@@ -158,7 +158,7 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 | Módulo | Descrição | Verticais | Sprint | Status |
 |---|---|---|---|---|
 | App nativo Expo | Aluno/paciente mobile; PWA (Sprint 22) cobre 90% antes | todas | 27 | futuro |
-| Módulo fiscal (Focus NFe) | Emissão de NFS-e por company | todas | 28 | futuro |
+| Módulo fiscal (Focus NFe) | Emissão de NFS-e por company, cobertura nacional via Focus NFe (todos os municípios suportados; cada company emite no município do seu CNPJ) | todas | 28 | futuro |
 | Prescrição adaptativa IA por RPE | Consome `workout_sessions.rpe` do Sprint 11 + ajusta carga automaticamente | Academia | pós-27 | futuro (depende de app nativo) |
 
 ---

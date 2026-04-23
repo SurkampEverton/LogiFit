@@ -43,7 +43,7 @@ Este é um sistema que manipula **dados sensíveis de saúde** (LGPD art. 11), c
 ### Integrações Externas
 - **Asaas** — boleto, Pix, cartão recorrente. Webhooks com idempotência (tabela `webhook_events` com `external_id` único) e dead-letter.
 - **Resend** — email transacional.
-- **Fiscal (Fase 2):** Focus NFe para NFS-e.
+- **Fiscal (Fase 3):** Focus NFe para NFS-e (cobertura nacional — cada company emite no município do seu CNPJ; provider abstrai os web services municipais).
 
 ### Inteligência Artificial
 - **Vercel AI SDK** com provider plugável (Claude default, OpenAI/Gemini fallback)
