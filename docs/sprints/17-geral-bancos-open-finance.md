@@ -28,6 +28,19 @@ Integração com bancos via Open Finance (ou importação OFX fallback) + concil
 - Aprovação manual: operador vê sugestões e aceita/rejeita
 - Audit: toda conciliação gera registro
 
+**Manifestação do Destinatário (ADR 0057):**
+- UI completa na inbox `/app/financeiro/nfe` (criada no Sprint 15):
+  - Nova coluna **"Manifestação"** com status colorido: `⏳ D-25` / `✓ Confirmada` / `⚠ D-5 urgente` / `❌ Expirada` / `—` (quando `not_applicable`)
+  - Badge `auto`/`manual` indicando modo
+  - Botão **[Manifestar]** abre modal com 4 opções: Ciência (1 clique) · Confirmar · Desconhecer (exige justificativa ≥20 chars) · Não realizada (exige justificativa)
+- **Ciência automática default ON** (ADR 0057 — decisão do usuário): handler ouve `nfe.received.*` e dispara evento 210210 automaticamente ao criar linha em `nfe_received` com `manifestation_status='pending'` (respeita toggle `company_settings.nfe_auto_ciencia_enabled`)
+- **Confirmar/Desconhecer/Não realizada sempre manuais** — exigem `user_id` no audit; regra dura, sem exceção automatizada
+- Gate por CNPJ: trigger do Sprint 15 já marca `not_applicable` quando `company.cnpj IS NULL`; UI esconde ações para essas linhas
+- Job diário marca `expired` em linhas `pending` cujo `manifestation_deadline < now()`
+- Retry automático até 3 tentativas em caso de erro SEFAZ; alerta admin após falhas repetidas
+- Dashboard `/app/dashboard/gerente` ganha card "NFs a manifestar" com segmentos `> D-30` / `D-7 a D-30` / `vencendo hoje` / `vencidas`
+- Alerta via cross-alert dispatcher (Sprint 07) D-7 antes do deadline
+
 **NF-e recepção automática + download por chave (ADR 0056):**
 - Reusa a **inbox unificada `/app/financeiro/nfe`** e a tabela `nfe_received` criadas no Sprint 15
 - Ativa os 2 métodos que dependem de provider externo + certificado A1:
@@ -92,6 +105,9 @@ Server Actions:
 - `forecastCashFlow(companyId, days)`
 - `fetchNfeByKey(chave, companyId)` — chama `NfeFetcher.fetchByKey()`, valida chave 44 dígitos + checksum, popula `nfe_received` com `source='manual_key'` (ADR 0056)
 - `toggleNfeAutoDownload(companyId, enabled)` — implementação real do placeholder do Sprint 15; marca `company_settings.nfe_auto_download_enabled`
+- `toggleNfeAutoCiencia(companyId, enabled)` — liga/desliga ciência automática (default ON; ADR 0057)
+- `manifestNfe(nfeReceivedId, eventCode, justification?)` — envia evento SEFAZ via `NfeFetcher.sendManifestation()`; exige justificativa para `210220` e `210240`; grava protocolo retornado (ADR 0057)
+- Handler interno `onNfeReceived` — escuta `nfe.received.*`, checa `nfe_auto_ciencia_enabled`, dispara 210210 com `manifestation_mode='automatic'` quando habilitado
 
 API Routes:
 - `POST /api/financeiro/openfinance/callback` — callback do provider OAuth
@@ -123,16 +139,27 @@ Em `packages/db/schema/nfe-recepcao.ts`:
 - `bank_transaction.imported`
 - `reconciliation.matched`, `reconciliation.rejected`
 - `nfe.received_from_sefaz`, `nfe.parsed_to_ap`
+- `nfe.manifestation.ciencia` — `{ chave, mode: 'automatic'|'manual', user_id?, at, protocol }`
+- `nfe.manifestation.confirmada` / `.desconhecida` / `.nao_realizada` (ambas com `justification` quando aplicável)
+- `nfe.manifestation.expired` — job diário
+- `nfe.manifestation.deadline_approaching` — D-7
+- `nfe.manifestation.send_failed` — após retry exaurido
 - `cashflow.forecast_generated`
 - `certificate.uploaded`, `certificate.expiring_soon`
 
 ## Commit (checklist)
 
 - [ ] Schema Drizzle: `bank_accounts`, `openfinance_connections`, `bank_transactions`, `reconciliation_rules`, `company_certificates`, `nfe_sefaz_cursors` (novo aqui); `nfe_received` **já existe do Sprint 15** — só alter para garantir `source='auto_sefaz'` e `'manual_key'` no enum
-- [ ] Implementações de `NfeFetcher` em `packages/ai/nfe/providers/`: `arquivei.ts`, `sieg.ts`, `focus.ts`, `sefaz-direct.ts` (com certificado A1)
+- [ ] Implementações de `NfeFetcher` em `packages/ai/nfe/providers/`: `arquivei.ts`, `sieg.ts`, `focus.ts`, `sefaz-direct.ts` (com certificado A1) — cada uma implementa `fetchByKey`, `fetchByCnpjCursor` E `sendManifestation` (ADR 0057)
 - [ ] Habilitar botão "🔎 Por chave" na inbox do Sprint 15 + validador mod 11 da chave
-- [ ] Habilitar toggle "Download automático" em `/app/settings/financeiro/nfe` (Sprint 15 tinha placeholder)
-- [ ] Testes E2E: (a) admin liga toggle + cadastra cert → job roda → NFs aparecem na inbox com `source='auto_sefaz'`; (b) operador cola chave → NF aparece com `source='manual_key'`; (c) admin desliga toggle → job skippa company
+- [ ] Habilitar toggle "Download automático" em `/app/settings/financeiro/nfe` (Sprint 15 tinha placeholder) + toggle "Ciência automática" (default ON, ADR 0057)
+- [ ] **UI de manifestação na inbox** (ADR 0057): coluna "Manifestação" + botão [Manifestar] + modal com 4 opções + validação de justificativa mínima
+- [ ] **Handler `onNfeReceived`** em `packages/ai/nfe/ciencia-handler.ts`: dispara 210210 automático respeitando toggle
+- [ ] **Job `nfe-manifestation-expiry`** (Vercel Cron diário): marca `expired` + emite `nfe.manifestation.expired`
+- [ ] **Job `nfe-manifestation-deadline-warn`** (Vercel Cron diário): emite `nfe.manifestation.deadline_approaching` para linhas em D-7
+- [ ] **Retry automático** em `sendManifestation` (até 3x, exponential backoff) + alerta admin após falha definitiva
+- [ ] **Card "NFs a manifestar"** no dashboard gerente (Sprint 07 estendido)
+- [ ] Testes E2E: (a) admin liga toggle + cadastra cert → job roda → NFs aparecem na inbox com `source='auto_sefaz'`; (b) operador cola chave → NF aparece com `source='manual_key'`; (c) admin desliga toggle → job skippa company; (d) **NF baixada com ciência ON → evento 210210 automático dispara em <5s e `manifestation_status='ciencia'`**; (e) **operador desconhece NF com justificativa → evento 210220 enviado + audit com user_id**; (f) **NF sem manifestação por 180d → job marca `expired`**; (g) **company sem CNPJ → linhas marcadas `not_applicable`, UI esconde ações**
 - [ ] RLS + audit + criptografia at-rest dos tokens e certificados
 - [ ] Wrapper Open Finance em `packages/ai/openfinance/provider.ts` com interface comum (Pluggy/Belvo adapters)
 - [ ] Parser OFX (fallback) em `packages/db/bancos/ofx-parser.ts`

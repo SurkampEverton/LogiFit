@@ -6,6 +6,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — Manifestação do Destinatário NF-e (ADR 0057)
+
+- **ADR 0057** — Manifestação do Destinatário de NF-e (`docs/decisions/0057-manifestacao-destinatario-nfe.md`). Cobre os 4 eventos fiscais da NT 2012/002 SEFAZ: Ciência (210210), Confirmação (210200), Desconhecimento (210220), Não Realizada (210240). Ciclo de vida integrado à inbox `/app/financeiro/nfe` (ADR 0056).
+- **Ciência automática ON por padrão** (decisão do usuário) — tenant pequeno sem contador tem conformidade fiscal sem configurar; demais eventos **sempre manuais** com audit por `user_id`.
+- **Gate por CNPJ** — company sem CNPJ (tenant PF) recebe `manifestation_status='not_applicable'` via trigger; UI esconde ações.
+- **Sprint 15** — adiciona colunas de manifestação em `nfe_received` (`manifestation_status`, `manifestation_protocol`, `manifestation_at`, `manifestation_deadline`, `manifestation_by_user_id`, `manifestation_mode`, `manifestation_justification`, `manifestation_attempts`, `manifestation_last_error`) + `company_settings.nfe_manifestation_enabled`, `nfe_auto_ciencia_enabled` (default true), `nfe_manifestation_deadline_days` (default 180) + trigger do gate por CNPJ.
+- **Sprint 17** — UI completa (coluna "Manifestação" + modal 4 opções) + `NfeFetcher.sendManifestation()` com retry + handler de ciência automática + jobs `nfe-manifestation-expiry` e `nfe-manifestation-deadline-warn` + card "NFs a manifestar" no dashboard do gerente + Server Actions `toggleNfeAutoCiencia` e `manifestNfe`.
+- **Prazo padrão 180 dias** com alerta D-7 via cross-alert dispatcher (Sprint 07); override por UF fica como evolução.
+- `CLAUDE.md` — NT 2012/002 SEFAZ adicionada aos marcos regulatórios.
+- `docs/modulos.md` — módulo "Manifestação do Destinatário NF-e" em Geral.
+
 ### Added — Inbox unificada de NF-e com 4 métodos de ingestão (ADR 0056)
 
 - **ADR 0056** — Inbox unificada de NF-e (`docs/decisions/0056-nfe-inbox-unificada-e-metodos-ingestao.md`). Tela única `/app/financeiro/nfe` concentra os 4 métodos de entrada: (1) download automático SEFAZ, (2) download por chave 44 dígitos, (3) upload XML, (4) entrada manual sem NF. Um único toggle em settings liga/desliga o automático; os 3 métodos manuais ficam sempre disponíveis como ações na inbox.
