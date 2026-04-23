@@ -29,11 +29,11 @@ Regras duras e inquebráveis. Divididas em 3 blocos. Violação = CI vermelho, r
 ## Processo (quebrou = não fecha sprint)
 
 **9.** 1 sprint ativo por vez. Teto de 3 semanas por sprint. Estourou? Quebra em duas funcionalidades menores.
-**10.** Branch por feature: `feat/sprint-XX-slug`. Sem commit direto em `main`.
+**10.** Commits vão direto para `main` (desenvolvimento solo, sem PR review obrigatório). Branches `feat/*`, `fix/*`, `chore/*`, `docs/*` são **opcionais** — usar só quando a feature é longa, arriscada, ou o trabalho precisa ser testado isolado antes de merge.
 **11.** Conventional Commits obrigatórios (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
 **12.** Toda feature nova entra atrás de **feature flag** (PostHog) até ser validada.
 **13.** ADR criado no **mesmo dia** da decisão; nunca retroativo.
-**14.** `CHANGELOG.md` atualizado em todo PR que muda comportamento observável.
+**14.** `CHANGELOG.md` atualizado em todo commit que muda comportamento observável.
 **15.** Nenhum `--no-verify`, `--force` em `main`, nem skip de CI.
 
 ---

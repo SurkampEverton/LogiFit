@@ -27,8 +27,8 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 6. **Se a decisão é arquitetural**, propor criar ADR em `docs/decisions/` no mesmo turno.
 7. **Sempre** atualizar `CHANGELOG.md` quando mudar comportamento observável.
 8. **Nunca** `git commit` sem o usuário pedir explicitamente.
-9. **Nunca** `--force`, `--no-verify`, merge em `main` sem revisão.
-10. **Respeitar Conventional Commits** (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
+9. **Nunca** `--force`, `--no-verify`, nem skip de CI.
+10. **Respeitar Conventional Commits** (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`). Commits vão direto em `main` (dev solo); branches só para trabalho longo/arriscado.
 11. **Nunca** escrever path absoluto (drive letter, `D:\...`, `/Users/...`, `~/...`) em doc versionada — repo é clonado em máquinas diferentes; usar sempre caminhos relativos a partir da raiz do repo.
 
 Lista completa em [`docs/rules.md`](docs/rules.md).
@@ -75,8 +75,8 @@ pnpm typecheck        # tsc --noEmit
 ## Convenções
 
 ### Branches
-- `feat/sprint-XX-slug`, `fix/slug`, `chore/slug`, `docs/slug`
-- Sem commit direto em `main`
+- **Commits vão direto em `main`** (dev solo, sem PR review obrigatório)
+- Branches `feat/sprint-XX-slug`, `fix/slug`, `chore/slug`, `docs/slug` são **opcionais** — usar só para trabalho longo, arriscado, ou que precisa ser testado isolado antes de merge
 
 ### Commits
 - Conventional Commits obrigatório
