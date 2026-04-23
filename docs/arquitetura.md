@@ -29,6 +29,7 @@ Este é um sistema que manipula **dados sensíveis de saúde** (LGPD art. 11), c
 - **Tailwind CSS v4 + shadcn/ui** — sombras padrão removidas via override de tokens
 - **Zustand** (estado cliente) + **TanStack Query** (estado servidor)
 - **React Hook Form + Zod** — formulários e validação ponta-a-ponta (schemas Zod compartilhados com server actions)
+- **next-intl** — i18n em 3 idiomas (`pt-BR` default, `en-US`, `es-419`); middleware + cookie `NEXT_LOCALE`; regulamentação Brasil-only (regra 27 + [ADR 0052](decisions/0052-i18n-tres-idiomas-pt-en-es.md))
 
 ### Backend, Banco e Autenticação
 - **Supabase** (Postgres gerenciado):

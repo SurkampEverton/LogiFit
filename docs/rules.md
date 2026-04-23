@@ -1,6 +1,6 @@
 # Regras do Projeto LogiFit
 
-Regras duras e inquebráveis. Divididas em 3 blocos. Violação = CI vermelho, revert, ou sprint não fecha.
+Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (i18n). Violação = CI vermelho, revert, ou sprint não fecha.
 
 > **Como usar:** toda discussão técnica começa perguntando "isso fere alguma regra?". Se sim, ou mudamos a regra (ADR) ou mudamos a solução. Regras não são sugestões.
 
@@ -23,6 +23,8 @@ Regras duras e inquebráveis. Divididas em 3 blocos. Violação = CI vermelho, r
 **24.** Transferência de aluno entre filiais = `UPDATE members SET company_id = X` + registro em `audit_log`; nunca deletar/recriar.
 **25.** Dados clínicos sensíveis (prontuário, mídia, avaliação) **nunca cruzam `company_id` quando `tenant.topology = 'franchise'`**. Nem com consent. Enforced por RLS + audit.
 **26.** `groups` é camada apenas visual/agregada. Queries cross-tenant do mesmo group retornam **somente dados agregados** via views dedicadas. Nenhum `SELECT` direto em tabela operacional pode usar `group_id` como filtro cross-tenant. Teste de CI bloqueia.
+
+**27.** **Proibido hardcode de string de UI.** Toda string visível ao usuário (botão, título, mensagem, placeholder, tooltip) vai via `t('namespace.key')` do next-intl. Message catalog obrigatório nos 3 locales (`pt-BR`, `en-US`, `es-419`). CI roda `pnpm i18n:check` e falha se faltar chave em qualquer locale. Exceção: nomes de entidades de domínio (ex: "Pollock 7 dobras"), códigos técnicos (CID, TUSS), nomes de features flags, strings de debug/log não-visíveis. Ver [ADR 0052](decisions/0052-i18n-tres-idiomas-pt-en-es.md).
 
 ---
 

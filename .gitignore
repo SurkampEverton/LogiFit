@@ -1,0 +1,47 @@
+# Dependências (quando houver Node)
+node_modules/
+.pnpm-store/
+.yarn/
+
+# Build outputs
+dist/
+build/
+.next/
+.turbo/
+out/
+
+# TypeScript
+*.tsbuildinfo
+
+# Testes / coverage
+coverage/
+.nyc_output/
+
+# Ambiente
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Claude Code — local settings (não versionar)
+.claude/settings.local.json
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+
+# Arquivos temporários do agente
+.git/COMMIT_MSG_TMP

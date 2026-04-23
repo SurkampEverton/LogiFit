@@ -49,7 +49,10 @@ Visão funcional do sistema, agrupada por **área**. Cada módulo tem "quais ver
 | `franchise_agreements` | Pares bilaterais para cross-company em `topology=franchise` | todas | 01b | todo |
 | Audit log | Append-only, particionado por mês, leitura sensível grava sempre | todas | 01b | todo |
 | Observabilidade | Sentry + PostHog + Logtail/Axiom | todas | 00 | todo |
+| Observabilidade de IA | Wrapper com tokens/latência/custo/cache hit-miss em `packages/ai/observability.ts` | todas | 00 | todo |
 | CI + teste RLS | Pipeline GitHub Actions que falha se tabela nova sem RLS | todas | 00 | todo |
+| **i18n (3 idiomas: pt-BR/en-US/es-419)** | next-intl com middleware, catalog JSON por namespace, CI check de chaves faltantes (regra 27, ADR 0052) | todas | 00 | todo |
+| **LocaleSwitcher** | Componente reutilizável em `packages/ui` para troca de idioma; persiste em cookie + `persons.preferred_locale` | todas | 00 | todo |
 
 ---
 
