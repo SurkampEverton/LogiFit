@@ -72,8 +72,25 @@ Portal em `/meu/*` (namespace separado do `/app/*`):
 - `/meu/teleconsulta/[appointmentId]` — sala de vídeo (habilitado no Sprint 31)
 - `/meu/exames` — exames laboratoriais e gráficos de evolução (habilitado no Sprint 30 Nutri)
 - `/meu/suplementos` — prescrições ativas de suplementação (habilitado no Sprint 30)
-- `/meu/privacidade` — gerenciar consents
+- `/meu/privacidade` (ADR 0054) — portal completo dos 8 direitos LGPD art. 18:
+  - **Visão geral:** toggles de consents ativos por finalidade + histórico; revogação imediata é permitida mas **não apaga dados com obrigação de retenção** (prontuário 20 anos CFM 2.299/2021, fiscal 5 anos)
+  - **Direito I — Confirmação** (`right='confirmation'`): botão 1-clique → resposta automática
+  - **Direito II — Acesso** (`right='access'`): "Baixar meus dados" → admin gera export JSON + PDF em ≤15d → link TTL 7d via email
+  - **Direito III — Correção** (`right='rectification'`): form "campo + novo valor sugerido"
+  - **Direito IV — Anonimização/eliminação** (`right='anonymization'`): **solicitação, não apagamento automático** — admin + profissional + contador validam em ≤15d o que é apagável (consent não-essencial, marketing, device readings) vs retenção legal; aluno vê resposta na timeline
+  - **Direito V — Portabilidade** (`right='portability'`): export JSON + FHIR (clínico) + OFX (financeiro)
+  - **Direito VI — Info sobre compartilhamento** (`right='sharing_info'`): lista de terceiros (Asaas, Focus NFe, Garmin, laboratório) + datas + finalidades
+  - **Direito VII — Info sobre consequências de não consentir** (`right='consent_info'`): tooltip em cada toggle com impacto ("desativar consent fisio→academia: seu instrutor deixa de ver alertas de lesão")
+  - **Direito VIII — Revogação** (`right='revocation'`): toggle na visão geral; cria audit trail
+  - **Timeline de solicitações** com status + SLA visível (X dias restantes)
+- `/meu/privacidade/solicitacoes/[id]` — detalhe da solicitação + mensagens do admin + anexos
 - `/login/meu` — entrada do member (magic link)
+
+**Rotas administrativas espelho (lado operador — admin atende solicitações LGPD):**
+
+- `/app/compliance/titular-requests` (ADR 0054) — fila de `data_subject_requests` com filtros status/tipo/deadline; admin priorize por SLA (D-3 destacado)
+- `/app/compliance/titular-requests/[id]` — detalhe: admin revisa pedido, adiciona mensagens ao titular, executa ação (anonimizar conforme matriz de retenção, gerar export, aplicar correção), anexa laudo, marca `fulfilled`/`rejected`
+- `/app/settings/retencao` (ADR 0054) — admin vê políticas de retenção legais (prontuário 20a, fiscal 5a, marketing revogável) em `retention_policies`; configuráveis apenas para categorias sem obrigação legal
 
 ## Server Actions + API Routes
 

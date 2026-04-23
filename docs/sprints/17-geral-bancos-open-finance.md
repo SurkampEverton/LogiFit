@@ -113,6 +113,10 @@ Integração com bancos via Open Finance (ou importação OFX fallback) + concil
 - `/app/settings/certificados` — upload/rotação de certificado A1 por company
 - `/app/settings/financeiro/nfe` (criada no Sprint 15) — toggle "Download automático" passa a ser **funcional** neste sprint; escolha de provider + credenciais
 - `/app/financeiro/nfe` (criada no Sprint 15) — mesma inbox ganha **linhas novas** com `source='auto_sefaz'` e **botão "Por chave" habilitado**
+- `/app/financeiro/nfe/[id]/manifestar` — modal/drawer de manifestação (ADR 0057): 4 botões — [Ciência] (1 clique) / [Confirmar] (1 clique) / [Desconhecer] (exige textarea ≥20 chars de justificativa) / [Não realizada] (idem); exibe prazo restante + histórico de tentativas
+- `/app/financeiro/nfe/[id]/devolver` — modal de devolução (ADR 0058): tipo total/parcial + seleção de itens (quando parcial) + categoria do motivo (defeito/divergência/atraso/cancelamento/outro) + textarea ≥20 chars + botões [Gerar PDF controle] + [Marcar como aguardando emissão externa]
+- `/app/financeiro/nfe/[id]/importar-devolucao` — upload do XML da NF-e de devolução emitida externamente (valida `refNFe = chave_original`); fecha ciclo `awaiting_external_emission → emitted`
+- `/app/financeiro/devolucoes` — lista consolidada de `nfe_returns` com filtros status/fornecedor/período; segmento "aguardando emissão > 7d" destacado
 
 ## Server Actions + API Routes
 

@@ -111,8 +111,16 @@ Ver [`modulos.md` — Emissão Fiscal](../modulos.md#emiss%C3%A3o-fiscal):
 - `/app/settings/fiscal/catalogo` — CRUD catálogo de serviços
 - `/app/settings/fiscal/numeracao` — séries e numeração por tipo
 - `/app/fiscal/retencoes` — relatório mensal de retenções agrupado por tributo (ADR 0061); filtros por período/company/tributo; export PDF/CSV
-- `/app/contador` — **portal do contador externo** (role `contador_externo` do Sprint 01b): download em massa de XMLs (recebidos + emitidos) por período, CSV/OFX de AP/AR, relatório de retenções; tudo read-only
-- `/app/contador/convidar` — admin do tenant convida contador via magic link
+- `/app/contador` — **portal do contador externo** (role `contador_externo` do Sprint 01b — ADR 0061), tudo read-only, layout distinto (sem sidebar operador, sem acesso a members/agenda/prontuário). Navegação lateral inclui:
+  - **`/app/contador/dashboard`** — home com KPIs agregados: receita total mês/ano + NFSe emitidas × recebidas + APs pagos × pendentes + retenções pendentes de guia
+  - **`/app/contador/xmls`** — download em massa de XMLs (recebidos + emitidos) por período com filtros (tipo, emitente, status); export ZIP assinado TTL 1h
+  - **`/app/contador/ap-ar`** — CSV/OFX de AP/AR por período; incluindo `no_invoice=true` (entradas sem NF)
+  - **`/app/contador/retencoes`** — link para `/app/fiscal/retencoes` (compartilhado)
+  - **`/app/contador/dre`** — **acesso ao DRE** (Sprint 14) read-only por período + company + consolidado (decisão explícita: contador precisa do DRE para fechar balanço; aba inclui breakdown de receita × custos + comparativo mês/anterior + export PDF/XLSX)
+  - **`/app/contador/kpis`** — KPIs **agregados** (nunca individuais — regra 26 group_owner se aplica igual): receita por modalidade, inadimplência, ticket médio, MRR, overdue por método; para sanity check do contador
+  - **`/app/contador/fiscal-emissions`** — lista read-only de `fiscal_emissions` emitidas (NFS-e + NF-e + NFC-e) por período; filtro por tipo/status/chave; download individual PDF/XML
+  - **`/app/contador/certificados`** (read-only) — visualiza certificados A1 ativos + vencimento (não pode alterar; admin altera)
+- `/app/contador/convidar` — admin do tenant convida contador via magic link (Sprint 01b tem o schema; aqui fica a UI detalhada: form email + nome + empresa contábil + permissions padrão `contador_externo`; revogação)
 
 ## Server Actions + API Routes
 

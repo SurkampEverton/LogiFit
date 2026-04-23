@@ -61,7 +61,7 @@ Visão funcional do sistema, agrupada por **área**. Cada módulo tem "quais ver
 | **Dashboard de conformidade IA** | `/app/compliance/ia` lista features IA ativas + classe SaMD + última revisão do comitê + log de decisões humanas (CFM 2.454/2026) | todas | 01b | todo |
 | **RIPD versionado por módulo crítico (LGPD art. 11 — ADR 0054)** | `ripd_documents` + `ripd_versions` com SHA-256 hash, riscos identificados, mitigações, parecer DPO; revisão semestral obrigatória | todas | 01b | todo |
 | **Consent granular por finalidade (LGPD art. 8º + art. 11)** | `consent_purposes (key, label, required, lawful_basis, data_categories[])` + `consents (member_id, purpose_key, given_at, revoked_at)` com trilha completa | todas | 01b | todo |
-| **Direitos do titular (LGPD art. 18)** | Portal `/meu/privacidade`: solicitações de acesso/correção/anonimização/portabilidade + workflow de atendimento + SLA 15 dias | todas | 01b | todo |
+| **Direitos do titular (LGPD art. 18 — 8 direitos completos)** | Portal `/meu/privacidade` com 8 botões (confirmação/acesso/correção/anonimização/portabilidade/info-compartilhamento/info-consequências/revogação); apagamento **é solicitação**, não automático (obrigações de retenção: prontuário 20a CFM 2.299, fiscal 5a); SLA 15 dias; `data_subject_requests` + timeline visível ao titular; admin atende via `/app/compliance/titular-requests` | todas | 01b (scaffold) + 26 (portal completo) | todo |
 | **Retenção e descarte automatizado** | `retention_policies (data_category, retention_period, legal_basis)` + job de expurgo + audit | todas | 01b | todo |
 
 ---
@@ -236,7 +236,7 @@ Ciclo fiscal completo de emissão de documentos via **Focus NFe** como provider 
 | **Wizard de onboarding fiscal** | `/app/settings/fiscal` — credenciais Focus + regime + catálogo + série/numeração + teste em homologação | Academia, Fisio, Nutri | 36 | futuro |
 | **Motor de retenções tributárias (ADR 0061)** | `tax_natures` (10 globais + custom tenant) + `tax_retentions` (PIS/COFINS/CSLL/IRRF/INSS/ISS); calculadora aplicada em AP (Sprint 15) e comissão/RPA (Sprint 23); atualização anual das tabelas IRRF/INSS | Academia, Fisio, Nutri | 15 (schema + AP) + 23 (comissão) | todo |
 | **Relatório mensal de retenções** | `/app/fiscal/retencoes` agrupado por tributo + período + company; export PDF/CSV para contador gerar DARF; campo `guide_reference` colável após pagamento | Academia, Fisio, Nutri | 36 | futuro |
-| **Portal do contador externo** | Role `contador_externo` (Sprint 01b) + `/app/contador` read-only: download em massa ZIP de XMLs (recebidos + emitidos) + CSV/OFX AP/AR + retenções; MFA obrigatório; **nunca vê dado clínico** (LGPD art. 11) | Academia, Fisio, Nutri | 01b (role) + 36 (portal) | todo |
+| **Portal do contador externo** | Role `contador_externo` (Sprint 01b) + `/app/contador/*` read-only com 8 abas: dashboard, xmls (download massa), ap-ar (CSV/OFX), retenções, **DRE por período/company** (Sprint 14 read-only), **KPIs agregados** (nunca individuais — regra 26), emissões fiscais, certificados A1 (visualização); MFA obrigatório; **nunca vê dado clínico** (LGPD art. 11) | Academia, Fisio, Nutri | 01b (role) + 36 (portal completo) | todo |
 
 ---
 

@@ -106,6 +106,7 @@ Transforma o módulo financeiro (que era focado em mensalidade Asaas + custos) e
 - `/app/financeiro/aging` — aging report
 - `/app/settings/financeiro/aprovacao` — configurar regras de workflow
 - `/app/settings/financeiro/ocr` — **admin do tenant configura provider OCR**: escolhe na lista (OCR.space/Google Vision/AWS Textract/Azure/Tesseract), cola API key, define provider de fallback, testa com boleto de exemplo e vê preview do resultado
+- `/app/settings/financeiro/naturezas` (ADR 0061) — CRUD de `tax_natures`: lista naturezas globais (10 curadas, read-only com botão "Desativar para meu tenant") + CRUD das custom do tenant; modal de edição mostra `retentions jsonb` em formato amigável (checkbox por tributo + campo rate + threshold); preview "aplicado em AP de R$ 1.000" mostra retenções calculadas para validar configuração
 
 ## Server Actions + API Routes
 

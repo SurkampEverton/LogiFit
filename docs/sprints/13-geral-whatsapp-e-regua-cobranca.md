@@ -55,6 +55,8 @@ Ver [`modulos.md` — Geral](../modulos.md#geral):
 - `/app/mensagens/providers` — config do provider (API key, número, sandbox toggle)
 - `/app/members/[id]/mensagens` — histórico de mensagens do member
 - `/app/settings/mensagens` — rate-limit global e defaults
+- `/app/settings/canais/whatsapp` (ADR 0051) — config do hub inbound multi-fluxo: lista de handlers registrados com toggle (`boleto`, `exame`, `foto-progress`, `receipt`, etc.) + identity matcher config (telefone → fallback pedir CPF) + intent router rules + log recente de classificações IA + métrica "mensagens não roteadas" para detectar gaps
+- `/app/mensagens/inbound` — inbox de mensagens recebidas pendentes de ação humana (classificador sem confiança ou member não identificado)
 
 ## Server Actions + API Routes
 

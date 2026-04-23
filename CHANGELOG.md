@@ -6,6 +6,33 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Changed — Auditoria de cobertura de telas + ajustes em 7 sprints
+
+Após auditoria sistemática cruzando 218 rotas documentadas × 10 roles × 61 ADRs × módulos prometidos, aplicados ajustes em 7 sprints:
+
+- **Sprint 01b** — 4 telas novas detalhadas:
+  - `/app/settings/compliance/comite-ia` (ADR 0053) — cadastro de membros, ata anexada, calendário de revisões semestrais, gate visual de features IA classe II+
+  - `/app/compliance/ia` (ADR 0053) — dashboard de conformidade IA: features ativas + classe SaMD + última revisão + log de decisões humanas
+  - `/meu/privacidade` (ADR 0054, scaffold) — 8 botões dos direitos LGPD art. 18; apagamento como solicitação (não automático)
+  - 3 schemas novos: `data_subject_requests`, `ai_committee_members`, `ai_committee_reviews`, `ai_feature_classifications`
+  - Wrapper `withAiClassGate(featureKey, fn)` bloqueia execução de features IA classe II+ sem comitê ativo
+- **Sprint 13** — 2 telas: `/app/settings/canais/whatsapp` (config handlers inbound + identity matcher + log de classificações) + `/app/mensagens/inbound` (mensagens sem roteamento automático)
+- **Sprint 15** — `/app/settings/financeiro/naturezas` (ADR 0061) — CRUD de `tax_natures` globais + custom do tenant com preview de retenções
+- **Sprint 17** — 4 telas detalhadas:
+  - `/app/financeiro/nfe/[id]/manifestar` — modal dos 4 eventos (ciência/confirmar/desconhecer/não realizada) com validação de justificativa ≥20 chars
+  - `/app/financeiro/nfe/[id]/devolver` — modal de devolução (total/parcial + categoria + motivo) + PDF controle
+  - `/app/financeiro/nfe/[id]/importar-devolucao` — upload do XML da devolução emitida externamente
+  - `/app/financeiro/devolucoes` — lista consolidada de `nfe_returns` com alertas >7d em espera
+- **Sprint 26** — `/meu/privacidade` expandido com UI completa dos 8 direitos LGPD + `/meu/privacidade/solicitacoes/[id]` + rotas admin espelho (`/app/compliance/titular-requests`, `/app/settings/retencao`)
+- **Sprint 32** — 2 telas Device Hub detalhadas: `/app/members/[id]/dispositivos/curar` (curadoria profissional das leituras para avaliação) + `/app/settings/devices/[provider]` (config por provider) + `/meu/dispositivos/[provider]/consent` (consent granular por integração)
+- **Sprint 36** — `/app/contador/*` expandido em **8 abas**: dashboard, xmls (massa), ap-ar (CSV/OFX), retenções, **DRE por período** (Sprint 14 read-only), **KPIs agregados** (nunca individuais — regra 26), fiscal-emissions, certificados (visualização); decisão: contador precisa de DRE para fechar balanço + KPIs para sanity check
+- `docs/modulos.md` — módulos "Direitos do titular" e "Portal do contador externo" com escopo completo (8 abas do contador explicitadas)
+
+**Decisões aplicadas nesta rodada** (respostas às 3 perguntas):
+1. ✅ `/meu/privacidade` direito de apagamento = **solicitação** (admin + profissional + contador validam obrigações de retenção em 15d); evita cliente apagar acidentalmente dado com retenção legal
+2. ✅ `/app/contador` inclui **DRE + KPIs agregados** (contador precisa para fechar balanço; agregados respeitam regra 26 — nunca dado individual)
+3. ✅ Device Hub — telas em `/meu/dispositivos` (member pareia/revoga) **e** `/app/members/[id]/dispositivos` (profissional curta leituras para avaliação formal)
+
 ### Added — Motor de retenções + portal contador + roadmap fiscal faseado (ADR 0061)
 
 - **ADR 0061** — Motor de retenções tributárias + cobertura fiscal faseada (`docs/decisions/0061-motor-retencoes-e-cobertura-fiscal-faseada.md`). Mapeia os 7 grupos de impostos (A-G) e define cobertura progressiva: Fase atual cobre B (retenções em AP) + G (retenções em comissão/RPA) + role/portal contador externo; Fases futuras cobrem C (apuração mensal), D (guias DAS/DARF/DAM), E (obrigações acessórias SPED/ECD/ECF), F (folha CLT + eSocial). Ambição de cobertura completa longo prazo, com tempo para avaliar make vs buy em cada grupo complexo.

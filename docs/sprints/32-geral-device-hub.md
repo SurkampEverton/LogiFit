@@ -119,8 +119,11 @@ Ver [`modulos.md` — Geral](../modulos.md#geral):
 - `/meu/dispositivos/balanca-ble` — UI Web Bluetooth para emparelhamento
 - `/meu/dispositivos/importar` — upload FIT/CSV/TCX
 - `/meu/dispositivos/historico` — leituras ingeridas
-- `/app/members/[id]/dispositivos` — profissional vê dispositivos conectados + agregados (se tem permission)
-- `/app/settings/devices` — admin define quais providers ficam disponíveis no tenant
+- `/app/members/[id]/dispositivos` — profissional vê dispositivos conectados + agregados (se tem permission + consent)
+- `/app/members/[id]/dispositivos/curar` (ADR 0049) — **curadoria profissional**: profissional seleciona leituras de `device_readings` + valida/edita + importa para `assessment_measurements` com rastreabilidade (`source_device_reading_id`, `validated_by_user_id`); UI lado-a-lado (leituras brutas × valor final da avaliação formal)
+- `/app/settings/devices` — admin define quais providers ficam disponíveis no tenant (toggle por provider + credentials do app OAuth)
+- `/app/settings/devices/[provider]` — config específica do provider (credentials OAuth app, rate limits, janela de sync, retention de dado cru 90d)
+- `/meu/dispositivos/[provider]/consent` — member concede consent granular por provider (ADR 0049 — consent por integração separado); dá opt-in explícito a "compartilhar dados do Garmin com LogiFit + meu profissional"
 
 ## Server Actions + API Routes
 
