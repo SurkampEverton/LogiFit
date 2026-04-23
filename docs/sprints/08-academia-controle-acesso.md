@@ -8,7 +8,7 @@
 
 ## Goal
 
-Aluno da Academia entra na unidade via QR code dinâmico (HMAC rotativo 60s) lido pela catraca. Catraca publica check-in via Realtime; UI da recepção vê passagem ao vivo. Bloqueio automático quando contrato em atraso > grace period (consumido de `invoice.overdue` do Sprint 04).
+Aluno da Academia entra na unidade via QR code dinâmico (HMAC rotativo 60s) lido pela catraca. Catraca publica check-in via Realtime; UI da recepção vê passagem ao vivo. Bloqueio automático quando contrato em atraso > grace period (consumido de `invoice.overdue` do Sprint 04). **Personal trainers contratados no tenant exigem CREF ativo (Lei 9.696/1998) — validado no onboarding via `professional_registrations` do Sprint 01b (ADR 0055).**
 
 ## Critério de aceite
 
@@ -22,6 +22,8 @@ Aluno da Academia entra na unidade via QR code dinâmico (HMAC rotativo 60s) lid
 - Dispositivo (`access_devices`) cadastrado por unit com token próprio HMAC distinto do QR
 - Teste E2E: gerar QR, bater na catraca, verificar allow=true; esperar 90s, repetir → token antigo rejeitado
 - Teste E2E: member com invoice vencida +15d não consegue passar; paga invoice → libera em <5s
+- **Gate CREF para personal trainer (ADR 0055):** onboarding de user com role `personal` ou `instrutor` exige ao menos 1 `professional_registrations` ativo com `council_body='CREF'` (Lei 9.696/1998 art. 3º). Operador do tenant é orientado no fluxo a cadastrar o CREF antes de atribuir a role. Nota jurídica exibida na UI.
+- Teste E2E: tentar criar user com role `personal` sem CREF ativo → fluxo bloqueia com mensagem "Personal trainer exige CREF ativo (Lei 9.696/1998); cadastre em /app/pessoas/[id]/registros"
 
 ## Dependências
 
@@ -107,6 +109,7 @@ Consumidores no MVP:
   - Subscriber de `contract.resumed` → resolve `access_blocks` relacionados
 - [ ] UI `/app/acesso/*` com estados (live, bloqueios, catracas)
 - [ ] UI `/app/members/[id]/qr` com rotação visível
+- [ ] Gate de onboarding: `/app/settings/users/new` com role `personal`/`instrutor` consulta `professional_registrations` da `person_id` e bloqueia se CREF inativo; link para tela de cadastro (ADR 0055)
 - [ ] Widget "acessos do paciente" em `/app/members/[id]` (slot `acessos`): frequência últimos 30d + último check-in + unit preferida + bloqueios ativos. Registrar com `{ slot: 'acessos', requiredPermissions: ['acesso.read'], requiredVertical: 'academia', consentPurpose: null, showWhen: (m) => m.has_access_events }`. Tenant só-Fisio/só-Nutri não vê. Ver [modulos.md — matriz](../modulos.md#matriz-de-visibilidade-mvp--previsão-fase-23)
 - [ ] Hardware protótipo (ADR 0018 escolhido + POC funcional)
 - [ ] Testes unit: HMAC gen/validate + tolerância

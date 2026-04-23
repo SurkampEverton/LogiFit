@@ -25,6 +25,8 @@ Visão funcional do sistema, agrupada por **área**. Cada módulo tem "quais ver
 | Módulo | Descrição | Verticais | Sprint | Status |
 |---|---|---|---|---|
 | **Cadastro central de `persons`** | Tabela única PF/PJ com detecção automática do tipo pelo documento; todos os cadastros especializados (members/leads/suppliers/companies/users/profissionais) ganham FK `person_id`. Sem duplicação de dados de identidade. | todas | 01a | todo |
+| **Registros profissionais em conselho (ADR 0055)** | `professional_registrations (person_id, council_body, council_number, council_state, cbo_code, situation, verified_at, verification_source)` — cadastro de CRM/CRN/CREFITO/CREF (e CRF/CRP/COREN/CRO futuros) com unicidade global. Uma pessoa pode ter N registros (profissional dual). Gates downstream: assinatura de prontuário (Sprint 20), geração TISS (Sprint 22), contrato de comissão (Sprint 23), onboarding de personal (Sprint 08) | todas | 01b | todo |
+| **Validação periódica de situação no conselho** | Job Fase 2 consulta portais oficiais (CFM, CREFITO, CRN, CONFEF) e atualiza `situation` automaticamente; no MVP é `operator_attested` | todas | pós-19 | futuro |
 | **`<PersonPicker>` reutilizável** | Componente de autocomplete que busca persons e mostra papéis ativos; usado em toda tela de cadastro especializado | todas | 01a | todo |
 | **Busca automática de dados por CNPJ** | Ao digitar 14 dígitos preenche razão social, endereço, CNAE, porte, regime tributário, situação cadastral vindos da Receita. BrasilAPI (default) + ReceitaWS (fallback) + CNPJá! (pago, opcional). Admin configura via `/app/settings/pessoas/cnpj` | todas | 01a | todo |
 | **Cache de CNPJ + validação periódica de situação** | Cache global 7 dias; botão manual de refresh; job semanal detecta empresa baixada/suspensa | todas | 01a | todo |
@@ -316,6 +318,7 @@ Introduzido pelo [ADR 0047](decisions/0047-cadastro-central-persons.md). Em vez 
 | `suppliers` | `pf` ou `pj` | Autônomo ou empresa |
 | `leads` | nullable inicialmente | `quick_name`+`quick_phone` cobrem captura rápida; `person_id` obrigatório a partir do estágio `proposta` |
 | `professional_contracts` | `pf` apenas | Profissional é pessoa física |
+| `professional_registrations` | `pf` apenas | Registro em conselho (CRM/CRN/CREFITO/CREF/...) sempre vinculado a PF (ADR 0055) |
 | `units` | — | Local físico, não é pessoa; tem `company_id` FK e endereço próprio |
 
 **Views consolidadas:** `v_members_full`, `v_suppliers_full`, `v_companies_full` fazem JOIN com persons para leituras quentes. `v_person_roles(person_id, roles text[])` lista papéis ativos por pessoa (para UI "esta pessoa é: aluna, fornecedora, usuária").

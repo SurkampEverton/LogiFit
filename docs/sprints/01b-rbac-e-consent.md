@@ -1,4 +1,4 @@
-# Sprint 01b — RBAC com scope + Consent LGPD
+# Sprint 01b — RBAC com scope + Consent LGPD + Registros profissionais em conselho
 
 - **Início:** planejado (depois do Sprint 01a)
 - **Fim planejado:** +3 semanas
@@ -7,7 +7,7 @@
 
 ## Goal
 
-Autorização com scope (group/tenant/company/unit), consent cross-module/cross-company, audit log particionado, todos testados nos 4 cenários canônicos.
+Autorização com scope (group/tenant/company/unit), consent cross-module/cross-company, audit log particionado, **registros profissionais em conselho (CRM/CRN/CREFITO/CREF)** para habilitar assinatura regulatória e faturamento TISS nas fases seguintes — todos testados nos 4 cenários canônicos.
 
 ## Critério de aceite
 
@@ -25,6 +25,12 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 - **Teste E2E explícito da regra 25**: criar cenário franquia (tenant.topology='franchise') com 2 companies + member A em company 1 + member B em company 2; tentar (a) SELECT direto cross-company (deve retornar 0 rows via RLS), (b) criar consent.share_injury_to_training entre os dois (deve bloquear ou retornar erro explícito), (c) função `has_permission` cross-company em franchise (deve retornar false). CI falha se qualquer desses passarem
 - Teste E2E: recepção (sem `financeiro.read` na role) ganha grant direto `financeiro.read` scope `company:X` com `expires_at` futuro → passa a ver `/app/financeiro/*` e widget financeiro no dashboard do member
 - Teste E2E: grant com `expires_at` no passado é ignorado pela policy (job noturno marca `revoked_at`)
+- Tabela `professional_registrations` criada (ADR 0055) com `person_id` FK, `council_body` (CRM/CRN/CREFITO/CREF + enum aberto para CRF/CRP/COREN/CRO futuros), `council_number`, `council_state`, `cbo_code nullable`, `situation` (`active`/`suspended`/`cassated`/`expired`/`pending_verification`/`unknown`), `verified_at`, `verification_source` (`operator_attested` default no MVP)
+- Constraint global unique `(council_body, council_number, council_state)` — mesmo número de conselho não existe em 2 tenants (detecta fraude)
+- Uma pessoa pode ter **N registros** — profissional dual (fisio + PT; médico em 2 UFs)
+- UI `/app/pessoas/[id]/registros` — admin/gerente cadastra, atualiza situação, anexa documento (opcional)
+- Teste E2E: criar pessoa fisio → cadastrar CREFITO-3 12345 → `situation='pending_verification'`; admin confirma → `active`; simular `suspended` → bloqueia gate downstream do Sprint 20/22/23 (testes específicos nos sprints)
+- Teste E2E: tentar cadastrar o mesmo CRM/SP/99999 em 2 tenants diferentes → constraint global rejeita
 
 ## Dependências
 
@@ -34,6 +40,7 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 
 - [ADR 0005 — RBAC com consent cross-module](../decisions/0005-rbac-com-consent-cross-module.md)
 - [ADR 0008 — Group como camada agregada](../decisions/0008-group-como-camada-agregada.md)
+- [ADR 0055 — Registros profissionais em conselho](../decisions/0055-registros-profissionais-em-conselho.md)
 - **ADR 0019 (esperado)** — Autorização por role + role custom por tenant + grant direto `user_permissions`. Policies RLS fazem union de `user_roles` e `user_permissions` ativos (`revoked_at IS NULL AND (expires_at IS NULL OR expires_at > now())`). Grants sempre têm `expires_at` sugerido (UX força preencher; "sem expiração" exige justificativa).
 
 ## Commit
@@ -52,9 +59,18 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 - [ ] Ação `revokeGrant(grantId)` em Server Action — seta `revoked_at = now()`; RLS passa a ignorar
 - [ ] Job noturno (cron) marca grants vencidos (`expires_at < now() AND revoked_at IS NULL`) como `revoked_at = expires_at`
 - [ ] Página `/app/perfil/privacidade` para aluno ver/revogar consents
+- [ ] Schema Drizzle: `professional_registrations` — `id`, `tenant_id`, `person_id` fk (kind=pf via trigger), `council_body` enum, `council_number text`, `council_state text`, `specialty text nullable`, `cbo_code text nullable`, `situation` enum, `issued_at date nullable`, `verified_at timestamptz nullable`, `verified_by_user_id nullable`, `verification_source` enum (default `operator_attested`), `valid_until date nullable`, `document_storage_path nullable`, `archived_at timestamptz nullable`, timestamps
+- [ ] Constraint global unique `(council_body, council_number, council_state)` — cross-tenant
+- [ ] Seed: permissions `profissional.read`, `profissional.write` + atribuições padrão (`super_admin_rede`, `diretor_matriz`, `gerente_filial` ganham write)
+- [ ] View `v_professional_registrations_active` filtra `archived_at IS NULL AND situation IN ('active','pending_verification')`
+- [ ] UI `/app/pessoas/[id]/registros` — lista + add/edit + mudança de situação com audit
+- [ ] Upload opcional de documento (carteirinha/comprovante) para Storage bucket `professional-docs` privado com URL assinada curta
+- [ ] Seed dos 4 conselhos base no enum: CRM, CRN, CREFITO, CREF; preparar (no enum mas sem seed de dados): CRF, CRP, COREN, CRO
 - [ ] Testes E2E contra os 4 cenários canônicos
 - [ ] Testes E2E específicos de grants: criar, usar, revogar, expirar
+- [ ] Teste E2E de registro profissional: cadastro + atestação + mudança de situação + unicidade global
 - [ ] ADR 0019 publicado
+- [ ] ADR 0055 publicado
 
 ## Stretch
 

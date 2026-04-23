@@ -13,6 +13,7 @@ Cálculo automático de comissão/repasse por profissional (fisio autônomo, per
 ## Critério de aceite
 
 - Cada profissional tem `professional_contracts` (um ou mais) com condições: `kind` (percent_faturamento / percent_recebido / fixo_por_atendimento / tabela_por_servico), `default_percent` ou `default_amount_cents`, `overrides` por `service_type`/`tuss_code`
+- **Gate de registro profissional ativo (ADR 0055):** `createProfessionalContract` valida que a `person_id` informada tem ao menos 1 `professional_registrations` com `situation='active'` coerente com o tipo de serviço do contrato (ex: contrato de fisio exige CREFITO ativo; contrato de personal exige CREF ativo). Erro explícito + link para `/app/pessoas/[id]/registros` se faltar. Mapping `service_type → council_body` tabelado em `packages/db/rh/council-mapping.ts`
 - Quando atendimento é realizado + pago (ou convênio paga), cálculo dispara criando `commission_entries`
 - Abatimento de comissão por cancelamento/no-show/glosa configurável
 - Fechamento mensal: `commission_periods` agrega entries do mês → valor final a pagar ao profissional
@@ -25,6 +26,7 @@ Cálculo automático de comissão/repasse por profissional (fisio autônomo, per
 
 ## Dependências
 
+- Sprint 01b (`professional_registrations` — gate de registro ativo)
 - Sprint 04 (pagamentos — fonte do "recebido")
 - Sprint 20 (consultas — atendimento realizado)
 - Sprint 21 (evolução — sessão fisio)

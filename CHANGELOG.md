@@ -6,6 +6,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — Registros profissionais em conselho (ADR 0055)
+
+- **ADR 0055** — Registros profissionais em conselho: CRM/CRN/CREFITO/CREF (+ enum aberto para CRF/CRP/COREN/CRO) (`docs/decisions/0055-registros-profissionais-em-conselho.md`). Tabela `professional_registrations` com unicidade global `(council_body, council_number, council_state)`; uma pessoa pode ter N registros (profissional dual); `situation` enum (`active`/`suspended`/`cassated`/`expired`/`pending_verification`/`unknown`); MVP = `operator_attested`, Fase 2 = job de validação automática nos portais oficiais.
+- **Sprint 01b** — cria tabela, permissions `profissional.read/write`, UI `/app/pessoas/[id]/registros`, view `v_professional_registrations_active`, seed dos 4 conselhos base, testes E2E.
+- **Sprint 20** (Prontuário) — `signConsulta`/`lockConsulta` exige registro ativo coerente com `kind` (medico→CRM, fisio→CREFITO, nutri→CRN); PDF inclui `{council_body}-{council_state} {council_number}` no rodapé (obrigatório CFM 2.299/2021, COFFITO 414/2012 art. 7º III, CFN 599/2018).
+- **Sprint 22** (TISS) — gerador de XML popula `NumeroConselhoProfissional`, `SiglaConselho`, `UF`, `CBOS` a partir de `professional_registrations`; bloqueia geração se profissional sem `cbo_code` cadastrado.
+- **Sprint 23** (Comissões) — `createProfessionalContract` valida registro ativo coerente com tipo de serviço do contrato.
+- **Sprint 08** (Acesso Academia) — onboarding de user com role `personal`/`instrutor` exige CREF ativo (Lei 9.696/1998).
+- `docs/modulos.md` — novo módulo "Registros profissionais em conselho" em Fundação + linhagem adicionada ao Contact-FK model.
+- `CLAUDE.md` — marcos regulatórios ampliados: Leis 3.268/1957 (CFM), 6.316/1975 (COFFITO), 6.583/1978 (CFN), 9.696/1998 (CONFEF).
+
 ### Added — Conformidade regulatória (ADRs 0053, 0054 + regras 28, 29)
 
 - **ADR 0053** — Conformidade CFM 2.454/2026 (IA em medicina) + classificação SaMD por feature (`docs/decisions/0053-conformidade-cfm-2454-2026-ia-saude.md`). Três pilares: (1) classificação SaMD por feature IA (Classe I/II/III/IV conforme RDC 657/2022); (2) supervisão humana documentada em `ai_audit_log`; (3) Comitê de IA interno obrigatório por tenant com feature IA classe II+. Tabela inicial classifica Sprints 06/13/19/28/32/33/34. Deadline regulatório: agosto/2026.

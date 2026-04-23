@@ -26,6 +26,8 @@ Catálogos CID-11 + CIF vinculados ao atendimento, templates por especialidade (
   - `kind=fisio` → `icp_brasil_optional` (COFFITO 414/2012): aceita ICP-Brasil OU lacre autenticado (MFA + hash + audit)
   - `kind=nutri` → `authenticated_lock` (CFN 599/2018): lacre autenticado suficiente
   - Status: `draft`/`locked`/`signed`/`archived`
+- **Gate de registro profissional ativo (ADR 0055):** `signConsulta` / `lockConsulta` verificam que o profissional tem ao menos 1 `professional_registrations` com `situation='active'` (ou `pending_verification` com `created_at > now() - interval '30 days'`) e `council_body` coerente com `kind` da consulta (`medico→CRM`, `fisio→CREFITO`, `nutri→CRN`). Sem registro compatível → erro 403 "Profissional sem registro ativo no conselho X; cadastre em /app/pessoas/[id]/registros".
+- PDF e XML do prontuário incluem no rodapé: `{nome do profissional} — {council_body}-{council_state} {council_number}` (dado obrigatório CFM 2.299/2021 art. 3º, COFFITO 414/2012 art. 7º III, CFN 599/2018 art. 5º)
 - Entrada obrigatória de ao menos 1 CID-11 principal por consulta
 - CIF opcional com componentes: Funções do Corpo (b), Estruturas (s), Atividades/Participação (d), Fatores Ambientais (e)
 - Templates de avaliação prontos por especialidade fisio (reusa `assessment_types` do Sprint 12)
@@ -42,7 +44,7 @@ Catálogos CID-11 + CIF vinculados ao atendimento, templates por especialidade (
 - Sprint 02 (members)
 - Sprint 03 (appointments)
 - Sprint 12 (assessment_types — reusa infra)
-- Sprint 01b (consent + audit_log)
+- Sprint 01b (consent + audit_log + `professional_registrations`)
 
 ## Decisões tomadas / ADRs esperados
 
@@ -113,6 +115,10 @@ Em `packages/db/schema/fisio.ts`:
 - [ ] RLS + testes incluindo franchise (regra 25)
 - [ ] Zod schemas
 - [ ] Integração ICP-Brasil (provider do ADR 0028) + fluxo de lacre autenticado (MFA + hash SHA-256 do conteúdo + timestamp + audit)
+- [ ] Gate em `signConsulta`/`lockConsulta`: query `professional_registrations` ativa coerente com `consultas.kind`; erro explícito se ausente (ADR 0055)
+- [ ] Rodapé do PDF com `{council_body}-{council_state} {council_number}` do profissional executante
+- [ ] Teste E2E: fisio sem CREFITO ativo tenta assinar → bloqueado; admin marca CREFITO como ativo → assinatura prossegue
+- [ ] Teste E2E: fisio com CREFITO `suspended` → bloqueado mesmo com ICP-Brasil válido
 - [ ] Templates seed: ortopedia, neuro, respiratória (reusa `assessment_types`)
 - [ ] UI prontuário com editor SOAP + picker de CID/CIF (autocomplete)
 - [ ] Gerador PDF com `@react-pdf/renderer` incluindo hash da assinatura visível
