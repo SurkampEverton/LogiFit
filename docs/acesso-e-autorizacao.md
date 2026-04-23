@@ -60,7 +60,7 @@ Injetados via Supabase Auth Hook ao autenticar ou trocar contexto:
   ```
 - Mesmo que código esqueça `WHERE tenant_id = ...`, o banco corta.
 - **Usuário multi-tenant** (ex: fisio atende em 2 clínicas) tem uma linha em `user_tenants` por tenant. Ao logar, escolhe contexto ativo → Auth Hook injeta o `tenant_id` no JWT.
-- **Trocar de contexto** exige logout + login (ou re-issue explícito do JWT) — nunca é silencioso. Registra em audit.
+- **Trocar de contexto é sempre explícito** — volta para `/select-tenant`, onde o usuário escolhe o tenant ativo e o JWT é reassinado com o novo `tenant_id`. Nunca acontece silenciosamente. Cada troca é registrada em `audit_log`.
 
 ---
 
@@ -70,13 +70,52 @@ Tabelas:
 
 ```
 roles               -- admin, recepcao, instrutor, fisio, nutri, diretor_rede,
-                    -- gerente_filial, group_owner, aluno
+                    -- gerente_filial, group_owner, aluno (roles base)
+                    -- + roles custom do tenant (ex: contador_externo, recepcao_com_financeiro)
 permissions         -- member.read, member.write, prontuario.read, prontuario.write,
                     -- financeiro.read, financeiro.write, copilot.use, agenda.write, ...
-role_permissions    -- (role_id, permission) — configurável por tenant se quiser
-user_roles          -- (user_id, role_id, scope_type, scope_id)
+role_permissions    -- (tenant_id, role_id, permission) — editável por tenant (role custom)
+user_roles          -- (user_id, role_id, scope_type, scope_id) — pacote de permissions via role
                     -- scope_type ∈ {group, tenant, company, unit}
+user_permissions    -- (user_id, permission, scope_type, scope_id,
+                    --  granted_by, granted_at, expires_at, revoked_at, reason)
+                    -- grant direto pontual: uma permission específica, normalmente com validade
 ```
+
+### Três caminhos de autorização (ADR 0019)
+
+1. **Role base** — atribuir uma role existente (`recepcao`, `gerente_filial`, etc) em `user_roles`. Pacote fechado.
+2. **Role custom do tenant** — admin do tenant edita `role_permissions` ou cria role nova (ex: `contador_externo` com `financeiro.read`). Perfil repetível.
+3. **Grant direto em `user_permissions`** — exceção pontual ("Maria vê financeiro de `company:X` até 2026-12-31"). Sempre com `reason`; `expires_at` altamente recomendado.
+
+As policies RLS fazem **union** de `user_roles` e `user_permissions` ativos: o user tem a permission se bater em QUALQUER das duas fontes. Função SQL centralizadora:
+
+```sql
+CREATE FUNCTION has_permission(
+  p_user uuid, p_permission text, p_scope_type text, p_scope_id uuid
+) RETURNS boolean AS $$
+  SELECT EXISTS (
+    -- via role
+    SELECT 1 FROM user_roles ur
+    JOIN role_permissions rp ON rp.role_id = ur.role_id
+    WHERE ur.user_id = p_user
+      AND rp.permission = p_permission
+      AND ur.scope_type = p_scope_type
+      AND ur.scope_id = p_scope_id
+    UNION ALL
+    -- via grant direto
+    SELECT 1 FROM user_permissions up
+    WHERE up.user_id = p_user
+      AND up.permission = p_permission
+      AND up.scope_type = p_scope_type
+      AND up.scope_id = p_scope_id
+      AND up.revoked_at IS NULL
+      AND (up.expires_at IS NULL OR up.expires_at > now())
+  );
+$$ LANGUAGE SQL STABLE;
+```
+
+Job noturno marca grants vencidos como `revoked_at = expires_at` para manter audit limpo.
 
 ### Exemplo de policy RLS combinando tenant + scope
 
@@ -164,7 +203,7 @@ Fluxo:
 3. Se **exatamente 1 contexto**: entra direto, JWT com `tenant_id` setado.
 4. Se **múltiplos contextos**: tela de seleção "onde você quer entrar?" — lista tenants + dashboard de grupo (se for owner).
 5. Ao escolher: Auth Hook reassina JWT com `tenant_id` e `scopes[]` daquele contexto.
-6. Trocar contexto depois = volta para tela de seleção (não é trocar silenciosamente).
+6. Trocar contexto depois = botão "trocar tenant" leva de volta para `/select-tenant` e reassina o JWT no novo contexto. Nunca silencioso. Cada troca grava `audit_log`.
 
 ---
 

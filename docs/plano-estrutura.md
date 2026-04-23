@@ -1,8 +1,12 @@
 # Plano: Estrutura de Planejamento e Desenvolvimento — LogiFit
 
+> **Documento histórico — congelado em 2026-04-22.**
+> Este é o plano original que gerou a estrutura inicial do projeto. As contagens e listas abaixo refletem o estado daquele momento (ex: "8 ADRs") e não são atualizadas conforme novos artefatos aparecem.
+> Estado atual do projeto vive em [`docs/roadmap.md`](roadmap.md) + [`CHANGELOG.md`](../CHANGELOG.md) + [`docs/decisions/`](decisions/).
+
 ## Context
 
-LogiFit é um ERP SaaS B2B multi-tenant para Academia + Fisioterapia + Nutrição, greenfield em `D:\Projeto\LogiFit`. O repositório hoje tem apenas `README.md` e `docs/arquitetura.md` (copiado do plano original).
+LogiFit é um ERP SaaS B2B multi-tenant para Academia + Fisioterapia + Nutrição, greenfield. O repositório hoje tem apenas `README.md` e `docs/arquitetura.md` (copiado do plano original).
 
 O usuário pediu a estrutura de planejamento e desenvolvimento do projeto. Durante a conversa, as decisões a seguir foram firmadas e precisam ser materializadas em documentação versionada:
 
@@ -20,7 +24,7 @@ Intenção: criar um pacote de documentação que sirva como espinha dorsal do p
 ## Árvore final de artefatos a criar
 
 ```
-D:\Projeto\LogiFit\
+<repo root>/
 ├── CHANGELOG.md                                  # novo
 ├── CLAUDE.md                                     # novo — contexto para Claude Code
 ├── README.md                                     # manter
@@ -136,17 +140,17 @@ Atualizar seção "Tabelas mestras do MVP" e "Multi-tenancy" para refletir `grou
 
 ## Critical Files
 
-- `D:\Projeto\LogiFit\CLAUDE.md` (novo, ~80 linhas)
-- `D:\Projeto\LogiFit\docs\rules.md` (novo, ~150 linhas)
-- `D:\Projeto\LogiFit\docs\acesso-e-autorizacao.md` (novo, ~200 linhas)
-- `D:\Projeto\LogiFit\docs\multiempresa.md` (novo, ~180 linhas)
-- `D:\Projeto\LogiFit\docs\decisions\0001-0008-*.md` (novos, ~50 linhas cada)
-- `D:\Projeto\LogiFit\docs\sprints\00, 01a, 01b-*.md` + `_template.md` (novos)
-- `D:\Projeto\LogiFit\docs\roadmap.md` (novo)
-- `D:\Projeto\LogiFit\CHANGELOG.md` (novo)
-- `D:\Projeto\LogiFit\.github\pull_request_template.md` (novo)
-- `D:\Projeto\LogiFit\docs\arquitetura.md` (editar — adicionar groups/companies/units e seção de comunicação)
-- `D:\Projeto\LogiFit\docs\plano-estrutura.md` (novo — cópia deste plano)
+- `CLAUDE.md` (novo, ~80 linhas)
+- `docs/rules.md` (novo, ~150 linhas)
+- `docs/acesso-e-autorizacao.md` (novo, ~200 linhas)
+- `docs/multiempresa.md` (novo, ~180 linhas)
+- `docs/decisions/0001-0008-*.md` (novos, ~50 linhas cada)
+- `docs/sprints/00, 01a, 01b-*.md` + `_template.md` (novos)
+- `docs/roadmap.md` (novo)
+- `CHANGELOG.md` (novo)
+- `.github/pull_request_template.md` (novo)
+- `docs/arquitetura.md` (editar — adicionar groups/companies/units e seção de comunicação)
+- `docs/plano-estrutura.md` (novo — cópia deste plano)
 
 Total: 20 arquivos novos + 1 edição (9 ADRs + 4 sprints + 4 docs raiz-docs + `plano-estrutura.md` + `CHANGELOG.md` + `CLAUDE.md` + `.github/pull_request_template.md`).
 

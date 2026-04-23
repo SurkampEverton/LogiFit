@@ -10,10 +10,11 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 
 - [`docs/arquitetura.md`](docs/arquitetura.md) — visão geral da arquitetura e stack
 - [`docs/rules.md`](docs/rules.md) — **26 regras duras** (arquiteturais, processo, código)
+- [`docs/modulos.md`](docs/modulos.md) — catálogo de módulos por área (fundação, geral, academia, fisio, nutri) + quais verticais usam
 - [`docs/multiempresa.md`](docs/multiempresa.md) — hierarquia group → tenant → company → unit + flags de topology
 - [`docs/acesso-e-autorizacao.md`](docs/acesso-e-autorizacao.md) — 4 camadas (identidade, tenant, RBAC, consent)
-- [`docs/roadmap.md`](docs/roadmap.md) — funcionalidades, fases, status
-- [`docs/sprints/`](docs/sprints/) — sprint ativo + templates
+- [`docs/roadmap.md`](docs/roadmap.md) — linha do tempo + controle de evolução por sprint
+- [`docs/sprints/`](docs/sprints/) — plano executável de cada sprint
 - [`docs/decisions/`](docs/decisions/) — ADRs (por que decidimos assim)
 
 ## Regras que você (Claude) DEVE respeitar
@@ -28,6 +29,7 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 8. **Nunca** `git commit` sem o usuário pedir explicitamente.
 9. **Nunca** `--force`, `--no-verify`, merge em `main` sem revisão.
 10. **Respeitar Conventional Commits** (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
+11. **Nunca** escrever path absoluto (drive letter, `D:\...`, `/Users/...`, `~/...`) em doc versionada — repo é clonado em máquinas diferentes; usar sempre caminhos relativos a partir da raiz do repo.
 
 Lista completa em [`docs/rules.md`](docs/rules.md).
 

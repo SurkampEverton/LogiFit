@@ -2,27 +2,9 @@
 
 ## Context
 
-Projeto **greenfield** em `d:\Projeto\LogiFit` para um ERP SaaS B2B multi-tenant que unifica três verticais — **Academia**, **Fisioterapia** e **Nutrição** — em um só produto. O diferencial é o cruzamento de dados em tempo real entre as áreas (restrição clínica do fisio → alerta no treino; log da academia → sugestão nutricional).
+Projeto **greenfield** para um ERP SaaS B2B multi-tenant que unifica três verticais — **Academia**, **Fisioterapia** e **Nutrição** — em um só produto. O diferencial é o cruzamento de dados em tempo real entre as áreas (restrição clínica do fisio → alerta no treino; log da academia → sugestão nutricional).
 
 Este é um sistema que manipula **dados sensíveis de saúde** (LGPD art. 11), com profissionais regulados (CFM, CRN, CREFITO). A arquitetura precisa ser robusta desde o dia 1 em **isolamento de tenant, auditoria, criptografia, assinatura de prontuário e continuidade** — não apenas bonita.
-
----
-
-## Reanálise Crítica (mudanças sobre o rascunho anterior)
-
-O rascunho inicial estava correto em espírito, mas omitia pilares críticos para saúde B2B. Ajustes principais:
-
-1. **Escopo MVP reduzido** — lançar as 3 verticais + IA + Generative UI ao mesmo tempo é receita para atraso. MVP entrega **uma vertical de ponta-a-ponta** + motor cross (CRM/financeiro/agenda).
-2. **LGPD / dados de saúde** — prontuário é dado sensível; exige criptografia at-rest por tenant, logs de acesso auditáveis, consentimento granular e assinatura digital (ICP-Brasil) no prontuário do fisio.
-3. **Multi-tenancy** — estratégia explícita: **RLS do Postgres** com `tenant_id` em toda tabela, `auth.jwt() -> tenant_id` injetado via custom claim do Supabase. Decidido antes de escrever o 1º schema.
-4. **RBAC cross-module** — instrutor da academia **não vê** prontuário do fisio por padrão; acesso exige consentimento do paciente. Modelo de permissão é um dos primeiros schemas.
-5. **Drizzle vs Supabase types** — Drizzle é a fonte única do schema; os tipos gerados pelo Supabase são **desabilitados** para evitar duplicação.
-6. **Offline-first na catraca** — catraca perde internet; check-in grava localmente e sincroniza. Não é feature do MVP mas precisa ser considerado no design do evento de acesso.
-7. **Observabilidade** — Sentry + PostHog + Logtail desde o início, não no final. Custo mínimo, ROI gigante.
-8. **CI/CD e testes** — Vitest (unit) + Playwright (e2e) + GitHub Actions configurados no dia 1.
-9. **Custos de IA** — cache semântico + rate limit por tenant + fallback de modelo (Haiku → Sonnet) para evitar runaway bill.
-10. **Fiscal** — Asaas **não emite NF-e de serviço**; precisa de integração com emissor (Focus NFe / Nota Control) ou módulo próprio — fora do MVP, mas mapeado.
-11. **Mobile do aluno** — **não entra no MVP**; PWA bem feito cobre 90% dos casos. App nativo (Expo) vira Fase 2.
 
 ---
 
@@ -67,7 +49,7 @@ O rascunho inicial estava correto em espírito, mas omitia pilares críticos par
 - **Vercel AI SDK** com provider plugável (Claude default, OpenAI/Gemini fallback)
 - **Cache semântico** em `ai_cache` (pgvector) para reduzir custo em perguntas repetidas
 - **Rate limit por tenant** (Upstash Redis) — evita runaway bill
-- **Generative UI moved out of MVP** — entra na Fase 2 após validar adoção do copilot simples
+- **Generative UI fica fora do MVP** — entra na Fase 2 após validar adoção do copilot simples
 
 ### Observabilidade e Qualidade
 - **Sentry** (erros front + back)
@@ -123,6 +105,7 @@ Detalhes em [multiempresa.md](multiempresa.md#flags-do-tenant).
 - `franchise_agreements` (condições de mobilidade cross-company em `topology=franchise`)
 - `audit_log` (quem leu/escreveu dado sensível — append-only, particionado por mês)
 - `webhook_events` (`external_id` unique para idempotência)
+- `domain_events` (event-sourcing leve do cross-module bus; criada no MVP, consumida de verdade na Fase 2 com o cross-alert lesão→treino)
 
 ### Cross-module event bus
 - Tabela `domain_events` (event-sourcing leve) + Realtime do Supabase para fan-out
@@ -204,7 +187,7 @@ Precisa de dado no render inicial da página?
 
 ## 4. Plano de Inicialização Imediato
 
-1. **Monorepo Turborepo + pnpm** em `d:\Projeto\LogiFit`
+1. **Monorepo Turborepo + pnpm** na raiz do repositório
    - Apps: `web` (Next.js 15)
    - Packages: `db` (Drizzle), `ui` (shadcn custom), `ai` (Vercel AI SDK wrappers), `config` (tsconfig, biome), `types` (Zod schemas compartilhados)
 2. **Supabase CLI** + projeto local com Docker; migrations Drizzle aplicadas via `drizzle-kit`
@@ -224,15 +207,15 @@ Precisa de dado no render inicial da página?
 
 ## Critical Files (a serem criados)
 
-- `d:\Projeto\LogiFit\apps\web\app\` — rotas Next.js (App Router)
-- `d:\Projeto\LogiFit\packages\db\schema\` — Drizzle schemas por domínio
-- `d:\Projeto\LogiFit\packages\db\migrations\` — SQL versionado
-- `d:\Projeto\LogiFit\packages\db\rls\` — políticas RLS centralizadas
-- `d:\Projeto\LogiFit\packages\ui\` — design system
-- `d:\Projeto\LogiFit\packages\ai\` — AI SDK wrappers + cache semântico
-- `d:\Projeto\LogiFit\packages\types\` — Zod schemas compartilhados
-- `d:\Projeto\LogiFit\.github\workflows\ci.yml`
-- `d:\Projeto\LogiFit\supabase\config.toml`
+- `apps/web/app/` — rotas Next.js (App Router)
+- `packages/db/schema/` — Drizzle schemas por domínio
+- `packages/db/migrations/` — SQL versionado
+- `packages/db/rls/` — políticas RLS centralizadas
+- `packages/ui/` — design system
+- `packages/ai/` — AI SDK wrappers + cache semântico
+- `packages/types/` — Zod schemas compartilhados
+- `.github/workflows/ci.yml`
+- `supabase/config.toml`
 
 ---
 
