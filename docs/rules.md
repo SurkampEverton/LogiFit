@@ -1,6 +1,6 @@
 # Regras do Projeto LogiFit
 
-Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (i18n). Violação = CI vermelho, revert, ou sprint não fecha.
+Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (multi-empresa, i18n, IA, LGPD). Violação = CI vermelho, revert, ou sprint não fecha.
 
 > **Como usar:** toda discussão técnica começa perguntando "isso fere alguma regra?". Se sim, ou mudamos a regra (ADR) ou mudamos a solução. Regras não são sugestões.
 
@@ -25,6 +25,10 @@ Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (i18n)
 **26.** `groups` é camada apenas visual/agregada. Queries cross-tenant do mesmo group retornam **somente dados agregados** via views dedicadas. Nenhum `SELECT` direto em tabela operacional pode usar `group_id` como filtro cross-tenant. Teste de CI bloqueia.
 
 **27.** **Proibido hardcode de string de UI.** Toda string visível ao usuário (botão, título, mensagem, placeholder, tooltip) vai via `t('namespace.key')` do next-intl. Message catalog obrigatório nos 3 locales (`pt-BR`, `en-US`, `es-419`). CI roda `pnpm i18n:check` e falha se faltar chave em qualquer locale. Exceção: nomes de entidades de domínio (ex: "Pollock 7 dobras"), códigos técnicos (CID, TUSS), nomes de features flags, strings de debug/log não-visíveis. Ver [ADR 0052](decisions/0052-i18n-tres-idiomas-pt-en-es.md).
+
+**28.** **Feature IA classe SaMD II+ não ativa sem Comitê de IA cadastrado no tenant.** Feature flag é bloqueada por gate que consulta `ai_committee_members` — sem ao menos 1 membro ativo + ata de criação anexada, a feature não liga em produção, mesmo com flag ON. Toda chamada a feature IA clínica grava em `ai_audit_log` (input, output, modelo, versão do prompt, decisão humana: aceitou/editou/rejeitou). Classificador de output proibido ("diagnóstico", "tem [doença]", "prescrever") ativo em toda chamada. Violação = feature desligada automaticamente + alerta ao admin do tenant. Ver [ADR 0053](decisions/0053-conformidade-cfm-2454-2026-ia-saude.md) (CFM 2.454/2026 + classificação SaMD RDC 657/2022).
+
+**29.** **Dado de saúde sensível (LGPD art. 11) só trafega com base legal explícita + RIPD vigente.** Todo módulo que processa `health_data` (prontuário, avaliação, exame, mídia clínica, device reading, plano alimentar, prescrição) tem entrada em `ripd_documents` com versão vigente (`ripd_versions`) assinada pelo DPO, revisada no máximo a cada 6 meses. Consent por finalidade (`consent_purposes.lawful_basis`) não pode ser genérico — cada finalidade lista `data_categories[]` e `retention_period` explícitos. CI tem teste que falha se um módulo clínico novo for criado sem registro em `ripd_documents`. Direitos do titular (art. 18) atendidos em até **15 dias** via portal `/meu/privacidade`. Ver [ADR 0054](decisions/0054-lgpd-art11-dados-saude-ripd-versionado.md).
 
 ---
 

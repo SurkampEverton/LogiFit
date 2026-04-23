@@ -14,7 +14,7 @@ Home do operador contextual por role (recepção / gerente / diretor / group_own
 
 - `/app` redireciona para dashboard contextual baseado em role + scope ativo do JWT
 - Gerente de filial vê KPIs da sua company/unit; diretor de rede vê tenant; group_owner vê agregados do group (views `group_*`, nunca dado individual)
-- Cards padrão: **Alunos Ativos** · **Faturamento 30d** · **MRR** · **Taxa de Retenção 90d** · **Overdue %** · **Ocupação Agenda 7d** · **Horário de Pico (semanal)** · **Ocupação por Modalidade** · **Ticket Médio por Aluno** · **Últimas 10 atividades** (timeline cross-member)
+- Cards padrão: **Alunos Ativos** · **Faturamento 30d** · **MRR** · **Taxa de Retenção 90d** · **Overdue %** · **Inadimplência por Método** (cartão × PIX × boleto) · **Ocupação Agenda 7d** · **Horário de Pico (semanal)** · **Ocupação por Modalidade** · **Ticket Médio por Aluno** · **Conversão Gympass/TotalPass/Wellhub vs Direto** (quando integração wellness ativa) · **Últimas 10 atividades** (timeline cross-member)
 - Toggle light/dark persistente; zero shadow/`box-shadow` residual
 - Tokens aplicados: `surface`, `text`, `action-primary`, `success`, `warning`, `danger`
 - Cross-alert dispatcher: função genérica `dispatchAlert(event)` com tabela `alert_subscribers` vazia (sem subscribers no MVP — preparado para Fase 2)
@@ -90,6 +90,8 @@ Não publica eventos de negócio; só renderiza os dos outros sprints.
    - `dashboard_ocupacao_modalidade` (check-ins ou appointments por modalidade)
    - `dashboard_ticket_medio` (valor médio por member ativo)
    - `dashboard_overdue_pct`
+   - `dashboard_overdue_by_method` (overdue segmentado: cartão, PIX, boleto — Sprint 04 Asaas fornece o `payment_method`)
+   - `dashboard_wellness_conversion` (conversão de leads Gympass/TotalPass/Wellhub vs leads diretos — preview; view vazia até Sprint de Integrações Wellness existir, mas card já está mapeado)
 - [ ] Tabela `alert_subscribers` (esqueleto)
 - [ ] Função `dispatchAlert` em `packages/ai/alerts.ts` — itera subscribers registrados, publica
 - [ ] **API pública `registerCrossAlertHandler({ event, handler, requiredPermission? })`** em `packages/ai/alerts/registry.ts` — sprints consumidores (Sprint 08 acesso bloqueios, Sprint 13 régua, Sprint 19 churn, Sprint 27 lesão→treino, Sprint 32 device alerts, Sprint 33 exame crítico) registram handlers declarativamente; dispatcher invoca em ordem + audit

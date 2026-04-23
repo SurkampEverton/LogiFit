@@ -53,6 +53,14 @@ Visão funcional do sistema, agrupada por **área**. Cada módulo tem "quais ver
 | CI + teste RLS | Pipeline GitHub Actions que falha se tabela nova sem RLS | todas | 00 | todo |
 | **i18n (3 idiomas: pt-BR/en-US/es-419)** | next-intl com middleware, catalog JSON por namespace, CI check de chaves faltantes (regra 27, ADR 0052) | todas | 00 | todo |
 | **LocaleSwitcher** | Componente reutilizável em `packages/ui` para troca de idioma; persiste em cookie + `persons.preferred_locale` | todas | 00 | todo |
+| **Classificação SaMD por feature (ADR 0053)** | Tabela viva `docs/compliance/samd-classification.md` + `ai_feature_classifications (feature_key, class, requires_anvisa_notification, requires_committee)` alimentada pelos sprints de IA | todas (aplicável onde há IA) | 01b | todo |
+| **Supervisão humana documentada (CFM 2.454/2026)** | `ai_audit_log` append-only (input, output, modelo, versão do prompt, decisão humana: aceitou/editou/rejeitou) | todas (aplicável onde há IA) | 01b | todo |
+| **Comitê de IA interno por tenant (CFM 2.454/2026)** | `ai_committee_members (tenant_id, user_id, role, started_at)` + UI `/app/settings/compliance/comite-ia` + ata anexada + revisões periódicas; **gate em feature flag**: feature IA classe II+ não ativa sem comitê cadastrado | todas | 01b | todo |
+| **Dashboard de conformidade IA** | `/app/compliance/ia` lista features IA ativas + classe SaMD + última revisão do comitê + log de decisões humanas (CFM 2.454/2026) | todas | 01b | todo |
+| **RIPD versionado por módulo crítico (LGPD art. 11 — ADR 0054)** | `ripd_documents` + `ripd_versions` com SHA-256 hash, riscos identificados, mitigações, parecer DPO; revisão semestral obrigatória | todas | 01b | todo |
+| **Consent granular por finalidade (LGPD art. 8º + art. 11)** | `consent_purposes (key, label, required, lawful_basis, data_categories[])` + `consents (member_id, purpose_key, given_at, revoked_at)` com trilha completa | todas | 01b | todo |
+| **Direitos do titular (LGPD art. 18)** | Portal `/meu/privacidade`: solicitações de acesso/correção/anonimização/portabilidade + workflow de atendimento + SLA 15 dias | todas | 01b | todo |
+| **Retenção e descarte automatizado** | `retention_policies (data_category, retention_period, legal_basis)` + job de expurgo + audit | todas | 01b | todo |
 
 ---
 
@@ -199,6 +207,20 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 | Validação do diário pela nutri | Aprovar/comentar/sinalizar + relatório semanal | Nutri | 27 | futuro |
 | Teleconsulta | Vídeo integrado com provider abstrato (ADR 0038) + gravação opt-in + transcrição stretch | Academia, Fisio, Nutri | 27 | futuro |
 | Nutri-Agent (IA) | Agente IA cruzando log de Academia + prontuário Fisio + diário alimentar + antropometria (sempre com consent ativo) | Nutri | 28 | futuro |
+
+---
+
+## Integrações Wellness (Gympass / TotalPass / Wellhub)
+
+Canal de aquisição de alunos via benefícios corporativos. Gympass foi rebrandeado para **Wellhub** em 2024; TotalPass é concorrente direto. Ambos exigem integração via API proprietária para check-in e repasse financeiro.
+
+| Módulo | Descrição | Verticais | Sprint | Status |
+|---|---|---|---|---|
+| **Provider abstrato de wellness** | Interface `WellnessProvider` com implementações `wellhub` (ex-Gympass), `totalpass`, `classpass` (futuro) | Academia, Fisio | pós-19 | futuro |
+| **Check-in via wellness** | Member apresenta QR do app wellness → sistema valida com provider → cria `access_event` marcado com `source='wellhub'` | Academia | pós-19 | futuro |
+| **Reconciliação de repasse** | Job mensal puxa relatório do provider e cria lançamento financeiro (com split de taxa) | Academia, Fisio | pós-19 | futuro |
+| **Card "Conversão Wellness vs Direto"** | Dashboard compara CAC e ticket médio de lead wellness vs lead direto (preview do card em Sprint 07) | Academia, Fisio | pós-19 | futuro |
+| **Cadastro multi-plan por tenant** | Um tenant pode aceitar vários providers simultaneamente; configuração de credenciais por company | Academia, Fisio | pós-19 | futuro |
 
 ---
 
