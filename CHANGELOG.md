@@ -70,6 +70,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 - Novos widgets no dashboard do member: `alimentar` (Sprint 25), `suplementos` e `exames` (Sprint 26), `diario` (Sprint 27). Antigo `antropometria` consolidado em `avaliacao` (já vinha do Sprint 12).
 - Renumeração Fase 3: sprints 28–30 (Nutri-Agent 26→28, App nativo 27→29, Fiscal 28→30). Prescrição adaptativa IA por RPE: pós-27 → **pós-29**.
 
+### Added — material comercial
+
+- `docs/comercial.md` — apresentação comercial/pitch do produto consolidando todos os módulos em linguagem de venda (para clientes, investidores, decisores de compra). Espelho do planejamento técnico sem jargão; inclui roadmap transparente, números de venda, público-alvo por perfil e frase de fechamento.
+- `CLAUDE.md` seção "Documentação de referência" lista `docs/comercial.md` com nota de que é material de apoio, não fonte técnica.
+
 ### Fixed
 - —
 

@@ -16,6 +16,7 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 - [`docs/roadmap.md`](docs/roadmap.md) — linha do tempo + controle de evolução por sprint
 - [`docs/sprints/`](docs/sprints/) — plano executável de cada sprint
 - [`docs/decisions/`](docs/decisions/) — ADRs (por que decidimos assim)
+- [`docs/comercial.md`](docs/comercial.md) — apresentação comercial (pitch para clientes/investidores; não é fonte técnica, só espelho em linguagem de venda)
 
 ## Regras que você (Claude) DEVE respeitar
 
