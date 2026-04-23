@@ -28,6 +28,12 @@ Visão funcional do sistema, agrupada por **área**. Cada módulo tem "quais ver
 | **`<PersonPicker>` reutilizável** | Componente de autocomplete que busca persons e mostra papéis ativos; usado em toda tela de cadastro especializado | todas | 01a | todo |
 | **Busca automática de dados por CNPJ** | Ao digitar 14 dígitos preenche razão social, endereço, CNAE, porte, regime tributário, situação cadastral vindos da Receita. BrasilAPI (default) + ReceitaWS (fallback) + CNPJá! (pago, opcional). Admin configura via `/app/settings/pessoas/cnpj` | todas | 01a | todo |
 | **Cache de CNPJ + validação periódica de situação** | Cache global 7 dias; botão manual de refresh; job semanal detecta empresa baixada/suspensa | todas | 01a | todo |
+| **Device Hub (wearables + clínicos)** | Ingestão normalizada FHIR-like de Garmin, Oura, BLE bioimpedância, FIT/CSV; provider abstrato; expande com Apple Health + Google Health Connect no Sprint 36 App Nativo | todas | 34 | futuro |
+| **Curadoria profissional de leituras para avaliação** | Profissional seleciona leituras de `device_readings` + valida/edita + importa para `assessment_measurements` com rastreabilidade (`source_device_reading_id`, `validated_by_user_id`) | todas | 34 | futuro |
+| **Monitoramento contínuo por categoria** | Tracks de peso/HR/sono/recovery/passos entre avaliações formais com tendências visuais | todas | 34 | futuro |
+| **Alertas inteligentes de saúde** | Regras declarativas (mesma DSL do Sprint 13) consomem `device_readings` e disparam via cross-alert dispatcher: HR em repouso subiu, % gordura aumenta, sedentarismo | todas | 34 | futuro |
+| **Timeline enriquecida no member** | Widget de timeline ganha tracks paralelos: avaliações oficiais + dados de dispositivo (agregados) + alertas disparados | todas | 34 | futuro |
+| **Consent granular por provider + retenção 90d raw** | Member autoriza cada integração separadamente; dado cru rotaciona 90 dias, agregados diários indefinidos | todas | 34 | futuro |
 | Identidade + MFA | Login (magic link + OAuth), TOTP obrigatório para profissionais | todas | 01a | todo |
 | Hierarquia group→tenant→company→unit | Schema multi-tenant com RLS raiz, 4 cenários canônicos no seed | todas | 01a | todo |
 | Login contextual + troca de tenant | Usuário multi-tenant escolhe contexto; JWT é reassinado | todas | 01a | todo |

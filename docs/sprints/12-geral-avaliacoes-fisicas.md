@@ -69,7 +69,7 @@ Em `packages/db/schema/avaliacoes.ts`:
 
 - `assessment_types` — `id`, `tenant_id nullable` (null = template global, ex: "bioimpedância InBody"), `name`, `description`, `vertical` enum nullable (`academia`, `fisio`, `nutri`), `fields jsonb` (array: `{ key, label, kind: 'number'|'enum'|'text', unit?, min?, max?, options? }`), `version int`, `archived_at`
 - `assessments` — `id`, `tenant_id`, `member_id`, `assessment_type_id`, `type_version int`, `performed_at`, `performed_by_user_id`, `notes text`, `soft_deleted_at nullable`, `created_at`
-- `assessment_measurements` — `id`, `assessment_id`, `field_key text`, `value_num numeric nullable`, `value_text text nullable`, `value_enum text nullable`. Índice `(assessment_id, field_key)` único.
+- `assessment_measurements` — `id`, `assessment_id`, `field_key text`, `value_num numeric nullable`, `value_text text nullable`, `value_enum text nullable`, **`source` enum (`manual`, `device`, `import_csv`) default 'manual'**, **`source_device_reading_id uuid nullable`** (FK `device_readings` do Sprint 34 Device Hub — rastreia origem quando medida veio de dispositivo curado pelo profissional), **`validated_by_user_id uuid nullable`**, **`validated_at timestamptz nullable`**. Índice `(assessment_id, field_key)` único. Quando `source='device'`, exige `validated_by_user_id` e `validated_at` preenchidos (trigger valida). Coluna preparada desde Sprint 12; UI de importação ativa quando Sprint 34 Device Hub existir.
 - `assessment_photos` — `id`, `assessment_id`, `storage_path`, `kind` enum (`front`, `back`, `side`, `custom`), `uploaded_at`. Storage bucket `assessments-photos` privado com URL assinada curta.
 - `assessment_calculations` — (opcional, cache) `id`, `assessment_id`, `calc_key text`, `value numeric`, `calculated_at`. Usado para IMC, % gordura via Pollock etc. Recalculado se measurements mudam.
 
@@ -90,6 +90,7 @@ Em `packages/db/schema/avaliacoes.ts`:
 - [ ] Upload de foto para Storage bucket privado + URL assinada
 - [ ] UI catálogo de tipos + editor de campos (low-code)
 - [ ] UI wizard de avaliação respeitando schema do tipo
+- [ ] **Slot para importação de leituras de dispositivo (placeholder quando Sprint 34 Device Hub existir):** UI já tem botão "Importar leituras de dispositivos" mas mostra "disponível em breve"; schema já aceita `source_device_reading_id` + `validated_by_user_id` para quando Device Hub for ativado
 - [ ] UI gráficos (reusar biblioteca do dashboard Sprint 07)
 - [ ] UI comparação lado a lado
 - [ ] Widget "última avaliação" em `/app/members/[id]` (slot `avaliacao`): mostra IMC + % gordura + peso se tem; link para evolução. `{ slot: 'avaliacao', requiredPermissions: ['avaliacao.read'], requiredVertical: null, consentPurpose: null, showWhen: (m) => m.has_assessments }`
