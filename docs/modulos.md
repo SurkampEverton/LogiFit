@@ -109,11 +109,37 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 
 | Módulo | Descrição | Verticais | Sprint | Status |
 |---|---|---|---|---|
-| Prontuário eletrônico | Documentos clínicos por consulta, criptografados at-rest | Fisio | 16 | futuro |
-| Assinatura digital ICP-Brasil | Assinatura do prontuário pelo profissional (CFM/CREFITO) | Fisio | 16 | futuro |
-| Evolução com mídias | Fotos/vídeos em Supabase Storage criptografado | Fisio | 17 | futuro |
-| Cross-alert lesão→treino | Consumidor de `domain_events` do Sprint 07 + ação automática no Academia (com consent) | Fisio + Academia | 18 | futuro |
-| Generative UI (cards de relatório) | Resposta IA renderiza componentes, não texto corrido | Fisio (primeira) | 19 | futuro |
+| Prontuário eletrônico COFFITO | Consultas versionadas; draft/signed/archived | Fisio | 16 | futuro |
+| Catálogo CID-11 + CIF | Global + vinculação com consulta (M:N) | Fisio | 16 | futuro |
+| Assinatura digital ICP-Brasil | Provider A1/A3; hash rastreável | Fisio | 16 | futuro |
+| Templates de avaliação por especialidade | Ortopedia/neuro/respiratória via `assessment_types` | Fisio | 16 | futuro |
+| Nota corretiva | Correção de prontuário assinado sem deletar | Fisio | 16 | futuro |
+| Evolução por sessão SOAP | Registro rápido + free text | Fisio | 17 | futuro |
+| Anexos categorizados de evolução | Exame imagem / vídeo execução / documento / foto postural | Fisio | 17 | futuro |
+| URL assinada curta | Mídia clínica com TTL 10min | Fisio | 17 | futuro |
+| Convênios e planos de saúde | Cadastro de operadoras + acordos + tabela TUSS | Fisio | 18 | futuro |
+| Carteirinha do paciente | `member_insurances` com validade | Fisio | 18 | futuro |
+| Autorização de procedimento | Solicitação + acompanhamento de aprovação | Fisio | 18 | futuro |
+| Guias TISS (consulta + SP/SADT) | XML ANS v3.05+ individual e em lote | Fisio | 18 | futuro |
+| Conciliação de retorno TISS | Parser XML + pagamento + glosa | Fisio | 18 | futuro |
+| Controle de glosas | Motivo + recurso manual + resolução | Fisio | 18 | futuro |
+| Contratos profissionais | Condições de comissão por tipo + overrides | Geral (Fisio/Academia/Nutri) | 19 | futuro |
+| Cálculo automático de comissão | Consome eventos financeiros + clínicos | Geral | 19 | futuro |
+| Fechamento mensal de comissões | Period aprovado + transferência Asaas | Geral | 19 | futuro |
+| Estoque (descartáveis + revenda) | `stock_items` + movimentações + saldo | Geral (Fisio inicial) | 20 | futuro |
+| POS simples | Venda no balcão gera invoice | Geral | 20 | futuro |
+| Inventário | Contagem física com ajustes | Geral | 20 | futuro |
+| Equipamentos regulados ANVISA | Cadastro + cronograma manutenção/calibração + certificados | Fisio (Academia futuro) | 21 | futuro |
+| Logs de limpeza de ambiente | Checklist por sala + timestamp | Fisio | 21 | futuro |
+| Integração CNES | Cadastro do estabelecimento + validação | Fisio | 21 | futuro |
+| Relatório fiscalização vigilância | Export PDF equipamentos + limpeza | Fisio | 21 | futuro |
+| Portal do paciente web (PWA) | Self-service: agenda, pagamento, vídeos, QR, prontuário resumido | Academia, Fisio, Nutri | 22 | futuro |
+| Auth magic link do member | Separado do operador; TTL 15min | Academia, Fisio, Nutri | 22 | futuro |
+| Cross-alert lesão → treino | Consumidor `consulta.signed` com CID; adapta workout | Fisio + Academia | 23 | futuro |
+| Mapeamento CID → contraindicações | Catálogo `cid_exercise_contraindications` curado | Fisio + Academia | 23 | futuro |
+| Adaptação sugerida de workout | Diff de exercícios com review do instrutor | Fisio + Academia | 23 | futuro |
+| Generative UI (framework) | Registro de componentes; tool calls streamadas | Geral (começa Fisio) | 24 | futuro |
+| Componentes clínicos Fisio | PatientCard, EvolutionChart, CidSuggestion, ReportSection | Fisio | 24 | futuro |
 
 ---
 
@@ -121,9 +147,9 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 
 | Módulo | Descrição | Verticais | Sprint | Status |
 |---|---|---|---|---|
-| Antropometria (subtipo de avaliação) | Reusa `assessment_types` do Sprint 12 com template Nutri; cardápios herdam do member | Nutri | 20 | futuro |
-| Cardápios | Planos alimentares diários/semanais com lista de substituições (reusa `prescriptions` polimórficas do Sprint 11) | Nutri | 20 | futuro |
-| Nutri-Agent (IA) | Agente IA cruzando log de Academia + prontuário Fisio (sempre com consent ativo) | Nutri | 21 | futuro |
+| Antropometria (subtipo de avaliação) | Reusa `assessment_types` do Sprint 12 com template Nutri | Nutri | 25 | futuro |
+| Cardápios | Planos alimentares diários/semanais com lista de substituições (reusa `prescriptions` polimórficas do Sprint 11) | Nutri | 25 | futuro |
+| Nutri-Agent (IA) | Agente IA cruzando log de Academia + prontuário Fisio (sempre com consent ativo) | Nutri | 26 | futuro |
 
 ---
 
@@ -131,9 +157,9 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 
 | Módulo | Descrição | Verticais | Sprint | Status |
 |---|---|---|---|---|
-| App nativo Expo | Aluno/paciente mobile; PWA cobre 90% no MVP | todas | 22 | futuro |
-| Módulo fiscal (Focus NFe) | Emissão de NFS-e por company | todas | 23 | futuro |
-| Prescrição adaptativa IA por RPE | Consome `workout_sessions.rpe` do Sprint 11 + ajusta carga automaticamente | Academia | pós-22 | futuro (depende de app nativo) |
+| App nativo Expo | Aluno/paciente mobile; PWA (Sprint 22) cobre 90% antes | todas | 27 | futuro |
+| Módulo fiscal (Focus NFe) | Emissão de NFS-e por company | todas | 28 | futuro |
+| Prescrição adaptativa IA por RPE | Consome `workout_sessions.rpe` do Sprint 11 + ajusta carga automaticamente | Academia | pós-27 | futuro (depende de app nativo) |
 
 ---
 
@@ -174,8 +200,11 @@ registerMemberWidget({
 | Conquistas | `conquistas` | `engajamento.read` | — | sempre (mostra progresso mesmo sem earned) | não | recepção, gerente, fisio, nutri, instrutor |
 | Metas | `metas` | `engajamento.read` | — | member tem `goals` ativos | não | recepção, gerente, fisio, nutri, instrutor |
 | Risco de churn | `risco` | `retencao.read` | — | `last_prediction_prob_30d > 0.3` | não | gerente, diretor (não aluno nem instrutor) |
-| Prontuário (Fisio, Fase 2) | `prontuario` | `prontuario.read` | `fisio` | member tem `consultas` fisio | não para fisio; **sim** para cross-module | fisio (direto), instrutor (se consent `injury_to_training`) |
-| Evolução com mídias (Fisio, Fase 2) | `evolucao` | `prontuario.read` | `fisio` | member tem `evolucao_entries` | não | fisio |
+| Prontuário (Fisio, Sprint 16) | `prontuario` | `prontuario.read` | `fisio` | member tem `consultas` fisio | não para fisio; **sim** para cross-module | fisio (direto), instrutor (se consent `injury_to_training`) |
+| Evolução por sessão (Fisio, Sprint 17) | `evolucao` | `prontuario.read` | `fisio` | member tem `evolucoes_sessao` | não | fisio |
+| Convênio do paciente (Sprint 18) | `convenio` | `convenios.read` | `fisio` | member tem `member_insurances` | não | recepção fisio, gerente |
+| Comissão do profissional (Sprint 19) | `comissao` (tela /app, não em /members/[id]) | `rh.read_own` | — | profissional logado tem `commission_entries` | não | próprio profissional |
+| Alerta de lesão (Sprint 23) | `alerta_lesao` | `cross.read` | — | member tem `member_injury_alerts` ativos | sim (consent `share_injury_to_training`) | instrutor, gerente |
 | Antropometria (Nutri, Fase 3) | `antropometria` | `nutri.read` | `nutri` | member tem `antropometria_entries` | não para nutri; **sim** cross-module | nutri (direto), fisio (se consent) |
 | Plano alimentar (Nutri, Fase 3) | `alimentar` | `nutri.read` | `nutri` | member tem `cardapios` ativo | não para nutri; sim cross-module | nutri |
 

@@ -17,6 +17,7 @@ Registro de custos fixos e variáveis por company + DRE consolidado por período
 - Recorrência de custo (ex: aluguel todo dia 5) — gera `cost_entries` automaticamente
 - DRE por período: receita (já existe — vem do Sprint 04) - custos + saldo
 - DRE por company e consolidado por tenant (quando `financial_mode=distributed`)
+- **Lucratividade por procedimento/serviço**: DRE com dimensão adicional `service_type` (ex: consulta fisio, aula pilates, personal, consulta nutri) — exige que `invoice_items` (estender no Sprint 04) guardem `service_type` ou link com `appointment/consulta`
 - **Previsibilidade de receita**: projeção 3 meses com base em contratos ativos + histórico de churn + cobranças pendentes
 - Comparativo mês × mês, ano × ano
 - Exportar DRE em PDF e CSV
@@ -91,6 +92,7 @@ Em `packages/db/schema/custos.ts`:
 - [ ] Heurística de previsibilidade em `packages/ai/financeiro/forecast.ts` (usa taxa histórica de churn simples — Sprint 15 pode substituir depois)
 - [ ] UI custos com filtros + upload de NF-e PDF
 - [ ] UI DRE com gráficos de barras (categoria) e linha (evolução temporal)
+- [ ] **Dimensão "lucratividade por procedimento"** na UI: selector que pivota DRE por `service_type`; exige que Sprint 04 tenha enriquecido `invoice_items` com `service_type`/`tuss_code` (migração retroativa via backfill)
 - [ ] UI previsibilidade com simulador interativo
 - [ ] Export PDF (usa biblioteca, ex: `@react-pdf/renderer`) e CSV
 - [ ] Permission `custos.read`, `custos.write`, `dre.read`
