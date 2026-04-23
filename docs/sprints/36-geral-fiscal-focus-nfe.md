@@ -110,6 +110,9 @@ Ver [`modulos.md` — Emissão Fiscal](../modulos.md#emiss%C3%A3o-fiscal):
 - `/app/settings/fiscal` — wizard de configuração
 - `/app/settings/fiscal/catalogo` — CRUD catálogo de serviços
 - `/app/settings/fiscal/numeracao` — séries e numeração por tipo
+- `/app/fiscal/retencoes` — relatório mensal de retenções agrupado por tributo (ADR 0061); filtros por período/company/tributo; export PDF/CSV
+- `/app/contador` — **portal do contador externo** (role `contador_externo` do Sprint 01b): download em massa de XMLs (recebidos + emitidos) por período, CSV/OFX de AP/AR, relatório de retenções; tudo read-only
+- `/app/contador/convidar` — admin do tenant convida contador via magic link
 
 ## Server Actions + API Routes
 
@@ -189,7 +192,10 @@ Consumidores:
 - [ ] Integração com POS (Sprint 24) — NFC-e automática
 - [ ] Fila de retry em emissões `rejected` por erro transient (até 3x, backoff)
 - [ ] Dashboard card "Emissões com erro" + alerta via cross-alert dispatcher (Sprint 07)
-- [ ] Permissions `fiscal.read`, `fiscal.emit`, `fiscal.cancel`, `fiscal.admin`
+- [ ] Permissions `fiscal.read`, `fiscal.emit`, `fiscal.cancel`, `fiscal.admin`, `retencoes.read`
+- [ ] **Portal `/app/contador`** (ADR 0061): download ZIP em massa de XMLs recebidos + emitidos por período (URL assinada TTL 1h); CSV/OFX de AP/AR; relatório de retenções por tributo; **cabeçalho sempre mostra "Leitura somente — dados fiscais e financeiros; sem acesso clínico"**
+- [ ] Aba **`/app/fiscal/retencoes`** (ADR 0061): tabela agrupada por tributo (IRRF/PIS/COFINS/CSLL/INSS/ISS) × período; total por tributo; export PDF (contador gera DARF separado) + CSV; campo `guide_reference` colável na linha para rastrear DARF pago
+- [ ] Convite de contador: `createContadorInvite({ email, tenantId })` — gera magic link via Resend + force MFA setup no 1º acesso; admin controla revogação em `/app/settings/contador`
 - [ ] Seed: ambiente homologação com emissões de cada tipo
 - [ ] Testes unit + E2E cobrindo 8 tipos + 3 eventos
 - [ ] Feature flag `fiscal_focus_v1`

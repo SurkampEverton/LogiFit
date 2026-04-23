@@ -6,6 +6,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — Motor de retenções + portal contador + roadmap fiscal faseado (ADR 0061)
+
+- **ADR 0061** — Motor de retenções tributárias + cobertura fiscal faseada (`docs/decisions/0061-motor-retencoes-e-cobertura-fiscal-faseada.md`). Mapeia os 7 grupos de impostos (A-G) e define cobertura progressiva: Fase atual cobre B (retenções em AP) + G (retenções em comissão/RPA) + role/portal contador externo; Fases futuras cobrem C (apuração mensal), D (guias DAS/DARF/DAM), E (obrigações acessórias SPED/ECD/ECF), F (folha CLT + eSocial). Ambição de cobertura completa longo prazo, com tempo para avaliar make vs buy em cada grupo complexo.
+- **Sprint 01b** — nova role `contador_externo` com permissions `fiscal.read` + `financeiro.read` + `nfe.read` + `retencoes.read` em todas as companies do tenant; MFA obrigatório; **sem** acesso a dados clínicos (LGPD art. 11); convite via magic link + fluxo de onboarding.
+- **Sprint 15** — schemas `tax_natures` (10 globais + custom por tenant) + `tax_retentions`; calculadora em `packages/ai/fiscal/tax-calculator.ts` com suporte a rate_table (IRRF progressivo), cap_cents (teto INSS), threshold_cents, condition por UF/tomador; UI de AP com select de natureza + preview de retenções; coluna `accounts_payable.net_amount_cents`; UI admin `/app/settings/financeiro/naturezas`; job anual `tax-tables-annual-update`.
+- **Sprint 23** — cálculo automático de retenções em comissão/RPA conforme tipo do profissional (PF autônomo → RPA com INSS 11%/IRRF progressivo; PJ → PIS/COFINS/CSLL/IRRF; Simples → sem retenção); UI mostra decomposição bruto → retenções → líquido; `commission_entries.net_amount_cents`.
+- **Sprint 36** — aba `/app/fiscal/retencoes` (relatório mensal agrupado por tributo + export PDF/CSV) + **portal `/app/contador`** read-only para role `contador_externo` (download ZIP em massa de XMLs + CSV/OFX + relatório de retenções) + `/app/contador/convidar` para admin do tenant convidar contador externo.
+- **Roadmap** — 4 sprints novos mapeados como **futuro (pós-produção)** cobrindo Grupos C/D/E/F: Sprint 37 (Apuração mensal), Sprint 38 (Guias oficiais DAS/DARF/DAM), Sprint 39 (Obrigações acessórias SPED/ECD/ECF — avaliar make vs buy), Sprint 40 (Folha CLT + eSocial — avaliar integração TOTVS/Senior/ADP). ADRs 0062-0065 previstos.
+- `docs/modulos.md` — 4 módulos novos (motor de retenções, relatório retenções, portal contador, 4 fases futuras).
+- `CLAUDE.md` — cobertura fiscal faseada explicitada; fontes regulatórias ampliadas (Lei 10.833/2003, IN RFB 1.234/2012, tabela IRRF anual, Portaria INSS, LC 116/2003).
+
+**Integrações com Contabilizei/Conube/Omie/Alterdata/Domínio:** mencionadas no ADR 0061 como opções a avaliar nos Sprints 37+; não implementadas agora.
+
 ### Added — Ciclo fiscal completo: devolução + emissão via Focus + recepção avançada (ADRs 0058, 0059, 0060 + Sprint 36)
 
 Resposta à verificação sistemática de todas as 22 operações NF-e do Brasil contra os módulos LogiFit. Cobertura anterior: 2 operações (recepção + manifestação). Agora: **ciclo fiscal completo** com 8 emissões + 3 eventos + 4 cenários avançados de recepção.

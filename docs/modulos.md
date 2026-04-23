@@ -234,6 +234,9 @@ Ciclo fiscal completo de emissão de documentos via **Focus NFe** como provider 
 | **Cancelamento / CC-e / Inutilização** | 3 eventos pós-emissão (cancelar dentro da janela, corrigir campos não-fiscais, inutilizar numeração pulada) | Academia, Fisio, Nutri | 36 | futuro |
 | **Catálogo de serviços tributáveis** | `fiscal_service_catalog` configurado por company: código LC 116/2003, alíquota ISS do município, retenções, regime tributário | Academia, Fisio, Nutri | 36 | futuro |
 | **Wizard de onboarding fiscal** | `/app/settings/fiscal` — credenciais Focus + regime + catálogo + série/numeração + teste em homologação | Academia, Fisio, Nutri | 36 | futuro |
+| **Motor de retenções tributárias (ADR 0061)** | `tax_natures` (10 globais + custom tenant) + `tax_retentions` (PIS/COFINS/CSLL/IRRF/INSS/ISS); calculadora aplicada em AP (Sprint 15) e comissão/RPA (Sprint 23); atualização anual das tabelas IRRF/INSS | Academia, Fisio, Nutri | 15 (schema + AP) + 23 (comissão) | todo |
+| **Relatório mensal de retenções** | `/app/fiscal/retencoes` agrupado por tributo + período + company; export PDF/CSV para contador gerar DARF; campo `guide_reference` colável após pagamento | Academia, Fisio, Nutri | 36 | futuro |
+| **Portal do contador externo** | Role `contador_externo` (Sprint 01b) + `/app/contador` read-only: download em massa ZIP de XMLs (recebidos + emitidos) + CSV/OFX AP/AR + retenções; MFA obrigatório; **nunca vê dado clínico** (LGPD art. 11) | Academia, Fisio, Nutri | 01b (role) + 36 (portal) | todo |
 
 ---
 
@@ -257,6 +260,10 @@ Canal de aquisição de alunos via benefícios corporativos. Gympass foi rebrand
 |---|---|---|---|---|
 | App nativo Expo | Aluno/paciente mobile; PWA (Sprint 26) cobre 90% antes | todas | 29 | futuro |
 | Módulo fiscal (Focus NFe) | **Ciclo fiscal completo de emissão** via Focus NFe: NFS-e + NF-e produto + NFC-e varejo + NF-e devolução + NF-e transferência + NF-e remessa/retorno conserto + NF-e entrada própria + eventos (cancelamento, CC-e, inutilização). Ver [ADR 0059](decisions/0059-ciclo-fiscal-emissao-focus-nfe.md) | todas | 36 | futuro |
+| **Apuração mensal de receita (Grupo C — ADR 0061/0062)** | Consolida receita por regime Simples/Presumido/Real + gera memorial "pré-DAS"/"pré-DARF" | todas | 37 | **futuro (pós-produção)** |
+| **Guias oficiais DAS/DARF/DAM (Grupo D — ADR 0063)** | Integração PGDAS-D + geração DARF com código de receita + opcional integração Contabilizei/Conube/Omie/Alterdata | todas | 38 | **futuro (pós-produção)** |
+| **Obrigações acessórias SPED/ECD/ECF (Grupo E — ADR 0064)** | SPED Fiscal + Contribuições + ECD + ECF + DCTF-Web + PGDAS-D + DEFIS + DIRF; avaliar make vs buy | todas | 39 | **futuro (avaliar)** |
+| **Folha CLT + eSocial (Grupo F — ADR 0065)** | Folha completa (salário, horas, DSR, férias, 13º, rescisão) + INSS patronal + FGTS + IRRF folha + eventos eSocial S-1000 a S-5013; avaliar integração TOTVS/Senior/ADP vs motor próprio | todas | 40 | **futuro (avaliar)** |
 | Prescrição adaptativa IA por RPE | Consome `workout_sessions.rpe` do Sprint 11 + ajusta carga automaticamente | Academia | pós-29 | futuro (depende de app nativo) |
 
 ---

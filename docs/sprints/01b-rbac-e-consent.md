@@ -12,7 +12,7 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 ## Critério de aceite
 
 - Tabelas `roles`, `permissions`, `role_permissions`, `user_roles` (com `scope_type` + `scope_id`) criadas
-- Roles base: `super_admin_rede`, `diretor_matriz`, `gerente_filial`, `recepcao`, `fisio`, `nutri`, `instrutor`, `aluno`, `group_owner`
+- Roles base: `super_admin_rede`, `diretor_matriz`, `gerente_filial`, `recepcao`, `fisio`, `nutri`, `instrutor`, `aluno`, `group_owner`, **`contador_externo`** (ADR 0061 — read-only fiscal/financeiro/NF-e em todas as companies do tenant; MFA obrigatório; portal dedicado `/app/contador`; nunca vê prontuário/consulta/avaliação)
 - `role_permissions` editável por tenant (permite **role custom**; ex: `contador_externo`, `recepcao_com_financeiro`)
 - Tabela `user_permissions` para **grants diretos** user → permission, com `scope`, `expires_at`, `reason`, `granted_by` (exceções pontuais que não viram role)
 - RLS multi-nível funcionando: tenant + company/unit conforme scope, com **union** entre `user_roles` e `user_permissions` (ambos concedem acesso)
@@ -47,7 +47,9 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 
 - [ ] Schema Drizzle: `roles`, `permissions`, `role_permissions`, `user_roles` com scope
 - [ ] Schema Drizzle: `user_permissions` — `id`, `tenant_id`, `user_id`, `permission text`, `scope_type`, `scope_id`, `granted_by user_id`, `granted_at`, `expires_at nullable`, `revoked_at nullable`, `reason text`. Índices: `(tenant_id, user_id, permission)`; parcial `WHERE revoked_at IS NULL`.
-- [ ] Seed das roles base + permissions padrão
+- [ ] Seed das roles base + permissions padrão; **role `contador_externo`** com `fiscal.read`, `financeiro.read`, `nfe.read`, `retencoes.read` em scope `tenant` (todas companies); **sem** permissions de gravação; **sem** acesso a `prontuario.read`, `avaliacao.read`, `member.read_sensitive`, `consulta.read` (ADR 0061 + LGPD art. 11)
+- [ ] Fluxo de convite para contador externo: admin em `/app/settings/contador/convidar` → envia magic link via Resend → contador aceita, cria senha, ativa MFA obrigatório → acesso read-only liberado (reusa infra Sprint 01a magic link)
+- [ ] Teste E2E: contador externo convidado loga via magic link, ativa TOTP, vê `/app/contador` + `/app/financeiro/*` (leitura), **não** vê `/app/members/*` (bloqueado por RLS) nem consegue gravar em AP/AR
 - [ ] `role_permissions` permite escrita por tenant (admin edita) — role custom por tenant via UI
 - [ ] Policies RLS multi-nível (tenant + company + unit) com **union** de `user_roles` + `user_permissions` ativos (função SQL `has_permission(user_id, permission, scope_type, scope_id)` centraliza)
 - [ ] Schema `consents` + fluxo de opt-in (onboarding do aluno)
