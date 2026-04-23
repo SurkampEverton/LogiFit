@@ -147,9 +147,18 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 
 | Módulo | Descrição | Verticais | Sprint | Status |
 |---|---|---|---|---|
-| Antropometria (subtipo de avaliação) | Reusa `assessment_types` do Sprint 12 com template Nutri | Nutri | 25 | futuro |
-| Cardápios | Planos alimentares diários/semanais com lista de substituições (reusa `prescriptions` polimórficas do Sprint 11) | Nutri | 25 | futuro |
-| Nutri-Agent (IA) | Agente IA cruzando log de Academia + prontuário Fisio (sempre com consent ativo) | Nutri | 26 | futuro |
+| Banco de alimentos nacional (TACO) | ~3000 alimentos com 30+ nutrientes + medidas caseiras + equivalências calóricas | Nutri | 25 | futuro |
+| Alimentos customizados por tenant | Preparações/receitas locais com nutrientes calculados | Nutri | 25 | futuro |
+| Plano alimentar interativo | Editor drag-drop com cálculo tempo real (kcal/macros/micros) + lista de substituição automática | Nutri | 25 | futuro |
+| Export PDF com branding do tenant | Logo, cores, assinatura do profissional no plano | Nutri (aproveita todas) | 25 | futuro |
+| Catálogo de suplementos | Vitaminas/minerais/fitoterápicos com posologia e interações | Nutri | 26 | futuro |
+| Prescrição de suplementação | Dose + frequência + duração + interações medicamentosas | Nutri | 26 | futuro |
+| Catálogo de analitos laboratoriais | Valores de referência por sexo/idade/condição | Nutri | 26 | futuro |
+| Registro e análise de exames | Laudo PDF + cálculo de fora-da-faixa + gráficos de evolução | Nutri | 26 | futuro |
+| Diário alimentar do paciente | Registro por refeição com foto + cálculo de desvio vs plano | Nutri | 27 | futuro |
+| Validação do diário pela nutri | Aprovar/comentar/sinalizar + relatório semanal | Nutri | 27 | futuro |
+| Teleconsulta | Vídeo integrado com provider abstrato (ADR 0038) + gravação opt-in + transcrição stretch | Academia, Fisio, Nutri | 27 | futuro |
+| Nutri-Agent (IA) | Agente IA cruzando log de Academia + prontuário Fisio + diário alimentar + antropometria (sempre com consent ativo) | Nutri | 28 | futuro |
 
 ---
 
@@ -157,9 +166,9 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 
 | Módulo | Descrição | Verticais | Sprint | Status |
 |---|---|---|---|---|
-| App nativo Expo | Aluno/paciente mobile; PWA (Sprint 22) cobre 90% antes | todas | 27 | futuro |
-| Módulo fiscal (Focus NFe) | Emissão de NFS-e por company, cobertura nacional via Focus NFe (todos os municípios suportados; cada company emite no município do seu CNPJ) | todas | 28 | futuro |
-| Prescrição adaptativa IA por RPE | Consome `workout_sessions.rpe` do Sprint 11 + ajusta carga automaticamente | Academia | pós-27 | futuro (depende de app nativo) |
+| App nativo Expo | Aluno/paciente mobile; PWA (Sprint 22) cobre 90% antes | todas | 29 | futuro |
+| Módulo fiscal (Focus NFe) | Emissão de NFS-e por company, cobertura nacional via Focus NFe (todos os municípios suportados; cada company emite no município do seu CNPJ) | todas | 30 | futuro |
+| Prescrição adaptativa IA por RPE | Consome `workout_sessions.rpe` do Sprint 11 + ajusta carga automaticamente | Academia | pós-29 | futuro (depende de app nativo) |
 
 ---
 
@@ -205,8 +214,11 @@ registerMemberWidget({
 | Convênio do paciente (Sprint 18) | `convenio` | `convenios.read` | `fisio` | member tem `member_insurances` | não | recepção fisio, gerente |
 | Comissão do profissional (Sprint 19) | `comissao` (tela /app, não em /members/[id]) | `rh.read_own` | — | profissional logado tem `commission_entries` | não | próprio profissional |
 | Alerta de lesão (Sprint 23) | `alerta_lesao` | `cross.read` | — | member tem `member_injury_alerts` ativos | sim (consent `share_injury_to_training`) | instrutor, gerente |
-| Antropometria (Nutri, Fase 3) | `antropometria` | `nutri.read` | `nutri` | member tem `antropometria_entries` | não para nutri; **sim** cross-module | nutri (direto), fisio (se consent) |
-| Plano alimentar (Nutri, Fase 3) | `alimentar` | `nutri.read` | `nutri` | member tem `cardapios` ativo | não para nutri; sim cross-module | nutri |
+| Antropometria (via Sprint 12) | `avaliacao` | `avaliacao.read` | — | member tem `assessments` | não | nutri (direto), fisio/academia (se consent) |
+| Plano alimentar (Sprint 25) | `alimentar` | `nutri.read` | `nutri` | member tem `meal_plans` ativo | não para nutri; sim cross-module | nutri |
+| Suplementação (Sprint 26) | `suplementos` | `nutri.read` | `nutri` | member tem `supplement_prescriptions` ativas | não | nutri |
+| Exames alterados (Sprint 26) | `exames` | `nutri.read` | `nutri` | member tem `lab_results` recentes com `out_of_range` | não | nutri, fisio (se consent) |
+| Diário alimentar (Sprint 27) | `diario` | `nutri.read` | `nutri` | member tem `meal_plans` ativo | não | nutri |
 
 ### Exceções de role
 

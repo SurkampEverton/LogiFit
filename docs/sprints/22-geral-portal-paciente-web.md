@@ -67,7 +67,11 @@ Portal em `/meu/*` (namespace separado do `/app/*`):
 - `/meu/treino` — ficha atual + vídeos + registro de sessão
 - `/meu/qr` — QR code dinâmico com rotação visível
 - `/meu/prontuario` — resumo (só Fisio, só se consent explícito)
-- `/meu/cardapio` — plano alimentar (só Nutri, futuro)
+- `/meu/cardapio` — plano alimentar com PDF (habilitado no Sprint 25 Nutri)
+- `/meu/diario` — registro do diário alimentar (habilitado no Sprint 27 Nutri)
+- `/meu/teleconsulta/[appointmentId]` — sala de vídeo (habilitado no Sprint 27)
+- `/meu/exames` — exames laboratoriais e gráficos de evolução (habilitado no Sprint 26 Nutri)
+- `/meu/suplementos` — prescrições ativas de suplementação (habilitado no Sprint 26)
 - `/meu/privacidade` — gerenciar consents
 - `/login/meu` — entrada do member (magic link)
 

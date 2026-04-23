@@ -50,11 +50,13 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 
 | # | Sprint | Funcionalidade | Módulo | Status | Dependências |
 |---|---|---|---|---|---|
-| 27 | 25 | Antropometria (reusa avaliações do #12) + cardápios (reusa prescrições do #11) | nutri | futuro | MVP + Fase 2 |
-| 28 | 26 | IA Nutri-Agent cruzando log Academia + prontuário Fisio | nutri/ia | futuro | #25, #18, #23 |
-| 29 | 27 | App nativo Expo (aluno/paciente) — Bluetooth + push | mobile | futuro | MVP estável + #22 |
-| 30 | 28 | Módulo fiscal Focus NFe (NFS-e por company) | fiscal | futuro | #6 |
-| 31 | pós-27 | **Prescrição adaptativa IA por RPE** (ajuste de carga automático) | academia/ia | futuro | #11, #27 (app nativo com input RPE em tempo real) |
+| 27 | [25](sprints/25-nutri-alimentos-e-plano.md) | Banco de alimentos TACO + plano alimentar interativo + substituições + PDF branding | nutri | futuro | MVP + Fase 2 |
+| 28 | [26](sprints/26-nutri-suplementos-exames.md) | Suplementação (catálogo + prescrição + interações) + exames laboratoriais + referências + alertas | nutri | futuro | #25, #17 |
+| 29 | [27](sprints/27-geral-diario-alimentar-teleconsulta.md) | Diário alimentar (paciente + validação nutri) + teleconsulta (vídeo com provider abstrato) | geral/nutri | futuro | #22, #25, #16 |
+| 30 | 28 | IA Nutri-Agent cruzando log Academia + prontuário Fisio + diário alimentar + antropometria | nutri/ia | futuro | #25, #26, #27, #18, #23 |
+| 31 | 29 | App nativo Expo (aluno/paciente) — Bluetooth + push | mobile | futuro | MVP estável + #22 |
+| 32 | 30 | Módulo fiscal Focus NFe (NFS-e por company) | fiscal | futuro | #6 |
+| 33 | pós-29 | **Prescrição adaptativa IA por RPE** (ajuste de carga automático) | academia/ia | futuro | #11, #29 (app nativo com input RPE em tempo real) |
 
 ---
 
@@ -69,6 +71,8 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 - Tributação em comissões (calcular INSS/IR retidos ou só bruto?) — Sprint 19 (parte do ADR 0030)
 - Método de custo de estoque (PEPS vs custo médio) — Sprint 20 (ADR 0031)
 - Integração Datasus CNES automática vs manual — Sprint 21
+- Teleconsulta provider (Daily.co / Whereby / Jitsi / Twilio Video) — Sprint 27 (ADR 0038)
+- Fonte de valores de referência laboratorial (SBAC / curado LogiFit) — Sprint 26 (parte do ADR 0037)
 
 ---
 

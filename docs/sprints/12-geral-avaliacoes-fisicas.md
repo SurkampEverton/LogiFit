@@ -86,7 +86,7 @@ Em `packages/db/schema/avaliacoes.ts`:
 - [ ] Schema Drizzle: `assessment_types`, `assessments`, `assessment_measurements`, `assessment_photos`, `assessment_calculations`
 - [ ] RLS + testes (dado sensível — leitura audited)
 - [ ] Zod schema dinâmico baseado em `assessment_types.fields`
-- [ ] Calculadoras comuns em `packages/db/assessments/calc.ts` (IMC, Pollock 7/3, Durnin, TMB, relação cintura-quadril)
+- [ ] Calculadoras comuns em `packages/db/assessments/calc.ts` (IMC, Pollock 7/3, **Petroski**, **Guedes**, Durnin, **Faulkner**, TMB Harris-Benedict, **TMB Mifflin-St Jeor**, **TMB Cunningham** (usa massa magra), **TMB Katch-McArdle**, relação cintura-quadril, **% gordura pela circunferência Jackson-Pollock**). Organizado por categoria (`body_fat_percent`, `metabolic_rate`, `ratios`) para UI oferecer o protocolo certo conforme especialidade do profissional.
 - [ ] Upload de foto para Storage bucket privado + URL assinada
 - [ ] UI catálogo de tipos + editor de campos (low-code)
 - [ ] UI wizard de avaliação respeitando schema do tipo

@@ -8,7 +8,7 @@
 
 ## Goal
 
-Prontuário eletrônico completo atendendo COFFITO 414/415 — assinatura digital ICP-Brasil, catálogos CID-11 + CIF vinculados ao atendimento, templates de avaliação por especialidade (ortopedia, neuro, respiratória, pediatria, uroginecologia).
+Prontuário eletrônico polimórfico atendendo regulamentações profissionais — COFFITO 414/415 para Fisio (assinatura ICP-Brasil obrigatória), **CFN 594/2017 para Nutri** (guarda indeterminada, assinatura opcional). Catálogos CID-11 + CIF vinculados ao atendimento, templates por especialidade (ortopedia, neuro, respiratória, pediatria, uroginecologia; nutri via Sprint 25). Entidade `consultas` compartilhada com coluna `kind` — Sprint 25 (Nutri) **reusa a infra**.
 
 ## Critério de aceite
 
@@ -79,7 +79,7 @@ Em `packages/db/schema/fisio.ts`:
 
 - `cid_catalog` — `code text pk`, `description text`, `chapter text`, `version text`, `active bool`, `release_date`. Global (tenant_id NULL), leitura por todos.
 - `cif_catalog` — similar a CID. Componentes: `component` enum (`body_functions`, `body_structures`, `activities_participation`, `environmental_factors`).
-- `consultas` — `id`, `tenant_id`, `company_id`, `member_id`, `appointment_id nullable`, `professional_user_id`, `template_type_id nullable` (ref `assessment_types`), `content jsonb` (estrutura do formulário preenchido), `status` enum (`draft`, `signed`, `archived`), `signed_at nullable`, `signed_hash text nullable`, `signature_provider text nullable`, `created_at`, `updated_at`
+- `consultas` — `id`, `tenant_id`, `company_id`, `member_id`, `appointment_id nullable`, `professional_user_id`, **`kind` enum (`fisio`, `nutri`, `custom`)** — polimórfica entre verticais; cada kind ganha regras próprias (CFM/COFFITO para `fisio`, CFN 594 para `nutri`), `template_type_id nullable` (ref `assessment_types`), `content jsonb` (estrutura do formulário preenchido conforme template), `status` enum (`draft`, `signed`, `archived`), `signed_at nullable`, `signed_hash text nullable`, `signature_provider text nullable`, `signature_required bool` — `true` para `fisio` (COFFITO exige); `false` para `nutri` (CFN não exige mas permite), `created_at`, `updated_at`
 - `consulta_cids` — `consulta_id`, `cid_code`, `kind` enum (`principal`, `secundario`), `notes nullable`. PK `(consulta_id, cid_code, kind)`.
 - `consulta_cifs` — `consulta_id`, `cif_code`, `qualifier int`, `notes nullable`.
 - `consulta_correction_notes` — `id`, `consulta_id`, `body text`, `reason text`, `author_user_id`, `created_at` — append-only.
