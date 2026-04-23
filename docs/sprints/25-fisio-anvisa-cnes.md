@@ -78,7 +78,7 @@ API Routes:
 Em `packages/db/schema/vigilancia.ts`:
 
 - `equipment` — `id`, `tenant_id`, `company_id`, `unit_id nullable`, `kind text` (ultrassom, tens, laser, etc), `manufacturer`, `model`, `serial_number text`, `acquired_at date`, `warranty_until date nullable`, `status` enum (`active`, `maintenance`, `decommissioned`), `maintenance_interval_days int nullable`, `calibration_interval_days int nullable`, `notes`
-- `equipment_maintenance` — `id`, `equipment_id`, `kind` enum (`preventive`, `calibration`, `corrective`), `planned_for date`, `performed_at date nullable`, `performed_by text nullable`, `certificate_storage_path nullable`, `cost_cents nullable`, `observations text`, `status` enum (`scheduled`, `completed`, `overdue`, `cancelled`)
+- `equipment_maintenance` — `id`, `equipment_id`, `kind` enum (`preventive`, `calibration`, `corrective`), `planned_for date`, `performed_at date nullable`, `performed_by text nullable`, `certificate_storage_path nullable`, `cost_cents nullable`, `observations text`, `status` enum (`scheduled`, `in_transit_to_external`, `at_external`, `returning`, `completed`, `overdue`, `cancelled`), **`external_location bool default false`** (true = equipamento sai do tenant para conserto/calibração externa — exige NF-e de remessa), **`external_supplier_id uuid nullable` fk `suppliers`** (fabricante/laboratório), **`nfe_shipping_emission_id uuid nullable` fk `fiscal_emissions`** (NF-e de remessa 5.915 via ADR 0059), **`nfe_return_emission_id uuid nullable` fk `fiscal_emissions`** (NF-e de retorno 1.916 quando equipamento volta), **`external_departed_at nullable`**, **`external_returned_at nullable`**
 - `equipment_usage_log` — `equipment_id`, `appointment_id nullable`, `consulta_id nullable`, `evolucao_id nullable`, `used_at`, `used_by_user_id` — rastreabilidade clínica
 - `cleaning_checklists` — `id`, `tenant_id`, `company_id`, `unit_id nullable`, `name`, `items jsonb` (array de `{ key, label, required bool }`), `active`
 - `cleaning_logs` — `id`, `tenant_id`, `company_id`, `unit_id`, `checklist_id`, `performed_by_user_id`, `performed_at`, `items_done jsonb`, `observations text`
@@ -103,6 +103,11 @@ Em `packages/db/schema/vigilancia.ts`:
 - [ ] Job diário que marca manutenções vencidas como `overdue` + emite evento
 - [ ] Régua (Sprint 13) com template "manutenção D-7"
 - [ ] UI equipamentos + manutenção + anexo de certificado
+- [ ] **Fluxo de manutenção externa (ADR 0059):** quando `equipment_maintenance.external_location=true`, UI oferece ciclo: `scheduled → in_transit_to_external → at_external → returning → completed`; em cada transição, botão "Emitir NF-e via Focus" aparece quando Sprint 36 ativo:
+  - Saída para conserto: NF-e 5.915 → `nfe_shipping_emission_id`
+  - Retorno do conserto: NF-e 1.916 (recepção da nota do fornecedor) — via inbox Sprint 17 → linka em `nfe_return_emission_id`
+- [ ] Quando Sprint 36 não ativo, operador emite externamente e anexa XML recebido; UI registra `emission_mode='external_import'`
+- [ ] Teste E2E: ultrassom agendado para calibração anual no fabricante → NF-e 5.915 emitida → equipamento retorna → NF-e 1.916 recebida na inbox → status `completed` com certificado anexado
 - [ ] UI checklists de limpeza com UI mobile-first (usado pela equipe de limpeza)
 - [ ] Integração com `appointments`/`consultas`: ao realizar, registrar `equipment_usage_log` do(s) aparelho(s) usado(s)
 - [ ] Cadastro CNES na tela de company

@@ -8,7 +8,7 @@
 
 ## Goal
 
-Controle de estoque de materiais consumíveis (gaze, agulha, atadura, descartáveis) e produtos de revenda (cremes, faixas elásticas, suplementos) com entradas, saídas, alertas de mínimo e integração com vendas no balcão (POS simples).
+Controle de estoque de materiais consumíveis (gaze, agulha, atadura, descartáveis) e produtos de revenda (cremes, faixas elásticas, suplementos) com entradas, saídas, alertas de mínimo, baixa automática por devolução de compra (ADR 0058) e integração com vendas no balcão (POS simples com emissão fiscal — NFC-e varejo ou NF-e produto via Sprint 36 quando ativo).
 
 ## Critério de aceite
 
@@ -64,7 +64,7 @@ Server Actions em `apps/web/app/estoque/actions.ts`:
 - `createStockItem(input)` / `updateStockItem`
 - `registerEntry(itemId, quantity, unitCostCents, reference, attachment?)` — attachment = NF-e PDF
 - `registerExit(itemId, quantity, reason, appointmentId?, consultaId?)`
-- `sellAtPos(items[], memberId?, paymentMethod)` — cria invoice Sprint 04 + movimentação saída
+- `sellAtPos(items[], memberId?, paymentMethod, fiscalDocKind?)` — cria invoice Sprint 04 + movimentação saída; `fiscalDocKind` opcional (`nfce` varejo sem memberId ou `nfe_product` quando há member identificado); se Sprint 36 ativo, dispara emissão via Focus NFe (ADR 0059); se não, apenas registra venda sem emissão
 - `countInventory(countings[])` — lista `{ itemId, physicalQty }`; gera ajustes com diferenças
 - `getItemBalance(itemId)` — utilitário read-only
 
@@ -73,7 +73,7 @@ Server Actions em `apps/web/app/estoque/actions.ts`:
 Em `packages/db/schema/estoque.ts`:
 
 - `stock_items` — `id`, `tenant_id`, `company_id`, `sku text`, `name`, `category text`, `unit text` (un/kg/ml), `cost_cents numeric`, `sale_price_cents nullable`, `min_stock int default 0`, `is_resale bool`, `active`, `archived_at`
-- `stock_movements` — `id`, `tenant_id`, `company_id`, `item_id`, `kind` enum (`entry_purchase`, `entry_adjustment`, `exit_consumption`, `exit_sale`, `exit_loss`, `exit_adjustment`), `quantity numeric` (positivo sempre; `kind` define sinal), `unit_cost_cents nullable`, `reference_doc text nullable` (NF-e, invoice, appointment uuid), `appointment_id nullable`, `consulta_id nullable`, `invoice_id nullable`, `user_id`, `at timestamptz`, `notes text`
+- `stock_movements` — `id`, `tenant_id`, `company_id`, `item_id`, `kind` enum (`entry_purchase`, `entry_adjustment`, `exit_consumption`, `exit_sale`, `exit_loss`, `exit_adjustment`, `exit_return_to_supplier`, `entry_return_from_customer`), `quantity numeric` (positivo sempre; `kind` define sinal), `unit_cost_cents nullable`, `reference_doc text nullable` (NF-e, invoice, appointment uuid), `appointment_id nullable`, `consulta_id nullable`, `invoice_id nullable`, `nfe_return_id uuid nullable` fk `nfe_returns` (ADR 0058), `fiscal_emission_id uuid nullable` fk `fiscal_emissions` (ADR 0059), `user_id`, `at timestamptz`, `notes text`
 - `stock_inventories` — `id`, `tenant_id`, `company_id`, `counted_at`, `counted_by_user_id`, `status` enum (`draft`, `finalized`), `finalized_at nullable`
 - `stock_inventory_entries` — `inventory_id`, `item_id`, `system_qty numeric`, `physical_qty numeric`, `difference numeric`, `notes text`. PK `(inventory_id, item_id)`.
 
@@ -94,6 +94,9 @@ Em `packages/db/schema/estoque.ts`:
 - [ ] RLS + audit (regra 5 — registro imutável; ajuste é movimentação nova, nunca DELETE)
 - [ ] Zod + Server Actions
 - [ ] POS simples em `/app/estoque/vendas` com integração Sprint 04 (gera invoice paid imediatamente ou pending conforme método)
+- [ ] Botão "Emitir NFC-e" ou "Emitir NF-e produto" no POS (ativo quando Sprint 36 ativo — ADR 0059); integra com `fiscal_emissions` automaticamente
+- [ ] Listener em `nfe_return.emitted` (ADR 0058): gera movimentação `exit_return_to_supplier` baixando do estoque os itens devolvidos com rastro via `nfe_return_id`
+- [ ] Listener opcional em devolução de venda recebida (ADR 0060 — `nfe_received.inbound_direction='sales_return'`): gera `entry_return_from_customer` devolvendo ao estoque
 - [ ] Job detector de `low_stock` que emite evento quando cruza limite
 - [ ] Régua padrão no Sprint 13 atualizada para consumir `stock.low_stock_alert`
 - [ ] Widget "estoque crítico" no dashboard do gerente (Sprint 07)

@@ -6,6 +6,38 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — Ciclo fiscal completo: devolução + emissão via Focus + recepção avançada (ADRs 0058, 0059, 0060 + Sprint 36)
+
+Resposta à verificação sistemática de todas as 22 operações NF-e do Brasil contra os módulos LogiFit. Cobertura anterior: 2 operações (recepção + manifestação). Agora: **ciclo fiscal completo** com 8 emissões + 3 eventos + 4 cenários avançados de recepção.
+
+- **ADR 0058** — Devolução de compra (`docs/decisions/0058-devolucao-de-compra-nfe.md`). Duas camadas: registro interno (`nfe_returns`) no Sprint 17 com PDF de controle + import de XML emitido externamente; emissão automática via Focus NFe no Sprint 36. Reconciler integra com AP/AR (estorno ou criação de crédito).
+- **ADR 0059** — Ciclo fiscal de emissão completo via Focus NFe (`docs/decisions/0059-ciclo-fiscal-emissao-focus-nfe.md`). Amplia Sprint 36 de "só NFS-e" para 8 tipos de emissão (NFS-e, NF-e produto, NFC-e varejo, NF-e devolução, NF-e transferência filial, NF-e remessa/retorno conserto, NF-e entrada própria) + 3 eventos (cancelamento, CC-e, inutilização). Interface `FiscalProvider` abstrata; Focus NFe como impl primária. LogiFit **não toca em motor tributário**.
+- **ADR 0060** — Tratamento avançado de recepção NF-e (`docs/decisions/0060-recepcao-nfe-avancada-nfs-relacionadas.md`). Parser estendido extrai `finNFe`, CFOP primário, `refNFe` → link automático entre NFs relacionadas; `inbound_direction` diferencia compra/devolução-de-venda-recebida/complementar/ajuste/entrada-própria; job noturno resolve links órfãos.
+- **Sprint 36 (novo)** — `docs/sprints/36-geral-fiscal-focus-nfe.md` implementa ADR 0059: 10 Server Actions de emissão + 3 de eventos + webhook callback Focus + wizard de onboarding + catálogo de serviços tributáveis + integrações com Sprints 04/16/17/22/24/25.
+- **Sprint 15** — schemas adicionais: `nfe_returns` (ADR 0058), colunas `finality`/`cfop_primary`/`related_nfe_id`/`related_chave`/`is_self_issued_entry`/`self_issue_emission_id`/`inbound_direction` em `nfe_received` (ADR 0060), `fiscal_emissions` + `fiscal_events` + `fiscal_numbering_sequences` (ADR 0059 — preparação de schema sem UI); parser estendido para extrair metadados do XML; coluna `nfse_chave` em `invoices`.
+- **Sprint 17** — UI completa de devolução (modal + PDF controle + import XML + reconciler) + badges contextuais por `inbound_direction` na inbox + filtro por tipo + job de resolução de links órfãos + 6 Server Actions novas.
+- **Sprint 24** — POS emite NFC-e ou NF-e produto automaticamente (quando Sprint 36 ativo); novos `kind` em `stock_movements` (`exit_return_to_supplier`, `entry_return_from_customer`); FKs para `nfe_returns` e `fiscal_emissions`; listeners de devolução integram com estoque.
+- **Sprint 16** — `intercompany_entries` ganha `requires_nfe_transfer` + `nfe_transfer_emission_id`; trigger marca transferências de bens entre CNPJs distintos; botão "Emitir NF-e transferência" quando Sprint 36 ativo.
+- **Sprint 25** — `equipment_maintenance` ganha ciclo para manutenção externa com status `in_transit_to_external`/`at_external`/`returning`; FKs para NF-e de remessa (5.915) e retorno (1.916); integra com inbox de recepção do retorno.
+- `docs/modulos.md` — 3 módulos novos no bloco "Geral" (devolução, recepção avançada) + nova seção completa "Emissão Fiscal" com 11 módulos cobertos pelo Sprint 36.
+- `docs/roadmap.md` — Sprint 36 escopo atualizado com descrição completa.
+- `CLAUDE.md` — marcos regulatórios ampliados: Focus NFe como provider oficial, NT 2013/005 (NFC-e), NT 2011/004 (CC-e), RTC 1.400/2016 ABRASF (NFS-e).
+
+**Cobertura fiscal LogiFit agora:**
+
+| Dimensão | Antes | Depois |
+|---|---|---|
+| Recepção NF-e | ✓ básica | ✓ básica + 4 cenários avançados (devolução de venda, complementar, ajuste, entrada própria) |
+| Manifestação | ✓ 4 eventos | ✓ 4 eventos |
+| Devolução | ✗ | ✓ registro interno + emissão automática |
+| Emissão NFS-e | ⏳ Sprint 36 (só) | ✓ Sprint 36 |
+| Emissão NF-e produto | ✗ | ✓ Sprint 36 |
+| Emissão NFC-e | ✗ | ✓ Sprint 36 (integra POS Sprint 24) |
+| Transferência entre filiais | ⚠ só contábil | ✓ contábil + NF-e de transferência |
+| Remessa conserto | ✗ | ✓ ciclo completo com NF-e 5.915 / 1.916 |
+| Entrada própria | ✗ | ✓ emissão + espelho na recepção |
+| Eventos (cancelar/CC-e/inutilizar) | ✗ | ✓ via Focus NFe |
+
 ### Added — Manifestação do Destinatário NF-e (ADR 0057)
 
 - **ADR 0057** — Manifestação do Destinatário de NF-e (`docs/decisions/0057-manifestacao-destinatario-nfe.md`). Cobre os 4 eventos fiscais da NT 2012/002 SEFAZ: Ciência (210210), Confirmação (210200), Desconhecimento (210220), Não Realizada (210240). Ciclo de vida integrado à inbox `/app/financeiro/nfe` (ADR 0056).

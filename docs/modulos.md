@@ -125,6 +125,8 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 | **Inbox unificada de NF-e (ADR 0056)** | Tela central `/app/financeiro/nfe` com 4 métodos de ingestão: download automático SEFAZ (Sprint 17), download por chave 44 dígitos (Sprint 17), upload XML (Sprint 15), entrada manual sem NF (Sprint 15). `nfe_received` com badge de origem por linha. Toggle único em settings para ligar/desligar o automático | Academia, Fisio, Nutri | 15 (inbox + manual + upload) + 17 (pluga automático + por chave) | todo |
 | **Download por chave NF-e** | Operador cola 44 dígitos → provider (Arquivei/Sieg/Focus/SEFAZ direto com cert A1) busca XML; registrado em `nfe_received` com `source='manual_key'` | Academia, Fisio, Nutri | 17 | futuro |
 | **Manifestação do Destinatário NF-e (ADR 0057)** | 4 eventos SEFAZ (Ciência 210210, Confirmação 210200, Desconhecimento 210220, Não Realizada 210240) integrados à inbox. **Ciência automática ON por padrão** (tenant pequeno tem conformidade sem configurar); demais eventos sempre manuais com audit. Gate por CNPJ (tenant PF sem company.cnpj não vê). Prazo 180d + alertas D-30/D-7; job de expiração | Academia, Fisio, Nutri (só company com CNPJ) | 15 (schema) + 17 (UI + envio + jobs) | todo |
+| **Devolução de compra NF-e (ADR 0058)** | Registro interno `nfe_returns` linkado à NF original + PDF de controle para levar ao contador + import do XML da NF-e de devolução emitida externamente. Camada 2 (emissão direta via Focus NFe) vem no Sprint 36. Integra com estoque (baixa) e financeiro (estorna AP ou cria AR) | Academia, Fisio, Nutri | 15 (schema) + 17 (UI + reconciler) + 36 (emissão automática) | todo |
+| **Recepção NF-e avançada — NFs relacionadas (ADR 0060)** | Parser extrai `finNFe` + CFOP + `refNFe` → link automático entre NFs relacionadas (devolução de venda recebida, complementar recebida, ajuste, NF-e de entrada própria). Badges contextuais na inbox + filtro por tipo + job de resolução retroativa de links órfãos | Academia, Fisio, Nutri (company com CNPJ) | 15 (schema + parser) + 17 (UI + jobs) | todo |
 | **Workflow de aprovação AP** | Regras configuráveis por faixa de valor + multi-aprovadores + audit | Academia, Fisio, Nutri | 15 | todo |
 | **Rateio entre filiais** | `allocation_rules` (fixed/proporcional/por KPI) + recálculo de DRE | Academia, Fisio, Nutri (só `owned`) | 16 | todo |
 | **Intercompany** | Lançamentos espelhados entre companies + fechamento mensal de saldos | Academia, Fisio, Nutri (só `owned`) | 16 | todo |
@@ -215,6 +217,26 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 
 ---
 
+## Emissão Fiscal (Sprint 36 — via Focus NFe, ADR 0059)
+
+Ciclo fiscal completo de emissão de documentos via **Focus NFe** como provider único. LogiFit não toca em motor tributário — Focus cuida de ICMS/IPI/PIS/COFINS/CST/CFOP/ISS por UF/município.
+
+| Módulo | Descrição | Verticais | Sprint | Status |
+|---|---|---|---|---|
+| **Inbox de emissões `/app/fiscal`** | Tela central de emissões + 3 ações de evento (cancelar, CC-e, inutilizar) + reconciliação com webhook callbacks | Academia, Fisio, Nutri | 36 | futuro |
+| **NFS-e (serviço municipal)** | Emissão automática a partir de `invoices` (Sprint 04) e `billing_guides` pagos (Sprint 22). Base do negócio saúde | Academia, Fisio, Nutri | 36 | futuro |
+| **NF-e produto (modelo 55)** | Emissão de venda de mercadoria (suplemento, órtese) identificando cliente PJ | Academia, Fisio (com revenda) | 36 | futuro |
+| **NFC-e (modelo 65, varejo)** | Emissão automática em POS balcão sem identificação | Academia (revenda), Fisio (revenda) | 36 | futuro |
+| **NF-e devolução (`finNFe=4`)** | Camada 2 da ADR 0058 — a partir de `nfe_returns`, emissão direta via Focus | Academia, Fisio, Nutri | 36 | futuro |
+| **NF-e transferência entre filiais** | Emissão obrigatória quando movimentação de bens cruza CNPJs distintos (Sprint 16 intercompany detecta) | Academia, Fisio, Nutri (redes owned) | 36 | futuro |
+| **NF-e remessa/retorno conserto** | Equipamento sai para calibração/conserto externo (Sprint 25); NF 5.915 na saída, 1.916 no retorno | Fisio, Academia (equipamento regulado) | 36 | futuro |
+| **NF-e de entrada própria** | Tenant emite NF-e contra si mesmo quando compra de PF/produtor rural sem inscrição; popula `nfe_received` via ADR 0060 | Academia, Fisio, Nutri | 36 | futuro |
+| **Cancelamento / CC-e / Inutilização** | 3 eventos pós-emissão (cancelar dentro da janela, corrigir campos não-fiscais, inutilizar numeração pulada) | Academia, Fisio, Nutri | 36 | futuro |
+| **Catálogo de serviços tributáveis** | `fiscal_service_catalog` configurado por company: código LC 116/2003, alíquota ISS do município, retenções, regime tributário | Academia, Fisio, Nutri | 36 | futuro |
+| **Wizard de onboarding fiscal** | `/app/settings/fiscal` — credenciais Focus + regime + catálogo + série/numeração + teste em homologação | Academia, Fisio, Nutri | 36 | futuro |
+
+---
+
 ## Integrações Wellness (Gympass / TotalPass / Wellhub)
 
 Canal de aquisição de alunos via benefícios corporativos. Gympass foi rebrandeado para **Wellhub** em 2024; TotalPass é concorrente direto. Ambos exigem integração via API proprietária para check-in e repasse financeiro.
@@ -234,7 +256,7 @@ Canal de aquisição de alunos via benefícios corporativos. Gympass foi rebrand
 | Módulo | Descrição | Verticais | Sprint | Status |
 |---|---|---|---|---|
 | App nativo Expo | Aluno/paciente mobile; PWA (Sprint 26) cobre 90% antes | todas | 29 | futuro |
-| Módulo fiscal (Focus NFe) | Emissão de NFS-e por company, cobertura nacional via Focus NFe (todos os municípios suportados; cada company emite no município do seu CNPJ) | todas | 30 | futuro |
+| Módulo fiscal (Focus NFe) | **Ciclo fiscal completo de emissão** via Focus NFe: NFS-e + NF-e produto + NFC-e varejo + NF-e devolução + NF-e transferência + NF-e remessa/retorno conserto + NF-e entrada própria + eventos (cancelamento, CC-e, inutilização). Ver [ADR 0059](decisions/0059-ciclo-fiscal-emissao-focus-nfe.md) | todas | 36 | futuro |
 | Prescrição adaptativa IA por RPE | Consome `workout_sessions.rpe` do Sprint 11 + ajusta carga automaticamente | Academia | pós-29 | futuro (depende de app nativo) |
 
 ---

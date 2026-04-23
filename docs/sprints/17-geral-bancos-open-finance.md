@@ -28,6 +28,26 @@ Integração com bancos via Open Finance (ou importação OFX fallback) + concil
 - Aprovação manual: operador vê sugestões e aceita/rejeita
 - Audit: toda conciliação gera registro
 
+**Devolução de compra — camada 1 (ADR 0058):**
+- Linha da NF na inbox ganha ação **[🔄 Devolver]** quando status = `ap_created` ou `parsed`
+- Modal de devolução: tipo (total/parcial) + seleção de itens (parcial) + categoria + motivo ≥20 chars
+- Cria registro em `nfe_returns` com status `draft`
+- Ação **[Gerar PDF controle]** → produz PDF formatado com chave original + itens + motivo para levar ao contador/sistema de emissão externo
+- Ação **[Importar XML emitido]** → operador cola ou faz upload do XML da NF-e de devolução emitida externamente; valida `refNFe = chave_original`; marca `emitted` com `emission_mode='external_import'`
+- Ciclo: `draft → awaiting_external_emission → emitted → confirmed_by_supplier | rejected_by_supplier | cancelled`
+- Emissão direta via Focus NFe vem no Sprint 36 (`[Emitir via Focus]` — camada 2 da ADR 0058)
+- Reconciler em `packages/db/erp-financeiro/return-reconciler.ts`: devolução total cancela AP se não paga / cria AR se já paga; devolução parcial reduz valor da AP ou cria AR pelo excedente
+- Dashboard gerente ganha card "Devoluções pendentes" segmentado por status + alerta >7d em `awaiting_external_emission`
+
+**NFs relacionadas e inbound direction (ADR 0060):**
+- Inbox mostra badge contextual por linha: `🔄 Dev. venda #89` / `➕ Complem. NF 88` / `🔧 Ajuste NF 75` / `📤 NF-e própria` / (vazio para compra normal)
+- Botão "Ver link" navega para NF original em `nfe_received` ou emissão em `fiscal_emissions`
+- Filtro novo: **Tipo** (`Normal` / `Complementar` / `Ajuste` / `Devolução` / `Entrada própria`)
+- Complementar recebida: `convertNfeToAp` **soma** valor à AP original em vez de criar nova
+- Ajuste recebido: não cria AP (só rastro)
+- Devolução de venda recebida: **estorna** AR da venda original (quando Sprint 36 ativo; requer linkagem `fiscal_emissions`)
+- Job noturno `nfe-resolve-orphan-links`: resolve `related_nfe_id` quando NF original chega após a relacionada
+
 **Manifestação do Destinatário (ADR 0057):**
 - UI completa na inbox `/app/financeiro/nfe` (criada no Sprint 15):
   - Nova coluna **"Manifestação"** com status colorido: `⏳ D-25` / `✓ Confirmada` / `⚠ D-5 urgente` / `❌ Expirada` / `—` (quando `not_applicable`)
@@ -108,6 +128,9 @@ Server Actions:
 - `toggleNfeAutoCiencia(companyId, enabled)` — liga/desliga ciência automática (default ON; ADR 0057)
 - `manifestNfe(nfeReceivedId, eventCode, justification?)` — envia evento SEFAZ via `NfeFetcher.sendManifestation()`; exige justificativa para `210220` e `210240`; grava protocolo retornado (ADR 0057)
 - Handler interno `onNfeReceived` — escuta `nfe.received.*`, checa `nfe_auto_ciencia_enabled`, dispara 210210 com `manifestation_mode='automatic'` quando habilitado
+- `createNfeReturn(nfeReceivedId, input)` / `markReturnAwaitingEmission(returnId)` / `linkEmittedReturnXml(returnId, xml)` / `markReturnConfirmed(returnId)` / `markReturnRejected(returnId, reason)` / `cancelReturn(returnId, reason)` — ADR 0058
+- `generateReturnControlPdf(returnId)` — gera PDF formatado para operador levar ao contador
+- Handler `resolveOrphanLinks()` (job noturno) — popula `related_nfe_id` em linhas órfãs quando NF original chega depois (ADR 0060)
 
 API Routes:
 - `POST /api/financeiro/openfinance/callback` — callback do provider OAuth

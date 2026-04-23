@@ -63,7 +63,7 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 | 35 | [33](sprints/33-geral-pipeline-exames.md) | **Pipeline Inteligente de Exames Laboratoriais — upload PDF → OCR → IA extração + IA interpretação conservadora → revisão profissional → lab_results oficial; paciente pode subir via portal** | geral | futuro | #06 copilot + #15 OCR + #30 exames + #26 portal |
 | 36 | 34 | IA Nutri-Agent cruzando log Academia + prontuário Fisio + diário alimentar + antropometria + **device_readings (Device Hub)** + **lab_results (Pipeline Exames)** | nutri/ia | futuro | #31, #32, #33, #34, #35, #24, #29 |
 | 37 | 35 | App nativo Expo (aluno/paciente) — Bluetooth + push + **Apple Health + Google Health Connect (expande Device Hub)** | mobile | futuro | MVP estável + #28 + #34 |
-| 38 | 36 | Módulo fiscal Focus NFe (NFS-e por company) | fiscal | futuro | #6 |
+| 38 | [36](sprints/36-geral-fiscal-focus-nfe.md) | **Módulo fiscal — emissão completa via Focus NFe** (NFS-e + NF-e produto + NFC-e + devolução + transferência + remessa conserto + entrada própria + eventos) — ADR 0059 | fiscal | futuro | #6, #18 (15 schemas), #20 (17 inbox), #24 (POS), #25 (equipamento) |
 | 39 | pós-35 | **Prescrição adaptativa IA por RPE** (ajuste de carga automático) | academia/ia | futuro | #13, #37 (app nativo com input RPE em tempo real) |
 
 ---
