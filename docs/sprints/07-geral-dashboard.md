@@ -14,7 +14,7 @@ Home do operador contextual por role (recepção / gerente / diretor / group_own
 
 - `/app` redireciona para dashboard contextual baseado em role + scope ativo do JWT
 - Gerente de filial vê KPIs da sua company/unit; diretor de rede vê tenant; group_owner vê agregados do group (views `group_*`, nunca dado individual)
-- Cards padrão: receita 30d, MRR, overdue %, ocupação da agenda 7d, inadimplência, últimas 10 atividades (timeline cross-member)
+- Cards padrão: **Alunos Ativos** · **Faturamento 30d** · **MRR** · **Taxa de Retenção 90d** · **Overdue %** · **Ocupação Agenda 7d** · **Horário de Pico (semanal)** · **Ocupação por Modalidade** · **Ticket Médio por Aluno** · **Últimas 10 atividades** (timeline cross-member)
 - Toggle light/dark persistente; zero shadow/`box-shadow` residual
 - Tokens aplicados: `surface`, `text`, `action-primary`, `success`, `warning`, `danger`
 - Cross-alert dispatcher: função genérica `dispatchAlert(event)` com tabela `alert_subscribers` vazia (sem subscribers no MVP — preparado para Fase 2)
@@ -80,7 +80,16 @@ Não publica eventos de negócio; só renderiza os dos outros sprints.
 - [ ] Tokens "Equilíbrio Vital" em `packages/ui/tokens.ts` + `tailwind.config.ts`
 - [ ] Override do shadcn para remover `box-shadow` e `drop-shadow` padrão
 - [ ] Toggle light/dark com `next-themes` + preferência por tenant
-- [ ] Views SQL em `packages/db/views/` aplicadas via migration
+- [ ] Views SQL em `packages/db/views/` aplicadas via migration:
+   - `dashboard_alunos_ativos` (members ativos por company/unit)
+   - `dashboard_faturamento_30d` (soma de invoices paid)
+   - `dashboard_mrr` (valor de contratos ativos normalizado por ciclo)
+   - `dashboard_retencao_90d` (cohort: members ativos hoje / members ativos há 90d)
+   - `dashboard_ocupacao_agenda_7d` (% de slots ocupados)
+   - `dashboard_horario_pico` (heatmap de check-ins por hora × dia semana)
+   - `dashboard_ocupacao_modalidade` (check-ins ou appointments por modalidade)
+   - `dashboard_ticket_medio` (valor médio por member ativo)
+   - `dashboard_overdue_pct`
 - [ ] Tabela `alert_subscribers` (esqueleto)
 - [ ] Função `dispatchAlert` em `packages/ai/alerts.ts` (ou `packages/types/events.ts`) — itera subscribers, publica
 - [ ] Server Action `getDashboardData`

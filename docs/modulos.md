@@ -67,6 +67,27 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 | Brindes (reward catalog + grants) | Físico (camiseta), digital_credit (crédito na próxima) ou service_credit (1 PT de cortesia) com workflow de entrega | Academia, Fisio, Nutri | 09 | todo |
 | Metas + progresso automático | Objetivos do member (perder 5kg, 3×/sem); progresso vindo de antropometria, check-ins, medição manual | Academia, Fisio, Nutri | 09 | todo |
 | Top performers (stretch) | Card de ranking no dashboard geral com opt-in do member | Academia, Fisio, Nutri | 09 (stretch) | todo |
+| Funil de vendas (`leads`) | Estágios configuráveis, aula experimental, propostas versionadas, conversão → member | Academia, Fisio, Nutri | 10 | todo |
+| Propostas comerciais | Documento versionado com plano/bundle + desconto + validade | Academia, Fisio, Nutri | 10 | todo |
+| Biblioteca de exercícios | Catálogo global + tenant com vídeos curtos em Storage | Academia, Fisio (reabilitação) | 11 | todo |
+| Workouts (treinos) | Conjunto ordenado de exercícios com séries/reps/carga/descanso; versionado | Academia, Fisio | 11 | todo |
+| Prescrições polimórficas | `prescriptions` com `kind` (workout / meal_plan / fisio_protocol); genérico | Academia, Fisio, Nutri | 11 | todo |
+| Execução de sessão + RPE | Registro de performance real + percepção de esforço 1–10 | Academia, Fisio | 11 | todo |
+| Avaliações físicas (catálogo) | Tipos configuráveis (bioimpedância, dobras, anamnese, ROM) com campos declarativos | Academia, Fisio, Nutri | 12 | todo |
+| Registro seriado de medições | `measurements` séries temporais + gráficos de evolução | Academia, Fisio, Nutri | 12 | todo |
+| Anamnese estruturada | Template de formulário com perguntas abertas/múltipla escolha | Academia, Fisio, Nutri | 12 | todo |
+| Calculadoras (IMC, Pollock, TMB) | Funções derivadas das medições | Academia, Nutri | 12 | todo |
+| Integração WhatsApp | Provider abstrato (Twilio / Z-API / Meta via ADR 0025) + templates | Academia, Fisio, Nutri | 13 | todo |
+| Integração email (Resend) | Canal alternativo/redundante consolidado | Academia, Fisio, Nutri | 13 | todo |
+| Régua de cobrança (DSL) | Motor declarativo: evento → ação → delay (cobrança, reengajamento, follow-up lead) | Academia, Fisio, Nutri | 13 | todo |
+| Opt-out e rate-limit | Consent de marketing + limite por tenant | Academia, Fisio, Nutri | 13 | todo |
+| Custos operacionais | `cost_categories` (fixos/variáveis) + `cost_entries` + recorrências | Academia, Fisio, Nutri | 14 | todo |
+| DRE consolidado | Receita - custos por período/company/tenant + export PDF/CSV | Academia, Fisio, Nutri | 14 | todo |
+| Previsibilidade de receita | Projeção 3 meses + simulador de sensibilidade | Academia, Fisio, Nutri | 14 | todo |
+| Pipeline de features de churn | Extração por member de `domain_events` (frequência, pagamento, engajamento) | Academia, Fisio, Nutri | 15 | todo |
+| Modelo preditivo de churn | `prob_30d/60d/90d` + top factors + modelo via ADR 0027 | Academia, Fisio, Nutri | 15 | todo |
+| Intervenções de retenção | `churn_interventions` + integração com régua de cobrança para ação automática | Academia, Fisio, Nutri | 15 | todo |
+| Feedback loop de cancelamento | `churn_events` alimenta retreino + mede accuracy | Academia, Fisio, Nutri | 15 | todo |
 
 ---
 
@@ -88,11 +109,11 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 
 | Módulo | Descrição | Verticais | Sprint | Status |
 |---|---|---|---|---|
-| Prontuário eletrônico | Documentos clínicos por consulta, criptografados at-rest | Fisio | 10 | futuro |
-| Assinatura digital ICP-Brasil | Assinatura do prontuário pelo profissional (CFM/CREFITO) | Fisio | 10 | futuro |
-| Evolução com mídias | Fotos/vídeos em Supabase Storage criptografado | Fisio | 11 | futuro |
-| Cross-alert lesão→treino | Consumidor de `domain_events` do Sprint 07 + ação automática no Academia (com consent) | Fisio + Academia | 12 | futuro |
-| Generative UI (cards de relatório) | Resposta IA renderiza componentes, não texto corrido | Fisio (primeira) | 13 | futuro |
+| Prontuário eletrônico | Documentos clínicos por consulta, criptografados at-rest | Fisio | 16 | futuro |
+| Assinatura digital ICP-Brasil | Assinatura do prontuário pelo profissional (CFM/CREFITO) | Fisio | 16 | futuro |
+| Evolução com mídias | Fotos/vídeos em Supabase Storage criptografado | Fisio | 17 | futuro |
+| Cross-alert lesão→treino | Consumidor de `domain_events` do Sprint 07 + ação automática no Academia (com consent) | Fisio + Academia | 18 | futuro |
+| Generative UI (cards de relatório) | Resposta IA renderiza componentes, não texto corrido | Fisio (primeira) | 19 | futuro |
 
 ---
 
@@ -100,9 +121,9 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 
 | Módulo | Descrição | Verticais | Sprint | Status |
 |---|---|---|---|---|
-| Antropometria | Medidas corporais seriadas (peso, circunferências, dobras) | Nutri | 14 | futuro |
-| Cardápios | Planos alimentares diários/semanais com lista de substituições | Nutri | 14 | futuro |
-| Nutri-Agent (IA) | Agente IA cruzando log de Academia + prontuário Fisio (sempre com consent ativo) | Nutri | 15 | futuro |
+| Antropometria (subtipo de avaliação) | Reusa `assessment_types` do Sprint 12 com template Nutri; cardápios herdam do member | Nutri | 20 | futuro |
+| Cardápios | Planos alimentares diários/semanais com lista de substituições (reusa `prescriptions` polimórficas do Sprint 11) | Nutri | 20 | futuro |
+| Nutri-Agent (IA) | Agente IA cruzando log de Academia + prontuário Fisio (sempre com consent ativo) | Nutri | 21 | futuro |
 
 ---
 
@@ -110,8 +131,9 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 
 | Módulo | Descrição | Verticais | Sprint | Status |
 |---|---|---|---|---|
-| App nativo Expo | Aluno/paciente mobile; PWA cobre 90% no MVP | todas | 16 | futuro |
-| Módulo fiscal (Focus NFe) | Emissão de NFS-e por company | todas | 17 | futuro |
+| App nativo Expo | Aluno/paciente mobile; PWA cobre 90% no MVP | todas | 22 | futuro |
+| Módulo fiscal (Focus NFe) | Emissão de NFS-e por company | todas | 23 | futuro |
+| Prescrição adaptativa IA por RPE | Consome `workout_sessions.rpe` do Sprint 11 + ajusta carga automaticamente | Academia | pós-22 | futuro (depende de app nativo) |
 
 ---
 
@@ -147,8 +169,11 @@ registerMemberWidget({
 | Copilot (CTA contextual) | `copilot` | `copilot.use` | — | sempre | não | recepção, gerente, fisio, nutri, instrutor |
 | Créditos ativos | `creditos` | `member.read` | — | member tem `appointment_credits.balance > 0` | não | recepção, gerente, fisio, nutri, instrutor |
 | Acessos (Academia) | `acessos` | `acesso.read` | `academia` | member tem `access_events` | não | recepção, gerente, instrutor |
+| Treino atual | `treino` | `prescricao.read` | — | member tem `workout_prescriptions` ativo | não | instrutor, fisio, gerente |
+| Última avaliação | `avaliacao` | `avaliacao.read` | — | member tem `assessments` | não para profissional direto; **sim** cross-module | profissional do tipo relevante (Academia/Fisio/Nutri) |
 | Conquistas | `conquistas` | `engajamento.read` | — | sempre (mostra progresso mesmo sem earned) | não | recepção, gerente, fisio, nutri, instrutor |
 | Metas | `metas` | `engajamento.read` | — | member tem `goals` ativos | não | recepção, gerente, fisio, nutri, instrutor |
+| Risco de churn | `risco` | `retencao.read` | — | `last_prediction_prob_30d > 0.3` | não | gerente, diretor (não aluno nem instrutor) |
 | Prontuário (Fisio, Fase 2) | `prontuario` | `prontuario.read` | `fisio` | member tem `consultas` fisio | não para fisio; **sim** para cross-module | fisio (direto), instrutor (se consent `injury_to_training`) |
 | Evolução com mídias (Fisio, Fase 2) | `evolucao` | `prontuario.read` | `fisio` | member tem `evolucao_entries` | não | fisio |
 | Antropometria (Nutri, Fase 3) | `antropometria` | `nutri.read` | `nutri` | member tem `antropometria_entries` | não para nutri; **sim** cross-module | nutri (direto), fisio (se consent) |

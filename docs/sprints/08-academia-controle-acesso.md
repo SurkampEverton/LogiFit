@@ -33,7 +33,7 @@ Aluno da Academia entra na unidade via QR code dinâmico (HMAC rotativo 60s) lid
 ## Decisões tomadas / ADRs esperados
 
 - **ADR 0017 (esperado)** — QR dinâmico HMAC com rotação 60s. Justifica: tela do celular screenshotada não funciona após 60s; antifraude sem exigir hardware leitor com crypto forte. Secret por tenant rotacionável.
-- **ADR 0018 (esperado)** — Hardware da catraca. Opções: (a) Android box com Expo bare rodando leitor QR + heartbeat; (b) ESP32 com câmera OV2640 + firmware custom; (c) iPad fixo + cabo para catraca tradicional via relé. **Decisão é deste sprint**; já listada como pendente no [roadmap.md](../roadmap.md#decisões-pendentes).
+- **ADR 0018 (esperado)** — Hardware da catraca + modalidade de autenticação. Opções de hardware: (a) Android box com Expo bare rodando leitor QR + heartbeat; (b) ESP32 com câmera OV2640 + firmware custom; (c) iPad fixo + cabo para catraca tradicional via relé; (d) câmera IP com **reconhecimento facial** (MediaPipe Face Recognition, AWS Rekognition ou modelo local via Python edge function). Modalidades de auth: **QR HMAC** (padrão, barato, rápido) e **facial** (opcional, depende do hardware escolhido; biometria exige consent específico por LGPD — `consent.facial_recognition`). Cliente do tenant escolhe uma ou ambas no cadastro da catraca. **Decisão é deste sprint**; já listada como pendente no [roadmap.md](../roadmap.md#decisões-pendentes).
 
 ## Módulos entregues
 
@@ -72,9 +72,10 @@ Server Actions:
 
 Em `packages/db/schema/acesso.ts`:
 
-- `access_devices` — `id`, `tenant_id`, `company_id`, `unit_id`, `label`, `token_hash text` (bcrypt do token completo), `last_heartbeat timestamptz`, `created_at`, `revoked_at`
+- `access_devices` — `id`, `tenant_id`, `company_id`, `unit_id`, `label`, `token_hash text` (bcrypt do token completo), `auth_modes text[]` (ex: `['qr', 'facial']`), `hardware_type text` (escolhido no ADR 0018), `last_heartbeat timestamptz`, `created_at`, `revoked_at`
 - `access_secrets` — `id`, `tenant_id`, `secret bytea`, `active bool`, `rotated_at`. Rotação periódica; tokens QR validam contra chaves ativas das últimas 2 rotações (tolerância).
-- `access_events` — `id`, `tenant_id`, `device_id`, `member_id`, `at timestamptz`, `kind` enum (`checkin`, `checkout`, `denied_overdue`, `denied_block`, `denied_invalid_token`, `manual`), `appointment_id nullable`, `raw jsonb`. Append-only via trigger; particionar por mês.
+- `member_face_embeddings` — `id`, `tenant_id`, `member_id`, `embedding vector(512)` (via pgvector), `created_at`, `consent_id` (exige consent LGPD específico para biometria). Presente só se modalidade `facial` ativa no tenant.
+- `access_events` — `id`, `tenant_id`, `device_id`, `member_id`, `at timestamptz`, `kind` enum (`checkin`, `checkout`, `denied_overdue`, `denied_block`, `denied_invalid_token`, `denied_no_face_match`, `manual`), `auth_mode` enum (`qr`, `facial`, `manual`), `appointment_id nullable`, `raw jsonb`. Append-only via trigger; particionar por mês.
 - `access_blocks` — `id`, `tenant_id`, `member_id`, `kind` enum (`manual`, `overdue`, `suspended`), `reason`, `started_at`, `expires_at nullable`, `resolved_at nullable`
 
 **RLS:** tenant + scope por company/unit. `POST /api/acesso/checkin` usa service role do Supabase (não JWT do member) — catraca autentica via `device_token`.
@@ -92,14 +93,17 @@ Consumidores no MVP:
 
 ## Commit (checklist)
 
-- [ ] Schema Drizzle: `access_devices`, `access_secrets`, `access_events` (append-only + partition), `access_blocks`
+- [ ] Schema Drizzle: `access_devices`, `access_secrets`, `access_events` (append-only + partition), `access_blocks`, `member_face_embeddings` (se facial ativo)
 - [ ] RLS + testes nos 4 cenários
 - [ ] HMAC QR em `packages/ai/qr.ts` (gerador + validador com tolerância de 1 rotação)
-- [ ] API Route `/api/acesso/checkin` idempotente (mesmo qr_token pode vir 2x se reintentar)
+- [ ] **Pipeline facial (opcional por tenant):** embedding generator (MediaPipe ou serviço externo conforme ADR 0018) + matching via pgvector similarity (threshold configurável); requer consent LGPD explícito antes de capturar embedding
+- [ ] API Route `/api/acesso/checkin` idempotente suportando **ambos os modos** (`qr_token` OU `face_image_b64`); mesmo qr_token pode vir 2x se reintentar
 - [ ] API Route `/api/acesso/heartbeat` + job que marca offline
 - [ ] Canal Realtime `tenant:X:unit:Y:access` usado pelo dashboard recepção
 - [ ] Subscriber de `invoice.overdue` → cria `access_blocks` automaticamente
+- [ ] Subscriber de `contract.paused` / `contract.auto_paused` → cria `access_blocks` com `kind='suspended'`
 - [ ] Subscriber de `payment.received` → resolve `access_blocks` do member
+- [ ] Subscriber de `contract.resumed` → resolve `access_blocks` relacionados
 - [ ] UI `/app/acesso/*` com estados (live, bloqueios, catracas)
 - [ ] UI `/app/members/[id]/qr` com rotação visível
 - [ ] Widget "acessos do paciente" em `/app/members/[id]` (slot `acessos`): frequência últimos 30d + último check-in + unit preferida + bloqueios ativos. Registrar com `{ slot: 'acessos', requiredPermissions: ['acesso.read'], requiredVertical: 'academia', consentPurpose: null, showWhen: (m) => m.has_access_events }`. Tenant só-Fisio/só-Nutri não vê. Ver [modulos.md — matriz](../modulos.md#matriz-de-visibilidade-mvp--previsão-fase-23)

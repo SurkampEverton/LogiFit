@@ -73,7 +73,7 @@ API Routes:
 Em `packages/db/schema/financeiro.ts`:
 
 - `plans` — `id`, `tenant_id`, `company_id`, `name`, `description`, `price_cents`, `billing_cycle` enum (`monthly`, `quarterly`, `yearly`), `active`, `trial_days`, `cancel_notice_days`
-- `contracts` — `id`, `tenant_id`, `company_id`, `member_id`, `plan_id`, `started_at`, `ends_at nullable`, `status` enum (`active`, `paused`, `cancelled`, `expired`), `billing_day int` (1–28), timestamps
+- `contracts` — `id`, `tenant_id`, `company_id`, `member_id`, `plan_id`, `started_at`, `ends_at nullable`, `status` enum (`active`, `paused`, `cancelled`, `expired`), `billing_day int` (1–28), `pause_reason text nullable`, `pause_starts_at nullable`, `pause_ends_at nullable`, `auto_pause_rule jsonb nullable` (ex: `{ trigger: 'no_checkin_days', value: 30 }`), timestamps
 - `invoices` — `id`, `tenant_id`, `company_id`, `contract_id`, `member_id`, `amount_cents`, `due_at`, `status` enum (`pending`, `paid`, `overdue`, `cancelled`, `refunded`), `asaas_id text unique`, `external_url`, timestamps
 - `payments` — `id`, `tenant_id`, `invoice_id`, `amount_cents`, `method` enum (`boleto`, `pix`, `credit_card`), `paid_at`, `asaas_id unique`, `raw_payload jsonb`
 - `asaas_keys` — `id`, `tenant_id`, `company_id nullable`, `api_key` (criptografado), `sandbox bool`, `active`. Regra: quando `tenant.financial_mode=centralized`, `company_id` é NULL; quando `distributed`, é obrigatório. Enforced por check constraint.
@@ -90,6 +90,9 @@ Em `packages/db/schema/financeiro.ts`:
 - `payment.received` — `{ invoice_id, payment_id, amount_cents, method, paid_at }`
 - `payment.failed` / `payment.refunded`
 - `invoice.overdue` — `{ invoice_id, days_overdue }` — Sprint 08 consome para bloquear QR
+- `contract.paused` — `{ contract_id, member_id, reason, starts_at, ends_at? }` — Sprint 08 bloqueia QR durante pausa
+- `contract.resumed` — `{ contract_id, member_id, at }`
+- `contract.auto_paused` — variante com `trigger_rule` informado
 
 ## Commit (checklist)
 
@@ -103,6 +106,10 @@ Em `packages/db/schema/financeiro.ts`:
 - [ ] Retry de webhook em dead-letter se processing falhar 3x
 - [ ] UI `/app/financeiro/*` com estado vazio e filtros
 - [ ] Widget "financeiro do paciente" em `/app/members/[id]` (slot `financeiro`): contrato ativo + status + próximo vencimento + flag inadimplente. Registrar com `{ slot: 'financeiro', requiredPermissions: ['financeiro.read'], requiredVertical: null, consentPurpose: null, showWhen: (m) => m.has_contract }`. Fisio/Nutri/Instrutor **não** veem (regra de role). Ver [modulos.md — matriz](../modulos.md#matriz-de-visibilidade-mvp--previsão-fase-23)
+- [ ] **Trancamento manual de contrato** (`pauseContract(contractId, startsAt, endsAt?, reason)`) — pausa emissão de cobranças + bloqueia acesso (consumido pelo Sprint 08 via `contract.paused`)
+- [ ] **Trancamento automático por regra** configurável em `auto_pause_rule`: ex: sem check-in há 30 dias aciona pause automático com notificação; retornou a fazer check-in (ou admin retoma manual) reativa
+- [ ] Job diário que avalia `auto_pause_rule` dos contratos ativos e dispara pause quando critério é atingido
+- [ ] **DRE básico por company + consolidado por tenant** — saída (receita - custos do Sprint 14 quando disponível; no MVP do Sprint 04 só receita) em `/app/financeiro/dre`. Sprint 14 amplia com custos operacionais.
 - [ ] Seed: 2 planos por company + 5 contratos ativos por tenant
 - [ ] Testes unit (parser de webhook, cálculo de próxima data de cobrança)
 - [ ] Testes E2E: assinar plano, simular webhook de pagamento, cancelar contrato
@@ -111,9 +118,8 @@ Em `packages/db/schema/financeiro.ts`:
 
 ## Stretch
 
-- [ ] Pausar contrato (pausa emissão de cobrança)
 - [ ] Cobranças avulsas (fora de contrato)
-- [ ] Relatório DRE por company + consolidado por tenant
+- [ ] DRE avançado com filtros e export PDF (base é commit; refinamento é Sprint 14)
 
 ## Log
 
