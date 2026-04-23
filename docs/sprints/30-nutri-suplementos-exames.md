@@ -1,7 +1,7 @@
-# Sprint 26 — Nutri · Suplementação + Exames Laboratoriais
+# Sprint 30 — Nutri · Suplementação + Exames Laboratoriais
 
 - **Área:** nutri
-- **Início:** planejado (depois do Sprint 25)
+- **Início:** planejado (depois do Sprint 29)
 - **Fim planejado:** +3 semanas
 - **Status:** planejado (futuro)
 - **Item do roadmap:** #28
@@ -16,15 +16,15 @@ Prescrição de suplementos (vitaminas, minerais, fitoterápicos) como entidade 
 
 - Catálogo `supplements` com nome, tipo (`vitamin`, `mineral`, `fitoterápico`, `aminoacid`, `blend`), unidades padrão, concentração típica
 - Prescrição de suplemento tem dose + frequência + via + duração + observação (ex: "Vitamina D3 2000UI, 1x ao dia via oral, por 90 dias, junto ao almoço")
-- Vincula à `consulta` Nutri (Sprint 16 polimórfico)
+- Vincula à `consulta` Nutri (Sprint 20 polimórfico)
 - Alerta de interação medicamentosa simples (Vitamina K vs varfarina, por ex) via catálogo curado
-- Export no PDF do plano (junto ao plano alimentar do Sprint 25 ou PDF próprio)
+- Export no PDF do plano (junto ao plano alimentar do Sprint 29 ou PDF próprio)
 
 **Exames laboratoriais:**
 
 - Catálogo `lab_analytes` (glicose, colesterol total, HDL, LDL, triglicerídeos, ferritina, vitamina D, TSH, etc) com valores de referência por sexo/idade/condição
 - `lab_results` registra resultado de exame por paciente: `analyte`, `value`, `unit`, `collected_at`, `laboratory text`
-- Upload de laudo PDF (reusa infra Sprint 17)
+- Upload de laudo PDF (reusa infra Sprint 21)
 - Destaque automático: resultado fora da faixa → cor visual (vermelho alto, azul baixo) + tag
 - Gráfico de evolução por analito (reusa componente do Sprint 12)
 - Relatório agregado: últimos exames ordenados por categoria
@@ -35,9 +35,9 @@ Prescrição de suplementos (vitaminas, minerais, fitoterápicos) como entidade 
 ## Dependências
 
 - Sprint 02 (members)
-- Sprint 16 (consultas nutri)
-- Sprint 17 (Storage para laudo PDF)
-- Sprint 25 (PDF branding para incluir prescrição suplemento)
+- Sprint 20 (consultas nutri)
+- Sprint 21 (Storage para laudo PDF)
+- Sprint 29 (PDF branding para incluir prescrição suplemento)
 
 ## Decisões tomadas / ADRs esperados
 
@@ -103,12 +103,12 @@ Em `packages/db/schema/nutri.ts`:
 - [ ] Seed: 20 analitos + faixas + 10 suplementos + 30 interações
 - [ ] Calculadora `isOutOfRange(result, memberAge, memberSex, condition?)` em `packages/db/nutri/lab.ts`
 - [ ] Server Actions de suplemento + exame
-- [ ] Upload de laudo reusa pipeline do Sprint 17 (bucket `nutri-exames`)
+- [ ] Upload de laudo reusa pipeline do Sprint 21 (bucket `nutri-exames`)
 - [ ] UI catálogo + prescrição + registro de exame
 - [ ] Componente de gráfico de evolução (reusa Sprint 12)
 - [ ] Widget "exames alterados" em `/app/members/[id]` (slot `exames`): alerta se há `lab_result` recente `out_of_range`. `{ slot: 'exames', requiredPermissions: ['nutri.read'], requiredVertical: 'nutri', consentPurpose: null, showWhen: (m) => m.has_recent_lab_alerts }`
 - [ ] Integração com régua (Sprint 13): `lab_result.alert_raised` pode disparar notificação ao profissional
-- [ ] PDF do plano (Sprint 25) inclui seção de suplementação
+- [ ] PDF do plano (Sprint 29) inclui seção de suplementação
 - [ ] Feature flag `nutri_suplementos_exames_v1`
 - [ ] ADR 0037 publicado
 
@@ -116,7 +116,7 @@ Em `packages/db/schema/nutri.ts`:
 
 - [ ] OCR de laudo PDF (extração automática de valores)
 - [ ] Comparação entre laboratórios diferentes (ajuste por método de análise)
-- [ ] Export do conjunto de exames para o paciente (Portal Sprint 22)
+- [ ] Export do conjunto de exames para o paciente (Portal Sprint 26)
 - [ ] Predição: nutri-agent (Sprint 28) consulta evolução de analitos para sugerir ajuste
 
 ## Log

@@ -1,4 +1,4 @@
-# Sprint 16 — Fisio · Prontuário eletrônico + CID/CIF + assinatura ICP-Brasil
+# Sprint 20 — Fisio · Prontuário eletrônico + CID/CIF + assinatura ICP-Brasil
 
 - **Área:** fisio
 - **Início:** planejado (início da Fase 2, depois do MVP)
@@ -8,7 +8,7 @@
 
 ## Goal
 
-Prontuário eletrônico polimórfico atendendo regulamentações profissionais — COFFITO 414/415 para Fisio (assinatura ICP-Brasil obrigatória), **CFN 594/2017 para Nutri** (guarda indeterminada, assinatura opcional). Catálogos CID-11 + CIF vinculados ao atendimento, templates por especialidade (ortopedia, neuro, respiratória, pediatria, uroginecologia; nutri via Sprint 25). Entidade `consultas` compartilhada com coluna `kind` — Sprint 25 (Nutri) **reusa a infra**.
+Prontuário eletrônico polimórfico atendendo regulamentações profissionais — COFFITO 414/415 para Fisio (assinatura ICP-Brasil obrigatória), **CFN 594/2017 para Nutri** (guarda indeterminada, assinatura opcional). Catálogos CID-11 + CIF vinculados ao atendimento, templates por especialidade (ortopedia, neuro, respiratória, pediatria, uroginecologia; nutri via Sprint 29). Entidade `consultas` compartilhada com coluna `kind` — Sprint 29 (Nutri) **reusa a infra**.
 
 ## Critério de aceite
 

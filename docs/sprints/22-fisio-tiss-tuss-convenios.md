@@ -1,7 +1,7 @@
-# Sprint 18 — Fisio · TISS/TUSS + Convênios (ANS)
+# Sprint 22 — Fisio · TISS/TUSS + Convênios (ANS)
 
 - **Área:** fisio
-- **Início:** planejado (depois do Sprint 17)
+- **Início:** planejado (depois do Sprint 21)
 - **Fim planejado:** +4 semanas
 - **Status:** planejado (futuro)
 - **Item do roadmap:** #20
@@ -29,8 +29,8 @@ Faturamento para planos de saúde no padrão TISS (Troca de Informações em Sa�
 
 ## Dependências
 
-- Sprint 16 (prontuário — faturamento referencia consulta)
-- Sprint 17 (evolução — guia SP/SADT para sessão)
+- Sprint 20 (prontuário — faturamento referencia consulta)
+- Sprint 21 (evolução — guia SP/SADT para sessão)
 - Sprint 04 (financeiro — co-participação vira invoice)
 - Sprint 14 (DRE — faturamento de convênio é receita)
 

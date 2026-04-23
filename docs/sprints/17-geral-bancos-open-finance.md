@@ -1,0 +1,165 @@
+# Sprint 17 — Geral · Bancos + Open Finance + Conciliação + Automação NF-e SEFAZ
+
+- **Área:** geral
+- **Início:** planejado (depois do Sprint 16)
+- **Fim planejado:** +3 semanas
+- **Status:** planejado
+- **Item do roadmap:** #19
+
+## Goal
+
+Integração com bancos via Open Finance (ou importação OFX fallback) + conciliação automática de extratos bancários com AP/AR + automação de recepção de NF-e diretamente do SEFAZ via provider agregador (Arquivei/Sieg/similar).
+
+## Critério de aceite
+
+**Contas bancárias:**
+- `bank_accounts` por company com banco, agência, conta, tipo (CC/poupança/conta-corrente PJ)
+- Saldo inicial + histórico
+
+**Open Finance (entrada automática):**
+- Integração com provider (Pluggy/Belvo/similar conforme ADR 0037)
+- Autorização via OAuth do cliente; tokens rotacionados
+- Sincronização diária: traz transações novas em `bank_transactions`
+- Fallback **OFX upload manual** se o banco não estiver integrado
+
+**Conciliação:**
+- `reconciliation_rules` por tenant: condições (descrição contém X, valor entre Y e Z, etc) → ação (match automático com AP Z ou criar entry contábil)
+- Conciliação automática: extrato + AP/AR similares em valor+data → match sugerido
+- Aprovação manual: operador vê sugestões e aceita/rejeita
+- Audit: toda conciliação gera registro
+
+**NF-e recepção automática via SEFAZ:**
+- Via provider agregador (Arquivei/Sieg/similar conforme ADR 0038) usando certificado digital A1 do cliente
+- Upload/configuração do certificado por company (seguro: criptografado + nunca exposto via API)
+- Job diário busca NFs novas do CNPJ de cada company
+- NF recebida cria AP draft automático (reusa pipeline do Sprint 15 de parser XML)
+- Evita duplicata via chave NF-e unique
+
+**Gerais:**
+- Dashboard: extrato por conta + saldo consolidado por company
+- Projeção de fluxo de caixa: saldo atual + AP próximas + AR próximas → saldo projetado
+- Teste E2E: conectar conta fake, ver transação vindo, conciliar com AP, zerar pendência
+- Teste E2E: job SEFAZ busca NFs, AP é criada, fluxo continua
+- Seed: 2 contas bancárias por company + 20 transações + 5 regras de conciliação
+
+## Dependências
+
+- Sprint 15 (AP/AR core para conciliar)
+- Sprint 16 (IC pode ser liquidado via transferência real)
+- Sprint 01b (audit + certificate management)
+
+## Decisões tomadas / ADRs esperados
+
+- **ADR 0037 (esperado)** — Provider Open Finance: Pluggy vs Belvo vs API direta dos bancos. Critério: cobertura de bancos brasileiros, pricing (per-connection), latência, confiabilidade. POC no início do sprint.
+- **ADR 0038 (esperado)** — Provider NF-e recepção: Arquivei (tier gratuito), Sieg, Nfe.io, Focus NFe (mesmo provider do NFS-e emissor pode ter recepção), SEFAZ direto com certificado. Critério: custo por NF, cobertura, gestão de certificado. POC no início do sprint.
+- **Pergunta aberta:** certificado digital A1/A3 — como armazenar? A1 em HSM do Supabase/Vault próprio (A1 é arquivo .pfx com senha); A3 é hardware físico (não serve para automação server-side). Optar por A1 + Supabase Vault ou AWS KMS.
+
+## Módulos entregues
+
+- Cadastro de contas bancárias
+- Open Finance provider com fallback OFX
+- Conciliação automática com regras
+- Projeção de fluxo de caixa
+- Recepção automática de NF-e via SEFAZ
+- Gestão segura de certificado digital A1 por company
+
+## Rotas Next.js
+
+- `/app/financeiro/bancos` — lista de contas bancárias + saldos
+- `/app/financeiro/bancos/new` — adicionar (com fluxo OAuth Open Finance)
+- `/app/financeiro/bancos/[id]/extrato` — transações + filtros
+- `/app/financeiro/bancos/[id]/conciliar` — sugestões + aprovação
+- `/app/financeiro/conciliacao/regras` — CRUD de rules
+- `/app/financeiro/fluxo-caixa` — projeção 30/60/90 dias
+- `/app/financeiro/ofx/upload` — fallback manual
+- `/app/settings/certificados` — upload/rotação de certificado A1 por company
+- `/app/financeiro/nfe/recebidas` — inbox de NFs automáticas
+
+## Server Actions + API Routes
+
+Server Actions:
+- `connectBankAccount(provider)` — inicia fluxo OAuth
+- `refreshBankAccount(id)` — força sincronização manual
+- `uploadOfx(file)` — parser OFX + import
+- `createReconciliationRule`, `suggestMatches(bankTransactionId)`, `confirmMatch(bankTxId, apOrArId)`, `rejectMatch(...)`
+- `uploadCertificate(companyId, pfxFile, password)` — criptografa e armazena
+- `forecastCashFlow(companyId, days)`
+
+API Routes:
+- `POST /api/financeiro/openfinance/callback` — callback do provider OAuth
+- `GET /api/jobs/openfinance/sync-daily` — job Vercel Cron
+- `GET /api/jobs/nfe/sefaz-sync` — job diário busca NFs
+- `POST /api/financeiro/nfe/received` — webhook do provider NF-e (quando aplicável)
+
+## Schemas Drizzle (esperado)
+
+Em `packages/db/schema/bancos.ts`:
+
+- `bank_accounts` — `id`, `tenant_id`, `company_id`, `bank_code text`, `bank_name`, `agency`, `account_number`, `kind` enum (`checking`, `savings`, `business`), `current_balance_cents numeric`, `last_synced_at`, `openfinance_connection_id nullable`, `active`
+- `openfinance_connections` — `id`, `tenant_id`, `company_id`, `provider text` (do ADR), `access_token_encrypted`, `refresh_token_encrypted`, `expires_at`, `status` enum (`active`, `error`, `revoked`)
+- `bank_transactions` — `id`, `tenant_id`, `bank_account_id`, `external_id text` (do provider, unique), `posted_at timestamptz`, `amount_cents` (negativo = saída), `description text`, `raw_payload jsonb`, `reconciled_with_ap_id nullable`, `reconciled_with_ar_id nullable`, `reconciled_at nullable`, `reconciled_by_user_id nullable`
+- `reconciliation_rules` — `id`, `tenant_id`, `condition jsonb` (ex: `{description_contains: "aluguel", amount_min: 5000, amount_max: 5500}`), `action` enum (`auto_match_ap`, `auto_match_ar`, `auto_create_entry`, `flag_for_review`), `target_supplier_id nullable`, `target_chart_account_id nullable`, `active`, `priority int`
+
+Em `packages/db/schema/certificados.ts`:
+- `company_certificates` — `id`, `tenant_id`, `company_id`, `kind` enum (`a1`), `encrypted_pfx bytea`, `encrypted_password text`, `expires_at`, `uploaded_at`, `last_used_at`, `revoked_at`
+
+Em `packages/db/schema/nfe-recepcao.ts`:
+- `nfe_sefaz_cursors` — `id`, `company_id`, `provider text`, `last_nsu text` (número sequencial único do SEFAZ), `last_synced_at`
+- `nfe_received` — `id`, `tenant_id`, `company_id`, `chave text unique` (44 dígitos), `xml_storage_path`, `emitter_cnpj text`, `amount_cents`, `issue_date date`, `received_at`, `ap_id nullable` (linkada após parser), `status` enum (`received`, `parsed`, `ap_created`, `rejected`, `duplicate`)
+
+**RLS:** tenant_id + scope company + permission (`financeiro.bank.*`, `financeiro.nfe.*`). Certificado = acesso somente a `financeiro.admin`.
+
+## Eventos de domínio emitidos
+
+- `bank_account.connected`, `bank_account.disconnected`
+- `bank_transaction.imported`
+- `reconciliation.matched`, `reconciliation.rejected`
+- `nfe.received_from_sefaz`, `nfe.parsed_to_ap`
+- `cashflow.forecast_generated`
+- `certificate.uploaded`, `certificate.expiring_soon`
+
+## Commit (checklist)
+
+- [ ] Schema Drizzle: `bank_accounts`, `openfinance_connections`, `bank_transactions`, `reconciliation_rules`, `company_certificates`, `nfe_sefaz_cursors`, `nfe_received`
+- [ ] RLS + audit + criptografia at-rest dos tokens e certificados
+- [ ] Wrapper Open Finance em `packages/ai/openfinance/provider.ts` com interface comum (Pluggy/Belvo adapters)
+- [ ] Parser OFX (fallback) em `packages/db/bancos/ofx-parser.ts`
+- [ ] Motor de conciliação em `packages/db/bancos/reconcile.ts` (aplica rules + sugere matches por similaridade valor+data)
+- [ ] Wrapper NF-e recepção em `packages/ai/nfe/sefaz-provider.ts`
+- [ ] Upload de certificado com criptografia (Supabase Vault ou próprio)
+- [ ] Jobs: sync daily Open Finance + SEFAZ NFs
+- [ ] Projeção de fluxo de caixa em `packages/ai/financeiro/cashflow-forecast.ts`
+- [ ] UI todas as telas acima
+- [ ] Card "saldo consolidado" e "próximas vencendo" no dashboard
+- [ ] Alerta de certificado expirando (30 dias antes)
+- [ ] Seed + testes unit (parser OFX, motor conciliação)
+- [ ] Testes E2E: sandbox Open Finance + conciliação + NF-e sandbox
+- [ ] Feature flag `bancos_nfe_v1`
+- [ ] ADRs 0037 e 0038 publicados
+
+## Stretch
+
+- [ ] Pagamento via Open Finance (iniciar TED/PIX pela API)
+- [ ] Multi-banco por company
+- [ ] Conciliação por IA (sugestões usando Copilot com contexto)
+- [ ] Alerta de transação suspeita (fraude)
+
+## Log
+
+- —
+
+## Definition of Done
+
+- [ ] Feature flag `bancos_nfe_v1` ligada em dev
+- [ ] Testes unit + E2E verdes
+- [ ] POCs de Open Finance + NF-e provider funcionais em sandbox
+- [ ] Certificado criptografado confirmado
+- [ ] RLS verificada
+- [ ] Migrations aplicadas
+- [ ] CHANGELOG atualizado
+- [ ] Roadmap: sprint 17 → `done`
+- [ ] ADRs 0037 e 0038 publicados
+
+## Retro
+
+- —

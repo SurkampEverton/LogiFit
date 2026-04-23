@@ -1,4 +1,4 @@
-# Sprint 15 — IA · Previsão de Churn
+# Sprint 19 — IA · Previsão de Churn
 
 - **Área:** geral (ia/retenção)
 - **Início:** planejado (depois do Sprint 14)

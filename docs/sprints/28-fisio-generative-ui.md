@@ -1,7 +1,7 @@
-# Sprint 24 — Fisio · Generative UI (cards de relatório)
+# Sprint 28 — Fisio · Generative UI (cards de relatório)
 
 - **Área:** fisio (fundação de Generative UI que depois se estende)
-- **Início:** planejado (depois do Sprint 23)
+- **Início:** planejado (depois do Sprint 27)
 - **Fim planejado:** +3 semanas
 - **Status:** planejado (futuro) — **fecha a Fase 2**
 - **Item do roadmap:** #26
@@ -26,8 +26,8 @@ Primeira implementação de Generative UI no produto: resposta do Copilot (Sprin
 
 - Sprint 06 (Copilot base)
 - Sprint 12 (avaliações — gráficos reusam dados)
-- Sprint 16 (consultas — CID vem daqui)
-- Sprint 17 (evolução)
+- Sprint 20 (consultas — CID vem daqui)
+- Sprint 21 (evolução)
 
 ## Decisões tomadas / ADRs esperados
 

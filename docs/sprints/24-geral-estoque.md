@@ -1,7 +1,7 @@
-# Sprint 20 — Geral · Estoque (descartáveis + revenda)
+# Sprint 24 — Geral · Estoque (descartáveis + revenda)
 
 - **Área:** geral (começa atendendo Fisio; Academia e Nutri reusam)
-- **Início:** planejado (depois do Sprint 19)
+- **Início:** planejado (depois do Sprint 23)
 - **Fim planejado:** +2 semanas
 - **Status:** planejado (futuro)
 - **Item do roadmap:** #22
@@ -28,7 +28,7 @@ Controle de estoque de materiais consumíveis (gaze, agulha, atadura, descartáv
 ## Dependências
 
 - Sprint 04 (invoice — venda no balcão cria invoice)
-- Sprint 17 (fisio evolução — pode marcar consumo na sessão)
+- Sprint 21 (fisio evolução — pode marcar consumo na sessão)
 
 ## Decisões tomadas / ADRs esperados
 

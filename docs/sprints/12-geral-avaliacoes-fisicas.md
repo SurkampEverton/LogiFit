@@ -8,7 +8,7 @@
 
 ## Goal
 
-Catálogo de tipos de avaliação (bioimpedância, dobras cutâneas, antropometria, anamnese, testes funcionais) + registro seriado de medições + gráficos comparativos de evolução. Schema genérico serve Academia (composição corporal), Fisio (ROM, força) e Nutri (antropometria) — **Nutri Sprint 20 reusa esse schema** em vez de criar um próprio.
+Catálogo de tipos de avaliação (bioimpedância, dobras cutâneas, antropometria, anamnese, testes funcionais) + registro seriado de medições + gráficos comparativos de evolução. Schema genérico serve Academia (composição corporal), Fisio (ROM, força) e Nutri (antropometria) — **Nutri Sprint 24 reusa esse schema** em vez de criar um próprio.
 
 ## Critério de aceite
 
@@ -104,7 +104,7 @@ Em `packages/db/schema/avaliacoes.ts`:
 
 - [ ] Importação direta de bioimpedância InBody (CSV padrão do aparelho)
 - [ ] Template de anamnese Academia / Fisio / Nutri prontos
-- [ ] Assinatura digital da avaliação pelo profissional (precursor do Sprint 16 Fisio)
+- [ ] Assinatura digital da avaliação pelo profissional (precursor do Sprint 20 Fisio)
 - [ ] Comparação visual de fotos lado a lado (antes × depois)
 
 ## Log

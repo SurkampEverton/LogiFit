@@ -32,7 +32,7 @@ Registro de custos fixos e variáveis por company + DRE consolidado por período
 ## Decisões tomadas / ADRs esperados
 
 - **ADR (não precisa novo)** — categorias com `type` (fixed/variable) é estrutura trivial; não justifica ADR.
-- **Pergunta aberta:** modelo de previsibilidade — heurística simples (contratos ativos × valor - taxa de churn histórica) vs modelo mais sofisticado. Começar simples; sofisticação pode virar evolução do Sprint 15 (churn preditivo).
+- **Pergunta aberta:** modelo de previsibilidade — heurística simples (contratos ativos × valor - taxa de churn histórica) vs modelo mais sofisticado. Começar simples; sofisticação pode virar evolução do Sprint 19 (churn preditivo).
 
 ## Módulos entregues
 
@@ -89,7 +89,7 @@ Em `packages/db/schema/custos.ts`:
 - [ ] Zod schemas
 - [ ] Server Actions + job de recorrência
 - [ ] Calculadora de DRE em `packages/db/financeiro/dre.ts`
-- [ ] Heurística de previsibilidade em `packages/ai/financeiro/forecast.ts` (usa taxa histórica de churn simples — Sprint 15 pode substituir depois)
+- [ ] Heurística de previsibilidade em `packages/ai/financeiro/forecast.ts` (usa taxa histórica de churn simples — Sprint 19 pode substituir depois)
 - [ ] UI custos com filtros + upload de NF-e PDF
 - [ ] UI DRE com gráficos de barras (categoria) e linha (evolução temporal)
 - [ ] **Dimensão "lucratividade por procedimento"** na UI: selector que pivota DRE por `service_type`; exige que Sprint 04 tenha enriquecido `invoice_items` com `service_type`/`tuss_code` (migração retroativa via backfill)

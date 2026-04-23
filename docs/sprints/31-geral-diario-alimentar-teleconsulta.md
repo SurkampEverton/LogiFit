@@ -1,7 +1,7 @@
-# Sprint 27 — Geral · Diário Alimentar + Teleconsulta
+# Sprint 31 — Geral · Diário Alimentar + Teleconsulta
 
 - **Área:** geral (nasce para Nutri; teleconsulta aproveita Fisio e Nutri)
-- **Início:** planejado (depois do Sprint 26)
+- **Início:** planejado (depois do Sprint 30)
 - **Fim planejado:** +3 semanas
 - **Status:** planejado (futuro)
 - **Item do roadmap:** #29
@@ -10,15 +10,15 @@
 
 Dois módulos complementares para engajamento paciente-profissional:
 
-1. **Diário alimentar**: paciente registra refeições reais (com foto) no portal (Sprint 22) → nutri valida/comenta.
+1. **Diário alimentar**: paciente registra refeições reais (com foto) no portal (Sprint 26) → nutri valida/comenta.
 2. **Teleconsulta**: videoconferência integrada respeitando sigilo médico (LGPD + CFM/COFFITO/CFN) — alternativa à consulta presencial.
 
 ## Critério de aceite
 
 **Diário alimentar:**
 
-- Paciente registra refeição em `/meu/diario` com: horário, alimentos consumidos (picker do catálogo Sprint 25 + texto livre), foto opcional (Storage), observação
-- Entrada vinculada automaticamente ao dia/refeição do plano (Sprint 25) se houver plano ativo
+- Paciente registra refeição em `/meu/diario` com: horário, alimentos consumidos (picker do catálogo Sprint 29 + texto livre), foto opcional (Storage), observação
+- Entrada vinculada automaticamente ao dia/refeição do plano (Sprint 29) se houver plano ativo
 - Desvio automaticamente calculado: "comi 500 kcal a mais que o previsto no almoço"
 - Nutri vê diário em `/app/members/[id]/diario` — pode comentar, aprovar, sinalizar
 - Comentário do profissional notifica paciente via régua (Sprint 13)
@@ -41,9 +41,9 @@ Testes E2E:
 
 ## Dependências
 
-- Sprint 22 (Portal do paciente)
-- Sprint 25 (catálogo foods + plano ativo)
-- Sprint 16 (consultas — teleconsulta gera consulta no fim)
+- Sprint 26 (Portal do paciente)
+- Sprint 29 (catálogo foods + plano ativo)
+- Sprint 20 (consultas — teleconsulta gera consulta no fim)
 - Sprint 13 (régua para notificações)
 - Sprint 09 (conquistas)
 

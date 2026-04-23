@@ -64,7 +64,7 @@ Todos retornam `{ ok: true, data } | { ok: false, error }`. Nenhuma API Route ne
 
 Em `packages/db/schema/members.ts`:
 
-- `members` — `id uuid pk`, `tenant_id uuid not null`, `company_id uuid not null`, `home_unit_id uuid`, `full_name`, `display_name`, `birth_date`, `sex text nullable`, `phone`, `email`, `document` (CPF), `family_history jsonb nullable` (array de condições familiares — diabetes, hipertensão, câncer, etc; usado por Fisio Sprint 16 e Nutri Sprint 25 na anamnese), `archived_at timestamptz nullable`, timestamps. Índices: `(tenant_id, company_id)`, `(tenant_id, archived_at)`.
+- `members` — `id uuid pk`, `tenant_id uuid not null`, `company_id uuid not null`, `home_unit_id uuid`, `full_name`, `display_name`, `birth_date`, `sex text nullable`, `phone`, `email`, `document` (CPF), `family_history jsonb nullable` (array de condições familiares — diabetes, hipertensão, câncer, etc; usado por Fisio Sprint 20 e Nutri Sprint 29 na anamnese), `archived_at timestamptz nullable`, timestamps. Índices: `(tenant_id, company_id)`, `(tenant_id, archived_at)`.
 - `member_events` — `id`, `tenant_id`, `member_id`, `actor_user_id`, `kind` enum, `payload jsonb`, `at timestamptz`. Append-only (trigger proíbe UPDATE/DELETE). Partition por mês futura (começa não-particionado, avaliar em Sprint 01b).
 - `member_notes` — `id`, `tenant_id`, `member_id`, `author_user_id`, `body text`, `visibility` enum, timestamps.
 - `member_tags` — `tenant_id`, `member_id`, `tag text`. PK composta `(tenant_id, member_id, tag)`.

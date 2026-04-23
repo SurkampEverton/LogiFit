@@ -1,7 +1,7 @@
-# Sprint 23 — Cross · Alert lesão Fisio → ajuste no treino Academia
+# Sprint 27 — Cross · Alert lesão Fisio → ajuste no treino Academia
 
 - **Área:** cross (fisio + academia)
-- **Início:** planejado (depois do Sprint 22)
+- **Início:** planejado (depois do Sprint 26)
 - **Fim planejado:** +2 semanas
 - **Status:** planejado (futuro)
 - **Item do roadmap:** #25
@@ -12,7 +12,7 @@ Implementar o primeiro **cross-alert real** do produto: quando uma lesão é reg
 
 ## Critério de aceite
 
-- CID de consulta fisio (Sprint 16) com categoria relacionada a lesão dispara evento `member.injury_registered`
+- CID de consulta fisio (Sprint 20) com categoria relacionada a lesão dispara evento `member.injury_registered`
 - Subscriber do cross-alert dispatcher (esqueleto do Sprint 07) avalia:
   - Member também é ativo na Academia? (tem contrato ativo em module academia)
   - Há consent ativo `share_injury_to_training` desse member?
@@ -20,7 +20,7 @@ Implementar o primeiro **cross-alert real** do produto: quando uma lesão é reg
 - Se todos os checks passam: dispara `member.injury_alert_issued` + notifica instrutor via régua (Sprint 13)
 - **Adaptação automática do workout ativo**: baseado no CID, marca exercícios da ficha atual como "contraindicados" (exercise tem `contraindications` em metadata: grupo muscular / movimento / articulação); substitui por variação segura automaticamente
 - Instrutor revisa adaptação antes de confirmar (`/app/treinos/adaptacao-pendente/[id]`)
-- Paciente vê alerta no portal (Sprint 22) explicando a adaptação
+- Paciente vê alerta no portal (Sprint 26) explicando a adaptação
 - Toda operação cross-module grava `audit_log` com `consent_id` usado (regra 6 + 25)
 - Teste E2E: fisio registra CID de lombalgia → alerta dispara → exercícios de agachamento pesado marcados contraindicados → instrutor vê notificação → adaptação aplicada
 - Teste: mesmo fluxo sem consent → bloqueia no dispatcher
@@ -30,9 +30,9 @@ Implementar o primeiro **cross-alert real** do produto: quando uma lesão é reg
 
 - Sprint 07 (cross-alert dispatcher esqueleto)
 - Sprint 11 (workouts + exercises com `contraindications`)
-- Sprint 16 (consultas + CID)
+- Sprint 20 (consultas + CID)
 - Sprint 13 (régua para notificação)
-- Sprint 22 (portal para paciente ver alerta)
+- Sprint 26 (portal para paciente ver alerta)
 - Sprint 01b (consent framework)
 
 ## Decisões tomadas / ADRs esperados
@@ -89,12 +89,12 @@ Em `packages/db/schema/cross.ts`:
 - [ ] Schema Drizzle: `cid_exercise_contraindications`, `member_injury_alerts`, `workout_adaptations`
 - [ ] RLS + audit + consent validation
 - [ ] Seed: ~50 mapeamentos CID → contraindicação mais comuns (lombalgia, lesão joelho, ombro, punho, tornozelo)
-- [ ] Listener `consulta.signed` do Sprint 16 dispara `member.injury_registered` quando CID pertencer a categoria "lesão"
+- [ ] Listener `consulta.signed` do Sprint 20 dispara `member.injury_registered` quando CID pertencer a categoria "lesão"
 - [ ] Subscriber no cross-alert dispatcher (Sprint 07): valida consent + franchise + ativo na Academia
 - [ ] Função `suggestWorkoutAdaptation` em `packages/ai/cross/adaptation.ts`
 - [ ] UI fila do instrutor com diff visual (verde = adicionado, vermelho = removido)
 - [ ] Integração com régua Sprint 13: "injury_alert → notificar instrutor via WhatsApp"
-- [ ] Portal do paciente (Sprint 22) mostra o alerta em `/meu/alertas`
+- [ ] Portal do paciente (Sprint 26) mostra o alerta em `/meu/alertas`
 - [ ] Testes: happy path + bloqueio sem consent + bloqueio em franchise
 - [ ] Feature flag `cross_alert_lesao_v1`
 - [ ] ADR 0033 publicado

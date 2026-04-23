@@ -84,10 +84,28 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 | Custos operacionais | `cost_categories` (fixos/variáveis) + `cost_entries` + recorrências | Academia, Fisio, Nutri | 14 | todo |
 | DRE consolidado | Receita - custos por período/company/tenant + export PDF/CSV | Academia, Fisio, Nutri | 14 | todo |
 | Previsibilidade de receita | Projeção 3 meses + simulador de sensibilidade | Academia, Fisio, Nutri | 14 | todo |
-| Pipeline de features de churn | Extração por member de `domain_events` (frequência, pagamento, engajamento) | Academia, Fisio, Nutri | 15 | todo |
-| Modelo preditivo de churn | `prob_30d/60d/90d` + top factors + modelo via ADR 0027 | Academia, Fisio, Nutri | 15 | todo |
-| Intervenções de retenção | `churn_interventions` + integração com régua de cobrança para ação automática | Academia, Fisio, Nutri | 15 | todo |
-| Feedback loop de cancelamento | `churn_events` alimenta retreino + mede accuracy | Academia, Fisio, Nutri | 15 | todo |
+| **Plano de contas contábil** | Hierárquico (ativo/passivo/receita/despesa) + seed brasileiro | Academia, Fisio, Nutri | 15 | todo |
+| **Cadastro de fornecedores** | PF/PJ com histórico de compras/pagamentos | Academia, Fisio, Nutri | 15 | todo |
+| **Contas a pagar (AP)** | Workflow multi-aprovador configurável + status draft→paid→reconciled | Academia, Fisio, Nutri | 15 | todo |
+| **Contas a receber avulso (AR)** | Separado dos contratos do Sprint 04; gera boleto/PIX via Asaas | Academia, Fisio, Nutri | 15 | todo |
+| **OCR de boleto (OCR.space)** | Upload PDF/imagem → OCR → parser linha digitável FEBRABAN → preenche AP | Academia, Fisio, Nutri | 15 | todo |
+| **Upload XML NF-e (entrada)** | Parser de nota recebida → cria fornecedor + AP automaticamente | Academia, Fisio, Nutri | 15 | todo |
+| **Workflow de aprovação AP** | Regras configuráveis por faixa de valor + multi-aprovadores + audit | Academia, Fisio, Nutri | 15 | todo |
+| **Rateio entre filiais** | `allocation_rules` (fixed/proporcional/por KPI) + recálculo de DRE | Academia, Fisio, Nutri (só `owned`) | 16 | todo |
+| **Intercompany** | Lançamentos espelhados entre companies + fechamento mensal de saldos | Academia, Fisio, Nutri (só `owned`) | 16 | todo |
+| **Contas bancárias + Open Finance** | Pluggy/Belvo + fallback OFX; sync diária de extratos | Academia, Fisio, Nutri | 17 | todo |
+| **Conciliação bancária** | `reconciliation_rules` + match automático AP/AR ↔ extrato | Academia, Fisio, Nutri | 17 | todo |
+| **Projeção de fluxo de caixa** | Saldo atual + AP/AR futuras → saldo projetado 30/60/90 dias | Academia, Fisio, Nutri | 17 | todo |
+| **Recepção NF-e automática (SEFAZ)** | Via provider (Arquivei/Sieg) com certificado A1 por company | Academia, Fisio, Nutri | 17 | todo |
+| **Gestão de certificado digital A1** | Upload/rotação por company criptografado + alerta expiração | Academia, Fisio, Nutri | 17 | todo |
+| **Adquirência (maquininha)** | Cielo, Stone, Rede, GetNet, PagSeguro — API de vendas e conciliação | Academia, Fisio, Nutri | 18 | todo |
+| **Antecipação de recebíveis** | Solicita antecipação de vendas maquininha via API do adquirente | Academia, Fisio, Nutri | 18 | todo |
+| **Split de franquia adquirência** | Consome `franchise_agreements` para split automático de venda presencial | Academia, Fisio, Nutri (franchise) | 18 | todo |
+| **Receita unificada (online + presencial)** | Dashboard com Asaas (online) + Maquininhas (presencial) + taxas reais | Academia, Fisio, Nutri | 18 | todo |
+| Pipeline de features de churn | Extração por member de `domain_events` (frequência, pagamento, engajamento) | Academia, Fisio, Nutri | 19 | todo |
+| Modelo preditivo de churn | `prob_30d/60d/90d` + top factors + modelo via ADR 0040 | Academia, Fisio, Nutri | 19 | todo |
+| Intervenções de retenção | `churn_interventions` + integração com régua de cobrança para ação automática | Academia, Fisio, Nutri | 19 | todo |
+| Feedback loop de cancelamento | `churn_events` alimenta retreino + mede accuracy | Academia, Fisio, Nutri | 19 | todo |
 
 ---
 
@@ -166,7 +184,7 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 
 | Módulo | Descrição | Verticais | Sprint | Status |
 |---|---|---|---|---|
-| App nativo Expo | Aluno/paciente mobile; PWA (Sprint 22) cobre 90% antes | todas | 29 | futuro |
+| App nativo Expo | Aluno/paciente mobile; PWA (Sprint 26) cobre 90% antes | todas | 29 | futuro |
 | Módulo fiscal (Focus NFe) | Emissão de NFS-e por company, cobertura nacional via Focus NFe (todos os municípios suportados; cada company emite no município do seu CNPJ) | todas | 30 | futuro |
 | Prescrição adaptativa IA por RPE | Consome `workout_sessions.rpe` do Sprint 11 + ajusta carga automaticamente | Academia | pós-29 | futuro (depende de app nativo) |
 
@@ -209,16 +227,16 @@ registerMemberWidget({
 | Conquistas | `conquistas` | `engajamento.read` | — | sempre (mostra progresso mesmo sem earned) | não | recepção, gerente, fisio, nutri, instrutor |
 | Metas | `metas` | `engajamento.read` | — | member tem `goals` ativos | não | recepção, gerente, fisio, nutri, instrutor |
 | Risco de churn | `risco` | `retencao.read` | — | `last_prediction_prob_30d > 0.3` | não | gerente, diretor (não aluno nem instrutor) |
-| Prontuário (Fisio, Sprint 16) | `prontuario` | `prontuario.read` | `fisio` | member tem `consultas` fisio | não para fisio; **sim** para cross-module | fisio (direto), instrutor (se consent `injury_to_training`) |
-| Evolução por sessão (Fisio, Sprint 17) | `evolucao` | `prontuario.read` | `fisio` | member tem `evolucoes_sessao` | não | fisio |
-| Convênio do paciente (Sprint 18) | `convenio` | `convenios.read` | `fisio` | member tem `member_insurances` | não | recepção fisio, gerente |
-| Comissão do profissional (Sprint 19) | `comissao` (tela /app, não em /members/[id]) | `rh.read_own` | — | profissional logado tem `commission_entries` | não | próprio profissional |
-| Alerta de lesão (Sprint 23) | `alerta_lesao` | `cross.read` | — | member tem `member_injury_alerts` ativos | sim (consent `share_injury_to_training`) | instrutor, gerente |
+| Prontuário (Fisio, Sprint 20) | `prontuario` | `prontuario.read` | `fisio` | member tem `consultas` fisio | não para fisio; **sim** para cross-module | fisio (direto), instrutor (se consent `injury_to_training`) |
+| Evolução por sessão (Fisio, Sprint 21) | `evolucao` | `prontuario.read` | `fisio` | member tem `evolucoes_sessao` | não | fisio |
+| Convênio do paciente (Sprint 22) | `convenio` | `convenios.read` | `fisio` | member tem `member_insurances` | não | recepção fisio, gerente |
+| Comissão do profissional (Sprint 23) | `comissao` (tela /app, não em /members/[id]) | `rh.read_own` | — | profissional logado tem `commission_entries` | não | próprio profissional |
+| Alerta de lesão (Sprint 27) | `alerta_lesao` | `cross.read` | — | member tem `member_injury_alerts` ativos | sim (consent `share_injury_to_training`) | instrutor, gerente |
 | Antropometria (via Sprint 12) | `avaliacao` | `avaliacao.read` | — | member tem `assessments` | não | nutri (direto), fisio/academia (se consent) |
-| Plano alimentar (Sprint 25) | `alimentar` | `nutri.read` | `nutri` | member tem `meal_plans` ativo | não para nutri; sim cross-module | nutri |
-| Suplementação (Sprint 26) | `suplementos` | `nutri.read` | `nutri` | member tem `supplement_prescriptions` ativas | não | nutri |
-| Exames alterados (Sprint 26) | `exames` | `nutri.read` | `nutri` | member tem `lab_results` recentes com `out_of_range` | não | nutri, fisio (se consent) |
-| Diário alimentar (Sprint 27) | `diario` | `nutri.read` | `nutri` | member tem `meal_plans` ativo | não | nutri |
+| Plano alimentar (Sprint 29) | `alimentar` | `nutri.read` | `nutri` | member tem `meal_plans` ativo | não para nutri; sim cross-module | nutri |
+| Suplementação (Sprint 30) | `suplementos` | `nutri.read` | `nutri` | member tem `supplement_prescriptions` ativas | não | nutri |
+| Exames alterados (Sprint 30) | `exames` | `nutri.read` | `nutri` | member tem `lab_results` recentes com `out_of_range` | não | nutri, fisio (se consent) |
+| Diário alimentar (Sprint 31) | `diario` | `nutri.read` | `nutri` | member tem `meal_plans` ativo | não | nutri |
 
 ### Exceções de role
 

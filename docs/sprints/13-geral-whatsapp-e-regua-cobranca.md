@@ -17,7 +17,7 @@ Integração WhatsApp (provider abstraído) + motor de régua declarativa (cobra
 - Template de mensagem com variáveis (`{{member.name}}`, `{{invoice.amount}}`, `{{proposal.price}}`)
 - Aprovação de template (quando exigido pela Meta para WhatsApp Business)
 - Motor de régua com **DSL declarativa** (JSON): condição (evento + filtros) → ação (enviar template X via canal Y) → delay antes da próxima
-- Réguas pré-prontas: "Cobrança em atraso" (D+1, D+3, D+7), "Reengajamento" (sem check-in há 15d/30d), "Follow-up lead" (sem resposta há 3d), "Confirmação de agendamento" (D-1 lembrete + D-0 confirmação para fisio/consultas), "Manutenção de equipamento" (D-7 antes da manutenção agendada), "Estoque crítico" (quando `stock.low_stock_alert` dispara), **"Lembrete de ingestão de água" (padrão nutri: 4x ao dia em horários configuráveis; opt-in)**, **"Lembrete de refeição" (horários do plano alimentar Sprint 25)**, **"Pedir diário alimentar" (semanal se paciente não registrou — Sprint 27)**, **"Comentário do profissional no diário" (Sprint 27)**, **"Exame laboratorial alterado" (consome `lab_result.alert_raised` — Sprint 26)**
+- Réguas pré-prontas: "Cobrança em atraso" (D+1, D+3, D+7), "Reengajamento" (sem check-in há 15d/30d), "Follow-up lead" (sem resposta há 3d), "Confirmação de agendamento" (D-1 lembrete + D-0 confirmação para fisio/consultas), "Manutenção de equipamento" (D-7 antes da manutenção agendada), "Estoque crítico" (quando `stock.low_stock_alert` dispara), **"Lembrete de ingestão de água" (padrão nutri: 4x ao dia em horários configuráveis; opt-in)**, **"Lembrete de refeição" (horários do plano alimentar Sprint 29)**, **"Pedir diário alimentar" (semanal se paciente não registrou — Sprint 31)**, **"Comentário do profissional no diário" (Sprint 31)**, **"Exame laboratorial alterado" (consome `lab_result.alert_raised` — Sprint 30)**
 - Controle por member: opt-out respeitado (não envia se `consent.marketing_messages = revoked`)
 - Audit log de mensagens enviadas (canal, template, sucesso/falha, timestamp)
 - Rate-limit por tenant (config) — evita spam e controle de custo
@@ -112,7 +112,7 @@ Em `packages/db/schema/mensagens.ts`:
 ## Stretch
 
 - [ ] Receber mensagens inbound do WhatsApp (conversação bilateral)
-- [ ] Métricas de régua: taxa de abertura, resposta, conversão (integra com Sprint 15 churn)
+- [ ] Métricas de régua: taxa de abertura, resposta, conversão (integra com Sprint 19 churn)
 - [ ] Multi-provider com fallback automático (Twilio falha → tenta Z-API)
 - [ ] A/B test de templates
 

@@ -1,7 +1,7 @@
-# Sprint 19 — Fisio · Comissões e Repasse de Profissional
+# Sprint 23 — Fisio · Comissões e Repasse de Profissional
 
 - **Área:** fisio (aproveitável para Academia — personal trainer)
-- **Início:** planejado (depois do Sprint 18)
+- **Início:** planejado (depois do Sprint 22)
 - **Fim planejado:** +2 semanas
 - **Status:** planejado (futuro)
 - **Item do roadmap:** #21
@@ -26,9 +26,9 @@ Cálculo automático de comissão/repasse por profissional (fisio autônomo, per
 ## Dependências
 
 - Sprint 04 (pagamentos — fonte do "recebido")
-- Sprint 16 (consultas — atendimento realizado)
-- Sprint 17 (evolução — sessão fisio)
-- Sprint 18 (faturamento convênios — comissão pode ser sobre recebido líquido)
+- Sprint 20 (consultas — atendimento realizado)
+- Sprint 21 (evolução — sessão fisio)
+- Sprint 22 (faturamento convênios — comissão pode ser sobre recebido líquido)
 
 ## Decisões tomadas / ADRs esperados
 
@@ -68,7 +68,7 @@ Server Actions em `apps/web/app/rh/actions.ts`:
 
 Eventos consumidos:
 - `payment.received` (Sprint 04) → calcula comissão de `percent_recebido`
-- `billing_guide.paid` (Sprint 18) → comissão convênio
+- `billing_guide.paid` (Sprint 22) → comissão convênio
 - `appointment.completed` / `consulta.signed` / `evolucao.created` → comissão `fixo_por_atendimento`
 
 ## Schemas Drizzle (esperado)

@@ -1,7 +1,7 @@
-# Sprint 21 — Fisio · ANVISA (equipamentos + limpeza) + Integração CNES
+# Sprint 25 — Fisio · ANVISA (equipamentos + limpeza) + Integração CNES
 
 - **Área:** fisio (também aplicável a Academia quando houver equipamentos regulados)
-- **Início:** planejado (depois do Sprint 20)
+- **Início:** planejado (depois do Sprint 24)
 - **Fim planejado:** +2 semanas
 - **Status:** planejado (futuro)
 - **Item do roadmap:** #23
@@ -28,7 +28,7 @@ Compliance ANVISA/Vigilância Sanitária: cadastro de equipamentos regulados (ul
 ## Dependências
 
 - Sprint 03 (appointments — uso de equipamento)
-- Sprint 17 (evolução — rastreabilidade clínica)
+- Sprint 21 (evolução — rastreabilidade clínica)
 
 ## Decisões tomadas / ADRs esperados
 

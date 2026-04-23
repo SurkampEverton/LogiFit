@@ -1,7 +1,7 @@
-# Sprint 17 — Fisio · Evolução por sessão + mídias categorizadas
+# Sprint 21 — Fisio · Evolução por sessão + mídias categorizadas
 
 - **Área:** fisio
-- **Início:** planejado (depois do Sprint 16)
+- **Início:** planejado (depois do Sprint 20)
 - **Fim planejado:** +2 semanas
 - **Status:** planejado (futuro)
 - **Item do roadmap:** #19
@@ -25,7 +25,7 @@ Registro rápido de evolução do paciente por sessão (modelo SOAP — Subjetiv
 
 ## Dependências
 
-- Sprint 16 (`consultas` existe — evolução é subtipo ligado a appointment)
+- Sprint 20 (`consultas` existe — evolução é subtipo ligado a appointment)
 - Sprint 03 (appointments)
 - Sprint 01b (audit_log + consent)
 
@@ -56,7 +56,7 @@ Server Actions:
 
 - `createEvolucao(appointmentId, soap, freeText)` — emite `evolucao.created`
 - `updateEvolucao(id, ...)` — só se não assinada
-- `signEvolucao(id)` — opcional, mesmo fluxo do Sprint 16
+- `signEvolucao(id)` — opcional, mesmo fluxo do Sprint 20
 - `deleteAttachment(attachmentId)` — soft-delete + audit
 
 API Routes:

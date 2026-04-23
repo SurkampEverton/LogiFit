@@ -1,4 +1,4 @@
-# Sprint 25 — Nutri · Banco de Alimentos (TACO) + Plano Alimentar interativo
+# Sprint 29 — Nutri · Banco de Alimentos (TACO) + Plano Alimentar interativo
 
 - **Área:** nutri
 - **Início:** planejado (início da Fase 3, depois do MVP + Fase 2)
@@ -22,7 +22,7 @@ Banco de dados nutricional nacional (TACO — Tabela Brasileira de Composição 
 - **Cálculo em tempo real**: Soma de macros + micros da refeição + totais do dia atualizados enquanto monta
 - **Lista de substituição automática**: para cada item, sistema sugere 5 equivalentes calóricos ("150g arroz branco ≡ 180g arroz integral ≡ 2 batatas médias")
 - Export PDF com branding do tenant: logo, cores, nome do profissional, carimbo/assinatura opcional
-- Versionamento: editar plano ativo cria nova versão; paciente vê histórico no portal (Sprint 22)
+- Versionamento: editar plano ativo cria nova versão; paciente vê histórico no portal (Sprint 26)
 - Regra 25 respeitada (dado clínico em `topology=franchise`)
 - Teste E2E: montar plano, verificar soma nutricional, gerar PDF, versionar
 - Seed: TACO completa + 10 planos modelo (emagrecimento, ganho massa, vegetariano, cetogênico, low carb, diabético, renal, etc)
@@ -31,7 +31,7 @@ Banco de dados nutricional nacional (TACO — Tabela Brasileira de Composição 
 
 - Sprint 11 (`prescriptions` polimórficas — `kind='meal_plan'`)
 - Sprint 02 (members)
-- Sprint 16 (consultas `kind='nutri'` referenciam plano)
+- Sprint 20 (consultas `kind='nutri'` referenciam plano)
 - Sprint 12 (avaliação antropométrica — base do plano)
 
 ## Decisões tomadas / ADRs esperados
@@ -110,7 +110,7 @@ Em `packages/db/schema/nutri.ts`:
 - [ ] Editor drag-drop em `/app/nutri/planos/[id]/editar` com cálculo instantâneo via React
 - [ ] Gerador PDF com `@react-pdf/renderer` respeitando branding
 - [ ] Widget "plano alimentar" em `/app/members/[id]` (slot `alimentar`): `{ slot: 'alimentar', requiredPermissions: ['nutri.read'], requiredVertical: 'nutri', consentPurpose: 'cross_module_nutri' (p/ cross), showWhen: (m) => m.has_active_meal_plan }`
-- [ ] Integração com Sprint 22 Portal: paciente vê plano + download PDF em `/meu/cardapio`
+- [ ] Integração com Sprint 26 Portal: paciente vê plano + download PDF em `/meu/cardapio`
 - [ ] Seeds: 10 planos modelo por especialidade
 - [ ] Testes unit: soma de macros em plano com 20+ itens; substituição isocalórica
 - [ ] Testes E2E: montar plano + versionar + exportar

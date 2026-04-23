@@ -1,14 +1,14 @@
-# Sprint 22 — Geral · Portal do Paciente (Web / PWA)
+# Sprint 26 — Geral · Portal do Paciente (Web / PWA)
 
 - **Área:** geral (usado por Academia, Fisio, Nutri — é a primeira interface do aluno/paciente)
-- **Início:** planejado (depois do Sprint 21)
+- **Início:** planejado (depois do Sprint 25)
 - **Fim planejado:** +3 semanas
 - **Status:** planejado (futuro)
 - **Item do roadmap:** #24
 
 ## Goal
 
-Portal web self-service do paciente/aluno, entregue como PWA para funcionar como app. Cobre 90% dos casos de uso antes do app nativo da Fase 3 (Sprint 27). Inclui: login próprio, ver dados cadastrais, agenda pessoal, recibos, pagamentos pendentes, vídeos de "lição de casa" (exercícios prescritos), QR code de acesso Academia, cardápio (se Nutri).
+Portal web self-service do paciente/aluno, entregue como PWA para funcionar como app. Cobre 90% dos casos de uso antes do app nativo da Fase 3 (Sprint 31). Inclui: login próprio, ver dados cadastrais, agenda pessoal, recibos, pagamentos pendentes, vídeos de "lição de casa" (exercícios prescritos), QR code de acesso Academia, cardápio (se Nutri).
 
 ## Critério de aceite
 
@@ -34,8 +34,8 @@ Portal web self-service do paciente/aluno, entregue como PWA para funcionar como
 - Sprint 05 (créditos)
 - Sprint 08 (QR code)
 - Sprint 11 (workouts + sessões RPE)
-- Sprint 16 (consultas — leitura limitada)
-- Sprint 17 (evolução — leitura limitada)
+- Sprint 20 (consultas — leitura limitada)
+- Sprint 21 (evolução — leitura limitada)
 
 ## Decisões tomadas / ADRs esperados
 
@@ -67,11 +67,11 @@ Portal em `/meu/*` (namespace separado do `/app/*`):
 - `/meu/treino` — ficha atual + vídeos + registro de sessão
 - `/meu/qr` — QR code dinâmico com rotação visível
 - `/meu/prontuario` — resumo (só Fisio, só se consent explícito)
-- `/meu/cardapio` — plano alimentar com PDF (habilitado no Sprint 25 Nutri)
-- `/meu/diario` — registro do diário alimentar (habilitado no Sprint 27 Nutri)
-- `/meu/teleconsulta/[appointmentId]` — sala de vídeo (habilitado no Sprint 27)
-- `/meu/exames` — exames laboratoriais e gráficos de evolução (habilitado no Sprint 26 Nutri)
-- `/meu/suplementos` — prescrições ativas de suplementação (habilitado no Sprint 26)
+- `/meu/cardapio` — plano alimentar com PDF (habilitado no Sprint 29 Nutri)
+- `/meu/diario` — registro do diário alimentar (habilitado no Sprint 31 Nutri)
+- `/meu/teleconsulta/[appointmentId]` — sala de vídeo (habilitado no Sprint 31)
+- `/meu/exames` — exames laboratoriais e gráficos de evolução (habilitado no Sprint 30 Nutri)
+- `/meu/suplementos` — prescrições ativas de suplementação (habilitado no Sprint 30)
 - `/meu/privacidade` — gerenciar consents
 - `/login/meu` — entrada do member (magic link)
 
