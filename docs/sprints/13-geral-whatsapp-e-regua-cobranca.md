@@ -2,7 +2,7 @@
 
 - **Área:** geral
 - **Início:** planejado (depois do Sprint 12)
-- **Fim planejado:** +3 semanas
+- **Fim planejado:** +3 semanas — **⚠️ candidato à quebra em 13a (WhatsApp outbound + régua declarativa + Resend email) + 13b (hub inbound pluggable + intent router IA + identity matcher)** se estourar (regra 9). Decisão na abertura do sprint conforme estimativa detalhada.
 - **Status:** planejado
 - **Item do roadmap:** #15
 

@@ -22,7 +22,7 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 - Views agregadas `group_metrics` (somente números, nunca dado individual)
 - Teste E2E: `fisio` não vê prontuário de `company` onde não tem scope
 - Teste E2E: `group_owner` vê dashboard agregado mas **não** lista de membros individual
-- Teste E2E: dado clínico não cruza `company_id` em `topology=franchise`
+- **Teste E2E explícito da regra 25**: criar cenário franquia (tenant.topology='franchise') com 2 companies + member A em company 1 + member B em company 2; tentar (a) SELECT direto cross-company (deve retornar 0 rows via RLS), (b) criar consent.share_injury_to_training entre os dois (deve bloquear ou retornar erro explícito), (c) função `has_permission` cross-company em franchise (deve retornar false). CI falha se qualquer desses passarem
 - Teste E2E: recepção (sem `financeiro.read` na role) ganha grant direto `financeiro.read` scope `company:X` com `expires_at` futuro → passa a ver `/app/financeiro/*` e widget financeiro no dashboard do member
 - Teste E2E: grant com `expires_at` no passado é ignorado pela policy (job noturno marca `revoked_at`)
 

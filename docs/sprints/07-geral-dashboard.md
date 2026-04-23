@@ -91,7 +91,8 @@ Não publica eventos de negócio; só renderiza os dos outros sprints.
    - `dashboard_ticket_medio` (valor médio por member ativo)
    - `dashboard_overdue_pct`
 - [ ] Tabela `alert_subscribers` (esqueleto)
-- [ ] Função `dispatchAlert` em `packages/ai/alerts.ts` (ou `packages/types/events.ts`) — itera subscribers, publica
+- [ ] Função `dispatchAlert` em `packages/ai/alerts.ts` — itera subscribers registrados, publica
+- [ ] **API pública `registerCrossAlertHandler({ event, handler, requiredPermission? })`** em `packages/ai/alerts/registry.ts` — sprints consumidores (Sprint 08 acesso bloqueios, Sprint 13 régua, Sprint 19 churn, Sprint 27 lesão→treino, Sprint 32 device alerts, Sprint 33 exame crítico) registram handlers declarativamente; dispatcher invoca em ordem + audit
 - [ ] Server Action `getDashboardData`
 - [ ] Páginas `/app/dashboard/*` por role
 - [ ] Componentes de card reusáveis em `packages/ui/cards/`

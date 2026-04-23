@@ -2,7 +2,7 @@
 
 - **Área:** geral
 - **Início:** planejado (depois do Sprint 14)
-- **Fim planejado:** +4 semanas
+- **Fim planejado:** +4 semanas — **⚠️ candidato à quebra em 15a (AP/AR core + plano contas + workflow aprovação) + 15b (OCR boleto multi-provider + NF-e XML + fornecedores import)** se estourar 3 semanas (regra 9). Decisão na abertura do sprint conforme estimativa detalhada.
 - **Status:** planejado
 - **Item do roadmap:** #17
 

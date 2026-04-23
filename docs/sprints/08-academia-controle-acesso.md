@@ -100,10 +100,11 @@ Consumidores no MVP:
 - [ ] API Route `/api/acesso/checkin` idempotente suportando **ambos os modos** (`qr_token` OU `face_image_b64`); mesmo qr_token pode vir 2x se reintentar
 - [ ] API Route `/api/acesso/heartbeat` + job que marca offline
 - [ ] Canal Realtime `tenant:X:unit:Y:access` usado pelo dashboard recepção
-- [ ] Subscriber de `invoice.overdue` → cria `access_blocks` automaticamente
-- [ ] Subscriber de `contract.paused` / `contract.auto_paused` → cria `access_blocks` com `kind='suspended'`
-- [ ] Subscriber de `payment.received` → resolve `access_blocks` do member
-- [ ] Subscriber de `contract.resumed` → resolve `access_blocks` relacionados
+- [ ] **Registrar handlers no cross-alert dispatcher** (API `registerCrossAlertHandler` do Sprint 07):
+  - Subscriber de `invoice.overdue` → cria `access_blocks` automaticamente
+  - Subscriber de `contract.paused` / `contract.auto_paused` → cria `access_blocks` com `kind='suspended'`
+  - Subscriber de `payment.received` → resolve `access_blocks` do member
+  - Subscriber de `contract.resumed` → resolve `access_blocks` relacionados
 - [ ] UI `/app/acesso/*` com estados (live, bloqueios, catracas)
 - [ ] UI `/app/members/[id]/qr` com rotação visível
 - [ ] Widget "acessos do paciente" em `/app/members/[id]` (slot `acessos`): frequência últimos 30d + último check-in + unit preferida + bloqueios ativos. Registrar com `{ slot: 'acessos', requiredPermissions: ['acesso.read'], requiredVertical: 'academia', consentPurpose: null, showWhen: (m) => m.has_access_events }`. Tenant só-Fisio/só-Nutri não vê. Ver [modulos.md — matriz](../modulos.md#matriz-de-visibilidade-mvp--previsão-fase-23)

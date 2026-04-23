@@ -103,6 +103,7 @@ Em `packages/db/schema/fisio.ts`:
 - [ ] Gerador PDF com `@react-pdf/renderer` incluindo hash da assinatura visível
 - [ ] Widget `prontuario` no dashboard do member: `{ slot: 'prontuario', requiredPermissions: ['prontuario.read'], requiredVertical: 'fisio', consentPurpose: 'cross_module_fisio', showWhen: (m) => m.has_consultas }`; cross-module (instrutor/academia) exige consent
 - [ ] Audit em toda leitura de consulta assinada
+- [ ] **Registrar handler `receipt`** no hub inbound WhatsApp do Sprint 13 (ADR 0051): paciente manda receita médica pelo WhatsApp → classificador identifica → cria rascunho linkado ao member → profissional anexa ao prontuário na próxima consulta
 - [ ] Feature flag `fisio_prontuario_v1`
 - [ ] ADR 0028 publicado
 

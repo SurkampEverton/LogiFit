@@ -25,6 +25,7 @@ Implementar o primeiro **cross-alert real** do produto: quando uma lesão é reg
 - Teste E2E: fisio registra CID de lombalgia → alerta dispara → exercícios de agachamento pesado marcados contraindicados → instrutor vê notificação → adaptação aplicada
 - Teste: mesmo fluxo sem consent → bloqueia no dispatcher
 - Teste: mesmo fluxo em franchise cross-company → bloqueia (regra 25)
+- **Teste E2E reforçado da regra 25**: member Maria é paciente fisio em company A (clínica); também é aluna Academia em company B da **mesma franquia** (tenant.topology='franchise'); fisio registra CID de lombalgia em company A; dispatcher deve **bloquear** o alerta **mesmo com `consent.share_injury_to_training` ativo** (regulatório CFM/COFFITO); audit grava tentativa bloqueada com `blocked_reason='regra_25_franchise_cross_company'`; instrutor em company B nunca recebe o alerta. Assert: 0 cross-alerts publicados; 1 entry em `audit_log`
 
 ## Dependências
 

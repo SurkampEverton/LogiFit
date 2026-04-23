@@ -98,6 +98,7 @@ Em `packages/db/schema/avaliacoes.ts`:
 - [ ] Seed: 3 tipos + 2 avaliações por member
 - [ ] Testes unit das calculadoras
 - [ ] Testes E2E: criar tipo, registrar avaliação, ver gráfico
+- [ ] **Registrar handler `photo-progress`** no hub inbound WhatsApp do Sprint 13 (ADR 0051): paciente manda foto corporal pelo WhatsApp → classificador identifica → cria rascunho em `/app/members/[id]/avaliacoes/pending-photo` → profissional revisa e anexa a avaliação física formal na próxima consulta
 - [ ] Feature flag `avaliacoes_v1`
 - [ ] ADR 0024 publicado
 

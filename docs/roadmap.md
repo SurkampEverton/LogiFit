@@ -99,6 +99,10 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 
 ---
 
+## Convenção sobre sprints em alto nível
+
+Sprints **34, 35, 36** (Nutri-Agent IA, App Nativo Expo, Fiscal Focus NFe) e **37 pós-MVP** (Prescrição Adaptativa IA por RPE) aparecem na tabela da Fase 3 **apenas como entrada de roadmap** — não têm arquivo detalhado em `docs/sprints/NN-*.md` ainda. Isso é **deliberado**: arquivo de sprint profundo nasce quando o sprint vira candidato a `doing` (próximos 1-2 na fila). Evita doc especulativa que fica obsoleta antes de executar. Quando chegar a hora, o arquivo é criado via mesmo template + extensão (formato profundo: Goal, Aceite, Dependências, Schemas, Rotas, Server Actions, Eventos, Commit checklist, DoD).
+
 ## Operação
 
 - Quando um sprint começa: mudar `status → doing`, preencher `Início`; regra 9 (1 `doing` por vez)
