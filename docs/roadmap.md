@@ -85,7 +85,7 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 
 ## Decisões já fechadas
 
-- **OCR de boleto: OCR.space** (API HTTP, tier gratuito 25k/mês) — ADR 0035 nasce "accepted" no Sprint 15
+- **OCR de boleto: arquitetura provider-abstrato configurável pelo admin do tenant** — ADR 0035 accepted no Sprint 15. Default global: OCR.space (tier gratuito 25k/mês); alternativas suportadas: Google Vision, AWS Textract, Azure Computer Vision, Tesseract self-hosted. Admin configura via `/app/settings/financeiro/ocr` com credentials próprias; fallback em cadeia opcional.
 
 ---
 

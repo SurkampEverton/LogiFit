@@ -32,11 +32,20 @@ Transforma o módulo financeiro (que era focado em mensalidade Asaas + custos) e
 - Geração de boleto/PIX via Asaas
 - Integração com `invoices` existente (contrato) — mesmo dashboard de recebíveis
 
-**OCR de boleto:**
+**OCR de boleto (provider abstrato):**
 - Upload por drag-and-drop, câmera PWA ou WhatsApp inbound (stretch)
-- OCR via **OCR.space** (ADR 0035 accepted: tier gratuito 25k/mês; plano Pro US$ 30/mês acima disso)
-- Parser **determinístico** da linha digitável 47 dígitos FEBRABAN → valor, vencimento, cedente, nosso número
+- **Interface abstrata** `OCRProvider` com múltiplas implementações; cliente escolhe via config do tenant
+- Providers suportados:
+  - **OCR.space** (default global) — API HTTP, tier gratuito 25k/mês, Pro US$ 30/mês
+  - **Google Vision API** — melhor qualidade pt-BR, ~US$ 1,50/1000 imagens
+  - **AWS Textract** — ótimo para documentos estruturados, ~US$ 1,50/1000 páginas
+  - **Microsoft Azure Computer Vision** — alternativa em ecossistema Microsoft
+  - **Tesseract self-hosted** — open source, zero custo recorrente, qualidade menor (fallback gratuito)
+- Config por tenant em `tenant_settings.ocr_provider` + credentials próprias criptografadas (permite cliente grande usar conta corporativa Google/AWS)
+- Fallback em cadeia configurável: se provider primário falha (rate limit, erro), tenta próximo automaticamente
+- Parser **determinístico** da linha digitável 47 dígitos FEBRABAN → valor, vencimento, cedente, nosso número (funciona com qualquer provider OCR que retorne texto razoável)
 - Preenche AP em draft; operador confirma/edita
+- Dashboard de saúde do OCR por tenant: % acerto, providers usados, fallbacks acionados
 
 **NF-e entrada (upload manual XML):**
 - Upload do XML recebido
@@ -63,7 +72,7 @@ Transforma o módulo financeiro (que era focado em mensalidade Asaas + custos) e
 
 - **ADR 0033 (esperado)** — Plano de contas hierárquico: `chart_of_accounts` com `parent_id` self-referencing + seed brasileiro padrão; cada lançamento obrigatoriamente vinculado a 1 conta folha (não pode vincular a conta agregadora).
 - **ADR 0034 (esperado)** — Workflow AP configurável: `approval_rules` por tenant (ou por empresa) com faixas de valor + aprovadores em série ou paralelo. Estado da AP avança conforme cada aprovação chega; audit completo de quem aprovou/rejeitou.
-- **ADR 0035 (accepted)** — **OCR de boleto via OCR.space**. Decidido sem POC (usuário fechou). Tier gratuito 25k/mês cobre volume inicial; Pro US$ 30/mês acima. Fallback manual (operador digita) se API indisponível.
+- **ADR 0035 (accepted)** — **OCR de boleto: interface abstrata configurável pelo admin do tenant**. OCR.space é o provider default (tier gratuito 25k/mês), mas o admin pode trocar por Google Vision, AWS Textract, Azure Computer Vision ou Tesseract self-hosted via `/app/settings/financeiro/ocr`. Credentials criptografadas por tenant. Fallback em cadeia configurável. Parser FEBRABAN é pós-OCR e independente de provider. Fallback final: operador digita manual se todos os providers falharem.
 - **Relação com `cost_entries` do Sprint 14:** decidir no sprint se `cost_entries` vira legado ou migra para `accounts_payable` (simplificação). Recomendação: AP é fonte primária; `cost_entries` fica como lançamento rápido para despesas sem fornecedor formal.
 
 ## Módulos entregues
@@ -88,6 +97,7 @@ Transforma o módulo financeiro (que era focado em mensalidade Asaas + custos) e
 - `/app/financeiro/contas-receber` — AR avulso (não-contrato)
 - `/app/financeiro/aging` — aging report
 - `/app/settings/financeiro/aprovacao` — configurar regras de workflow
+- `/app/settings/financeiro/ocr` — **admin do tenant configura provider OCR**: escolhe na lista (OCR.space/Google Vision/AWS Textract/Azure/Tesseract), cola API key, define provider de fallback, testa com boleto de exemplo e vê preview do resultado
 
 ## Server Actions + API Routes
 
@@ -132,7 +142,11 @@ Em `packages/db/schema/erp-financeiro.ts`:
 - [ ] Migration: seed plano de contas brasileiro simplificado (~60 contas)
 - [ ] RLS + audit completo
 - [ ] Zod schemas em `packages/types/erp-financeiro.ts`
-- [ ] Wrapper `packages/ai/ocr/ocrspace.ts` para OCR.space
+- [ ] Interface abstrata `packages/ai/ocr/provider.ts` com contrato comum (`extractText`, `extractStructured`)
+- [ ] Adapters de provider em `packages/ai/ocr/providers/`: `ocrspace.ts` (default), `googlevision.ts`, `awstextract.ts`, `azure.ts`, `tesseract.ts` (self-hosted via child process ou API local)
+- [ ] Orquestrador `packages/ai/ocr/orchestrator.ts` com fallback em cadeia configurável por tenant
+- [ ] Schema `tenant_ocr_settings` — tenant_id, provider_primary, provider_fallback nullable, credentials_encrypted (JSONB por provider), active
+- [ ] UI `/app/settings/financeiro/ocr` com seletor + form de credentials por provider + botão "testar com boleto de exemplo" + preview
 - [ ] Parser linha digitável FEBRABAN em `packages/db/erp-financeiro/febraban.ts` (47 dígitos — valor, vencimento, cedente, nosso número)
 - [ ] Parser XML NF-e em `packages/db/erp-financeiro/nfe-parser.ts` (schema nacional, extrai emitente, itens, valor, chave)
 - [ ] Server Actions + API Routes

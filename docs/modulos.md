@@ -88,7 +88,8 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 | **Cadastro de fornecedores** | PF/PJ com histórico de compras/pagamentos | Academia, Fisio, Nutri | 15 | todo |
 | **Contas a pagar (AP)** | Workflow multi-aprovador configurável + status draft→paid→reconciled | Academia, Fisio, Nutri | 15 | todo |
 | **Contas a receber avulso (AR)** | Separado dos contratos do Sprint 04; gera boleto/PIX via Asaas | Academia, Fisio, Nutri | 15 | todo |
-| **OCR de boleto (OCR.space)** | Upload PDF/imagem → OCR → parser linha digitável FEBRABAN → preenche AP | Academia, Fisio, Nutri | 15 | todo |
+| **OCR de boleto (provider abstrato)** | Upload PDF/imagem → OCR → parser linha digitável FEBRABAN → preenche AP. Default OCR.space; admin escolhe entre OCR.space / Google Vision / AWS Textract / Azure / Tesseract via `/app/settings/financeiro/ocr` | Academia, Fisio, Nutri | 15 | todo |
+| **Config de provider OCR por tenant** | UI onde admin cola API key, escolhe fallback, testa com boleto exemplo | Academia, Fisio, Nutri | 15 | todo |
 | **Upload XML NF-e (entrada)** | Parser de nota recebida → cria fornecedor + AP automaticamente | Academia, Fisio, Nutri | 15 | todo |
 | **Workflow de aprovação AP** | Regras configuráveis por faixa de valor + multi-aprovadores + audit | Academia, Fisio, Nutri | 15 | todo |
 | **Rateio entre filiais** | `allocation_rules` (fixed/proporcional/por KPI) + recálculo de DRE | Academia, Fisio, Nutri (só `owned`) | 16 | todo |
