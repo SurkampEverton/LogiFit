@@ -34,6 +34,11 @@ Visão funcional do sistema, agrupada por **área**. Cada módulo tem "quais ver
 | **Alertas inteligentes de saúde** | Regras declarativas (mesma DSL do Sprint 13) consomem `device_readings` e disparam via cross-alert dispatcher: HR em repouso subiu, % gordura aumenta, sedentarismo | todas | 34 | futuro |
 | **Timeline enriquecida no member** | Widget de timeline ganha tracks paralelos: avaliações oficiais + dados de dispositivo (agregados) + alertas disparados | todas | 34 | futuro |
 | **Consent granular por provider + retenção 90d raw** | Member autoriza cada integração separadamente; dado cru rotaciona 90 dias, agregados diários indefinidos | todas | 34 | futuro |
+| **Pipeline inteligente de exames laboratoriais** | Upload PDF → OCR → IA extrai analitos estruturados → IA sugere padrões e hipóteses (conservador, nunca diagnostica) → profissional revisa lado-a-lado → publica em `lab_results` oficial | todas | 35 | futuro |
+| **Self-upload de exame pelo paciente** | Portal `/meu/exames/upload` com consent específico; exame entra em fila de revisão antes de virar histórico oficial | todas | 35 | futuro |
+| **Classificador de output clínico** | Guardrail IA que bloqueia termos proibidos ("tem [doença]", "diagnóstico de", etc); reforça [ADR 0015](decisions/0015-sem-implementar-copilot-safety.md) | todas | 35 | futuro |
+| **Categorização sensível de exames** | Permission `exam.sensitive.read` para HIV/psiquiátrico/genético/paternidade; audit reforçado | Fisio + Nutri | 35 | futuro |
+| **Opt-out de IA em exames por tenant** | Admin pode desabilitar IA e manter só OCR + revisão humana (para tenants com LGPD mais restritivo) | todas | 35 | futuro |
 | Identidade + MFA | Login (magic link + OAuth), TOTP obrigatório para profissionais | todas | 01a | todo |
 | Hierarquia group→tenant→company→unit | Schema multi-tenant com RLS raiz, 4 cenários canônicos no seed | todas | 01a | todo |
 | Login contextual + troca de tenant | Usuário multi-tenant escolhe contexto; JWT é reassinado | todas | 01a | todo |
