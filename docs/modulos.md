@@ -26,6 +26,8 @@ Visão funcional do sistema, agrupada por **área**. Cada módulo tem "quais ver
 |---|---|---|---|---|
 | **Cadastro central de `persons`** | Tabela única PF/PJ com detecção automática do tipo pelo documento; todos os cadastros especializados (members/leads/suppliers/companies/users/profissionais) ganham FK `person_id`. Sem duplicação de dados de identidade. | todas | 01a | todo |
 | **`<PersonPicker>` reutilizável** | Componente de autocomplete que busca persons e mostra papéis ativos; usado em toda tela de cadastro especializado | todas | 01a | todo |
+| **Busca automática de dados por CNPJ** | Ao digitar 14 dígitos preenche razão social, endereço, CNAE, porte, regime tributário, situação cadastral vindos da Receita. BrasilAPI (default) + ReceitaWS (fallback) + CNPJá! (pago, opcional). Admin configura via `/app/settings/pessoas/cnpj` | todas | 01a | todo |
+| **Cache de CNPJ + validação periódica de situação** | Cache global 7 dias; botão manual de refresh; job semanal detecta empresa baixada/suspensa | todas | 01a | todo |
 | Identidade + MFA | Login (magic link + OAuth), TOTP obrigatório para profissionais | todas | 01a | todo |
 | Hierarquia group→tenant→company→unit | Schema multi-tenant com RLS raiz, 4 cenários canônicos no seed | todas | 01a | todo |
 | Login contextual + troca de tenant | Usuário multi-tenant escolhe contexto; JWT é reassinado | todas | 01a | todo |

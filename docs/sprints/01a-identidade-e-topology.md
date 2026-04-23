@@ -15,6 +15,9 @@ Autenticação + **cadastro central `persons`** + hierarquia completa (group/ten
 - MFA (TOTP) obrigatório para roles profissionais, opcional para aluno
 - JWT contém custom claims: `tenant_id`, `group_ids[]` (se aplicável), `topology`
 - **Tabela `persons` central** (PF ou PJ) com detecção automática do tipo pelo tamanho do documento digitado (11 dígitos = CPF/PF; 14 = CNPJ/PJ) + validação matemática
+- **Busca automática de dados por CNPJ** via BrasilAPI (default) + ReceitaWS (fallback) + CNPJá! (opcional, pago, configurável pelo admin) com cache de 7 dias em `cnpj_cache`
+- **Alerta de situação cadastral** no cadastro: empresa baixada/suspensa/inapta exige confirmação explícita com razão
+- **Job semanal de validação de situação** de companies + suppliers ativos; emite alerta quando detecta mudança
 - `companies` e `users` ganham `person_id` FK apontando para `persons`
 - Hierarquia criada: `groups`, `tenants` (com 3 flags), `companies` (matriz/filial, linka `persons` kind=pj), `units` (local físico, sem person)
 - Constraint no banco: exatamente 1 matriz por tenant
@@ -38,12 +41,18 @@ Autenticação + **cadastro central `persons`** + hierarquia completa (group/ten
 - [ADR 0008 — Group como camada agregada](../decisions/0008-group-como-camada-agregada.md)
 - [ADR 0009 — Loja avulsa não vira nível próprio](../decisions/0009-loja-avulsa-nao-vira-nivel-proprio.md)
 - [ADR 0047 — Cadastro central de persons com FK em tabelas especializadas](../decisions/0047-cadastro-central-persons.md)
+- [ADR 0048 — Busca automática de CNPJ via provider abstrato](../decisions/0048-busca-cnpj-provider-abstrato.md)
 
 ## Schemas Drizzle (esperado)
 
 Em `packages/db/schema/persons.ts`:
 
 - `persons` — `id uuid pk`, `tenant_id uuid not null`, `kind` enum (`pf`, `pj`), `name text not null` (nome completo OU razão social), `display_name text` (apelido OU nome fantasia), `document text` (CPF ou CNPJ sem formatação), `birth_date date nullable` (só PF), `sex text nullable` (só PF), `email text`, `phone text`, `address jsonb` (`{cep, logradouro, numero, complemento, bairro, cidade, uf}`), `notes text`, `archived_at timestamptz nullable`, timestamps. Índices: `(tenant_id, document)` unique; `(tenant_id, name)`; GIN em `address` se busca por cidade for frequente.
+
+Em `packages/db/schema/cnpj-cache.ts`:
+
+- `cnpj_cache` — `cnpj text pk` (14 dígitos normalizados), `data jsonb` (payload completo do provider), `provider_used text`, `situacao text` (ativa/suspensa/baixada/inapta), `fetched_at timestamptz`, `expires_at timestamptz`. **Global** (não tem tenant_id) — dado público de CNPJ é compartilhado entre tenants; reduz requests em 95%+.
+- `tenant_cnpj_settings` — `tenant_id pk`, `provider_primary text default 'brasilapi'`, `provider_fallback text nullable`, `credentials_encrypted jsonb nullable` (API key do CNPJá! se aplicável), `active bool`
 
 Em `packages/db/schema/identity.ts`:
 
@@ -69,15 +78,24 @@ Em `packages/db/schema/identity.ts`:
 - `/app/settings/empresas/[id]/units` — CRUD de units
 - `/app/settings/users` — lista users
 - `/app/settings/users/new` — **linka persons kind=pf** + preenche dados específicos (role, scope, MFA)
+- `/app/settings/pessoas/cnpj` — admin configura provider de busca CNPJ (BrasilAPI/ReceitaWS/CNPJá!) + cola API key + testa com CNPJ exemplo
+- `/app/pessoas/[id]/refresh-cnpj` — ação para forçar nova consulta (ignora cache) em cadastro já existente
 
 ## Server Actions + API Routes
 
 Server Actions em `apps/web/app/pessoas/actions.ts`:
 
 - `searchPersons(query, { kind?, hasRole? })` — busca por nome/documento/email; opcional filtrar por papel ativo
-- `createPerson(input)` — detecta PF/PJ pelo documento, valida dígito, cria
+- `lookupCnpj(cnpj)` — consulta via provider configurado (com cache 7d); retorna dados preenchíveis + situação cadastral. UI chama via `/api/pessoas/cnpj/[cnpj]` enquanto operador digita.
+- `refreshCnpjData(personId)` — força nova consulta ignorando cache; atualiza campos da `persons` com dados vindos da Receita
+- `createPerson(input, { autoFillCnpj })` — se documento é CNPJ e `autoFillCnpj=true` (default), chama lookup e preenche name/display_name/address/phone/email antes de salvar
 - `updatePerson(id, patch)`
 - `archivePerson(id)` — só permite se sem papéis ativos; se tem, sugere arquivar os papéis primeiro
+
+API Routes:
+
+- `GET /api/pessoas/cnpj/[cnpj]` — endpoint público (dentro do tenant scope via RLS); consulta cache → provider → retorna JSON normalizado
+- `POST /api/jobs/cnpj/validate-situacao-weekly` — job Vercel Cron que revalida situação cadastral de companies/suppliers ativos e emite alerta se mudou
 
 Em `apps/web/app/settings/empresas/actions.ts`:
 - `createCompany(personId, type, parentId?, ie, im, cnesCode?)` — linka persons existente
@@ -97,9 +115,17 @@ Em `apps/web/app/settings/users/actions.ts`:
 - [ ] Supabase Auth + magic link + OAuth Google
 - [ ] MFA obrigatório para roles profissionais (TOTP)
 - [ ] Supabase Auth Hook injetando `tenant_id` + `group_ids` no JWT
-- [ ] Schema Drizzle: `persons` (central), `groups`, `tenants` (flags), `companies` (com `person_id` FK + type + regras fiscais), `units` (sem person), `users` (com `person_id` FK + auth_user_id), `user_tenants`
+- [ ] Schema Drizzle: `persons` (central), `cnpj_cache` (global), `tenant_cnpj_settings`, `groups`, `tenants` (flags), `companies` (com `person_id` FK + type + regras fiscais), `units` (sem person), `users` (com `person_id` FK + auth_user_id), `user_tenants`
 - [ ] Constraints: 1-matriz-por-tenant; `companies.person_id` kind=pj; `users.person_id` kind=pf; `(tenant_id, document)` unique em persons
 - [ ] Validador de CPF/CNPJ em `packages/db/persons/document.ts` (dígito verificador)
+- [ ] Interface `CnpjProvider` em `packages/ai/cnpj/provider.ts` (contrato comum `lookup(cnpj) → CnpjData`)
+- [ ] Adapters: `brasilapi.ts` (default), `receitaws.ts` (fallback), `cnpja.ts` (upgrade pago opcional)
+- [ ] Orquestrador com fallback em cadeia + cache 7d em `cnpj_cache`
+- [ ] UI `/app/settings/pessoas/cnpj` para admin configurar provider + credenciais + testar
+- [ ] Auto-fill ao digitar CNPJ em `/app/pessoas/new` (loading state + preview dos dados antes de confirmar)
+- [ ] Alerta de situação ≠ ativa (modal obrigatório confirmar + razão em campo livre)
+- [ ] Botão "atualizar dados da Receita" em `/app/pessoas/[id]`
+- [ ] Job Vercel Cron semanal `/api/jobs/cnpj/validate-situacao-weekly` para companies + suppliers ativos
 - [ ] RLS raiz em todas as tabelas criadas (persons incluída)
 - [ ] Script de seed com os 4 cenários canônicos (persons + companies + users linkados corretamente)
 - [ ] Teste E2E Playwright: isolamento entre tenants + fluxo de cadastro pessoa → papel
