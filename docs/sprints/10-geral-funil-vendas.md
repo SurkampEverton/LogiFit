@@ -33,7 +33,7 @@ Funil de vendas pré-matrícula: captura de `leads`, estágios configuráveis (n
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0022 (esperado)** — `leads` como entidade separada de `members`. Conversão copia dados relevantes e cria `member` novo (não transforma in-place). Histórico do lead preservado em `leads.converted_to_member_id`.
+- **ADR 0022 (esperado)** — `leads` como entidade separada de `members`, ambas linkando `persons` via FK (padrão do [ADR 0047](../decisions/0047-cadastro-central-persons.md)). Conversão adiciona registro em `members` com **mesmo `person_id`** do lead — não duplica dados de identidade; `leads.converted_to_member_id` preserva histórico do funil.
 - **Pergunta aberta:** estágios fixos com `lead_stages` configurável ou enum rígido? Começar configurável (tabela `lead_stages` por tenant).
 
 ## Módulos entregues
@@ -59,19 +59,21 @@ Ver [`modulos.md` — Geral](../modulos.md#geral) (serão adicionados):
 
 Server Actions em `apps/web/app/vendas/actions.ts`:
 
-- `createLead(input)` / `updateLead(id, input)` / `archiveLead(id, reason)`
+- `createLead(input)` — aceita `personId` (se já cadastrada) ou `quickName + quickPhone` (captura rápida). Emite `lead.created`.
+- `upgradeLeadToPerson(leadId, personInput)` — quando lead avança para `proposta`, cria persons linkada e preenche `person_id`
+- `updateLead(id, input)` / `archiveLead(id, reason)`
 - `moveLeadToStage(leadId, stageId, reason?)` — emite `lead.stage_changed`
 - `scheduleTrialClass(leadId, resourceId, startsAt)` — cria appointment com flag trial
 - `createProposal(leadId, planId, priceCents, discountCents, validUntil)` — versionada
 - `acceptProposal(proposalId)` — aceita e dispara conversão
-- `convertLeadToMember(leadId, proposalId?)` — cria member + contrato draft + arquiva lead
+- `convertLeadToMember(leadId, proposalId?)` — exige `person_id` no lead; cria member com **mesmo `person_id`** + contrato draft + arquiva lead. Atomic.
 
 ## Schemas Drizzle (esperado)
 
 Em `packages/db/schema/vendas.ts`:
 
 - `lead_stages` — `id`, `tenant_id`, `name`, `order int`, `is_terminal bool`, `kind` enum (`open`, `won`, `lost`), `color text`. Seed default: 6 estágios.
-- `leads` — `id`, `tenant_id`, `company_id`, `assigned_to_user_id nullable`, `full_name`, `phone`, `email`, `source` enum (`website`, `instagram`, `referral`, `walk_in`, `panfleto`, `other`), `source_ref uuid nullable` (ex: referral_id), `interest text`, `stage_id`, `notes text`, `converted_to_member_id uuid nullable`, `lost_reason text nullable`, `created_at`, `updated_at`
+- `leads` — `id`, `tenant_id`, `company_id`, `person_id uuid nullable` (FK `persons` — pode ser nulo inicialmente se lead ainda não tem CPF confirmado; `quick_name text nullable` e `quick_phone text nullable` capturam os mínimos enquanto persons não é criada), `assigned_to_user_id nullable`, `source` enum (`website`, `instagram`, `referral`, `walk_in`, `panfleto`, `other`), `source_ref uuid nullable` (ex: referral_id), `interest text`, `stage_id`, `notes text`, `converted_to_member_id uuid nullable`, `lost_reason text nullable`, `created_at`, `updated_at`. Regra: quando lead avança para estágio `proposta` ou `matriculado`, `person_id` torna-se obrigatório (trigger valida); até lá aceita `quick_*` só. Campos de identidade (nome/email/phone) preferidos via JOIN com persons quando `person_id` setado.
 - `lead_events` — histórico de mudanças de estágio, mensagens enviadas, interações. Append-only.
 - `trial_classes` — `id`, `lead_id`, `appointment_id`, `outcome` enum (`booked`, `attended`, `no_show`, `cancelled`)
 - `proposals` — `id`, `tenant_id`, `lead_id`, `plan_id nullable`, `bundle_plan_id nullable`, `price_cents`, `discount_cents default 0`, `valid_until`, `status` enum (`draft`, `sent`, `accepted`, `rejected`, `expired`), `sent_at`, `accepted_at`, `rejection_reason text nullable`, `version int`

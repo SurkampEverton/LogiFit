@@ -23,6 +23,7 @@ Perfil único cross-module do aluno/paciente (`members`), timeline append-only (
 ## Dependências
 
 - Sprint 01b (RBAC com scope + consent)
+- Sprint 01a (`persons` central via [ADR 0047](../decisions/0047-cadastro-central-persons.md) — `members.person_id` FK)
 
 ## Decisões tomadas / ADRs esperados
 
@@ -40,8 +41,8 @@ Ver [`modulos.md` — Geral](../modulos.md#geral):
 
 ## Rotas Next.js
 
-- `/app/members` — lista com busca, filtro por tag/company/unit, paginação
-- `/app/members/new` — cadastro
+- `/app/members` — lista com busca, filtro por tag/company/unit, paginação (usa view `v_members_full` com JOIN em persons)
+- `/app/members/new` — wizard com `<PersonPicker>` (busca ou cria persons) + formulário de campos específicos (home_unit, family_history, notas); botão "matricular agora" continua para plano/contrato do Sprint 04
 - `/app/members/[id]` — home do paciente: layout com grid de widgets. MVP do sprint 02 entrega widget "dados + tags + timeline resumida". Slots vazios com placeholder para agenda (Sprint 03), financeiro (Sprint 04), copilot (Sprint 06), acessos (Sprint 08), conquistas/metas (Sprint 09)
 - `/app/members/[id]/edit` — edição
 - `/app/members/[id]/timeline` — histórico completo
@@ -51,9 +52,10 @@ Ver [`modulos.md` — Geral](../modulos.md#geral):
 
 Server Actions (em `apps/web/app/members/actions.ts`):
 
-- `createMember(input)` — Zod validado; emite `member.created`
-- `updateMember(id, input)` — registra mudança em `member_events`
-- `archiveMember(id, reason)` — soft-delete; emite `member.archived`
+- `createMember({ personId, companyId, homeUnitId, familyHistory })` — linka `persons` existente (obrigatório); se persons não existe, UI redireciona para `/app/pessoas/new`. Emite `member.created`.
+- `createMemberWithPerson(personInput, memberInput)` — helper que cria persons + members em 1 transação (usado no wizard de matrícula rápida)
+- `updateMember(id, patch)` — só campos específicos de member; dados de identidade editam via `/app/pessoas/[id]/edit`
+- `archiveMember(id, reason)` — soft-delete do papel; persons permanece ativa (pode ter outros papéis)
 - `transferMember(id, toCompanyId)` — respeitando RLS + regras 24/25; emite `member.transferred`
 - `addNote(memberId, body, visibility)` — `visibility ∈ {author_only, unit, company, tenant}`
 - `addTag(memberId, tag)` / `removeTag(memberId, tag)`
@@ -64,7 +66,7 @@ Todos retornam `{ ok: true, data } | { ok: false, error }`. Nenhuma API Route ne
 
 Em `packages/db/schema/members.ts`:
 
-- `members` — `id uuid pk`, `tenant_id uuid not null`, `company_id uuid not null`, `home_unit_id uuid`, `full_name`, `display_name`, `birth_date`, `sex text nullable`, `phone`, `email`, `document` (CPF), `family_history jsonb nullable` (array de condições familiares — diabetes, hipertensão, câncer, etc; usado por Fisio Sprint 20 e Nutri Sprint 29 na anamnese), `archived_at timestamptz nullable`, timestamps. Índices: `(tenant_id, company_id)`, `(tenant_id, archived_at)`.
+- `members` — `id uuid pk`, `tenant_id uuid not null`, `person_id uuid not null` (FK `persons` do Sprint 01a — fornece nome, documento, email, phone, endereço, birth_date, sex), `company_id uuid not null`, `home_unit_id uuid`, `family_history jsonb nullable` (array de condições familiares — diabetes, hipertensão, câncer, etc; usado por Fisio Sprint 20 e Nutri Sprint 29 na anamnese), `archived_at timestamptz nullable`, timestamps. Índices: `(tenant_id, company_id)`, `(tenant_id, person_id)` unique (mesma pessoa não vira 2 members no mesmo tenant), `(tenant_id, archived_at)`. Campos de identidade (nome/CPF/email/phone) vêm via JOIN com `persons` — view `v_members_full` materializa leitura quente.
 - `member_events` — `id`, `tenant_id`, `member_id`, `actor_user_id`, `kind` enum, `payload jsonb`, `at timestamptz`. Append-only (trigger proíbe UPDATE/DELETE). Partition por mês futura (começa não-particionado, avaliar em Sprint 01b).
 - `member_notes` — `id`, `tenant_id`, `member_id`, `author_user_id`, `body text`, `visibility` enum, timestamps.
 - `member_tags` — `tenant_id`, `member_id`, `tag text`. PK composta `(tenant_id, member_id, tag)`.

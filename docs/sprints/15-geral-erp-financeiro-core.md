@@ -49,8 +49,9 @@ Transforma o módulo financeiro (que era focado em mensalidade Asaas + custos) e
 
 **NF-e entrada (upload manual XML):**
 - Upload do XML recebido
-- Parser extrai: emitente (vira/atualiza supplier), valor total, itens (para integração futura com estoque Sprint 24), datas
-- Cria AP em `draft` linkado ao fornecedor
+- Parser extrai emitente (CNPJ + razão social + endereço) → **busca em `persons` pelo CNPJ**; se não existe, cria `persons` com kind=pj + cria `suppliers` linkando; se já existe como persons mas sem papel supplier, adiciona só registro em `suppliers`. Nunca duplica.
+- Itens (para integração futura com estoque Sprint 24), valor total, datas
+- Cria AP em `draft` linkado ao supplier (que aponta pra persons)
 - Valida chave de acesso (44 dígitos) — duplicatas bloqueadas
 - Automação SEFAZ automática vai no Sprint 17
 
@@ -67,6 +68,7 @@ Transforma o módulo financeiro (que era focado em mensalidade Asaas + custos) e
 - Sprint 04 (Asaas + `invoices` existente)
 - Sprint 14 (`cost_entries` vira fonte alternativa ou migra para AP — decidir no sprint)
 - Sprint 01b (consent/audit/workflow de aprovação reusa RBAC)
+- Sprint 01a (`persons` central via [ADR 0047](../decisions/0047-cadastro-central-persons.md) — `suppliers.person_id` FK)
 
 ## Decisões tomadas / ADRs esperados
 
@@ -103,7 +105,8 @@ Transforma o módulo financeiro (que era focado em mensalidade Asaas + custos) e
 
 Server Actions:
 - `createChartAccount`, `moveChartAccount(id, newParentId)`
-- `createSupplier`, `updateSupplier`
+- `createSupplier({ personId, ...specificFields })` — linka persons existente (obrigatório); UI `/app/financeiro/fornecedores/new` usa `<PersonPicker>` para buscar/criar persons antes
+- `updateSupplier(id, patch)` — só campos específicos; identidade edita em `/app/pessoas/[id]`
 - `createAP(input)` (draft), `submitForApproval(apId)`, `approveAP(apId)`, `rejectAP(apId, reason)`
 - `registerManualPayment(apId, method, paidAt, reference)`, `payViaAsaas(apId)`
 - `createAR(input)`, `generateBoletoAR(arId)`
@@ -119,7 +122,7 @@ API Routes:
 Em `packages/db/schema/erp-financeiro.ts`:
 
 - `chart_of_accounts` — `id`, `tenant_id`, `code text`, `name text`, `kind` enum (`ativo`, `passivo`, `receita`, `despesa`, `custo`), `parent_id uuid nullable`, `is_leaf bool`, `active`
-- `suppliers` — `id`, `tenant_id`, `company_id nullable`, `kind` enum (`pf`, `pj`), `document text` (CPF/CNPJ, unique global), `legal_name`, `trade_name nullable`, `email nullable`, `phone nullable`, `address jsonb`, `default_payment_method text nullable`, `default_payment_term_days int nullable`, `archived_at`
+- `suppliers` — `id`, `tenant_id`, `person_id uuid not null` (FK `persons` do Sprint 01a — fornece kind, document, name, email, phone, address), `company_id nullable` (para fornecedores específicos de uma company da rede), `default_payment_method text nullable`, `default_payment_term_days int nullable`, `bank_account jsonb nullable` (chave PIX, banco/agência/conta), `notes text`, `archived_at`. Unique `(tenant_id, person_id)`. Identidade vem via JOIN com `persons`; view `v_suppliers_full` materializa leitura.
 - `approval_rules` — `id`, `tenant_id`, `scope` enum (`ap`, `ar`, `both`), `min_amount_cents`, `max_amount_cents nullable`, `required_approvers jsonb` (array ordenada de roles ou user_ids), `company_id nullable` (regras específicas por empresa), `active`
 - `accounts_payable` — `id`, `tenant_id`, `company_id`, `supplier_id nullable`, `chart_account_id`, `amount_cents`, `issue_date`, `due_date`, `description`, `doc_number text nullable` (NF/boleto), `doc_key text nullable` (chave NF-e 44 dígitos, unique), `status` enum (`draft`, `pending_approval`, `approved`, `rejected`, `scheduled`, `paid`, `cancelled`, `reconciled`), `approval_trace jsonb` (array de aprovações com user_id, decision, at, comment), `paid_at nullable`, `paid_amount_cents nullable`, `payment_method text nullable`, `asaas_transfer_id nullable`, `attachment_storage_path nullable`, `source` enum (`manual`, `ocr_boleto`, `nfe_upload`, `nfe_sefaz`), `source_metadata jsonb`, `created_by_user_id`, `created_at`
 - `accounts_receivable` — similar a AP mas pro lado recebimento; opcionalmente vinculada a `invoices` (contratos) ou independente

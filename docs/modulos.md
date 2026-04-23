@@ -24,6 +24,8 @@ Visão funcional do sistema, agrupada por **área**. Cada módulo tem "quais ver
 
 | Módulo | Descrição | Verticais | Sprint | Status |
 |---|---|---|---|---|
+| **Cadastro central de `persons`** | Tabela única PF/PJ com detecção automática do tipo pelo documento; todos os cadastros especializados (members/leads/suppliers/companies/users/profissionais) ganham FK `person_id`. Sem duplicação de dados de identidade. | todas | 01a | todo |
+| **`<PersonPicker>` reutilizável** | Componente de autocomplete que busca persons e mostra papéis ativos; usado em toda tela de cadastro especializado | todas | 01a | todo |
 | Identidade + MFA | Login (magic link + OAuth), TOTP obrigatório para profissionais | todas | 01a | todo |
 | Hierarquia group→tenant→company→unit | Schema multi-tenant com RLS raiz, 4 cenários canônicos no seed | todas | 01a | todo |
 | Login contextual + troca de tenant | Usuário multi-tenant escolhe contexto; JWT é reassinado | todas | 01a | todo |
@@ -250,6 +252,34 @@ registerMemberWidget({
 - Registro acontece no boot da app (Sprint 02 cria `packages/ui/members/registry.ts`).
 - Cada sprint adiciona 1 call `registerMemberWidget(...)` durante seu próprio setup.
 - Testes e2e garantem que widget fantasma (sem permission/vertical) não aparece.
+
+---
+
+## Cadastro central de pessoas (`persons`) — modelo Contact-FK
+
+Introduzido pelo [ADR 0047](decisions/0047-cadastro-central-persons.md). Em vez de duplicar campos de identidade (nome, CPF/CNPJ, email, phone, endereço) em `members`, `leads`, `suppliers`, `companies`, `users`, há **uma tabela central `persons`** por tenant e as especializadas ganham FK `person_id`.
+
+**Fluxo padrão de cadastro:**
+
+1. Operador cria a pessoa em `/app/pessoas/new` — sistema detecta PF ou PJ pelo tamanho do documento (11 vs 14 dígitos) e valida dígito verificador.
+2. Nas telas especializadas (`/app/settings/users/new`, `/app/members/new`, `/app/financeiro/fornecedores/new`, `/app/settings/empresas/new`, etc.), operador usa `<PersonPicker>` para buscar a pessoa já cadastrada (ou cria uma nova in-line) e preenche apenas os campos específicos daquele papel.
+3. Mesma `person_id` pode aparecer em múltiplos papéis (aluna + fornecedora + colaboradora) — cada um como linha própria na tabela especializada, sem duplicar identidade.
+
+**Regras de linkagem:**
+
+| Tabela especializada | `person.kind` aceito | Observação |
+|---|---|---|
+| `users` | `pf` apenas | Login é sempre pessoa física |
+| `companies` | `pj` apenas | Empresa/filial é sempre pessoa jurídica |
+| `members` | `pf` ou `pj` | Suporte a cliente corporativo |
+| `suppliers` | `pf` ou `pj` | Autônomo ou empresa |
+| `leads` | nullable inicialmente | `quick_name`+`quick_phone` cobrem captura rápida; `person_id` obrigatório a partir do estágio `proposta` |
+| `professional_contracts` | `pf` apenas | Profissional é pessoa física |
+| `units` | — | Local físico, não é pessoa; tem `company_id` FK e endereço próprio |
+
+**Views consolidadas:** `v_members_full`, `v_suppliers_full`, `v_companies_full` fazem JOIN com persons para leituras quentes. `v_person_roles(person_id, roles text[])` lista papéis ativos por pessoa (para UI "esta pessoa é: aluna, fornecedora, usuária").
+
+**Regra 24 preservada e reforçada:** transferência de member entre companies é UPDATE de `members.company_id`; conversão lead→member é INSERT em `members` com mesmo `person_id`. Nunca deleta/recria pessoa.
 
 ---
 
