@@ -47,13 +47,17 @@ Transforma o módulo financeiro (que era focado em mensalidade Asaas + custos) e
 - Preenche AP em draft; operador confirma/edita
 - Dashboard de saúde do OCR por tenant: % acerto, providers usados, fallbacks acionados
 
-**NF-e entrada (upload manual XML):**
-- Upload do XML recebido
-- Parser extrai emitente (CNPJ + razão social + endereço) → **busca em `persons` pelo CNPJ**; se não existe, cria `persons` com kind=pj + cria `suppliers` linkando; se já existe como persons mas sem papel supplier, adiciona só registro em `suppliers`. Nunca duplica.
-- Itens (para integração futura com estoque Sprint 24), valor total, datas
-- Cria AP em `draft` linkado ao supplier (que aponta pra persons)
-- Valida chave de acesso (44 dígitos) — duplicatas bloqueadas
-- Automação SEFAZ automática vai no Sprint 17
+**NF-e · Inbox unificada (ADR 0056):**
+- Tela central **`/app/financeiro/nfe`** concentra os 4 métodos de ingestão na mesma lista; cada linha em `nfe_received` mostra badge de origem (`auto`/`chave`/`upload`/`manual`)
+- Filtros: status, origem, período, fornecedor, empresa
+- Ações primárias no topo da inbox: **[🔎 Por chave]**, **[📄 Upload XML]**, **[✍ Entrada manual sem NF]**
+- **No MVP (Sprint 15):** ativos **Upload XML** e **Entrada manual**; botão "Por chave" presente mas **desabilitado com tooltip** "disponível a partir do Sprint 17 quando provider estiver configurado"
+- **Upload XML:** parser extrai emitente (CNPJ + razão social + endereço) → **busca em `persons` pelo CNPJ**; se não existe, cria `persons` com kind=pj + cria `suppliers` linkando; se já existe como persons mas sem papel supplier, adiciona só registro em `suppliers`. Nunca duplica. Cria linha em `nfe_received` com `source='upload_xml'` e AP draft linkada.
+- **Entrada manual sem NF:** modal com campos mínimos (fornecedor via PersonPicker, valor, vencimento, categoria do plano de contas, descrição) → cria direto `accounts_payable` com flag `no_invoice=true`; **não** cria linha em `nfe_received` (não é nota fiscal)
+- Itens da NF (para integração futura com estoque Sprint 24) guardados em `nfe_received.raw_payload` como JSON
+- Valida chave de acesso (44 dígitos) — duplicatas bloqueadas via unique global
+- **Configuração:** `/app/settings/financeiro/nfe` mostra toggle "Download automático" com estado "aguardando configuração (Sprint 17)"; os 3 métodos manuais aparecem como "sempre ativos" sem toggle
+- Automação SEFAZ + download por chave vão no Sprint 17 (pluga na mesma inbox)
 
 **Gerais:**
 - Relatórios: AP vencidos, AR vencidos, top 10 fornecedores, aging (0-30/30-60/60-90/>90 dias)
@@ -95,7 +99,9 @@ Transforma o módulo financeiro (que era focado em mensalidade Asaas + custos) e
 - `/app/financeiro/contas-pagar/new` — criação manual
 - `/app/financeiro/contas-pagar/[id]` — detalhe + aprovação/pagamento
 - `/app/financeiro/contas-pagar/ocr` — upload boleto PDF/imagem
-- `/app/financeiro/nf-e/upload` — upload XML NF-e
+- `/app/financeiro/nfe` — **Inbox unificada** (ADR 0056): lista de `nfe_received` + ações [Por chave disabled / Upload XML / Entrada manual]
+- `/app/financeiro/nfe/[id]` — detalhe da NF recebida + botão "Converter em AP" (ou "Ver AP")
+- `/app/settings/financeiro/nfe` — toggle download automático + métodos manuais listados
 - `/app/financeiro/contas-receber` — AR avulso (não-contrato)
 - `/app/financeiro/aging` — aging report
 - `/app/settings/financeiro/aprovacao` — configurar regras de workflow
@@ -111,11 +117,15 @@ Server Actions:
 - `registerManualPayment(apId, method, paidAt, reference)`, `payViaAsaas(apId)`
 - `createAR(input)`, `generateBoletoAR(arId)`
 - `processOcrBoleto(fileUpload)` — chama OCR.space, parseia linha digitável, retorna dados para preencher AP
-- `parseNfeXml(xmlContent)` — extrai dados, cria/atualiza supplier, cria AP draft
+- `uploadNfeXml(xmlContent)` — parser, cria/atualiza supplier via persons, cria linha em `nfe_received` com `source='upload_xml'` e AP draft linkada (ADR 0056)
+- `createApManual(input)` — entrada manual sem NF; cria `accounts_payable` com `no_invoice=true`; **não** cria linha em `nfe_received`
+- `convertNfeToAp(nfeReceivedId)` — recebe linha da inbox e cria AP vinculada (para NFs em status `new` ou `parsed`)
+- `discardNfe(nfeReceivedId, reason)` — marca `status='rejected'` com motivo (ex: duplicata, cancelada pelo emitente)
+- `toggleAutoDownload(companyId, enabled)` — placeholder no Sprint 15 (retorna erro "configure no Sprint 17"); funcional no Sprint 17
 
 API Routes:
 - `POST /api/financeiro/ocr/boleto` — recebe arquivo, chama OCR.space, retorna JSON estruturado
-- `POST /api/financeiro/nfe/upload` — recebe XML, parseia, cria AP
+- `POST /api/financeiro/nfe/upload` — recebe XML, parseia, cria linha em `nfe_received` + AP draft
 
 ## Schemas Drizzle (esperado)
 
@@ -124,7 +134,9 @@ Em `packages/db/schema/erp-financeiro.ts`:
 - `chart_of_accounts` — `id`, `tenant_id`, `code text`, `name text`, `kind` enum (`ativo`, `passivo`, `receita`, `despesa`, `custo`), `parent_id uuid nullable`, `is_leaf bool`, `active`
 - `suppliers` — `id`, `tenant_id`, `person_id uuid not null` (FK `persons` do Sprint 01a — fornece kind, document, name, email, phone, address), `company_id nullable` (para fornecedores específicos de uma company da rede), `default_payment_method text nullable`, `default_payment_term_days int nullable`, `bank_account jsonb nullable` (chave PIX, banco/agência/conta), `notes text`, `archived_at`. Unique `(tenant_id, person_id)`. Identidade vem via JOIN com `persons`; view `v_suppliers_full` materializa leitura.
 - `approval_rules` — `id`, `tenant_id`, `scope` enum (`ap`, `ar`, `both`), `min_amount_cents`, `max_amount_cents nullable`, `required_approvers jsonb` (array ordenada de roles ou user_ids), `company_id nullable` (regras específicas por empresa), `active`
-- `accounts_payable` — `id`, `tenant_id`, `company_id`, `supplier_id nullable`, `chart_account_id`, `amount_cents`, `issue_date`, `due_date`, `description`, `doc_number text nullable` (NF/boleto), `doc_key text nullable` (chave NF-e 44 dígitos, unique), `status` enum (`draft`, `pending_approval`, `approved`, `rejected`, `scheduled`, `paid`, `cancelled`, `reconciled`), `approval_trace jsonb` (array de aprovações com user_id, decision, at, comment), `paid_at nullable`, `paid_amount_cents nullable`, `payment_method text nullable`, `asaas_transfer_id nullable`, `attachment_storage_path nullable`, `source` enum (`manual`, `ocr_boleto`, `nfe_upload`, `nfe_sefaz`), `source_metadata jsonb`, `created_by_user_id`, `created_at`
+- `accounts_payable` — `id`, `tenant_id`, `company_id`, `supplier_id nullable`, `chart_account_id`, `amount_cents`, `issue_date`, `due_date`, `description`, `doc_number text nullable` (NF/boleto), `doc_key text nullable` (chave NF-e 44 dígitos, unique), `nfe_received_id uuid nullable` (FK `nfe_received` quando AP originou de inbox NF-e), `no_invoice bool default false` (true = entrada manual sem nota fiscal), `status` enum (`draft`, `pending_approval`, `approved`, `rejected`, `scheduled`, `paid`, `cancelled`, `reconciled`), `approval_trace jsonb`, `paid_at nullable`, `paid_amount_cents nullable`, `payment_method text nullable`, `asaas_transfer_id nullable`, `attachment_storage_path nullable`, `source` enum (`manual`, `ocr_boleto`, `nfe_upload`, `nfe_manual_key`, `nfe_sefaz`), `source_metadata jsonb`, `created_by_user_id`, `created_at`
+- `nfe_received` (ADR 0056, compartilhada com Sprint 17) — `id`, `tenant_id`, `company_id`, `chave text` (44 dígitos; unique global), `source` enum (`auto_sefaz`, `manual_key`, `upload_xml`), `xml_storage_path text nullable`, `emitter_cnpj text nullable`, `emitter_person_id uuid nullable` fk persons, `supplier_id uuid nullable` fk suppliers, `amount_cents bigint nullable`, `issue_date date nullable`, `received_at timestamptz default now()`, `fetched_by_user_id uuid nullable` (quem acionou fetch/upload), `fetch_duration_ms int nullable`, `ap_id uuid nullable` fk accounts_payable, `status` enum (`new`, `parsed`, `ap_created`, `duplicate`, `rejected`), `error_reason text nullable`, `raw_payload jsonb nullable`. Check: `source='auto_sefaz' → xml_storage_path IS NOT NULL`.
+- `company_settings` (ou colunas em `companies`) — `nfe_auto_download_enabled bool default false`, `nfe_provider text nullable`, `nfe_provider_credentials jsonb nullable` (criptografado), `nfe_last_sync_at timestamptz nullable`, `nfe_last_sync_count int default 0`
 - `accounts_receivable` — similar a AP mas pro lado recebimento; opcionalmente vinculada a `invoices` (contratos) ou independente
 - `ap_ar_payments` — pagamentos individuais (uma AP pode ter múltiplos pagamentos parciais)
 
@@ -137,11 +149,13 @@ Em `packages/db/schema/erp-financeiro.ts`:
 - `supplier.created`, `supplier.updated`
 - `ocr.boleto_processed` (com accuracy)
 - `nfe.received_via_upload`
+- `nfe.converted_to_ap` — inbox virou AP
+- `nfe.discarded` — inbox descartada (com reason)
 - `chart_account.created`
 
 ## Commit (checklist)
 
-- [ ] Schema Drizzle: `chart_of_accounts`, `suppliers`, `approval_rules`, `accounts_payable`, `accounts_receivable`, `ap_ar_payments`
+- [ ] Schema Drizzle: `chart_of_accounts`, `suppliers`, `approval_rules`, `accounts_payable`, `accounts_receivable`, `ap_ar_payments`, `nfe_received` (ADR 0056; compartilhada com Sprint 17), campos `nfe_*` em `company_settings`/`companies`
 - [ ] Migration: seed plano de contas brasileiro simplificado (~60 contas)
 - [ ] RLS + audit completo
 - [ ] Zod schemas em `packages/types/erp-financeiro.ts`
@@ -159,7 +173,10 @@ Em `packages/db/schema/erp-financeiro.ts`:
 - [ ] UI AP com kanban (draft/pending/approved/paid) + detalhe
 - [ ] UI upload OCR de boleto (drag-drop)
 - [ ] **Registrar handler `boleto-upload`** no hub inbound do Sprint 13 (ADR 0051): recebe anexo classificado como boleto, executa OCR + cria AP em draft automaticamente, notifica financeiro via resposta WhatsApp "Recebi boleto de R$ X, encaminhado"
-- [ ] UI upload XML NF-e
+- [ ] **UI inbox unificada `/app/financeiro/nfe`** (ADR 0056): lista `nfe_received` com badges de origem + filtros + ações [Por chave disabled / Upload XML / Entrada manual]
+- [ ] Modal de entrada manual (sem NF) — `createApManual` com PersonPicker + campos mínimos
+- [ ] UI `/app/settings/financeiro/nfe` — toggle download automático (disabled no Sprint 15, funcional no Sprint 17) + listagem dos métodos manuais como "sempre ativos"
+- [ ] Interface `NfeFetcher` em `packages/ai/nfe/fetcher.ts` (esqueleto; impls concretas nascem no Sprint 17)
 - [ ] Job pagamento em lote (gerente seleciona N APs approved e paga de uma vez)
 - [ ] Relatórios aging + top fornecedores
 - [ ] Integração Asaas para transferência/PIX (reusa wrapper Sprint 04)

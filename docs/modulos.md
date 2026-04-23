@@ -122,6 +122,8 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 | **OCR de boleto (provider abstrato)** | Upload PDF/imagem → OCR → parser linha digitável FEBRABAN → preenche AP. Default OCR.space; admin escolhe entre OCR.space / Google Vision / AWS Textract / Azure / Tesseract via `/app/settings/financeiro/ocr` | Academia, Fisio, Nutri | 15 | todo |
 | **Config de provider OCR por tenant** | UI onde admin cola API key, escolhe fallback, testa com boleto exemplo | Academia, Fisio, Nutri | 15 | todo |
 | **Upload XML NF-e (entrada)** | Parser de nota recebida → cria fornecedor + AP automaticamente | Academia, Fisio, Nutri | 15 | todo |
+| **Inbox unificada de NF-e (ADR 0056)** | Tela central `/app/financeiro/nfe` com 4 métodos de ingestão: download automático SEFAZ (Sprint 17), download por chave 44 dígitos (Sprint 17), upload XML (Sprint 15), entrada manual sem NF (Sprint 15). `nfe_received` com badge de origem por linha. Toggle único em settings para ligar/desligar o automático | Academia, Fisio, Nutri | 15 (inbox + manual + upload) + 17 (pluga automático + por chave) | todo |
+| **Download por chave NF-e** | Operador cola 44 dígitos → provider (Arquivei/Sieg/Focus/SEFAZ direto com cert A1) busca XML; registrado em `nfe_received` com `source='manual_key'` | Academia, Fisio, Nutri | 17 | futuro |
 | **Workflow de aprovação AP** | Regras configuráveis por faixa de valor + multi-aprovadores + audit | Academia, Fisio, Nutri | 15 | todo |
 | **Rateio entre filiais** | `allocation_rules` (fixed/proporcional/por KPI) + recálculo de DRE | Academia, Fisio, Nutri (só `owned`) | 16 | todo |
 | **Intercompany** | Lançamentos espelhados entre companies + fechamento mensal de saldos | Academia, Fisio, Nutri (só `owned`) | 16 | todo |

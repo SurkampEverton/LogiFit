@@ -6,6 +6,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — Inbox unificada de NF-e com 4 métodos de ingestão (ADR 0056)
+
+- **ADR 0056** — Inbox unificada de NF-e (`docs/decisions/0056-nfe-inbox-unificada-e-metodos-ingestao.md`). Tela única `/app/financeiro/nfe` concentra os 4 métodos de entrada: (1) download automático SEFAZ, (2) download por chave 44 dígitos, (3) upload XML, (4) entrada manual sem NF. Um único toggle em settings liga/desliga o automático; os 3 métodos manuais ficam sempre disponíveis como ações na inbox.
+- **Sprint 15** — cria `nfe_received` (compartilhada com Sprint 17), inbox unificada com Upload XML + Entrada manual ativos; botão "Por chave" presente mas desabilitado com tooltip explicativo; `/app/settings/financeiro/nfe` com toggle em estado "aguardando Sprint 17"; interface `NfeFetcher` esqueleto em `packages/ai/nfe/fetcher.ts`; Server Actions: `uploadNfeXml`, `createApManual`, `convertNfeToAp`, `discardNfe`.
+- **Sprint 17** — habilita os 2 métodos dependentes de provider externo + certificado A1: toggle "Download automático" vira funcional + botão "Por chave" habilitado na mesma inbox; implementações concretas de `NfeFetcher` (Arquivei, Sieg, Focus, SEFAZ direto); `nfe_sefaz_cursors` (novo); nova Server Action `fetchNfeByKey`.
+- `docs/modulos.md` — módulo "Inbox unificada de NF-e" (Sprint 15+17) + módulo "Download por chave NF-e" (Sprint 17).
+- **`accounts_payable`** ganha coluna `nfe_received_id uuid nullable` (FK) + `no_invoice bool default false` + enum `source` ampliado com `nfe_manual_key`.
+
 ### Added — Registros profissionais em conselho (ADR 0055)
 
 - **ADR 0055** — Registros profissionais em conselho: CRM/CRN/CREFITO/CREF (+ enum aberto para CRF/CRP/COREN/CRO) (`docs/decisions/0055-registros-profissionais-em-conselho.md`). Tabela `professional_registrations` com unicidade global `(council_body, council_number, council_state)`; uma pessoa pode ter N registros (profissional dual); `situation` enum (`active`/`suspended`/`cassated`/`expired`/`pending_verification`/`unknown`); MVP = `operator_attested`, Fase 2 = job de validação automática nos portais oficiais.

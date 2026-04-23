@@ -28,12 +28,17 @@ Integração com bancos via Open Finance (ou importação OFX fallback) + concil
 - Aprovação manual: operador vê sugestões e aceita/rejeita
 - Audit: toda conciliação gera registro
 
-**NF-e recepção automática via SEFAZ:**
-- Via provider agregador (Arquivei/Sieg/similar conforme ADR 0038) usando certificado digital A1 do cliente
+**NF-e recepção automática + download por chave (ADR 0056):**
+- Reusa a **inbox unificada `/app/financeiro/nfe`** e a tabela `nfe_received` criadas no Sprint 15
+- Ativa os 2 métodos que dependem de provider externo + certificado A1:
+  - **Download automático:** toggle em `/app/settings/financeiro/nfe` passa a ser funcional; job diário busca NFs novas do CNPJ de cada company; popula `nfe_received.source='auto_sefaz'`
+  - **Download por chave:** botão "🔎 Por chave" na inbox é habilitado; operador cola 44 dígitos → validador estrutural → provider busca XML → popula `nfe_received.source='manual_key'` com `fetched_by_user_id` do operador
+- Via provider agregador (Arquivei/Sieg/Focus/similar conforme ADR 0038) usando certificado digital A1 do cliente
 - Upload/configuração do certificado por company (seguro: criptografado + nunca exposto via API)
-- Job diário busca NFs novas do CNPJ de cada company
-- NF recebida cria AP draft automático (reusa pipeline do Sprint 15 de parser XML)
-- Evita duplicata via chave NF-e unique
+- Interface `NfeFetcher` do Sprint 15 ganha implementações concretas (`arquivei.ts`, `sieg.ts`, `focus.ts`, `sefaz-direct.ts` via cert)
+- NF recebida cria AP draft automático (reusa `convertNfeToAp` + parser do Sprint 15)
+- Evita duplicata via chave NF-e unique global (Sprint 15 já tem)
+- Toggle por company: `company_settings.nfe_auto_download_enabled` — desligado não roda job, outros métodos continuam disponíveis
 
 **Gerais:**
 - Dashboard: extrato por conta + saldo consolidado por company
@@ -73,7 +78,8 @@ Integração com bancos via Open Finance (ou importação OFX fallback) + concil
 - `/app/financeiro/fluxo-caixa` — projeção 30/60/90 dias
 - `/app/financeiro/ofx/upload` — fallback manual
 - `/app/settings/certificados` — upload/rotação de certificado A1 por company
-- `/app/financeiro/nfe/recebidas` — inbox de NFs automáticas
+- `/app/settings/financeiro/nfe` (criada no Sprint 15) — toggle "Download automático" passa a ser **funcional** neste sprint; escolha de provider + credenciais
+- `/app/financeiro/nfe` (criada no Sprint 15) — mesma inbox ganha **linhas novas** com `source='auto_sefaz'` e **botão "Por chave" habilitado**
 
 ## Server Actions + API Routes
 
@@ -84,6 +90,8 @@ Server Actions:
 - `createReconciliationRule`, `suggestMatches(bankTransactionId)`, `confirmMatch(bankTxId, apOrArId)`, `rejectMatch(...)`
 - `uploadCertificate(companyId, pfxFile, password)` — criptografa e armazena
 - `forecastCashFlow(companyId, days)`
+- `fetchNfeByKey(chave, companyId)` — chama `NfeFetcher.fetchByKey()`, valida chave 44 dígitos + checksum, popula `nfe_received` com `source='manual_key'` (ADR 0056)
+- `toggleNfeAutoDownload(companyId, enabled)` — implementação real do placeholder do Sprint 15; marca `company_settings.nfe_auto_download_enabled`
 
 API Routes:
 - `POST /api/financeiro/openfinance/callback` — callback do provider OAuth
@@ -104,8 +112,8 @@ Em `packages/db/schema/certificados.ts`:
 - `company_certificates` — `id`, `tenant_id`, `company_id`, `kind` enum (`a1`), `encrypted_pfx bytea`, `encrypted_password text`, `expires_at`, `uploaded_at`, `last_used_at`, `revoked_at`
 
 Em `packages/db/schema/nfe-recepcao.ts`:
-- `nfe_sefaz_cursors` — `id`, `company_id`, `provider text`, `last_nsu text` (número sequencial único do SEFAZ), `last_synced_at`
-- `nfe_received` — `id`, `tenant_id`, `company_id`, `chave text unique` (44 dígitos), `xml_storage_path`, `emitter_cnpj text`, `amount_cents`, `issue_date date`, `received_at`, `ap_id nullable` (linkada após parser), `status` enum (`received`, `parsed`, `ap_created`, `rejected`, `duplicate`)
+- `nfe_sefaz_cursors` — `id`, `company_id`, `provider text`, `last_nsu text` (número sequencial único do SEFAZ), `last_synced_at` — **criada neste sprint** (não existia no 15)
+- `nfe_received` — **já existe (Sprint 15, ADR 0056)**; neste sprint passa a receber linhas com `source='auto_sefaz'` (via job cursor) e `source='manual_key'` (via `fetchNfeByKey`)
 
 **RLS:** tenant_id + scope company + permission (`financeiro.bank.*`, `financeiro.nfe.*`). Certificado = acesso somente a `financeiro.admin`.
 
@@ -120,7 +128,11 @@ Em `packages/db/schema/nfe-recepcao.ts`:
 
 ## Commit (checklist)
 
-- [ ] Schema Drizzle: `bank_accounts`, `openfinance_connections`, `bank_transactions`, `reconciliation_rules`, `company_certificates`, `nfe_sefaz_cursors`, `nfe_received`
+- [ ] Schema Drizzle: `bank_accounts`, `openfinance_connections`, `bank_transactions`, `reconciliation_rules`, `company_certificates`, `nfe_sefaz_cursors` (novo aqui); `nfe_received` **já existe do Sprint 15** — só alter para garantir `source='auto_sefaz'` e `'manual_key'` no enum
+- [ ] Implementações de `NfeFetcher` em `packages/ai/nfe/providers/`: `arquivei.ts`, `sieg.ts`, `focus.ts`, `sefaz-direct.ts` (com certificado A1)
+- [ ] Habilitar botão "🔎 Por chave" na inbox do Sprint 15 + validador mod 11 da chave
+- [ ] Habilitar toggle "Download automático" em `/app/settings/financeiro/nfe` (Sprint 15 tinha placeholder)
+- [ ] Testes E2E: (a) admin liga toggle + cadastra cert → job roda → NFs aparecem na inbox com `source='auto_sefaz'`; (b) operador cola chave → NF aparece com `source='manual_key'`; (c) admin desliga toggle → job skippa company
 - [ ] RLS + audit + criptografia at-rest dos tokens e certificados
 - [ ] Wrapper Open Finance em `packages/ai/openfinance/provider.ts` com interface comum (Pluggy/Belvo adapters)
 - [ ] Parser OFX (fallback) em `packages/db/bancos/ofx-parser.ts`
