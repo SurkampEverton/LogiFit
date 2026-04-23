@@ -16,8 +16,10 @@ Transformar o registro de exames laboratoriais de digitação manual para pipeli
 
 - Profissional sobe em `/app/members/[id]/exames/upload` (drag-drop PDF/imagem)
 - Paciente sobe em `/meu/exames/upload` com `consent.self_upload_exam` ativo
+- **Paciente envia por WhatsApp** com `consent.whatsapp_exchange` ativo — handler registrado no hub do Sprint 13 (ADR 0051) classifica anexo como `exam`, baixa, aplica pipeline e responde ao paciente; sem necessidade de abrir portal
 - Storage criptografado em bucket dedicado `lab-documents`
 - Validação: tipo MIME (PDF/JPG/PNG), tamanho (≤20MB), resolução mínima
+- `exam_documents.source` identifica origem: `professional_upload` | `patient_portal` | `patient_whatsapp`
 
 **OCR:**
 
@@ -147,7 +149,7 @@ API Routes:
 
 Em `packages/db/schema/exames.ts`:
 
-- `exam_documents` — `id`, `tenant_id`, `member_id`, `uploaded_by_user_id nullable` (nulo se paciente), `uploaded_by_member_id nullable` (se paciente), `storage_path`, `original_filename`, `mime_type`, `sensitivity` enum (`normal`, `high`), `exam_type_detected text nullable`, `laboratory text nullable`, `collected_at timestamptz nullable`, `status` enum (`uploaded`, `processing`, `pending_review`, `published`, `rejected`), `uploaded_at`, `processed_at nullable`, `reviewed_at nullable`, `reviewed_by_user_id nullable`
+- `exam_documents` — `id`, `tenant_id`, `member_id`, `uploaded_by_user_id nullable` (nulo se paciente), `uploaded_by_member_id nullable` (se paciente), **`source` enum (`professional_upload`, `patient_portal`, `patient_whatsapp`, `lab_integration_future`)**, **`source_ref uuid nullable`** (ex: `whatsapp_inbound_messages.id` quando veio do WhatsApp — rastreabilidade), `storage_path`, `original_filename`, `mime_type`, `sensitivity` enum (`normal`, `high`), `exam_type_detected text nullable`, `laboratory text nullable`, `collected_at timestamptz nullable`, `status` enum (`uploaded`, `processing`, `pending_review`, `published`, `rejected`), `uploaded_at`, `processed_at nullable`, `reviewed_at nullable`, `reviewed_by_user_id nullable`
 - `exam_extractions` — `id`, `exam_document_id`, `raw_text`, `ocr_provider`, `ocr_confidence numeric nullable`, `structured_data jsonb` (JSON normalizado dos analitos extraídos), `extraction_model`, `extraction_at`, `extraction_cost_cents int nullable`
 - `exam_interpretations_draft` — `id`, `exam_document_id`, `out_of_range jsonb`, `patterns jsonb`, `hypotheses jsonb`, `follow_up_suggestions jsonb`, `model_used`, `generated_at`, `blocked_by_classifier bool` (se bloqueou termo proibido)
 - `exam_interpretations_final` — `id`, `exam_document_id`, `accepted_patterns jsonb`, `accepted_hypotheses jsonb`, `professional_observations text`, `reviewed_by_user_id`, `reviewed_at`
@@ -177,6 +179,7 @@ Em `packages/db/schema/exames.ts`:
 - [ ] Prompt + classificador em `packages/ai/exames/` (extraction.ts, interpretation.ts, classifier.ts)
 - [ ] UI `/app/members/[id]/exames/*` — upload, fila, revisão lado-a-lado com PDF viewer + table editor
 - [ ] UI `/meu/exames/*` — upload, status, histórico
+- [ ] **Registrar handler `exam-upload`** no hub inbound do Sprint 13 (ADR 0051): recebe anexo classificado como exame + person_id já resolvido → chama `uploadExamDocument({ source: 'patient_whatsapp', source_ref: inboundMessageId })` → dispara pipeline normalmente; responde ao paciente "📄 Recebi seu exame. Em análise." e depois "✓ Seu exame foi analisado! Ver: {portal_link}"
 - [ ] UI `/app/settings/exames/ia` — opt-out e config
 - [ ] Integração com régua Sprint 13 para notificações
 - [ ] Integração com Sprint 30 `lab_results` (publicação oficial)

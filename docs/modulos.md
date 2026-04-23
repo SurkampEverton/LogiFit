@@ -92,7 +92,10 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 | Registro seriado de medições | `measurements` séries temporais + gráficos de evolução | Academia, Fisio, Nutri | 12 | todo |
 | Anamnese estruturada | Template de formulário com perguntas abertas/múltipla escolha | Academia, Fisio, Nutri | 12 | todo |
 | Calculadoras (IMC, Pollock, TMB) | Funções derivadas das medições | Academia, Nutri | 12 | todo |
-| Integração WhatsApp | Provider abstrato (Twilio / Z-API / Meta via ADR 0025) + templates | Academia, Fisio, Nutri | 13 | todo |
+| Integração WhatsApp | Provider abstrato (Twilio / Z-API / Meta via ADR 0025) + templates + **inbound bidirecional** | Academia, Fisio, Nutri | 13 | todo |
+| **Hub de WhatsApp inbound (multi-fluxo)** | Paciente manda anexo/mensagem no WhatsApp; identity matcher (busca por telefone ou pede CPF) + intent router + classificador IA de anexo; handlers pluggable registrados por sprints consumidores (ADR 0051) | Academia, Fisio, Nutri | 13 | todo |
+| **Handler WhatsApp: boleto** | Fornecedor manda PDF do boleto pelo WhatsApp; sistema OCR'a e cria AP automaticamente | Academia, Fisio, Nutri | 15 | todo |
+| **Handler WhatsApp: exame laboratorial** | Paciente manda PDF do exame; pipeline completo OCR → IA → revisão → histórico com notificação de status | Academia, Fisio, Nutri | 35 | futuro |
 | Integração email (Resend) | Canal alternativo/redundante consolidado | Academia, Fisio, Nutri | 13 | todo |
 | Régua de cobrança (DSL) | Motor declarativo: evento → ação → delay (cobrança, reengajamento, follow-up lead) | Academia, Fisio, Nutri | 13 | todo |
 | Opt-out e rate-limit | Consent de marketing + limite por tenant | Academia, Fisio, Nutri | 13 | todo |

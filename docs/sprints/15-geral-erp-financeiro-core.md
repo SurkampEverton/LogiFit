@@ -32,8 +32,8 @@ Transforma o módulo financeiro (que era focado em mensalidade Asaas + custos) e
 - Geração de boleto/PIX via Asaas
 - Integração com `invoices` existente (contrato) — mesmo dashboard de recebíveis
 
-**OCR de boleto (provider abstrato):**
-- Upload por drag-and-drop, câmera PWA ou WhatsApp inbound (stretch)
+**OCR de boleto (provider abstrato) + WhatsApp inbound:**
+- Upload por drag-and-drop, câmera PWA ou **WhatsApp inbound (registrando handler no hub do Sprint 13, ADR 0051)** — fornecedor/cliente manda PDF no WhatsApp do tenant, sistema OCR'a, cria AP em draft, notifica financeiro
 - **Interface abstrata** `OCRProvider` com múltiplas implementações; cliente escolhe via config do tenant
 - Providers suportados:
   - **OCR.space** (default global) — API HTTP, tier gratuito 25k/mês, Pro US$ 30/mês
@@ -158,6 +158,7 @@ Em `packages/db/schema/erp-financeiro.ts`:
 - [ ] UI fornecedores com histórico
 - [ ] UI AP com kanban (draft/pending/approved/paid) + detalhe
 - [ ] UI upload OCR de boleto (drag-drop)
+- [ ] **Registrar handler `boleto-upload`** no hub inbound do Sprint 13 (ADR 0051): recebe anexo classificado como boleto, executa OCR + cria AP em draft automaticamente, notifica financeiro via resposta WhatsApp "Recebi boleto de R$ X, encaminhado"
 - [ ] UI upload XML NF-e
 - [ ] Job pagamento em lote (gerente seleciona N APs approved e paga de uma vez)
 - [ ] Relatórios aging + top fornecedores

@@ -8,7 +8,7 @@
 
 ## Goal
 
-Integração WhatsApp (provider abstraído) + motor de régua declarativa (cobrança, reengajamento, follow-up de lead) + templates + auditoria de mensagens. Funciona sobre `domain_events` (evento → regra → ação → delay).
+Integração WhatsApp (provider abstraído) **bidirecional** (outbound + inbound) + motor de régua declarativa (cobrança, reengajamento, follow-up de lead) + **hub central de inbound com intent router e identity matcher** + templates + auditoria de mensagens. Funciona sobre `domain_events` (evento → regra → ação → delay) e sobre webhooks inbound com handlers pluggable registrados por sprints consumidores.
 
 ## Critério de aceite
 
@@ -35,6 +35,7 @@ Integração WhatsApp (provider abstraído) + motor de régua declarativa (cobra
 
 - **ADR 0025 (esperado, no sprint)** — Provider WhatsApp: Twilio Business API vs Z-API vs Meta Business API direto. Critérios: custo por conversa, risco de ban, latência de aprovação de templates. Decisão com POC no início do sprint.
 - **ADR 0026 (esperado)** — Motor de régua DSL: JSON schema validado por Zod. Estrutura: `{ trigger: { event, filter }, actions: [{ delay, channel, template, fallback }], stop_on: [events] }`. Evita código custom por tenant.
+- **ADR 0051 (accepted)** — WhatsApp inbound como canal multi-fluxo pluggable: hub central com identity matcher + intent router + classificador IA de anexos; sprints consumidores (15, 33, 12, 20) registram handlers próprios. Ver [ADR 0051](../decisions/0051-whatsapp-inbound-canal-multifluxo.md).
 
 ## Módulos entregues
 
@@ -67,6 +68,7 @@ Server Actions em `apps/web/app/mensagens/actions.ts`:
 API Routes:
 
 - `POST /api/mensagens/webhook/whatsapp` — status callbacks do provider (entregue, lida, falhou)
+- **`POST /api/mensagens/webhook/whatsapp-inbound`** — mensagens recebidas do paciente; dispara identity_matcher + intent_router + handler registrado (ver ADR 0051)
 - `POST /api/mensagens/webhook/email` — webhook Resend (bounce, complaint)
 - Job: `POST /api/jobs/reguas/tick` (a cada 5min) — avalia triggers pendentes e enfileira envios
 
@@ -79,6 +81,9 @@ Em `packages/db/schema/mensagens.ts`:
 - `reguas` — `id`, `tenant_id`, `name`, `description`, `trigger jsonb` (`{ event, filter }`), `actions jsonb` (array de steps), `active bool`, `created_by_user_id`, `last_run_at`, `runs_count int`
 - `regua_executions` — `id`, `regua_id`, `tenant_id`, `member_id`, `trigger_event_ref uuid`, `started_at`, `finished_at nullable`, `state` enum (`running`, `completed`, `stopped_by_rule`, `failed`), `current_step int`
 - `messages_sent` — `id`, `tenant_id`, `member_id`, `channel`, `provider`, `template_id`, `regua_execution_id nullable`, `sent_at`, `delivered_at nullable`, `read_at nullable`, `failed_at nullable`, `failure_reason text`, `provider_message_id text`, `cost_cents int nullable`, `variables_resolved jsonb`
+- **`whatsapp_inbound_messages`** — `id`, `tenant_id`, `provider_message_id text unique`, `from_phone text`, `person_id nullable` (resolvido pelo identity matcher), `body text nullable`, `attachment_url text nullable`, `attachment_storage_path nullable`, `attachment_mime text`, `detected_intent text nullable`, `intent_confidence numeric nullable`, `handler_used text nullable`, `handler_result jsonb nullable`, `received_at`, `processed_at nullable`, `status` enum (`received`, `processing`, `handled`, `pending_confirmation`, `failed`, `rate_limited`)
+- **`whatsapp_conversations`** — `id`, `tenant_id`, `person_id`, `phone`, `state` enum (`idle`, `awaiting_cpf`, `awaiting_classification_confirm`, `awaiting_dob_verification`), `context jsonb` (ex: `{ pending_attachment_url }`), `last_message_at`, `created_at`
+- **`tenant_whatsapp_settings`** — `tenant_id pk`, `inbound_enabled bool`, `require_dob bool default false`, `classifier_confidence_threshold numeric default 0.80`, `intents_enabled jsonb` (lista de intents ativos), `default_handler text` (fallback quando nenhum match)
 
 **RLS:** tenant_id + scope. Audit obrigatório (regra 5) em criação/edição de régua e template.
 
@@ -103,6 +108,16 @@ Em `packages/db/schema/mensagens.ts`:
 - [ ] Rate-limit por tenant via Upstash Redis (reusa infra do Sprint 06)
 - [ ] Respeito a opt-out (`consents`): verificação antes de enviar
 - [ ] POC do provider escolhido no ADR 0025; envio real em sandbox
+- [ ] **Hub inbound pluggable** em `packages/ai/whatsapp/`: `inbound-handler.ts`, `intent-router.ts`, `identity-matcher.ts`, `classifier.ts`
+- [ ] **Identity matcher**: busca `persons.phone` → se match, prossegue; se não, fluxo conversacional pede CPF e atualiza `persons.phone` após validação
+- [ ] **Intent router** com IA classificadora (Claude Haiku ou equivalente); confidence ≥ 80% processa automático; < 80% pergunta ao paciente com botões (1 Exame / 2 Boleto / 3 Receita / 4 Outro)
+- [ ] **Default handlers** já no Sprint 13: `copilot-question.ts` (roteia texto livre para Copilot Sprint 06), `fallback-human.ts` (vira tarefa em fila para atendente humano quando não resolve)
+- [ ] Handler registry com API `registerIntentHandler({ intent, handle })` — consumido por Sprints 15 (boleto), 33 (exame), 12 (foto) e 20/21 (receita)
+- [ ] Templates inbound registrados: `exam.received`, `exam.published`, `boleto.received`, `identity.needed`, `classification.confirm`, etc
+- [ ] Consent `whatsapp_exchange` + UI em `/meu/privacidade` para ativar/desativar
+- [ ] Rate limit 10 msgs/min/telefone via Upstash Redis (reusa Sprint 06)
+- [ ] Dedupe por `provider_message_id`
+- [ ] UI `/app/mensagens/inbound` para operador acompanhar mensagens recebidas + intervir em pendentes/falhos
 - [ ] Seed: 3 templates + 1 régua ("cobrança D+1/+3/+7")
 - [ ] Testes unit do evaluator
 - [ ] Testes E2E: invoice.overdue → régua → mensagem no histórico
