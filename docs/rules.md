@@ -1,6 +1,6 @@
 # Regras do Projeto LogiFit
 
-Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (multi-empresa, i18n, IA, LGPD, pesquisa global, responsividade, arquitetura IA). Violação = CI vermelho, revert, ou sprint não fecha.
+Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (multi-empresa, i18n, IA, LGPD, pesquisa global, responsividade, arquitetura IA, tratamento de erros). Violação = CI vermelho, revert, ou sprint não fecha.
 
 > **Como usar:** toda discussão técnica começa perguntando "isso fere alguma regra?". Se sim, ou mudamos a regra (ADR) ou mudamos a solução. Regras não são sugestões.
 
@@ -35,6 +35,8 @@ Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (multi
 **31.** **Toda UI de `/app/*` e `/meu/*` é responsiva mobile-first** nos 3 viewports canônicos (mobile 390px, tablet 768px, desktop 1280px). Componente **deve** usar os componentes base de `packages/ui/layout/*` (`<ResponsiveTable>`, `<ResponsiveModal>`, `<ResponsiveForm>`, `<AppLayout>`, `<BottomNav>`); proibido construir layout próprio duplicado. Touch targets ≥44px (botões) e ≥48px (inputs). Teste Playwright visual em 3 viewports obrigatório em sprints com UI nova — falha CI. Exceção (ex: tela admin técnica desktop-only) exige ADR de sprint justificando. Ver [ADR 0063](decisions/0063-responsividade-total-mobile-first.md).
 
 **32.** **Chamada de IA nunca hardcode provider/modelo.** Toda invocação passa por `resolveModelForTask(task, featureKey?, tenantCtx)` que consulta `ai_task_routing`. Tasks canônicas: `chat`, `embedding`, `classification`, `extraction`, `vision`, `transcription`, `reasoning`. Feature clínica tem **tier mínimo imposto** por LogiFit (ex: Pipeline Exames interpretação não roda em modelo abaixo de Gemini Flash; CI bloqueia seed de `ai_task_routing` com modelo abaixo do mínimo). Tool calling sempre via Server Actions tipadas — **proibido LLM emitir SQL arbitrário**. System prompt composto por `buildSystemPrompt({ agent, tenant, user, permissions, ragChunks, globalRules })`, nunca string ad-hoc. Ver [ADR 0064](decisions/0064-ia-arquitetura-gemini-default-byok-rag.md).
+
+**33.** **Toda Server Action, API Route e job assíncrono usa `wrapAction()` / `wrapApiHandler()` / `wrapJob()` de `packages/errors/`.** O wrapper: (a) gera/propaga `request_id` (UUID no header `x-request-id`); (b) valida context (auth, permissions, rate limit Upstash, gate IA classe II+ — regra 28, consent cross-module — regra 6); (c) captura erro e traduz via translator do domínio (Asaas/Focus NFe/Gemini/TISS/...); (d) cria `system_alerts` async com fingerprint SHA256(type|module|path|status|tenant_id)[:16] — deduplicação automática; (e) grava `audit_log` quando `auditAction` informado; (f) `Sentry.captureException()` em `INTERNAL_ERROR`; (g) retorna envelope `{ ok: true, data } | { ok: false, error: ApiError }` tipado com 16 códigos fechados. CI tem lint custom `no-unwrapped-action` que bloqueia commit quando Server Action/API Route não usa wrapper. Exceção em jobs de migration/seed exige comentário `// wrap-exempt: <motivo>`. Ver [ADR 0071](decisions/0071-sistema-tratamento-erros-alertas-tempo-real.md).
 
 ---
 

@@ -115,7 +115,10 @@ Em `apps/web/app/settings/users/actions.ts`:
 - [ ] Supabase Auth + magic link + OAuth Google
 - [ ] MFA obrigatório para roles profissionais (TOTP)
 - [ ] Supabase Auth Hook injetando `tenant_id` + `group_ids` no JWT
-- [ ] Schema Drizzle: `persons` (central), `cnpj_cache` (global), `tenant_cnpj_settings`, `groups`, `tenants` (flags), `companies` (com `person_id` FK + type + regras fiscais), `units` (sem person), `users` (com `person_id` FK + auth_user_id), `user_tenants`
+- [ ] Schema Drizzle: `persons` (central), `cnpj_cache` (global), `tenant_cnpj_settings`, `groups`, `tenants` (flags + `mode` enum), `companies` (com `person_id` FK + type + regras fiscais), `units` (sem person), `users` (com `person_id` FK + auth_user_id), `user_tenants`
+- [ ] **Schema `system_alerts` + `system_alert_occurrences`** (ADR 0071) com RLS por tenant_id + role-based visibility (`min_role`) + índices de fingerprint + request_id + member_id (LGPD link) + trigger SQL que cria `security_incidents` automaticamente quando `severity='critical'` + `category IN ('security','data_leak','compliance')`
+- [ ] Particionamento por mês em `system_alert_occurrences` (ring buffer 20 últimos por alert) + retention job noturno conforme `retention_days` (30/90/365/1825 por severity)
+- [ ] Notification queue `notification_queue(channel, payload, scheduled_at, sent_at)` para email/WhatsApp assíncronos
 - [ ] Constraints: 1-matriz-por-tenant; `companies.person_id` kind=pj; `users.person_id` kind=pf; `(tenant_id, document)` unique em persons
 - [ ] Validador de CPF/CNPJ em `packages/db/persons/document.ts` (dígito verificador)
 - [ ] Interface `CnpjProvider` em `packages/ai/cnpj/provider.ts` (contrato comum `lookup(cnpj) → CnpjData`)

@@ -123,6 +123,7 @@ Em `packages/db/schema/mensagens.ts`:
 - [ ] Seed: 3 templates + 1 régua ("cobrança D+1/+3/+7")
 - [ ] Testes unit do evaluator
 - [ ] Testes E2E: invoice.overdue → régua → mensagem no histórico
+- [ ] **Canais de notificação para `system_alerts`** (ADR 0071): worker consumer da `notification_queue` — envia email via Resend para `severity='critical'` + WhatsApp via provider escolhido (ADR 0025) para `priority='urgent'`; templates aprovados pré-cadastrados ("🔴 Alerta crítico LogiFit: {title}"); rate limit 3 msgs/hora/user; opt-in obrigatório WhatsApp por admin; canal `privacidade@logifit.com.br` recebe todos `category='security'`
 - [ ] Feature flag `mensagens_v1`
 - [ ] ADRs 0025 e 0026 publicados
 

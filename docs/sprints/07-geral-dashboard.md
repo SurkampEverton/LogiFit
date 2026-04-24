@@ -128,6 +128,9 @@ Não publica eventos de negócio; só renderiza os dos outros sprints.
 - [ ] Testes E2E: 4 roles vendo scopes diferentes; group_owner só agregados
 - [ ] Teste visual Playwright: sem sombras no dark
 - [ ] Feature flag `dashboard_v1`
+- [ ] **UI `/app/admin/alertas`** (ADR 0071): KPIs (unread/critical/24h) + filtros (severity/módulo/status/período/busca) + lista com cards expansíveis + detalhe com timeline de ocorrências + similar alerts + ações [Acknowledge/Resolver/Dismiss/Escalar] + runbook inline; acesso via `has_permission('admin.alerts.read')` + `min_role` respeitado
+- [ ] Realtime subscribe `tenant:{id}:role:{min_role}` no layout global para badge + toast instantâneo
+- [ ] Jobs Vercel Cron: `/api/jobs/alert-auto-resolve` (hourly) + `/api/jobs/alert-retention-expurge` (daily)
 - [ ] ADR 0016 publicado
 
 ## Stretch

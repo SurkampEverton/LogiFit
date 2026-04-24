@@ -33,7 +33,7 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 ## Documentação de referência (leia antes de planejar)
 
 - [`docs/arquitetura.md`](docs/arquitetura.md) — visão geral da arquitetura e stack
-- [`docs/rules.md`](docs/rules.md) — **32 regras duras** (arquiteturais, processo, código, i18n, IA, LGPD, pesquisa global, responsividade, arquitetura IA)
+- [`docs/rules.md`](docs/rules.md) — **33 regras duras** (arquiteturais, processo, código, i18n, IA, LGPD, pesquisa global, responsividade, arquitetura IA, tratamento de erros)
 - [`docs/modulos.md`](docs/modulos.md) — catálogo de módulos por área (fundação, geral, academia, fisio, nutri) + quais verticais usam
 - [`docs/multiempresa.md`](docs/multiempresa.md) — hierarquia group → tenant → company → unit + flags de topology
 - [`docs/acesso-e-autorizacao.md`](docs/acesso-e-autorizacao.md) — 4 camadas (identidade, tenant, RBAC, consent)
@@ -61,6 +61,7 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 15. **Módulo novo com dado pesquisável** registra-se em `search_index` com `required_permission` explícita (trigger `search_index_sync()` + kind/label/url/searchable_text). Omissão viola regra 30. Ver [ADR 0062](docs/decisions/0062-pesquisa-global-command-palette.md).
 16. **Toda UI mobile-first** — usar `<AppLayout>`/`<ResponsiveTable>`/`<ResponsiveModal>`/`<ResponsiveForm>` de `packages/ui/layout/*`; testes Playwright em 3 viewports (390/768/1280); touch targets ≥44px. Proibido construir layout próprio duplicado. Ver [ADR 0063](docs/decisions/0063-responsividade-total-mobile-first.md) e regra 31.
 17. **Chamada de IA via `resolveModelForTask(task, featureKey?, tenantCtx)`** — nunca hardcode provider/modelo. Tasks canônicas: chat/embedding/classification/extraction/vision/transcription/reasoning. Tool calling sempre via Server Actions tipadas (proibido SQL arbitrário do LLM). System prompt via `buildSystemPrompt()` composto. Ver [ADR 0064](docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md) e regra 32.
+18. **Server Action / API Route / Job SEMPRE usa `wrapAction()` / `wrapApiHandler()` / `wrapJob()`** de `packages/errors/`. O wrapper valida context (auth + permissions + rate limit + gates IA/consent), traduz erros via translator do domínio, cria `system_alerts` async com fingerprint (dedup), grava `audit_log` quando aplicável, captura em Sentry `INTERNAL_ERROR`, e retorna envelope `{ ok, data | error }` tipado. Regra 33 enforced em CI via lint `no-unwrapped-action`. Ver [ADR 0071](docs/decisions/0071-sistema-tratamento-erros-alertas-tempo-real.md).
 
 Lista completa em [`docs/rules.md`](docs/rules.md).
 

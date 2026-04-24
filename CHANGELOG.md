@@ -6,6 +6,42 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — ADR 0071: Sistema de tratamento de erros + Alertas em tempo real + Regra 33
+
+Inspirado em modelo maduro do projeto Deep Control + corrige 3 pontos cegos reconhecidos (push ativo, role-based visibility, APM externo). Aplica todas as recomendações (1A-7A).
+
+**ADR 0071 — Sistema de erros + alertas:**
+- **Envelope unificado** `{code, message, details, request_id, runbook, retry_after_ms}` com **16 códigos fechados** (VALIDATION_ERROR, UNAUTHORIZED, FORBIDDEN, NOT_FOUND, CONFLICT, RATE_LIMITED, INTERNAL_ERROR, SERVICE_UNAVAILABLE, AI_QUOTA_EXCEEDED, AI_PROVIDER_ERROR, PAYMENT_FAILED, FISCAL_REJECTED, CONSENT_REQUIRED, COMMITTEE_REQUIRED, SLUG_TAKEN, TENANT_SUSPENDED)
+- **Fingerprint** SHA256(type|module|path|status|tenant_id)[:16] com TTL 24h — dedup multi-tenant
+- Schema **`system_alerts`** + **`system_alert_occurrences`** (ring buffer timeline) com RLS + role-based visibility (`min_role`) — correção do ponto cego "só tier" do modelo Deep Control
+- **4 canais de notificação no MVP**: badge SideMenu com Realtime subscribe + toast `sonner` na sessão ativa + email critical via Resend + WhatsApp urgent via provider (rate limit 3/hora) — corrige ponto cego "admin precisa entrar no dashboard"
+- **Canais complementares**: push PWA (Sprint 26) + Sentry (LogiFit dev team — stack traces)
+- **10 translators por domínio**: Asaas, Focus NFe (90+ códigos SEFAZ), Supabase RLS, Anthropic, Gemini, Groq, OpenAI, Twilio WhatsApp, TISS (~40 códigos glosa), Pluggy, Zod + fallback
+- **Auto-resolução inteligente**: TTL, HTTP 503 recovery por webhook.success do mesmo provider, AI_QUOTA_EXCEEDED reseta no mês, FISCAL_REJECTED transient resolve na próxima emissão OK
+- **Sanitização LGPD**: `sanitizeForAlert()` mascara CPF/CNPJ (últimos 4), email (só domínio), telefone (DDD+4), redact senha/token/dado clínico
+- **Retenção por severity**: info 30d · warning 90d · error 365d · critical 1825d · security_event 1825d+obrigação legal
+- **Trigger SQL** auto-cria `security_incidents` (ADR 0067) quando severity='critical' + category IN (security/data_leak/compliance) → dispara plano resposta 72h
+- **Sentry complementar** (não substitui system_alerts): admin do tenant vê erros do próprio tenant no `/app/admin/alertas`; LogiFit dev team vê stack traces em Sentry
+
+**Regra 33 (nova)** em `docs/rules.md` (total 33 regras):
+- Server Action / API Route / Job **sempre** usa `wrapAction()` / `wrapApiHandler()` / `wrapJob()` de `packages/errors/`
+- Wrapper: request_id + auth + permissions + rate limit + gates IA classe II+ (regra 28) + consent cross-module (regra 6) + translator + alert async + audit + Sentry + retorno `{ ok, data | error }`
+- **Lint custom `no-unwrapped-action`** bloqueia commit se Server Action sem wrapper (exceção `// wrap-exempt: <motivo>`)
+
+**Regra operacional 18** em `CLAUDE.md` (total 33 regras).
+
+**Sprints ajustados:**
+- **Sprint 00** — `packages/errors/` completo (api-error + 3 wrappers + 10 translators stubs + sanitize + fingerprint) + middleware `x-request-id` + Sentry/PostHog/Logtail clients + lint `no-unwrapped-action` + i18n catalog de mensagens + teste E2E panic→envelope→alert→Sentry→toast
+- **Sprint 00b (SideMenu)** — `useAlertCount()` hook com Supabase Realtime subscribe + toast global
+- **Sprint 01a** — schema `system_alerts` + `system_alert_occurrences` (particionado por mês) + RLS + trigger `security_incidents` + `notification_queue`
+- **Sprint 07** — UI `/app/admin/alertas` com KPIs/filtros/timeline/similar-alerts + realtime subscribe + jobs auto-resolve e retention expurge
+- **Sprint 13** — worker da `notification_queue` com email Resend (critical) + WhatsApp provider (urgent) + rate limit + templates aprovados; canal privacidade@ recebe todos `security`
+- **Translators por sprint de integração**: 04 (Asaas) · 06 (Gemini/OpenAI/Anthropic/Groq) · 15 (OCR) · 17 (Arquivei/Pluggy) · 20 (ICP-Brasil) · 22 (TISS) · 36 (Focus NFe 90+)
+
+**Decisões do usuário (2026-04-24):** todas recomendações aprovadas (1A-7A).
+
+**Impacto**: corrige 3 pontos cegos do modelo Deep Control; LGPD-safe; compliance auto-ligada a ADR 0067; diferencial operacional forte (admin vê erros em tempo real via múltiplos canais).
+
 ### Added — ADRs 0069 + 0070: Perfil como hub + Modo Solo + Insights cross-module + Timeline integrada
 
 Duas decisões interdependentes que transformam `/app/members/[id]` no hub central do profissional:

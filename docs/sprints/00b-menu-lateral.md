@@ -126,6 +126,8 @@ Telemetria PostHog:
   - Módulo inteiro oculto se todos itens filtrados
 - [ ] Footer com `<UserAvatar>` + trocar tenant + logout (reusa auth do Sprint 01a)
 - [ ] Badge dinâmica por item (função `badge()` executada no render — ex: contagem de "3 APs vencendo" em Contas a Pagar)
+- [ ] **Badge "Alertas do sistema" no header** (ADR 0071): hook `useAlertCount()` subscribe em Supabase Realtime channel `tenant:{id}:role:{min_role}`; mostra count de `system_alerts` com `status='unread'`; cores por severity (amarelo warning / vermelho critical); click navega para `/app/admin/alertas`; refetch em insert/update via realtime (fallback polling 60s se WebSocket falhar)
+- [ ] **Toast real-time global** (ADR 0071): mesma subscription Realtime dispara `sonner.toast()` quando alert novo chega com severity≥warning na sessão ativa do user; critical = toast infinito (exige click para dismiss)
 - [ ] Todos os ícones via biblioteca escolhida (lucide-react — já no stack)
 - [ ] Responsividade: larguras adaptadas por viewport (85%/320px/320px/280px)
 - [ ] Scroll interno do menu quando conteúdo excede altura da viewport
