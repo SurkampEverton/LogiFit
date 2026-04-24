@@ -86,6 +86,22 @@ Componente `<SideMenu>` em `packages/ui/layout/side-menu.tsx` gerencia tudo:
 
 Sprint 00b entrega `<SideMenu>` completo **+ registry de itens por módulo com filtro de permissão/vertical/consent**; sprints não implementam navegação própria — cada sprint registra seus itens via `registerMenuItem(meta)` e o componente filtra automaticamente na renderização conforme user logado.
 
+#### Largura do conteúdo (`.main`) — padrão híbrido (atualizado 2026-04-23)
+
+**Decisão:** `<AppLayout>` oferece **3 variantes de largura** para o slot de conteúdo; cada página escolhe a variante adequada.
+
+| Variante | `max-width` | Quando usar |
+|---|---|---|
+| **Default** (padrão) | **nenhum** — ocupa 100% da viewport | Dashboards, listas, tabelas, gráficos, inboxes — aproveita monitor ultrawide |
+| **`.main--constrained`** | 1200px centralizado | Prontuário SOAP, páginas com muito texto, telas de configuração longas (3+ seções), relatórios detalhados |
+| **`.main--narrow`** | 720px centralizado | Formulários simples (novo fornecedor, novo member), login/signup, wizard steps, páginas de erro/empty state |
+
+**Motivo:** 100% fixo em todo lugar prejudica legibilidade de texto em telas ultrawide (linhas 200+ caracteres). Max-width fixo em todo lugar desperdiça pixels em dashboards ultrawide (faixas pretas laterais). Híbrido deixa cada página escolher — dashboards espalham, formulários respiram.
+
+**Regra prática:** se a página é majoritariamente **dado tabular, gráficos ou cards lado-a-lado**, use default (100%). Se é majoritariamente **texto corrido ou form longo**, use `constrained` ou `narrow`. Cada sprint define no commit checklist.
+
+**Decisão do usuário 2026-04-23** após observar que o padrão original "`max-width: 1440px` fixo" deixava faixas pretas laterais enormes em monitor ultrawide — violava a própria diretriz "página ocupa 100%" do ADR.
+
 #### Tabelas
 
 Padrão: `<ResponsiveTable>` em `packages/ui` — renderiza `<table>` em `md+` e **`<CardList>`** (cards empilhados) em mobile:

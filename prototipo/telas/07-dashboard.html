@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard · LogiFit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="../base.css" />
+  <link rel="stylesheet" href="../app-shell.css" />
+  <link rel="stylesheet" href="../side-menu.css" />
+  <script src="../theme.js" defer></script>
+  <script src="../side-menu.js" defer></script>
+  <style>
+    /* ===== Ajustes locais high-fidelity ===== */
+
+    /* Ícones inline 18x18 */
+    .icon { width: 18px; height: 18px; stroke-width: 1.75; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+    .icon-sm { width: 14px; height: 14px; stroke-width: 2; }
+    .icon-xs { width: 12px; height: 12px; stroke-width: 2; }
+
+    /* ===== Context strip (unidades + período) ===== */
+    .context-strip {
+      display: flex;
+      align-items: center;
+      gap: var(--ev-space-2);
+      flex-wrap: wrap;
+      padding: var(--ev-space-3) var(--ev-space-4);
+      background-color: var(--ev-surface);
+      border: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+      border-radius: var(--ev-radius-md);
+      margin-bottom: var(--ev-space-5);
+    }
+    .context-strip__label {
+      font-size: var(--ev-text-xs);
+      color: var(--ev-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-right: var(--ev-space-2);
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--ev-space-1);
+      padding: 4px var(--ev-space-3);
+      font-size: var(--ev-text-xs);
+      font-weight: var(--ev-weight-medium);
+      color: var(--ev-text-muted);
+      background-color: transparent;
+      border: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+      border-radius: var(--ev-radius-pill);
+      cursor: pointer;
+      transition: all var(--ev-transition-fast);
+    }
+    .chip:hover { border-color: var(--ev-border-strong); color: var(--ev-text); }
+    .chip--active {
+      color: var(--ev-primary);
+      background-color: var(--ev-primary-soft);
+      border-color: var(--ev-primary);
+    }
+    .chip--active:hover { color: var(--ev-primary); }
+
+    /* ===== KPIs ===== */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--ev-space-4);
+      margin-bottom: var(--ev-space-5);
+    }
+    @media (max-width: 1280px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+
+    .kpi {
+      padding: var(--ev-space-5);
+    }
+    .kpi__top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--ev-space-3);
+    }
+    .kpi__label {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--ev-space-2);
+      font-size: var(--ev-text-xs);
+      color: var(--ev-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: var(--ev-weight-medium);
+    }
+    .kpi__value {
+      font-size: var(--ev-text-4xl);
+      font-weight: var(--ev-weight-semibold);
+      line-height: 1;
+      font-feature-settings: var(--ev-font-feature-tabular);
+      margin-bottom: var(--ev-space-2);
+      letter-spacing: -0.02em;
+    }
+    .kpi__value-unit { font-size: var(--ev-text-lg); font-weight: var(--ev-weight-medium); color: var(--ev-text-muted); margin-left: 2px; }
+    .kpi__footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--ev-space-2);
+      margin-top: var(--ev-space-3);
+    }
+    .kpi__delta {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: var(--ev-text-xs);
+      font-weight: var(--ev-weight-medium);
+      font-feature-settings: var(--ev-font-feature-tabular);
+    }
+    .kpi__delta--up { color: var(--ev-success); }
+    .kpi__delta--down { color: var(--ev-danger); }
+    .kpi__delta--neutral { color: var(--ev-text-muted); }
+    .kpi__vs { font-size: var(--ev-text-xs); color: var(--ev-text-subtle); }
+    .spark { width: 100%; height: 36px; }
+
+    /* ===== Grid principal: hero + side ===== */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: var(--ev-space-4);
+      margin-bottom: var(--ev-space-5);
+    }
+    @media (max-width: 1280px) { .main-grid { grid-template-columns: 1fr; } }
+
+    /* Hero chart */
+    .hero-chart { padding: var(--ev-space-5); }
+    .hero-chart__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--ev-space-4);
+      margin-bottom: var(--ev-space-4);
+    }
+    .hero-chart__title {
+      font-size: var(--ev-text-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ev-text-muted);
+      font-weight: var(--ev-weight-medium);
+      margin-bottom: var(--ev-space-1);
+    }
+    .hero-chart__subtitle {
+      font-size: var(--ev-text-2xl);
+      font-weight: var(--ev-weight-semibold);
+      letter-spacing: -0.01em;
+      font-feature-settings: var(--ev-font-feature-tabular);
+    }
+    .hero-chart__meta { font-size: var(--ev-text-xs); color: var(--ev-text-muted); margin-top: 2px; }
+    .hero-chart__legend { display: flex; gap: var(--ev-space-4); }
+    .legend-item { display: inline-flex; align-items: center; gap: var(--ev-space-2); font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+    .legend-item__swatch { width: 10px; height: 10px; border-radius: 2px; }
+    .legend-item__swatch--line { width: 14px; height: 2px; border-radius: 0; }
+
+    .chart-svg { width: 100%; height: 240px; display: block; }
+
+    /* Body do hero chart: chart + recommendation lado a lado (Unity-style) */
+    .hero-chart__body {
+      display: grid;
+      grid-template-columns: 1fr 240px;
+      gap: var(--ev-space-5);
+      align-items: stretch;
+    }
+    @media (max-width: 1440px) { .hero-chart__body { grid-template-columns: 1fr; } }
+
+    .hero-recommendation {
+      padding-left: var(--ev-space-5);
+      border-left: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: var(--ev-space-4);
+    }
+    @media (max-width: 1440px) {
+      .hero-recommendation {
+        padding-left: 0;
+        padding-top: var(--ev-space-4);
+        border-left: none;
+        border-top: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+      }
+    }
+    .hero-recommendation__label {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--ev-space-2);
+      font-size: var(--ev-text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: var(--ev-weight-semibold);
+      color: var(--ev-text-muted);
+      margin-bottom: var(--ev-space-3);
+    }
+    .hero-recommendation__label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--ev-border);
+      margin-left: var(--ev-space-2);
+    }
+    .hero-recommendation__text {
+      font-size: var(--ev-text-sm);
+      line-height: 1.6;
+      color: var(--ev-text);
+    }
+
+    /* Alertas */
+    .alerts { padding: var(--ev-space-5); }
+    .alerts__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--ev-space-4);
+    }
+    .alert-item {
+      display: flex;
+      gap: var(--ev-space-3);
+      padding: var(--ev-space-3) 0;
+      border-bottom: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+    }
+    .alert-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .alert-item:first-child { padding-top: 0; }
+    .alert-item__icon {
+      width: 34px; height: 34px;
+      border-radius: var(--ev-radius-md);
+      display: inline-flex; align-items: center; justify-content: center;
+      flex: 0 0 auto;
+    }
+    .alert-item__body { flex: 1; min-width: 0; }
+    .alert-item__title {
+      font-size: var(--ev-text-sm);
+      font-weight: var(--ev-weight-medium);
+      margin-bottom: 2px;
+      line-height: 1.35;
+    }
+    .alert-item__desc {
+      font-size: var(--ev-text-xs);
+      color: var(--ev-text-muted);
+      line-height: var(--ev-leading-normal);
+    }
+    .alert-item__tag {
+      display: inline-block;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: var(--ev-weight-semibold);
+      color: var(--ev-text-subtle);
+      margin-top: var(--ev-space-2);
+    }
+
+    /* ===== Unidades ===== */
+    .units-card { padding: var(--ev-space-5); margin-bottom: var(--ev-space-5); }
+    .units-table { width: 100%; border-collapse: collapse; }
+    .units-table th, .units-table td {
+      padding: var(--ev-space-3) var(--ev-space-3);
+      text-align: left;
+      border-bottom: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+      font-size: var(--ev-text-sm);
+    }
+    .units-table tr:last-child td { border-bottom: none; }
+    .units-table th {
+      font-size: var(--ev-text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ev-text-muted);
+      font-weight: var(--ev-weight-medium);
+      padding-top: 0;
+    }
+    .units-table td.num,
+    .units-table th.num {
+      text-align: right;
+      font-feature-settings: var(--ev-font-feature-tabular);
+    }
+    .unit-name { display: flex; align-items: center; gap: var(--ev-space-3); }
+    .unit-pin {
+      width: 32px; height: 32px;
+      border-radius: var(--ev-radius-md);
+      background-color: var(--ev-primary-soft);
+      color: var(--ev-primary);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: var(--ev-text-xs);
+      font-weight: var(--ev-weight-semibold);
+    }
+    .unit-pin--green { background-color: var(--ev-success-soft); color: var(--ev-success); }
+    .unit-pin--orange { background-color: var(--ev-energy-soft); color: var(--ev-energy); }
+    .unit-pin--yellow { background-color: var(--ev-warning-soft); color: var(--ev-warning); }
+    .unit-pin--red { background-color: var(--ev-danger-soft); color: var(--ev-danger); }
+
+    .progress {
+      width: 120px;
+      height: 6px;
+      background-color: var(--ev-surface-muted);
+      border-radius: var(--ev-radius-pill);
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: var(--ev-space-2);
+    }
+    .progress__bar {
+      height: 100%;
+      background-color: var(--ev-primary);
+      border-radius: var(--ev-radius-pill);
+    }
+    .progress__bar--success { background-color: var(--ev-success); }
+    .progress__bar--warning { background-color: var(--ev-warning); }
+    .progress__bar--danger { background-color: var(--ev-danger); }
+
+    /* ===== Bottom: agendamentos + leads ===== */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: var(--ev-space-4);
+    }
+    @media (max-width: 1280px) { .bottom-grid { grid-template-columns: 1fr; } }
+
+    .list-card { padding: var(--ev-space-5); }
+    .list-card__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--ev-space-4);
+    }
+
+    .timeline-row {
+      display: grid;
+      grid-template-columns: 56px 1fr auto;
+      gap: var(--ev-space-3);
+      padding: var(--ev-space-3) 0;
+      align-items: center;
+      border-bottom: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+    }
+    .timeline-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .timeline-row:first-child { padding-top: 0; }
+    .timeline-time {
+      font-size: var(--ev-text-sm);
+      font-weight: var(--ev-weight-semibold);
+      font-feature-settings: var(--ev-font-feature-tabular);
+      color: var(--ev-text);
+    }
+    .timeline-duration { font-size: 10px; color: var(--ev-text-subtle); text-transform: uppercase; letter-spacing: 0.05em; }
+    .timeline-body { min-width: 0; }
+    .timeline-title { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-medium); margin-bottom: 2px; }
+    .timeline-meta { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+
+    .avatar-stack { display: flex; align-items: center; }
+    .avatar {
+      width: 28px; height: 28px;
+      border-radius: var(--ev-radius-pill);
+      border: 2px solid var(--ev-surface);
+      background-color: var(--ev-primary-soft);
+      color: var(--ev-primary);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 10px;
+      font-weight: var(--ev-weight-semibold);
+      margin-left: -8px;
+    }
+    .avatar:first-child { margin-left: 0; }
+    .avatar--green { background-color: var(--ev-success-soft); color: var(--ev-success); }
+    .avatar--orange { background-color: var(--ev-energy-soft); color: var(--ev-energy); }
+    .avatar--red { background-color: var(--ev-danger-soft); color: var(--ev-danger); }
+    .avatar--yellow { background-color: var(--ev-warning-soft); color: var(--ev-warning); }
+
+    /* Lead */
+    .lead-row {
+      display: flex;
+      gap: var(--ev-space-3);
+      padding: var(--ev-space-3) 0;
+      border-bottom: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+      align-items: center;
+    }
+    .lead-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .lead-row:first-child { padding-top: 0; }
+    .lead-row__avatar { width: 36px; height: 36px; border-radius: var(--ev-radius-pill); display: inline-flex; align-items: center; justify-content: center; font-size: var(--ev-text-xs); font-weight: var(--ev-weight-semibold); flex: 0 0 auto; }
+    .lead-row__body { flex: 1; min-width: 0; }
+    .lead-row__name { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-medium); }
+    .lead-row__source { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+    .lead-row__score {
+      font-size: var(--ev-text-sm);
+      font-weight: var(--ev-weight-semibold);
+      font-feature-settings: var(--ev-font-feature-tabular);
+      color: var(--ev-text);
+    }
+    .lead-row__score-label { font-size: 10px; color: var(--ev-text-subtle); text-transform: uppercase; letter-spacing: 0.06em; text-align: right; display: block; }
+
+    /* ===== KPI Gauge (Unity/monitoring style) ===== */
+    .kpi__gauge-wrap {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin: var(--ev-space-3) auto var(--ev-space-2);
+    }
+    .kpi__gauge { width: 100%; height: 100%; display: block; }
+    .kpi__gauge-text {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .kpi__gauge-value {
+      font-size: var(--ev-text-xl);
+      font-weight: var(--ev-weight-bold);
+      line-height: 1;
+      font-feature-settings: var(--ev-font-feature-tabular);
+      letter-spacing: -0.02em;
+      color: var(--ev-text);
+    }
+    .kpi__gauge-sub {
+      font-size: 10px;
+      color: var(--ev-text-muted);
+      margin-top: 5px;
+      font-weight: var(--ev-weight-semibold);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* ===== Alertas editorial ===== */
+    .alerts__lead {
+      font-size: var(--ev-text-sm);
+      line-height: 1.6;
+      color: var(--ev-text);
+      padding: var(--ev-space-2) 0 var(--ev-space-4);
+      border-bottom: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+      margin-bottom: var(--ev-space-1);
+    }
+    .alert-item__priority {
+      font-size: 10px;
+      font-weight: var(--ev-weight-bold);
+      color: var(--ev-text-subtle);
+      letter-spacing: 0.1em;
+      font-family: var(--ev-font-mono);
+      white-space: nowrap;
+    }
+    .alert-item__priority--critical { color: var(--ev-danger); }
+    .alert-item__title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--ev-space-3);
+      margin-bottom: 2px;
+    }
+
+    /* ===== Radar hexagonal ===== */
+    .radar-card { padding: var(--ev-space-5); margin-bottom: var(--ev-space-5); }
+    .radar-body {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      gap: var(--ev-space-6);
+      align-items: center;
+      margin-top: var(--ev-space-4);
+    }
+    @media (max-width: 1440px) { .radar-body { grid-template-columns: 1fr; } }
+    .radar-svg { width: 100%; max-width: 440px; margin: 0 auto; display: block; }
+    .radar-legend { display: flex; flex-direction: column; gap: var(--ev-space-2); }
+    .radar-legend__title {
+      font-size: var(--ev-text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: var(--ev-weight-semibold);
+      color: var(--ev-text-muted);
+      padding-bottom: var(--ev-space-2);
+      border-bottom: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+      margin-bottom: var(--ev-space-1);
+    }
+    .radar-unit {
+      display: flex; align-items: center; gap: var(--ev-space-3);
+      padding: var(--ev-space-2) var(--ev-space-3);
+      border-left: 3px solid var(--ev-border);
+    }
+    .radar-unit__name {
+      font-weight: var(--ev-weight-medium);
+      font-size: var(--ev-text-sm);
+    }
+    .radar-unit__score {
+      margin-left: auto;
+      font-family: var(--ev-font-mono);
+      font-size: var(--ev-text-xs);
+      color: var(--ev-text-muted);
+      font-weight: var(--ev-weight-semibold);
+      font-feature-settings: var(--ev-font-feature-tabular);
+    }
+  </style>
+</head>
+<body>
+  <!-- SVG sprite (ícones lucide-style) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1v-9.5Z"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+      <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M20 12V8a2 2 0 0 0-2-2H5a1 1 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/><path d="M18 12a2 2 0 1 0 0 4h3v-4h-3Z"/></symbol>
+      <symbol id="i-bot" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 4v4M8 14h.01M16 14h.01"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4 3 8 8 9 5-1 8-5 8-9V6l-8-3Z"/></symbol>
+      <symbol id="i-dumbbell" viewBox="0 0 24 24"><path d="M14.4 14.4 9.6 9.6M18.66 5.34l.71.71M5.34 18.66l.71.71M21.88 8.12 15.76 2l-3.18 3.18 6.12 6.12L21.88 8.12ZM11.41 18.59 8.24 21.76l-6.12-6.12 3.18-3.18 6.11 6.13Z"/></symbol>
+      <symbol id="i-building" viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H2v10h4M18 9h4v13h-4M10 6h4M10 10h4M10 14h4M10 18h4"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+      <symbol id="i-trend-up" viewBox="0 0 24 24"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></symbol>
+      <symbol id="i-trend-down" viewBox="0 0 24 24"><path d="M22 17 13.5 8.5 8.5 13.5 2 7"/><path d="M16 17h6v-6"/></symbol>
+      <symbol id="i-alert-triangle" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+      <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z"/></symbol>
+      <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></symbol>
+      <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+      <symbol id="i-filter" viewBox="0 0 24 24"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3Z"/></symbol>
+      <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7M12 19V5"/></symbol>
+      <symbol id="i-arrow-down" viewBox="0 0 24 24"><path d="m19 12-7 7-7-7M12 5v14"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+      <symbol id="i-more" viewBox="0 0 24 24" stroke-width="2.5"><circle cx="5" cy="12" r=".5"/><circle cx="12" cy="12" r=".5"/><circle cx="19" cy="12" r=".5"/></symbol>
+      <!-- Ícones SideMenu (Sprint 00b) -->
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+      <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+      <symbol id="i-truck" viewBox="0 0 24 24"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></symbol>
+      <symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v4a4 4 0 1 0 8 0v-4"/><circle cx="20" cy="10" r="2"/></symbol>
+      <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/></symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></symbol>
+      <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M4 2v20l4-2 4 2 4-2 4 2V2l-4 2-4-2-4 2-4-2zM16 8H8M16 12H8M13 16H8"/></symbol>
+      <symbol id="i-door" viewBox="0 0 24 24"><path d="M3 22h18M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"/><circle cx="15" cy="12" r="1"/></symbol>
+      <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 14.14 14.14"/></symbol>
+      <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z"/><circle cx="7" cy="7" r="1.5"/></symbol>
+      <symbol id="i-trending-up" viewBox="0 0 24 24"><path d="m23 6-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></symbol>
+      <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol>
+      <symbol id="i-percent" viewBox="0 0 24 24"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></symbol>
+      <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></symbol>
+      <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+      <symbol id="i-package" viewBox="0 0 24 24"><path d="m16.5 9.4-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.27 6.96 8.73 5.05 8.73-5.05M12 22.08V12"/></symbol>
+      <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2Z"/></symbol>
+      <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.85 12.15 9-9M18 5l3 3M15 8l3 3"/></symbol>
+      <symbol id="i-watch" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 9v3l1.5 1.5M8 3l-.5-1h9l-.5 1M8 21l-.5 1h9l-.5-1"/></symbol>
+    </defs>
+  </svg>
+
+  <div class="app">
+
+    <!-- Topbar com hamburger (SideMenu overlay injetado via side-menu.js) -->
+    <header class="topbar">
+      <button class="hamburger" data-side-menu-trigger aria-label="Abrir menu" aria-controls="side-menu">
+        <svg class="icon" width="22" height="22"><use href="#i-menu"/></svg>
+      </button>
+      <div class="topbar__brand">
+        <span class="topbar__brand-mark">L</span>
+        <span>LogiFit</span>
+      </div>
+      <div class="topbar__tenant">
+        <div class="topbar__tenant-label">Tenant</div>
+        <div class="topbar__tenant-value">Vital Club Rede</div>
+      </div>
+      <div class="topbar__search">
+        <div style="position: relative;">
+          <svg class="icon icon-sm" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ev-text-subtle);"><use href="#i-search"/></svg>
+          <input class="ev-input" placeholder="Pesquisar (Ctrl+K)…" style="padding-left: 36px;" />
+        </div>
+      </div>
+      <button class="topbar__search-btn" aria-label="Abrir pesquisa (Ctrl+K)">
+        <svg class="icon"><use href="#i-search"/></svg>
+      </button>
+      <div class="topbar__actions">
+        <button class="theme-toggle" data-theme-toggle><span>Tema escuro</span></button>
+        <button class="ev-btn ev-btn--ghost" aria-label="Notificações"><svg class="icon"><use href="#i-bell"/></svg></button>
+        <div class="topbar__user">
+          <span class="topbar__avatar">ES</span>
+          <div class="topbar__user-text">
+            <div style="font-size: var(--ev-text-sm); font-weight: var(--ev-weight-medium);">Everton Surkamp</div>
+            <div style="font-size: var(--ev-text-xs); color: var(--ev-text-muted);">Gerente da rede</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="main">
+
+      <div class="main__header">
+        <div class="main__title">
+          <h1>Bom dia, Everton</h1>
+          <p>Quinta-feira, 23 de abril · 4 unidades ativas · 1.842 members</p>
+        </div>
+        <div class="ev-row">
+          <button class="ev-btn ev-btn--ghost"><svg class="icon icon-sm"><use href="#i-sparkles"/></svg>Copilot</button>
+          <button class="ev-btn ev-btn--primary"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Novo agendamento</button>
+        </div>
+      </div>
+
+      <!-- Context strip -->
+      <div class="context-strip">
+        <span class="context-strip__label">Unidades</span>
+        <button class="chip chip--active">Todas <span style="opacity:.6;">· 4</span></button>
+        <button class="chip">Pinheiros</button>
+        <button class="chip">Moema</button>
+        <button class="chip">Ipiranga</button>
+        <button class="chip">Tatuapé</button>
+
+        <div style="width: 1px; height: 20px; background: var(--ev-border); margin: 0 var(--ev-space-2);"></div>
+
+        <span class="context-strip__label">Período</span>
+        <button class="chip">Hoje</button>
+        <button class="chip">7 dias</button>
+        <button class="chip chip--active">30 dias</button>
+        <button class="chip">Trimestre</button>
+        <button class="chip">Ano</button>
+
+        <button class="chip" style="margin-left: auto;"><svg class="icon icon-xs"><use href="#i-filter"/></svg>Mais filtros</button>
+      </div>
+
+      <!-- ===== KPIs (gauges Unity/monitoring style) ===== -->
+      <section class="kpis">
+
+        <article class="ev-card kpi">
+          <div class="kpi__top">
+            <span class="kpi__label"><svg class="icon icon-sm" style="color: var(--ev-primary);"><use href="#i-wallet"/></svg>MRR do mês</span>
+            <span class="ev-badge ev-badge--success">meta 98%</span>
+          </div>
+          <div class="kpi__gauge-wrap">
+            <svg class="kpi__gauge" viewBox="0 0 120 120" aria-label="98% da meta">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ev-surface-muted)" stroke-width="8"/>
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ev-primary)" stroke-width="8"
+                      stroke-linecap="round" pathLength="100" stroke-dasharray="98 100"
+                      transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="kpi__gauge-text">
+              <div class="kpi__gauge-value">R$ 148,9k</div>
+              <div class="kpi__gauge-sub">98% meta</div>
+            </div>
+          </div>
+          <div class="kpi__footer">
+            <span class="kpi__delta kpi__delta--up"><svg class="icon icon-xs"><use href="#i-arrow-up"/></svg>4,2%</span>
+            <span class="kpi__vs">vs. mês anterior</span>
+          </div>
+        </article>
+
+        <article class="ev-card kpi">
+          <div class="kpi__top">
+            <span class="kpi__label"><svg class="icon icon-sm" style="color: var(--ev-success);"><use href="#i-activity"/></svg>Check-ins hoje</span>
+            <span class="ev-badge ev-badge--primary">ao vivo</span>
+          </div>
+          <div class="kpi__gauge-wrap">
+            <svg class="kpi__gauge" viewBox="0 0 120 120" aria-label="60% da meta diária">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ev-surface-muted)" stroke-width="8"/>
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ev-success)" stroke-width="8"
+                      stroke-linecap="round" pathLength="100" stroke-dasharray="60 100"
+                      transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="kpi__gauge-text">
+              <div class="kpi__gauge-value">327</div>
+              <div class="kpi__gauge-sub">60% meta · 545</div>
+            </div>
+          </div>
+          <div class="kpi__footer">
+            <span class="kpi__delta kpi__delta--up"><svg class="icon icon-xs"><use href="#i-arrow-up"/></svg>11%</span>
+            <span class="kpi__vs">vs. média quinta</span>
+          </div>
+        </article>
+
+        <article class="ev-card kpi">
+          <div class="kpi__top">
+            <span class="kpi__label"><svg class="icon icon-sm" style="color: var(--ev-warning);"><use href="#i-alert-triangle"/></svg>Inadimplência</span>
+            <span class="ev-badge ev-badge--warning">atenção</span>
+          </div>
+          <div class="kpi__gauge-wrap">
+            <svg class="kpi__gauge" viewBox="0 0 120 120" aria-label="3,8% inadimplência — zona de atenção">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ev-surface-muted)" stroke-width="8"/>
+              <!-- zonas: 0-30% verde (0-3% inadimpl.), 30-50% amarelo, 50-100% vermelho -->
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ev-success)" stroke-width="8"
+                      pathLength="100" stroke-dasharray="30 100"
+                      transform="rotate(-90 60 60)" opacity="0.2"/>
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ev-warning)" stroke-width="8"
+                      pathLength="100" stroke-dasharray="20 100" stroke-dashoffset="-30"
+                      transform="rotate(-90 60 60)" opacity="0.2"/>
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ev-danger)" stroke-width="8"
+                      pathLength="100" stroke-dasharray="50 100" stroke-dashoffset="-50"
+                      transform="rotate(-90 60 60)" opacity="0.2"/>
+              <!-- valor atual (3.8% de 10% = 38% do arco) em cor warning sólida -->
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ev-warning)" stroke-width="8"
+                      stroke-linecap="round" pathLength="100" stroke-dasharray="38 100"
+                      transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="kpi__gauge-text">
+              <div class="kpi__gauge-value">3,8%</div>
+              <div class="kpi__gauge-sub">zona atenção</div>
+            </div>
+          </div>
+          <div class="kpi__footer">
+            <span class="kpi__delta kpi__delta--down"><svg class="icon icon-xs"><use href="#i-arrow-up"/></svg>0,4 pp</span>
+            <span class="kpi__vs">vs. mês anterior</span>
+          </div>
+        </article>
+
+        <article class="ev-card kpi">
+          <div class="kpi__top">
+            <span class="kpi__label"><svg class="icon icon-sm" style="color: var(--ev-energy);"><use href="#i-sparkles"/></svg>Churn previsto · 30d</span>
+            <span class="ev-badge ev-badge--energy">IA</span>
+          </div>
+          <div class="kpi__gauge-wrap">
+            <svg class="kpi__gauge" viewBox="0 0 120 120" aria-label="87% de confiança do modelo">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ev-surface-muted)" stroke-width="8"/>
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ev-energy)" stroke-width="8"
+                      stroke-linecap="round" pathLength="100" stroke-dasharray="87 100"
+                      transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="kpi__gauge-text">
+              <div class="kpi__gauge-value">24</div>
+              <div class="kpi__gauge-sub">87% conf · IA</div>
+            </div>
+          </div>
+          <div class="kpi__footer">
+            <span class="kpi__delta kpi__delta--neutral">modelo v2.3</span>
+            <span class="kpi__vs">última atualização: 2h</span>
+          </div>
+        </article>
+
+      </section>
+
+      <!-- ===== Main grid: hero chart + alertas ===== -->
+      <section class="main-grid">
+
+        <article class="ev-card hero-chart">
+          <div class="hero-chart__header">
+            <div>
+              <div class="hero-chart__title">Receita &times; meta</div>
+              <div class="hero-chart__subtitle">R$ 148.920 <span style="font-size: var(--ev-text-sm); color: var(--ev-success); font-weight: var(--ev-weight-medium);">· 98% da meta</span></div>
+              <div class="hero-chart__meta">Últimos 6 meses · todas as unidades · projeção maio inclui recorrentes confirmados</div>
+            </div>
+            <div class="hero-chart__legend">
+              <span class="legend-item"><span class="legend-item__swatch legend-item__swatch--line" style="background: #3498DB;"></span>Realizado</span>
+              <span class="legend-item"><span class="legend-item__swatch legend-item__swatch--line" style="background: transparent; border-top: 2px dashed #5DADE2;"></span>Projeção</span>
+              <span class="legend-item"><span class="legend-item__swatch legend-item__swatch--line" style="background: transparent; border-top: 2px dashed #E67E22;"></span>Meta</span>
+            </div>
+          </div>
+
+          <div class="hero-chart__body">
+            <!-- Area line chart com gradient fill (Unity-style) -->
+            <svg class="chart-svg" viewBox="0 0 640 240" preserveAspectRatio="none" aria-label="Receita últimos 6 meses">
+              <defs>
+                <linearGradient id="area-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3498DB" stop-opacity="0.38"/>
+                  <stop offset="55%" stop-color="#3498DB" stop-opacity="0.12"/>
+                  <stop offset="100%" stop-color="#3498DB" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+
+              <!-- grid horizontal -->
+              <g stroke="currentColor" stroke-opacity="0.08" stroke-width="1">
+                <line x1="40" y1="48" x2="620" y2="48"/>
+                <line x1="40" y1="95" x2="620" y2="95"/>
+                <line x1="40" y1="142" x2="620" y2="142"/>
+                <line x1="40" y1="190" x2="620" y2="190"/>
+              </g>
+
+              <!-- y labels -->
+              <g font-size="10" fill="currentColor" opacity="0.5" font-family="Inter, sans-serif">
+                <text x="34" y="52"  text-anchor="end">R$ 160k</text>
+                <text x="34" y="99"  text-anchor="end">R$ 130k</text>
+                <text x="34" y="146" text-anchor="end">R$ 100k</text>
+                <text x="34" y="194" text-anchor="end">R$ 70k</text>
+              </g>
+
+              <!-- area fill (nov→abr) -->
+              <path d="M 60 80 L 153 70 L 247 60 L 340 53 L 433 52 L 527 41 L 527 190 L 60 190 Z" fill="url(#area-fill)"/>
+
+              <!-- line solid (nov→abr) -->
+              <path d="M 60 80 L 153 70 L 247 60 L 340 53 L 433 52 L 527 41" fill="none" stroke="#3498DB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+              <!-- projection dashed (abr→mai) -->
+              <path d="M 527 41 L 620 29" fill="none" stroke="#5DADE2" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round"/>
+
+              <!-- meta linha horizontal (151k) -->
+              <line x1="40" y1="37" x2="620" y2="37" stroke="#E67E22" stroke-width="1.5" stroke-dasharray="5 4"/>
+              <text x="614" y="32" text-anchor="end" fill="#E67E22" font-size="10" font-family="Inter, sans-serif" font-weight="600">meta R$ 151k</text>
+
+              <!-- vertical tracker no ponto ativo -->
+              <line x1="527" y1="30" x2="527" y2="190" stroke="#3498DB" stroke-width="1" stroke-dasharray="2 3" opacity="0.35"/>
+
+              <!-- dots nos pontos realizados (nov→mar) -->
+              <g fill="#FFFFFF" stroke="#3498DB" stroke-width="2">
+                <circle cx="60"  cy="80" r="3"/>
+                <circle cx="153" cy="70" r="3"/>
+                <circle cx="247" cy="60" r="3"/>
+                <circle cx="340" cy="53" r="3"/>
+                <circle cx="433" cy="52" r="3"/>
+              </g>
+
+              <!-- dot ativo (abr) -->
+              <circle cx="527" cy="41" r="6" fill="#3498DB" stroke="#FFFFFF" stroke-width="2.5"/>
+
+              <!-- dot projeção (mai) oco -->
+              <circle cx="620" cy="29" r="3.5" fill="none" stroke="#5DADE2" stroke-width="2"/>
+
+              <!-- value badge no ponto ativo -->
+              <g font-family="Inter, sans-serif">
+                <rect x="490" y="6" width="74" height="20" rx="4" fill="#3498DB"/>
+                <text x="527" y="19.5" text-anchor="middle" fill="#FFFFFF" font-size="10.5" font-weight="700">R$ 148,9k</text>
+              </g>
+
+              <!-- x labels -->
+              <g font-size="11" fill="currentColor" opacity="0.6" font-family="Inter, sans-serif">
+                <text x="60"  y="215" text-anchor="middle">nov</text>
+                <text x="153" y="215" text-anchor="middle">dez</text>
+                <text x="247" y="215" text-anchor="middle">jan</text>
+                <text x="340" y="215" text-anchor="middle">fev</text>
+                <text x="433" y="215" text-anchor="middle">mar</text>
+                <text x="527" y="215" text-anchor="middle" font-weight="700" fill="#3498DB">abr</text>
+                <text x="620" y="215" text-anchor="middle" fill-opacity="0.4">mai</text>
+              </g>
+            </svg>
+
+            <!-- Recomendação lateral (Unity-style) -->
+            <aside class="hero-recommendation">
+              <div>
+                <div class="hero-recommendation__label">
+                  <svg class="icon icon-xs" style="color: var(--ev-primary);"><use href="#i-sparkles"/></svg>
+                  Recomendação &middot; copilot
+                </div>
+                <p class="hero-recommendation__text">
+                  <strong>Moema</strong> puxou a média da rede com <strong style="color: var(--ev-success);">+8% vs. Q1</strong>, e abril já está <strong>6% acima</strong> da mesma janela de 2025. Vale considerar ampliar horário premium — o pico 18h-21h ainda tem <strong>12% de folga</strong> de ocupação.
+                </p>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: var(--ev-space-2);">
+                <button class="ev-btn ev-btn--sm" style="width: 100%; justify-content: center;">Ver análise completa</button>
+                <button class="ev-btn ev-btn--ghost ev-btn--sm" style="width: 100%; justify-content: center;">Gerar outros insights</button>
+              </div>
+            </aside>
+          </div>
+        </article>
+
+        <article class="ev-card alerts">
+          <div class="alerts__header">
+            <div>
+              <div class="kpi__label" style="margin-bottom: 2px;"><svg class="icon icon-sm" style="color: var(--ev-energy);"><use href="#i-alert-triangle"/></svg>Prioridades de hoje</div>
+              <div style="font-size: var(--ev-text-xs); color: var(--ev-text-muted);">Copilot &middot; regras clínicas &middot; 3 situações</div>
+            </div>
+          </div>
+
+          <p class="alerts__lead">
+            A mais crítica envolve <strong>cruzamento clínico</strong> — Ana Paula tem HIIT marcado 17:15, mas há restrição cardio registrada pelo fisio ontem. <strong style="color: var(--ev-danger);">Resolver antes das 17h.</strong>
+          </p>
+
+          <div class="alert-item">
+            <span class="alert-item__icon" style="background: var(--ev-danger-soft); color: var(--ev-danger);">
+              <svg class="icon icon-sm"><use href="#i-heart"/></svg>
+            </span>
+            <div class="alert-item__body">
+              <div class="alert-item__title-row">
+                <div class="alert-item__title">Treino incompatível com restrição clínica</div>
+                <span class="alert-item__priority alert-item__priority--critical">#01 · CRÍTICO</span>
+              </div>
+              <div class="alert-item__desc">Ana Paula &middot; HIIT 17:15 Moema. Fisio registrou restrição cardiovascular em 22/abr (CID-11 MG30.02). Sugere-se trocar por zona 2 ou pilates leve.</div>
+              <span class="alert-item__tag" style="color: var(--ev-danger);">ação agora</span>
+            </div>
+          </div>
+
+          <div class="alert-item">
+            <span class="alert-item__icon" style="background: var(--ev-warning-soft); color: var(--ev-warning);">
+              <svg class="icon icon-sm"><use href="#i-trend-down"/></svg>
+            </span>
+            <div class="alert-item__body">
+              <div class="alert-item__title-row">
+                <div class="alert-item__title">Queda de frequência &middot; risco de churn</div>
+                <span class="alert-item__priority" style="color: var(--ev-warning);">#02 · ATENÇÃO</span>
+              </div>
+              <div class="alert-item__desc">12 members com -60% de check-ins nos últimos 14 dias. 8 deles com plano recorrente há mais de 6 meses — vale contato proativo pela régua.</div>
+              <span class="alert-item__tag" style="color: var(--ev-warning);">próximos 7 dias</span>
+            </div>
+          </div>
+
+          <div class="alert-item">
+            <span class="alert-item__icon" style="background: var(--ev-primary-soft); color: var(--ev-primary);">
+              <svg class="icon icon-sm"><use href="#i-trend-up"/></svg>
+            </span>
+            <div class="alert-item__body">
+              <div class="alert-item__title-row">
+                <div class="alert-item__title">Ritmo acima do histórico &middot; Moema</div>
+                <span class="alert-item__priority">#03 · POSITIVO</span>
+              </div>
+              <div class="alert-item__desc">Já bateu 92% da meta diária de check-ins às 11h. Projeção: superar em 14%. Maior ritmo do trimestre.</div>
+              <span class="alert-item__tag" style="color: var(--ev-primary);">informativo</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- ===== Comparativo de unidades ===== -->
+      <article class="ev-card units-card">
+        <div class="ev-card__header">
+          <div>
+            <div class="ev-card__title" style="margin-bottom: 2px;">Comparativo de unidades</div>
+            <div style="font-size: var(--ev-text-xs); color: var(--ev-text-muted);">Abril/2026 · ordenado por atingimento de meta</div>
+          </div>
+          <button class="ev-btn ev-btn--ghost ev-btn--sm">Detalhar <svg class="icon icon-xs"><use href="#i-chevron-down"/></svg></button>
+        </div>
+
+        <table class="units-table">
+          <thead>
+            <tr>
+              <th>Unidade</th>
+              <th class="num">Members</th>
+              <th class="num">Check-ins hoje</th>
+              <th class="num">MRR</th>
+              <th>Atingimento meta</th>
+              <th class="num">Inadimplência</th>
+              <th class="num">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="unit-name">
+                  <span class="unit-pin unit-pin--green">M</span>
+                  <div>
+                    <div style="font-weight: var(--ev-weight-medium);">Moema</div>
+                    <div class="text-muted text-xs">São Paulo · SP</div>
+                  </div>
+                </div>
+              </td>
+              <td class="num">612</td>
+              <td class="num">118</td>
+              <td class="num">R$ 54.200</td>
+              <td>
+                <span class="progress"><span class="progress__bar progress__bar--success" style="width: 106%; max-width: 100%;"></span></span>
+                <span class="num" style="font-weight: var(--ev-weight-medium);">106%</span>
+              </td>
+              <td class="num">2,1%</td>
+              <td class="num"><span class="ev-badge ev-badge--success">saudável</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="unit-name">
+                  <span class="unit-pin">P</span>
+                  <div>
+                    <div style="font-weight: var(--ev-weight-medium);">Pinheiros</div>
+                    <div class="text-muted text-xs">São Paulo · SP · matriz</div>
+                  </div>
+                </div>
+              </td>
+              <td class="num">548</td>
+              <td class="num">104</td>
+              <td class="num">R$ 48.830</td>
+              <td>
+                <span class="progress"><span class="progress__bar" style="width: 98%;"></span></span>
+                <span class="num" style="font-weight: var(--ev-weight-medium);">98%</span>
+              </td>
+              <td class="num">3,4%</td>
+              <td class="num"><span class="ev-badge ev-badge--primary">no ritmo</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="unit-name">
+                  <span class="unit-pin unit-pin--orange">I</span>
+                  <div>
+                    <div style="font-weight: var(--ev-weight-medium);">Ipiranga</div>
+                    <div class="text-muted text-xs">São Paulo · SP</div>
+                  </div>
+                </div>
+              </td>
+              <td class="num">412</td>
+              <td class="num">67</td>
+              <td class="num">R$ 31.450</td>
+              <td>
+                <span class="progress"><span class="progress__bar progress__bar--warning" style="width: 84%;"></span></span>
+                <span class="num" style="font-weight: var(--ev-weight-medium);">84%</span>
+              </td>
+              <td class="num">4,7%</td>
+              <td class="num"><span class="ev-badge ev-badge--warning">atenção</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="unit-name">
+                  <span class="unit-pin unit-pin--red">T</span>
+                  <div>
+                    <div style="font-weight: var(--ev-weight-medium);">Tatuapé</div>
+                    <div class="text-muted text-xs">São Paulo · SP · franquia</div>
+                  </div>
+                </div>
+              </td>
+              <td class="num">270</td>
+              <td class="num">38</td>
+              <td class="num">R$ 14.440</td>
+              <td>
+                <span class="progress"><span class="progress__bar progress__bar--danger" style="width: 67%;"></span></span>
+                <span class="num" style="font-weight: var(--ev-weight-medium);">67%</span>
+              </td>
+              <td class="num">6,9%</td>
+              <td class="num"><span class="ev-badge ev-badge--danger">abaixo</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <!-- ===== Radar hexagonal · 4 unidades × 6 dimensões ===== -->
+      <article class="ev-card radar-card">
+        <div class="ev-card__header">
+          <div>
+            <div class="ev-card__title" style="margin-bottom: 2px;">Radar de unidades &middot; 6 dimensões</div>
+            <div style="font-size: var(--ev-text-xs); color: var(--ev-text-muted);">Normalizado 0-100 &middot; Moema líder em 5 de 6 &middot; Tatuapé pressionada por churn e adimplência</div>
+          </div>
+          <button class="ev-btn ev-btn--ghost ev-btn--sm">Detalhar <svg class="icon icon-xs"><use href="#i-chevron-down"/></svg></button>
+        </div>
+
+        <div class="radar-body">
+          <svg class="radar-svg" viewBox="0 0 440 420" aria-label="Radar comparativo de 4 unidades em 6 dimensões">
+
+            <!-- Grid concêntrico -->
+            <g fill="none" stroke="currentColor" stroke-opacity="0.1" stroke-width="1">
+              <path d="M 220 70 L 350 145 L 350 295 L 220 370 L 90 295 L 90 145 Z"/>
+              <path d="M 220 108 L 318 164 L 318 276 L 220 333 L 123 276 L 123 164 Z"/>
+              <path d="M 220 145 L 285 183 L 285 258 L 220 295 L 155 258 L 155 183 Z"/>
+              <path d="M 220 183 L 253 201 L 253 239 L 220 258 L 188 239 L 188 201 Z"/>
+            </g>
+
+            <!-- Eixos (center → vértices) -->
+            <g stroke="currentColor" stroke-opacity="0.1" stroke-width="1">
+              <line x1="220" y1="220" x2="220" y2="70"/>
+              <line x1="220" y1="220" x2="350" y2="145"/>
+              <line x1="220" y1="220" x2="350" y2="295"/>
+              <line x1="220" y1="220" x2="220" y2="370"/>
+              <line x1="220" y1="220" x2="90" y2="295"/>
+              <line x1="220" y1="220" x2="90" y2="145"/>
+            </g>
+
+            <!-- Tatuapé (pior, renderizado primeiro pra ficar atrás) -->
+            <path d="M 220 153 L 295 177 L 282 256 L 220 298 L 165 252 L 168 190 Z"
+                  fill="#E74C3C" fill-opacity="0.12" stroke="#E74C3C" stroke-width="2" stroke-linejoin="round"/>
+
+            <!-- Ipiranga -->
+            <path d="M 220 112 L 321 162 L 305 269 L 220 322 L 139 267 L 142 175 Z"
+                  fill="#E67E22" fill-opacity="0.12" stroke="#E67E22" stroke-width="2" stroke-linejoin="round"/>
+
+            <!-- Pinheiros -->
+            <path d="M 220 88 L 331 156 L 324 280 L 220 343 L 119 279 L 123 164 Z"
+                  fill="#3498DB" fill-opacity="0.12" stroke="#3498DB" stroke-width="2" stroke-linejoin="round"/>
+
+            <!-- Moema (melhor, topo) -->
+            <path d="M 220 78 L 340 151 L 334 286 L 220 340 L 106 286 L 110 156 Z"
+                  fill="#2ECC71" fill-opacity="0.16" stroke="#2ECC71" stroke-width="2.5" stroke-linejoin="round"/>
+
+            <!-- Dots em cada vértice da Moema (destaque) -->
+            <g fill="#2ECC71">
+              <circle cx="220" cy="78" r="3.5"/>
+              <circle cx="340" cy="151" r="3.5"/>
+              <circle cx="334" cy="286" r="3.5"/>
+              <circle cx="220" cy="340" r="3.5"/>
+              <circle cx="106" cy="286" r="3.5"/>
+              <circle cx="110" cy="156" r="3.5"/>
+            </g>
+
+            <!-- Labels dos 6 eixos -->
+            <g font-size="11" font-family="Inter, sans-serif" font-weight="600" fill="currentColor">
+              <text x="220" y="55"  text-anchor="middle">MRR</text>
+              <text x="365" y="148" text-anchor="start">Aderência</text>
+              <text x="365" y="300" text-anchor="start">NPS</text>
+              <text x="220" y="395" text-anchor="middle">Ocupação</text>
+              <text x="75"  y="300" text-anchor="end">Adimplência</text>
+              <text x="75"  y="148" text-anchor="end">Retenção</text>
+            </g>
+
+            <!-- Escala numérica no eixo superior -->
+            <g font-size="9" fill="currentColor" opacity="0.4" font-family="Inter, sans-serif">
+              <text x="226" y="186" text-anchor="start">25</text>
+              <text x="226" y="148" text-anchor="start">50</text>
+              <text x="226" y="110" text-anchor="start">75</text>
+              <text x="226" y="72"  text-anchor="start">100</text>
+            </g>
+          </svg>
+
+          <div class="radar-legend">
+            <div class="radar-legend__title">Unidades &middot; score médio</div>
+            <div class="radar-unit" style="border-left-color: #2ECC71;">
+              <span class="radar-unit__name" style="color: var(--ev-success);">Moema</span>
+              <span class="radar-unit__score">88</span>
+            </div>
+            <div class="radar-unit" style="border-left-color: #3498DB;">
+              <span class="radar-unit__name" style="color: var(--ev-primary);">Pinheiros</span>
+              <span class="radar-unit__score">81</span>
+            </div>
+            <div class="radar-unit" style="border-left-color: #E67E22;">
+              <span class="radar-unit__name" style="color: var(--ev-energy);">Ipiranga</span>
+              <span class="radar-unit__score">68</span>
+            </div>
+            <div class="radar-unit" style="border-left-color: #E74C3C;">
+              <span class="radar-unit__name" style="color: var(--ev-danger);">Tatuapé</span>
+              <span class="radar-unit__score">48</span>
+            </div>
+            <div style="margin-top: var(--ev-space-3); padding-top: var(--ev-space-3); border-top: 1px solid var(--ev-border); font-size: var(--ev-text-xs); color: var(--ev-text-muted); line-height: 1.5;">
+              <strong style="color: var(--ev-text);">Insight:</strong> o gap entre Moema e Tatuapé em <strong style="color: var(--ev-danger);">retenção (-45 pts)</strong> concentra 60% do churn previsto da rede.
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- ===== Bottom: próximos agendamentos + leads quentes ===== -->
+      <section class="bottom-grid">
+
+        <article class="ev-card list-card">
+          <div class="list-card__header">
+            <div>
+              <div class="ev-card__title" style="margin-bottom: 2px;">Próximos agendamentos</div>
+              <div style="font-size: var(--ev-text-xs); color: var(--ev-text-muted);">Próximas 6 horas · todas as unidades</div>
+            </div>
+            <button class="ev-btn ev-btn--ghost ev-btn--sm">Ver agenda</button>
+          </div>
+
+          <div class="timeline-row">
+            <div>
+              <div class="timeline-time">14:30</div>
+              <div class="timeline-duration">45 min</div>
+            </div>
+            <div class="timeline-body">
+              <div class="timeline-title">Avaliação física · Ana Beatriz Siqueira</div>
+              <div class="timeline-meta">Pinheiros · prof. Rafael Prado · sala 02</div>
+            </div>
+            <span class="ev-badge ev-badge--primary">confirmado</span>
+          </div>
+
+          <div class="timeline-row">
+            <div>
+              <div class="timeline-time">15:00</div>
+              <div class="timeline-duration">60 min</div>
+            </div>
+            <div class="timeline-body">
+              <div class="timeline-title">Aula de spinning · grupo 14 pessoas</div>
+              <div class="timeline-meta">Moema · prof. Camila Tavares · sala spin</div>
+            </div>
+            <div class="avatar-stack">
+              <span class="avatar">RM</span>
+              <span class="avatar avatar--green">JV</span>
+              <span class="avatar avatar--orange">LS</span>
+              <span class="avatar" style="background: var(--ev-surface-muted); color: var(--ev-text-muted);">+11</span>
+            </div>
+          </div>
+
+          <div class="timeline-row">
+            <div>
+              <div class="timeline-time">15:30</div>
+              <div class="timeline-duration">30 min</div>
+            </div>
+            <div class="timeline-body">
+              <div class="timeline-title">Personal · Marcos Ribeiro</div>
+              <div class="timeline-meta">Pinheiros · prof. Daniel Otávio · sala livre</div>
+            </div>
+            <span class="ev-badge ev-badge--warning">check-in pendente</span>
+          </div>
+
+          <div class="timeline-row">
+            <div>
+              <div class="timeline-time">16:00</div>
+              <div class="timeline-duration">50 min</div>
+            </div>
+            <div class="timeline-body">
+              <div class="timeline-title">Avaliação nutricional · Patrícia Coelho</div>
+              <div class="timeline-meta">Ipiranga · nutri. Júlia Martinez · consultório 1</div>
+            </div>
+            <span class="ev-badge ev-badge--primary">confirmado</span>
+          </div>
+
+          <div class="timeline-row">
+            <div>
+              <div class="timeline-time">17:15</div>
+              <div class="timeline-duration">60 min</div>
+            </div>
+            <div class="timeline-body">
+              <div class="timeline-title">HIIT · Ana Paula Gomes</div>
+              <div class="timeline-meta">Moema · prof. Rafael Prado · sala funcional</div>
+            </div>
+            <span class="ev-badge ev-badge--danger"><svg class="icon icon-xs"><use href="#i-alert-triangle"/></svg>restrição clínica</span>
+          </div>
+        </article>
+
+        <article class="ev-card list-card">
+          <div class="list-card__header">
+            <div>
+              <div class="ev-card__title" style="margin-bottom: 2px;">Leads quentes</div>
+              <div style="font-size: var(--ev-text-xs); color: var(--ev-text-muted);">Score &gt; 70 · IA · últimas 24h</div>
+            </div>
+            <button class="ev-btn ev-btn--ghost ev-btn--sm">Funil</button>
+          </div>
+
+          <div class="lead-row">
+            <span class="lead-row__avatar" style="background: var(--ev-success-soft); color: var(--ev-success);">CM</span>
+            <div class="lead-row__body">
+              <div class="lead-row__name">Carlos Mendes</div>
+              <div class="lead-row__source">Instagram Ads · trial 7 dias · há 14 min</div>
+            </div>
+            <div>
+              <span class="lead-row__score-label">score</span>
+              <span class="lead-row__score" style="color: var(--ev-success);">92</span>
+            </div>
+          </div>
+
+          <div class="lead-row">
+            <span class="lead-row__avatar" style="background: var(--ev-primary-soft); color: var(--ev-primary);">LR</span>
+            <div class="lead-row__body">
+              <div class="lead-row__name">Luana Ribeiro</div>
+              <div class="lead-row__source">Indicação · Ana Beatriz · há 2h</div>
+            </div>
+            <div>
+              <span class="lead-row__score-label">score</span>
+              <span class="lead-row__score" style="color: var(--ev-primary);">88</span>
+            </div>
+          </div>
+
+          <div class="lead-row">
+            <span class="lead-row__avatar" style="background: var(--ev-energy-soft); color: var(--ev-energy);">PA</span>
+            <div class="lead-row__body">
+              <div class="lead-row__name">Pedro Almeida</div>
+              <div class="lead-row__source">Google Ads · landing premium · há 4h</div>
+            </div>
+            <div>
+              <span class="lead-row__score-label">score</span>
+              <span class="lead-row__score" style="color: var(--ev-energy);">81</span>
+            </div>
+          </div>
+
+          <div class="lead-row">
+            <span class="lead-row__avatar" style="background: var(--ev-warning-soft); color: var(--ev-warning);">TS</span>
+            <div class="lead-row__body">
+              <div class="lead-row__name">Tatiane Souza</div>
+              <div class="lead-row__source">WhatsApp direto · perguntou plano fit · ontem</div>
+            </div>
+            <div>
+              <span class="lead-row__score-label">score</span>
+              <span class="lead-row__score" style="color: var(--ev-warning);">74</span>
+            </div>
+          </div>
+        </article>
+
+      </section>
+
+    </main>
+
+  </div>
+</body>
+</html>

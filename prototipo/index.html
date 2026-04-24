@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LogiFit · Protótipo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="./base.css" />
+  <script src="./theme.js" defer></script>
+  <style>
+    .hub {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: var(--ev-space-12) var(--ev-space-6);
+    }
+    .hub__header { margin-bottom: var(--ev-space-10); }
+    .hub__header h1 { font-size: var(--ev-text-3xl); margin-bottom: var(--ev-space-2); }
+    .hub__header p { color: var(--ev-text-muted); font-size: var(--ev-text-lg); }
+    .hub__actions { margin-top: var(--ev-space-4); }
+
+    .hub__section { margin-bottom: var(--ev-space-10); }
+    .hub__section h2 {
+      font-size: var(--ev-text-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ev-text-muted);
+      margin-bottom: var(--ev-space-4);
+      font-weight: var(--ev-weight-medium);
+    }
+
+    .screen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--ev-space-3);
+    }
+    .screen-card {
+      display: block;
+      padding: var(--ev-space-5);
+      background-color: var(--ev-surface);
+      border: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+      border-radius: var(--ev-radius-md);
+      text-decoration: none;
+      color: inherit;
+      transition: border-color var(--ev-transition-fast);
+    }
+    .screen-card:hover { border-color: var(--ev-primary); }
+    .screen-card__sprint {
+      display: inline-block;
+      font-size: var(--ev-text-xs);
+      color: var(--ev-text-muted);
+      font-weight: var(--ev-weight-medium);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: var(--ev-space-2);
+    }
+    .screen-card__title {
+      font-size: var(--ev-text-base);
+      font-weight: var(--ev-weight-semibold);
+      margin-bottom: var(--ev-space-1);
+    }
+    .screen-card__desc {
+      font-size: var(--ev-text-sm);
+      color: var(--ev-text-muted);
+      line-height: var(--ev-leading-normal);
+    }
+    .screen-card--todo {
+      border-style: dashed;
+      opacity: 0.6;
+    }
+    .screen-card--todo:hover { border-color: var(--ev-border-strong); }
+
+    .token-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: var(--ev-space-3);
+    }
+    .token-swatch {
+      padding: var(--ev-space-3);
+      border: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+      border-radius: var(--ev-radius-md);
+      background-color: var(--ev-surface);
+    }
+    .token-swatch__color {
+      height: 48px;
+      border-radius: var(--ev-radius-sm);
+      margin-bottom: var(--ev-space-2);
+      border: 1px solid var(--ev-border);
+    }
+    .token-swatch__name {
+      font-size: var(--ev-text-xs);
+      font-weight: var(--ev-weight-medium);
+      color: var(--ev-text);
+    }
+    .token-swatch__hex {
+      font-family: var(--ev-font-mono);
+      font-size: var(--ev-text-xs);
+      color: var(--ev-text-muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="hub">
+    <header class="hub__header">
+      <h1>LogiFit · Protótipo de telas</h1>
+      <p>ERP SaaS · Academia + Fisioterapia + Nutrição</p>
+      <div class="hub__actions">
+        <button class="theme-toggle" data-theme-toggle>Tema escuro</button>
+      </div>
+    </header>
+
+    <section class="hub__section">
+      <h2>Componentes base</h2>
+      <div class="screen-grid">
+        <a class="screen-card" href="./telas/07-dashboard.html">
+          <span class="screen-card__sprint">Sprint 00b</span>
+          <div class="screen-card__title">SideMenu (hamburger overlay)</div>
+          <p class="screen-card__desc">
+            Menu lateral overlay em todos os viewports · organizado por ~15 módulos · filtros automáticos por permission/vertical/consent/feature flag.
+            Atalhos: <kbd>Ctrl+B</kbd> / <kbd>Cmd+B</kbd> abre/fecha, <kbd>Esc</kbd> fecha. Swipe em mobile.
+            <br /><em>Abra qualquer tela abaixo para experimentar o ☰.</em>
+          </p>
+        </a>
+      </div>
+    </section>
+
+    <section class="hub__section">
+      <h2>Design tokens — Equilíbrio Vital</h2>
+      <div class="token-grid">
+        <div class="token-swatch">
+          <div class="token-swatch__color" style="background: var(--ev-bg)"></div>
+          <div class="token-swatch__name">bg</div>
+          <div class="token-swatch__hex">--ev-bg</div>
+        </div>
+        <div class="token-swatch">
+          <div class="token-swatch__color" style="background: var(--ev-surface)"></div>
+          <div class="token-swatch__name">surface</div>
+          <div class="token-swatch__hex">--ev-surface</div>
+        </div>
+        <div class="token-swatch">
+          <div class="token-swatch__color" style="background: var(--ev-primary)"></div>
+          <div class="token-swatch__name">primary</div>
+          <div class="token-swatch__hex">#3498DB</div>
+        </div>
+        <div class="token-swatch">
+          <div class="token-swatch__color" style="background: var(--ev-success)"></div>
+          <div class="token-swatch__name">success</div>
+          <div class="token-swatch__hex">#2ECC71</div>
+        </div>
+        <div class="token-swatch">
+          <div class="token-swatch__color" style="background: var(--ev-warning)"></div>
+          <div class="token-swatch__name">warning</div>
+          <div class="token-swatch__hex">#F39C12</div>
+        </div>
+        <div class="token-swatch">
+          <div class="token-swatch__color" style="background: var(--ev-energy)"></div>
+          <div class="token-swatch__name">energy</div>
+          <div class="token-swatch__hex">#E67E22</div>
+        </div>
+        <div class="token-swatch">
+          <div class="token-swatch__color" style="background: var(--ev-danger)"></div>
+          <div class="token-swatch__name">danger</div>
+          <div class="token-swatch__hex">#E74C3C</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="hub__section">
+      <h2>Telas — MVP (Fase 1 · Academia)</h2>
+      <div class="screen-grid">
+        <a class="screen-card" href="./telas/07-dashboard.html">
+          <span class="screen-card__sprint">Sprint 07 · dashboard</span>
+          <div class="screen-card__title">Home do gerente</div>
+          <p class="screen-card__desc">KPIs do negócio, alertas cruzados, atividade recente da rede. <strong>Com SideMenu ☰ (Sprint 00b).</strong></p>
+        </a>
+        <a class="screen-card screen-card--todo" href="#">
+          <span class="screen-card__sprint">Sprint 01a · onboarding</span>
+          <div class="screen-card__title">Criação do tenant</div>
+          <p class="screen-card__desc">Fluxo de cadastro, escolha de topology e criação da primeira company.</p>
+        </a>
+        <a class="screen-card screen-card--todo" href="#">
+          <span class="screen-card__sprint">Sprint 02 · CRM</span>
+          <div class="screen-card__title">Lista de members</div>
+          <p class="screen-card__desc">Busca, filtros por status, segmentação, ações em lote.</p>
+        </a>
+        <a class="screen-card" href="./telas/02-member-home.html">
+          <span class="screen-card__sprint">Sprint 02 · CRM</span>
+          <div class="screen-card__title">Home do member (aluno/paciente)</div>
+          <p class="screen-card__desc">/app/members/[id] · widgets cruzados: academia + fisio + nutri + copilot + alertas clínicos.</p>
+        </a>
+        <a class="screen-card screen-card--todo" href="#">
+          <span class="screen-card__sprint">Sprint 03 · agenda</span>
+          <div class="screen-card__title">Agenda universal</div>
+          <p class="screen-card__desc">Calendário diário/semanal, salas, profissionais, reservas.</p>
+        </a>
+        <a class="screen-card screen-card--todo" href="#">
+          <span class="screen-card__sprint">Sprint 06 · copilot</span>
+          <div class="screen-card__title">Copilot sidepanel</div>
+          <p class="screen-card__desc">Chat IA ancorado no member selecionado, com fontes citadas.</p>
+        </a>
+        <a class="screen-card screen-card--todo" href="#">
+          <span class="screen-card__sprint">Sprint 08 · acessos</span>
+          <div class="screen-card__title">Controle de catraca</div>
+          <p class="screen-card__desc">Tempo real de entradas/saídas, status da catraca, facial.</p>
+        </a>
+      </div>
+    </section>
+
+    <section class="hub__section">
+      <h2>Telas — Fase 2 (Fisioterapia)</h2>
+      <div class="screen-grid">
+        <a class="screen-card screen-card--todo" href="#">
+          <span class="screen-card__sprint">Sprint 20 · fisio</span>
+          <div class="screen-card__title">Prontuário eletrônico</div>
+          <p class="screen-card__desc">CID-11 + CIF, assinatura ICP por profissão, templates.</p>
+        </a>
+        <a class="screen-card screen-card--todo" href="#">
+          <span class="screen-card__sprint">Sprint 22 · fisio</span>
+          <div class="screen-card__title">Faturamento TISS</div>
+          <p class="screen-card__desc">Guias TISS, terminologia TUSS, convênios.</p>
+        </a>
+      </div>
+    </section>
+
+    <section class="hub__section">
+      <h2>Telas — Fase 3 (Fiscal)</h2>
+      <div class="screen-grid">
+        <a class="screen-card screen-card--todo" href="#">
+          <span class="screen-card__sprint">Sprint 17 · fiscal</span>
+          <div class="screen-card__title">Inbox NF-e</div>
+          <p class="screen-card__desc">4 métodos de ingestão, manifestação do destinatário.</p>
+        </a>
+        <a class="screen-card screen-card--todo" href="#">
+          <span class="screen-card__sprint">Sprint 36 · fiscal</span>
+          <div class="screen-card__title">Emissão fiscal (Focus NFe)</div>
+          <p class="screen-card__desc">NFS-e, NF-e produto, NFC-e, devolução, CC-e.</p>
+        </a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,212 @@
+/*
+ * Layout de aplicação: topbar + main (página ocupa 100% da largura).
+ * Navegação principal fica no <SideMenu> overlay (side-menu.css).
+ * Compartilhado por todas as telas em /telas/.
+ *
+ * Padrão: hamburger overlay em todos os viewports (ADR 0063).
+ */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ===== Topbar ===== */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--ev-space-3);
+  padding: 0 var(--ev-space-4);
+  height: var(--ev-topbar-height);
+  background-color: var(--ev-surface);
+  border-bottom: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+  position: sticky;
+  top: 0;
+  z-index: var(--ev-z-sticky);
+  /* Safe-area iPhone notch */
+  padding-top: env(safe-area-inset-top);
+  padding-left: calc(var(--ev-space-4) + env(safe-area-inset-left));
+  padding-right: calc(var(--ev-space-4) + env(safe-area-inset-right));
+}
+.topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--ev-space-2);
+  font-size: var(--ev-text-base);
+  font-weight: var(--ev-weight-semibold);
+  margin-right: var(--ev-space-2);
+}
+.topbar__brand-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--ev-radius-md);
+  background-color: var(--ev-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ev-text-inverse);
+  font-size: var(--ev-text-xs);
+  font-weight: var(--ev-weight-bold);
+}
+.topbar__search {
+  flex: 1;
+  max-width: 480px;
+}
+/* Esconde search em telas muito estreitas (vai pro Command Palette) */
+@media (max-width: 639px) {
+  .topbar__search { display: none; }
+}
+.topbar__search-btn {
+  display: none;
+  min-width: 44px;
+  min-height: 44px;
+  background: transparent;
+  border: none;
+  color: var(--ev-text-muted);
+  cursor: pointer;
+  border-radius: var(--ev-radius-md);
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 639px) {
+  .topbar__search-btn { display: inline-flex; }
+}
+.topbar__search-btn:hover {
+  background-color: var(--ev-surface-muted);
+  color: var(--ev-text);
+}
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ev-space-2);
+  margin-left: auto;
+}
+.topbar__tenant {
+  display: flex;
+  flex-direction: column;
+  padding-right: var(--ev-space-4);
+  border-right: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+}
+/* Esconde label de tenant em tablet/mobile — espaço escasso */
+@media (max-width: 767px) {
+  .topbar__tenant { display: none; }
+}
+.topbar__tenant-label {
+  font-size: var(--ev-text-xs);
+  color: var(--ev-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.topbar__tenant-value {
+  font-size: var(--ev-text-sm);
+  font-weight: var(--ev-weight-medium);
+}
+.topbar__user {
+  display: flex;
+  align-items: center;
+  gap: var(--ev-space-2);
+  padding: var(--ev-space-1) var(--ev-space-2);
+  border-radius: var(--ev-radius-md);
+  cursor: pointer;
+}
+.topbar__user:hover { background-color: var(--ev-surface-muted); }
+.topbar__user-text {
+  display: block;
+}
+/* Esconde texto do user em mobile — fica só o avatar */
+@media (max-width: 767px) {
+  .topbar__user-text { display: none; }
+}
+.topbar__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ev-radius-pill);
+  background-color: var(--ev-primary-soft);
+  color: var(--ev-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--ev-text-xs);
+  font-weight: var(--ev-weight-semibold);
+}
+
+/* ===== Main (default: 100% da viewport — ADR 0063 Opção C) =====
+ *
+ * Default: dashboards, listas, tabelas, gráficos ocupam a tela inteira
+ *          para aproveitar monitor ultrawide.
+ *
+ * Variante .main--constrained: páginas text-heavy (prontuário, forms
+ *          longos, configurações, docs legais) limitam largura para
+ *          manter legibilidade (60-80 chars/linha).
+ */
+.main {
+  padding: var(--ev-space-6) var(--ev-space-8);
+  overflow-y: auto;
+  flex: 1;
+  width: 100%;
+  padding-left: calc(var(--ev-space-8) + env(safe-area-inset-left));
+  padding-right: calc(var(--ev-space-8) + env(safe-area-inset-right));
+}
+@media (max-width: 767px) {
+  .main { padding: var(--ev-space-4); }
+}
+
+/* Variante text-heavy: centraliza e limita largura para legibilidade */
+.main--constrained {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Variante extra-compacta para formulários simples / telas de config */
+.main--narrow {
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.main__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ev-space-4);
+  margin-bottom: var(--ev-space-6);
+  flex-wrap: wrap;
+}
+.main__title h1 {
+  font-size: var(--ev-text-2xl);
+  margin-bottom: var(--ev-space-1);
+}
+@media (max-width: 639px) {
+  .main__title h1 { font-size: var(--ev-text-xl); }
+}
+.main__title p {
+  color: var(--ev-text-muted);
+  font-size: var(--ev-text-sm);
+}
+
+/* Theme toggle button — só pro protótipo */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ev-space-2);
+  padding: var(--ev-space-1) var(--ev-space-3);
+  background-color: transparent;
+  border: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+  border-radius: var(--ev-radius-md);
+  font-size: var(--ev-text-xs);
+  color: var(--ev-text-muted);
+  cursor: pointer;
+  transition: background-color var(--ev-transition-fast);
+}
+.theme-toggle:hover { background-color: var(--ev-surface-muted); }
+/* Em mobile vira ícone-only */
+@media (max-width: 767px) {
+  .theme-toggle {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .theme-toggle span { display: none; }
+}
