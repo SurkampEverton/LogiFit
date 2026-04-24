@@ -207,6 +207,7 @@ Consumidores:
 - [ ] Seed: ambiente homologação com emissões de cada tipo
 - [ ] Testes unit + E2E cobrindo 8 tipos + 3 eventos
 - [ ] Feature flag `fiscal_focus_v1`
+- [ ] **Pesquisa global** (ADR 0062): indexar `fiscal_emissions` como kind=`fiscal_emission` (label=número+tipo+destinatário, subtitle=valor+data+status, `required_permission='fiscal.read'`); permite operador achar "NFS-e 1234" direto
 - [ ] ADR 0059 publicado (já accepted)
 
 ## Stretch

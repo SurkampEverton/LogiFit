@@ -119,6 +119,7 @@ Em `packages/db/schema/fisio.ts`:
 - [ ] Rodapé do PDF com `{council_body}-{council_state} {council_number}` do profissional executante
 - [ ] Teste E2E: fisio sem CREFITO ativo tenta assinar → bloqueado; admin marca CREFITO como ativo → assinatura prossegue
 - [ ] Teste E2E: fisio com CREFITO `suspended` → bloqueado mesmo com ICP-Brasil válido
+- [ ] **Pesquisa global** (ADR 0062): indexar `consultas` como kind=`consulta` com `is_sensitive=true` + `required_permission='prontuario.read'` + `required_vertical='fisio'` + regra 25 (`company_id`); searchable_text = queixa + SOAP resumido + CIDs vinculados; clique grava audit
 - [ ] Templates seed: ortopedia, neuro, respiratória (reusa `assessment_types`)
 - [ ] UI prontuário com editor SOAP + picker de CID/CIF (autocomplete)
 - [ ] Gerador PDF com `@react-pdf/renderer` incluindo hash da assinatura visível

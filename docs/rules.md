@@ -1,6 +1,6 @@
 # Regras do Projeto LogiFit
 
-Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (multi-empresa, i18n, IA, LGPD). Violação = CI vermelho, revert, ou sprint não fecha.
+Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (multi-empresa, i18n, IA, LGPD, pesquisa global). Violação = CI vermelho, revert, ou sprint não fecha.
 
 > **Como usar:** toda discussão técnica começa perguntando "isso fere alguma regra?". Se sim, ou mudamos a regra (ADR) ou mudamos a solução. Regras não são sugestões.
 
@@ -29,6 +29,8 @@ Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (multi
 **28.** **Feature IA classe SaMD II+ não ativa sem Comitê de IA cadastrado no tenant.** Feature flag é bloqueada por gate que consulta `ai_committee_members` — sem ao menos 1 membro ativo + ata de criação anexada, a feature não liga em produção, mesmo com flag ON. Toda chamada a feature IA clínica grava em `ai_audit_log` (input, output, modelo, versão do prompt, decisão humana: aceitou/editou/rejeitou). Classificador de output proibido ("diagnóstico", "tem [doença]", "prescrever") ativo em toda chamada. Violação = feature desligada automaticamente + alerta ao admin do tenant. Ver [ADR 0053](decisions/0053-conformidade-cfm-2454-2026-ia-saude.md) (CFM 2.454/2026 + classificação SaMD RDC 657/2022).
 
 **29.** **Dado de saúde sensível (LGPD art. 11) só trafega com base legal explícita + RIPD vigente.** Todo módulo que processa `health_data` (prontuário, avaliação, exame, mídia clínica, device reading, plano alimentar, prescrição) tem entrada em `ripd_documents` com versão vigente (`ripd_versions`) assinada pelo DPO, revisada no máximo a cada 6 meses. Consent por finalidade (`consent_purposes.lawful_basis`) não pode ser genérico — cada finalidade lista `data_categories[]` e `retention_period` explícitos. CI tem teste que falha se um módulo clínico novo for criado sem registro em `ripd_documents`. Direitos do titular (art. 18) atendidos em até **15 dias** via portal `/meu/privacidade`. Ver [ADR 0054](decisions/0054-lgpd-art11-dados-saude-ripd-versionado.md).
+
+**30.** **Módulo novo com dado pesquisável deve registrar-se em `search_index`** via trigger `search_index_sync()` declarando explicitamente: `kind` (identificador do tipo), `label`/`subtitle`/`url` (o que mostrar), `searchable_text` (campos buscáveis), **`required_permission`** (permission mínima para aparecer no resultado), `required_vertical` (quando aplicável), `required_consent_purpose` (quando cross-module), `is_sensitive` (true → clique grava audit). Omissão de `required_permission` é proibido — operador sem permission nunca pode ver o resultado, nem "provocar" clique para descobrir existência. Ver [ADR 0062](decisions/0062-pesquisa-global-command-palette.md).
 
 ---
 

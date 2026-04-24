@@ -6,6 +6,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — Pesquisa global Command Palette Ctrl+K (ADR 0062 + regra 30)
+
+- **ADR 0062** — Pesquisa global via Command Palette (`docs/decisions/0062-pesquisa-global-command-palette.md`). Atalho `Ctrl+K` (Windows/Linux) e `Cmd+K` (Mac) abre overlay em qualquer tela; busca cross-module respeitando RLS + permission + consent + regra 25; modificadores `>` ações / `/` rotas / `@` pessoas / `#` tags; full-text PostgreSQL (tsvector) + trigram (pg_trgm) + unaccent; zero serviço externo (Algolia/Meilisearch rejeitados por custo + LGPD).
+- **Regra 30** em `docs/rules.md` — módulo novo com dado pesquisável registra-se em `search_index` com `required_permission` explícita; omissão proibida (operador sem permission nunca pode ver resultado).
+- **Sprint 00** — extensões PostgreSQL `pg_trgm` + `unaccent` habilitadas + scaffolding `<CommandPalette>` em `packages/ui` (componente base + hook `useCommandPalette()` + atalhos globais).
+- **Sprint 07** — entrega MVP: tabela `search_index` + `search_telemetry` + triggers `search_index_sync()` para 7 tipos (person, member, lead, supplier, user, professional, appointment, ap, ar, setting, quick_action) + API `/api/search` + `<CommandPalette>` completo + API `registerQuickAction()` + atalho no layout + audit em clique em sensível.
+- **Sprints 15, 17, 20, 21, 22, 25, 32, 33, 36** — cada sprint adiciona trigger de indexação de seus tipos no `search_index`: `ap`/`ar`/`supplier`/`nfe_received` (15), `bank_tx`/`nfe_return` (17), `consulta` sensível (20), `evolucao` sensível (21), `billing_guide`/`authorization` (22), `equipment`/`maintenance` (25), `device_connection` (32 — readings individuais NÃO indexados por volume), `lab_result` sensível (33), `fiscal_emission` (36).
+- `docs/modulos.md` — módulo "Pesquisa global (Command Palette Ctrl+K)" em Fundação.
+- `CLAUDE.md` — regra operacional 15 + contagem total de regras atualizada para 30.
+- **Sem semântica no MVP** — embeddings pgvector mapeados para sprint futuro pós-33 se busca por sinônimos clínicos virar dor.
+
 ### Changed — Auditoria de cobertura de telas + ajustes em 7 sprints
 
 Após auditoria sistemática cruzando 218 rotas documentadas × 10 roles × 61 ADRs × módulos prometidos, aplicados ajustes em 7 sprints:

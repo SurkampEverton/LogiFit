@@ -189,6 +189,7 @@ Em `packages/db/schema/exames.ts`:
 - [ ] Seed 10 exames de 5 labs diferentes + expected JSON
 - [ ] Testes unit: classificador (bloqueia "diagnóstico de X", aceita "sugere X")
 - [ ] Testes E2E: fluxo profissional + fluxo paciente portal
+- [ ] **Pesquisa global** (ADR 0062): indexar `lab_results` como kind=`lab_result` com `is_sensitive=true` + `required_permission='exame.read'`; searchable_text = nome do exame + analito + valor; resultados exibidos com ícone de sensibilidade; clique grava audit; exames HIV/psiquiátrico/genético/paternidade exigem `exam.sensitive.read` (escalonamento de permission)
 - [ ] Feature flag `exames_ia_v1`
 - [ ] ADR 0050 publicado
 

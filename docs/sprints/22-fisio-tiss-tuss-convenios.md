@@ -122,6 +122,7 @@ Em `packages/db/schema/convenios.ts`:
 - [ ] Testes unit do gerador de XML (casos mínimos: guia simples, guia com múltiplos itens, lote com N guias) validando contra XSD TISS 4.01
 - [ ] Testes E2E: fluxo completo até pagamento e glosa + caso de erro bloqueado pelo validador proativo
 - [ ] Feature flag `convenios_v1`
+- [ ] **Pesquisa global** (ADR 0062): indexar `billing_guides` (kind=`billing_guide`, label=número + operadora + paciente, `required_permission='faturamento.read'`), `authorizations` (kind=`authorization`), `insurance_plans` (kind=`insurance_plan`)
 - [ ] ADRs 0029, 0030, 0031 publicados
 
 ## Stretch

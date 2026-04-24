@@ -197,6 +197,7 @@ Em `packages/db/schema/nfe-recepcao.ts`:
 - [ ] Projeção de fluxo de caixa em `packages/ai/financeiro/cashflow-forecast.ts`
 - [ ] UI todas as telas acima
 - [ ] Card "saldo consolidado" e "próximas vencendo" no dashboard
+- [ ] **Pesquisa global** (ADR 0062): indexar `nfe_received` (label=chave últimos 6 dígitos + emitente, subtitle=valor+status+data, kind=`nfe_received`, `required_permission='financeiro.nfe.read'`), `bank_transactions` (label=descrição, subtitle=valor+data, kind=`bank_tx`), `nfe_returns` (kind=`nfe_return`, label=chave original)
 - [ ] Alerta de certificado expirando (30 dias antes)
 - [ ] Seed + testes unit (parser OFX, motor conciliação)
 - [ ] Testes E2E: sandbox Open Finance + conciliação + NF-e sandbox

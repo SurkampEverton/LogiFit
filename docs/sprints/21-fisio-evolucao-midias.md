@@ -90,6 +90,7 @@ Em `packages/db/schema/fisio.ts`:
 - [ ] Viewer de imagem com zoom/pan para `exame_imagem`
 - [ ] Timeline visual da evolução do paciente
 - [ ] Atualizar widget `prontuario` do dashboard do member: exibe também "última evolução" além de consultas formais
+- [ ] **Pesquisa global** (ADR 0062): indexar `evolucoes_sessao` como kind=`evolucao` com `is_sensitive=true` + `required_permission='prontuario.read'` + regra 25; clique grava audit
 - [ ] Feature flag `fisio_evolucao_v1`
 
 ## Stretch

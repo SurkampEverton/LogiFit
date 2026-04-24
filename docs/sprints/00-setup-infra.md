@@ -46,6 +46,8 @@ Monorepo funcional, Supabase local rodando, CI verde, observabilidade ligada, **
 - [ ] `packages/config` (tsconfig base + biome.json)
 - [ ] Supabase CLI + docker-compose local
 - [ ] Drizzle config + migration runner
+- [ ] **Extensões PostgreSQL habilitadas no Supabase** (ADR 0062): `pg_trgm` (trigram para fuzzy search), `unaccent` (busca sem acento — "Jose" acha "José"); migration inicial `CREATE EXTENSION IF NOT EXISTS pg_trgm; CREATE EXTENSION IF NOT EXISTS unaccent;`
+- [ ] **Scaffolding `<CommandPalette>` em `packages/ui`** (ADR 0062) — esqueleto do componente com overlay + input + slots de resultado (implementação completa no Sprint 07); hook `useCommandPalette()` + contexto global; atalhos `Ctrl+K` e `Cmd+K` registrados no provider root
 
 **i18n (ADR 0052):**
 

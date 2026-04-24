@@ -8,7 +8,7 @@
 
 ## Goal
 
-Home do operador contextual por role (recepção / gerente / diretor / group_owner) com KPIs do scope correspondente. Tokens de design "Equilíbrio Vital" aplicados em light/dark, sem sombras residuais do shadcn. Esqueleto do cross-alert dispatcher publicado em cima do `domain_events` (consumidor real nasce na Fase 2).
+Home do operador contextual por role (recepção / gerente / diretor / group_owner) com KPIs do scope correspondente. Tokens de design "Equilíbrio Vital" aplicados em light/dark, sem sombras residuais do shadcn. **Pesquisa global via Command Palette (Ctrl+K / Cmd+K)** cobrindo 7 tipos de entidade (pessoas, members, leads, suppliers, users, profissionais, agendamentos, AP/AR, settings, quick actions) — ADR 0062. Esqueleto do cross-alert dispatcher publicado em cima do `domain_events` (consumidor real nasce na Fase 2).
 
 ## Critério de aceite
 
@@ -21,6 +21,10 @@ Home do operador contextual por role (recepção / gerente / diretor / group_own
 - Dashboard atualiza em tempo quase real via Realtime para contadores de agenda/check-ins
 - Teste E2E: group_owner com 2 tenants vê agregados; ao "entrar" em 1 tenant, passa a ver detalhes operacionais daquele
 - Teste visual (Playwright snapshot) confirma sem sombras no dark mode
+- **Pesquisa global (ADR 0062):** atalho `Ctrl+K` (Windows/Linux) e `Cmd+K` (Mac) abre `<CommandPalette>` em qualquer página; busca retorna resultados categorizados por tipo (Pessoas · Agendamentos · Financeiro · Configurações · Ações rápidas); navegação por setas + Enter; modificadores `>` ações / `/` rotas / `@` pessoas / `#` tags; debounce 200ms; histórico local
+- Teste E2E: recepção busca "maria" → vê member "Maria Silva" mas **não** vê prontuários (sem `prontuario.read`); audit não grava (não clicou em sensível)
+- Teste E2E: fisio busca "dor lombar" → acha consultas com essa descrição; clicar grava `audit_log` com termo + resultado
+- Teste E2E: `Cmd+K` + `> novo` → mostra ações rápidas "Novo member", "Novo agendamento", "Nova AP" filtradas por permission do user
 
 ## Dependências
 
@@ -31,6 +35,7 @@ Home do operador contextual por role (recepção / gerente / diretor / group_own
 ## Decisões tomadas / ADRs esperados
 
 - **ADR 0016 (esperado)** — Tokens "Equilíbrio Vital": lista canônica + estratégia light/dark + override dos tokens padrão do shadcn (remover sombras). Fica em `packages/ui/tokens.ts` + `tailwind.config.ts`.
+- [ADR 0062 — Pesquisa global (Command Palette Ctrl+K)](../decisions/0062-pesquisa-global-command-palette.md) — accepted
 - **Pergunta aberta:** views materializadas vs live queries para KPIs. Começar live; medir latência; se >500ms em p95, materializar. Deferir decisão para o sprint (evitar over-engineering).
 
 ## Módulos entregues
@@ -39,6 +44,7 @@ Ver [`modulos.md` — Geral](../modulos.md#geral):
 
 - Dashboard "Equilíbrio Vital"
 - Cross-alert dispatcher (esqueleto)
+- **Pesquisa global (Command Palette Ctrl+K)** com 7 tipos indexados no MVP + API de registro para sprints posteriores adicionarem seus tipos
 
 ## Rotas Next.js
 
@@ -64,6 +70,8 @@ Nenhuma tabela de domínio nova. Criar apenas:
 - Views: `dashboard_kpis_company`, `dashboard_kpis_tenant`, `dashboard_revenue_30d`, `dashboard_ocupacao_7d` — em `packages/db/views/` como SQL raw
 - Views agregadas do group: `group_metrics`, `group_revenue_30d` (antecipa uso do group_owner — preview do que Fase 2 detalha)
 - Tabela `alert_subscribers` — `id`, `tenant_id`, `event_kind text`, `target_role text`, `active bool`. Vazia no MVP — preparação para Fase 2.
+- **Tabela `search_index`** (ADR 0062) — `id uuid pk`, `tenant_id`, `source_table text`, `source_id uuid`, `kind text`, `label text`, `subtitle text`, `url text`, `searchable_text text`, `search_vector tsvector`, `required_permission text`, `required_vertical text`, `required_consent_purpose text`, `company_id nullable`, `is_sensitive bool default false`, `updated_at`. Índices: GIN em `search_vector`, GIN em `searchable_text` (trigram), `(tenant_id, kind)`. Pode virar **materialized view** se latência de write ficar >50ms p95.
+- **Tabela `search_telemetry`** (ADR 0062) — `id`, `tenant_id`, `user_id`, `query text`, `result_kind_clicked text nullable`, `result_id_clicked uuid nullable`, `results_count int`, `at timestamptz`. Usado para evolução de ranking + detectar gaps (termo buscado sem resultado).
 
 **RLS das views:** herda do tenant_id + scope; views do group só liberam para role `group_owner`.
 
@@ -101,6 +109,16 @@ Não publica eventos de negócio; só renderiza os dos outros sprints.
 - [ ] Realtime counters nos cards de check-in e agenda
 - [ ] Redirect `/app` → home contextual
 - [ ] Testes unit das queries
+- [ ] **Pesquisa global (ADR 0062):** tabela `search_index` + triggers `search_index_sync()` em `persons`, `members`, `leads`, `suppliers`, `users`, `appointments`, `accounts_payable`, `accounts_receivable` (7 tipos MVP) + tabela `search_telemetry`
+- [ ] Extensões PostgreSQL `pg_trgm` + `unaccent` (Sprint 00 prepara; aqui usa)
+- [ ] Server Action `globalSearch(query, { kinds?, limit })` — query em `search_index` com filtros RLS + `has_permission()` + vertical + consent + regra 25
+- [ ] API Route `GET /api/search?q=&kinds=&limit=` — wrapper do Server Action; rate limit 30req/min por user
+- [ ] Componente `<CommandPalette>` em `packages/ui` — overlay, input com auto-foco, resultados categorizados, navegação por setas, modificadores `>`/`/`/`@`/`#`, debounce 200ms, TanStack Query, histórico local 10 últimos
+- [ ] Atalho global `Ctrl+K` (Windows/Linux) + `Cmd+K` (Mac) no layout root + hint clicável `[⌘K]` no header (adapta texto conforme OS detectado)
+- [ ] **API `registerQuickAction({ label, icon, url, shortcut?, requiredPermission?, requiredVertical? })`** em `packages/ui/command-palette/registry.ts` — sprints registram ações: "Novo member", "Novo agendamento", "Nova AP", "Emitir NFS-e", "Registrar OCR boleto", etc. (~20 no MVP)
+- [ ] Registro estático de rotas `/app/settings/*` como `kind='setting'`
+- [ ] Audit em `audit_log`: clique em resultado `is_sensitive=true` grava `{ user_id, action: 'search_access', term, result_kind, result_id }`
+- [ ] Regra 30 nova em `docs/rules.md`: módulo novo com dado pesquisável **deve** registrar-se em `search_index` com `required_permission` explícita
 - [ ] Testes E2E: 4 roles vendo scopes diferentes; group_owner só agregados
 - [ ] Teste visual Playwright: sem sombras no dark
 - [ ] Feature flag `dashboard_v1`

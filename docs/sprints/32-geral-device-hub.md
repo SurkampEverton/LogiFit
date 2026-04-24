@@ -184,6 +184,7 @@ Em `packages/db/schema/devices.ts`:
 - [ ] Testes unit dos parsers (FIT, TCX, CSV InBody)
 - [ ] Testes E2E: fluxo OAuth Garmin sandbox → sync → widget
 - [ ] Feature flag `devices_v1`
+- [ ] **Pesquisa global** (ADR 0062): **não indexa `device_readings` individualmente** (volume altíssimo, valor baixo); indexa `member_device_connections` como kind=`device_connection` (label=provider + member, `required_permission='devices.read'`) — permite operador achar "quais devices o João tem conectado"
 - [ ] ADR 0049 publicado
 
 ## Stretch

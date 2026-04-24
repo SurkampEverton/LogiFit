@@ -118,6 +118,7 @@ Em `packages/db/schema/vigilancia.ts`:
 - [ ] Seed: 3 equipamentos + 2 manutenções + 10 logs
 - [ ] Testes unit (marcar overdue, agrupar uso)
 - [ ] Testes E2E: cadastro → agendar → alerta → executar → certificado anexado
+- [ ] **Pesquisa global** (ADR 0062): indexar `equipment` como kind=`equipment` (label=modelo + número série, subtitle=fabricante + unit + status, `required_permission='vigilancia.read'`); `equipment_maintenance` como kind=`maintenance`
 - [ ] Feature flag `vigilancia_v1`
 
 ## Stretch
