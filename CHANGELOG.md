@@ -6,6 +6,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — Sprint 00b Menu lateral + evolução ADR 0063 (hamburger overlay único)
+
+- **Sprint 00b (novo)** — `docs/sprints/00b-menu-lateral.md` com escopo detalhado de `<SideMenu>` hamburger overlay + registry por módulo + filtros automáticos de permission/vertical/consent/feature flag.
+- **ADR 0063 atualizado** — padrão de navegação muda de "sidebar fixa em desktop + bottom-nav mobile + drawer tablet" (original) para **overlay único em todos os viewports** — ícone `☰` sempre visível, página ocupa 100% da largura em qualquer dispositivo. Trade-off aceito: mais cliques para navegar em desktop, compensado pelo atalho `Ctrl+B`/`Cmd+B` + pesquisa global `Ctrl+K` (ADR 0062) que vira caminho primário de navegação.
+- **Organização por módulos** (decisão do usuário 2026-04-23): menu agrupa itens em ~15 módulos (Início, Pessoas, Agenda, Acesso, Comercial, Financeiro, Fiscal, Clínico, Vigilância, Relacionamento, Estoque, Engajamento, RH, Compliance, Integrações, Configurações); cada módulo colapsa/expande; **módulo inteiro oculto** se nenhum item passa nos filtros.
+- **Filtros automáticos** na renderização: `requiredPermission` (via `has_permission()`), `requiredVertical` (tenant tem vertical ativa), `requiredConsent` (consent ativo), `featureFlag` (feature ligada). Padrão consistent com `registerMemberWidget` / `registerQuickAction` / `registerCrossAlertHandler` existentes.
+- **Sprint 00 ajustado** — `<AppLayout>` agora é só header compacto + slot de conteúdo 100% viewport; componentes `<BottomNav>`, `<Drawer>`, `<Sidebar>` fixa **removidos** (não existirão); entrega apenas slot do `<HamburgerTrigger>` (implementação completa no 00b).
+- **Sprint 07 ajustado** — não implementa sidebar própria; apenas registra itens do módulo "Início" via `registerMenuItem()`; botão 🔍 do Command Palette ao lado do ☰ no header.
+- **Atalhos de teclado** (desktop): `Ctrl+B` / `Cmd+B` abre/fecha menu (padrão VSCode); `Esc` fecha + restaura foco; `Ctrl+K` continua abrindo pesquisa global.
+- **Touch gestures** (mobile/tablet): swipe da borda esquerda abre; swipe para esquerda no menu aberto fecha.
+- **Acessibilidade:** focus trap `role="dialog"` + `aria-modal="true"` + restore focus no trigger ao fechar; WCAG AA.
+- **Roadmap atualizado** — Sprint 00b adicionado como item #1b entre #1 (Setup) e #2 (Identidade).
+- **`docs/modulos.md`** — módulo "SideMenu hamburger overlay" adicionado em Fundação.
+
 ### Added — Responsividade total mobile-first (ADR 0063 + regra 31)
 
 - **ADR 0063** — Responsividade total (`docs/decisions/0063-responsividade-total-mobile-first.md`). Toda UI `/app/*` e `/meu/*` adapta em 5 breakpoints (default/sm/md/lg/xl/2xl) via biblioteca de componentes base em `packages/ui/layout/*`. Mobile-first, touch targets ≥44px, safe-area-inset, testes Playwright em 3 viewports canônicos (mobile 390, tablet 768, desktop 1280). Zero serviço externo (Tailwind + shadcn nativos).

@@ -59,16 +59,32 @@ Convenção Tailwind v4 padrão + "ultrawide" adicionado:
 
 ### Padrões de adaptação obrigatórios
 
-#### Navegação (`/app/*`)
+#### Navegação (`/app/*`) — padrão hamburguer overlay único (atualizado 2026-04-23)
 
-| Viewport | Layout |
+**Decisão:** menu lateral é **overlay em todos os viewports** (mobile + tablet + desktop), acionado por ícone hambúrguer `☰` sempre visível no header. Página de conteúdo ocupa **100% da largura** em todos os dispositivos — menu nunca empurra conteúdo, sempre se sobrepõe com backdrop.
+
+| Viewport | Comportamento |
 |---|---|
-| `default` (mobile) | **Bottom tab bar** com 5 ícones principais (Home, Agenda, Financeiro, Pessoas, Mais) + header compacto com logo e avatar |
-| `sm` | Bottom nav ou header compacto com drawer |
-| `md` (tablet) | **Sidebar retrátil** (drawer) colapsável por gesto ou botão |
-| `lg+` | **Sidebar fixa** lateral (padrão ERP atual) |
+| `default` (mobile) | ☰ no header → menu overlay ocupa **85% da viewport** (max 320px) + backdrop escuro clicável para fechar; fecha automaticamente ao navegar |
+| `sm`/`md` (tablet) | ☰ no header → menu overlay ocupa **320px** (largura fixa); fecha ao clicar fora; swipe para fechar |
+| `lg+` (desktop) | ☰ no header → menu overlay **280px** + backdrop; **não fecha** automaticamente ao navegar (user pode mantê-lo aberto por sessão via toggle "fixar"); atalho `Ctrl+B` (ou `Cmd+B`) abre/fecha |
 
-Componente `<AppLayout>` em `packages/ui/layout/app-layout.tsx` decide automaticamente; sprints não implementam layout próprio.
+Componente `<SideMenu>` em `packages/ui/layout/side-menu.tsx` gerencia tudo:
+- Animação slide-in/out (framer-motion ou CSS transform)
+- Focus trap quando aberto (acessibilidade)
+- Restore focus no trigger (☰) ao fechar
+- Swipe gesture em touch (mobile/tablet)
+- Backdrop com `aria-hidden="true"` + tap/click fecha
+- Submenus inline (acordeão) — sem drawer aninhado
+- Footer com avatar user + settings + logout
+
+**Por que overlay em desktop também** (decisão do usuário 2026-04-23):
+- Página ocupa tela toda em qualquer viewport → tabelas densas e dashboards respiram
+- Padrão consistente cross-device (user move-se entre celular e desktop e UX é igual)
+- Moderno (Vercel dashboard, alguns produtos SaaS modernos)
+- Trade-off aceito: mais clique por navegação em desktop é compensado pela **pesquisa global Ctrl+K** (ADR 0062) que vira caminho primário de navegação
+
+Sprint 00b entrega `<SideMenu>` completo **+ registry de itens por módulo com filtro de permissão/vertical/consent**; sprints não implementam navegação própria — cada sprint registra seus itens via `registerMenuItem(meta)` e o componente filtra automaticamente na renderização conforme user logado.
 
 #### Tabelas
 

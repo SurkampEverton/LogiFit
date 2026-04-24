@@ -16,8 +16,9 @@ Home do operador contextual por role (recepção / gerente / diretor / group_own
 - Gerente de filial vê KPIs da sua company/unit; diretor de rede vê tenant; group_owner vê agregados do group (views `group_*`, nunca dado individual)
 - Cards padrão: **Alunos Ativos** · **Faturamento 30d** · **MRR** · **Taxa de Retenção 90d** · **Overdue %** · **Inadimplência por Método** (cartão × PIX × boleto) · **Ocupação Agenda 7d** · **Horário de Pico (semanal)** · **Ocupação por Modalidade** · **Ticket Médio por Aluno** · **Conversão Gympass/TotalPass/Wellhub vs Direto** (quando integração wellness ativa) · **Últimas 10 atividades** (timeline cross-member)
 - Toggle light/dark persistente; zero shadow/`box-shadow` residual
-- **Layout responsivo (ADR 0063):** mobile (390px) usa `<BottomNav>` com 5 ícones (Home, Agenda, Financeiro, Pessoas, Mais) + header compacto; tablet (768px) usa `<Drawer>` colapsável; desktop (1280px+) usa `<Sidebar>` fixa; cards do dashboard colapsam 4→3→2→1 conforme breakpoint
-- **Command Palette em touch:** botão 🔍 sempre visível no header mobile (substitui atalho Ctrl+K que não existe em celular); input da palette fica full-screen em mobile
+- **Layout responsivo (ADR 0063 atualizado):** padrão **hamburger overlay único** em todos os viewports — ícone `☰` sempre visível no header abre `<SideMenu>` (Sprint 00b) como overlay; **página ocupa 100% da largura** em mobile/tablet/desktop; cards do dashboard colapsam 4→3→2→1 conforme breakpoint
+- **Navegação principal via `<SideMenu>` do Sprint 00b** — Sprint 07 não implementa sidebar própria; apenas registra itens do módulo "Início" (Home/Dashboard por role) via `registerMenuItem()`
+- **Command Palette em touch:** botão 🔍 sempre visível no header (ao lado do ☰) em mobile substitui atalho Ctrl+K que não existe em celular; input da palette fica full-screen em mobile
 - Tokens aplicados: `surface`, `text`, `action-primary`, `success`, `warning`, `danger`
 - Cross-alert dispatcher: função genérica `dispatchAlert(event)` com tabela `alert_subscribers` vazia (sem subscribers no MVP — preparado para Fase 2)
 - Dashboard atualiza em tempo quase real via Realtime para contadores de agenda/check-ins
@@ -107,9 +108,9 @@ Não publica eventos de negócio; só renderiza os dos outros sprints.
 - [ ] Função `dispatchAlert` em `packages/ai/alerts.ts` — itera subscribers registrados, publica
 - [ ] **API pública `registerCrossAlertHandler({ event, handler, requiredPermission? })`** em `packages/ai/alerts/registry.ts` — sprints consumidores (Sprint 08 acesso bloqueios, Sprint 13 régua, Sprint 19 churn, Sprint 27 lesão→treino, Sprint 32 device alerts, Sprint 33 exame crítico) registram handlers declarativamente; dispatcher invoca em ordem + audit
 - [ ] Server Action `getDashboardData`
-- [ ] Páginas `/app/dashboard/*` por role — usando `<AppLayout>` do Sprint 00 (bottom-nav mobile / drawer tablet / sidebar desktop decidido automaticamente)
-- [ ] `<BottomNav>` populado com 5 slots por role (ex: recepção = Home/Agenda/Check-in/Pessoas/Mais; gerente = Home/Financeiro/Dashboard/Pessoas/Mais)
-- [ ] Botão 🔍 do Command Palette visível no header mobile (ADR 0063)
+- [ ] Páginas `/app/dashboard/*` por role — usando `<AppLayout>` do Sprint 00 (página 100% viewport; navegação via overlay `<SideMenu>` do Sprint 00b)
+- [ ] **Registrar itens do módulo "Início" no `<SideMenu>`** via `registerMenuItem()`: Home (redirect por role), Dashboard Recepção (permission `dashboard.recepcao`), Dashboard Gerente (permission `dashboard.gerente`), Dashboard Diretor, Dashboard Grupo (só role `group_owner`)
+- [ ] Botão 🔍 do Command Palette visível no header (ao lado do ☰); atalho Ctrl+K continua funcional em desktop (ADR 0062 + 0063)
 - [ ] Componentes de card reusáveis em `packages/ui/cards/`
 - [ ] Realtime counters nos cards de check-in e agenda
 - [ ] Redirect `/app` → home contextual

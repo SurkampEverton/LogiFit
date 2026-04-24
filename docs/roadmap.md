@@ -10,7 +10,8 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 
 | # | Sprint | Funcionalidade | Status | Início | Fim | % | Bloqueios | PR |
 |---|---|---|---|---|---|---|---|---|
-| 1 | [00](sprints/00-setup-infra.md) | Setup de infra (monorepo, CI, observabilidade) | todo | — | — | 0 | — | — |
+| 1 | [00](sprints/00-setup-infra.md) | Setup de infra (monorepo, CI, observabilidade, componentes base responsivos) | todo | — | — | 0 | — | — |
+| 1b | [00b](sprints/00b-menu-lateral.md) | **Menu lateral (SideMenu hamburger overlay + registry por módulo + filtro permission/vertical/consent)** | todo | — | — | 0 | depende #1 + parcialmente #3 (permissions) | — |
 | 2 | [01a](sprints/01a-identidade-e-topology.md) | Identidade + Topology (groups/tenants/companies/units + RLS raiz) | todo | — | — | 0 | depende #1 | — |
 | 3 | [01b](sprints/01b-rbac-e-consent.md) | RBAC com scope + grants diretos + Consent LGPD | todo | — | — | 0 | depende #2 | — |
 | 4 | [02](sprints/02-geral-crm-pessoas.md) | CRM unificado (members + timeline + dashboard do member) | todo | — | — | 0 | depende #3 | — |
