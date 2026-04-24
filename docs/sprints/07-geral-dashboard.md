@@ -8,7 +8,7 @@
 
 ## Goal
 
-Home do operador contextual por role (recepção / gerente / diretor / group_owner) com KPIs do scope correspondente. Tokens de design "Equilíbrio Vital" aplicados em light/dark, sem sombras residuais do shadcn. **Pesquisa global via Command Palette (Ctrl+K / Cmd+K)** cobrindo 7 tipos de entidade (pessoas, members, leads, suppliers, users, profissionais, agendamentos, AP/AR, settings, quick actions) — ADR 0062. Esqueleto do cross-alert dispatcher publicado em cima do `domain_events` (consumidor real nasce na Fase 2).
+Home do operador contextual por role (recepção / gerente / diretor / group_owner) com KPIs do scope correspondente. Tokens de design "Equilíbrio Vital" aplicados em light/dark, sem sombras residuais do shadcn. **Pesquisa global via Command Palette (Ctrl+K / Cmd+K)** cobrindo 7 tipos de entidade (pessoas, members, leads, suppliers, users, profissionais, agendamentos, AP/AR, settings, quick actions) — ADR 0062. **Modo Solo (ADR 0069)** detecta `tenants.mode='solo'` e renderiza visão simplificada (agenda do dia + cobranças + resumo mensal). Cross-alert dispatcher + handlers pro **MVP (ADR 0070)**: contraindicações CID×exercício, overtraining detectado, balanço calórico crítico, adesão baixa, mudança de peso brusca.
 
 ## Critério de aceite
 

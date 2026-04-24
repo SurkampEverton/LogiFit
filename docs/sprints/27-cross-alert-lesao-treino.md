@@ -8,7 +8,7 @@
 
 ## Goal
 
-Implementar o primeiro **cross-alert real** do produto: quando uma lesão é registrada no prontuário Fisio de um paciente que também é aluno da Academia do mesmo tenant, disparar alerta no instrutor responsável e **adaptar automaticamente a ficha de treino** para evitar a região lesionada — respeitando consent explícito do paciente e regra 25 (franchise bloqueia).
+Implementar o primeiro **cross-alert real** do produto: quando uma lesão é registrada no prontuário Fisio de um paciente que também é aluno da Academia do mesmo tenant, disparar alerta no instrutor responsável e **adaptar automaticamente a ficha de treino** para evitar a região lesionada — respeitando consent explícito do paciente e regra 25 (franchise bloqueia). **Entrega `cid_exercise_contraindications` (ADR 0070)** com seed global LogiFit curado (~200 contraindicações mais comuns: lombalgia, hérnia, lesão meniscal, tendinite, LCA, síndrome do impacto, etc.) + tenant pode override; função `detectContraindications(activeCids, activeWorkouts)` em `packages/db/insights/cross.ts` retorna severidade (avoid/adapt/caution) + alternativas sugeridas.
 
 ## Critério de aceite
 

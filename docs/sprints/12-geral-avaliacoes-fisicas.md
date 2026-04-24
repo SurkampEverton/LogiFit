@@ -8,7 +8,7 @@
 
 ## Goal
 
-Catálogo de tipos de avaliação (bioimpedância, dobras cutâneas, antropometria, anamnese, testes funcionais) + registro seriado de medições + gráficos comparativos de evolução. Schema genérico serve Academia (composição corporal), Fisio (ROM, força) e Nutri (antropometria) — **Nutri Sprint 24 reusa esse schema** em vez de criar um próprio.
+Catálogo de tipos de avaliação (bioimpedância, dobras cutâneas, antropometria, anamnese, testes funcionais) + registro seriado de medições + gráficos comparativos de evolução. Schema genérico serve Academia (composição corporal), Fisio (ROM, força) e Nutri (antropometria) — **Nutri Sprint 24 reusa esse schema** em vez de criar um próprio. **Calculadoras TMB/body-fat/Pollock/Mifflin-St Jeor/Katch-McArdle viram funções públicas em `packages/db/insights/anthropometry.ts`** (ADR 0070) para consumo cross-module.
 
 ## Critério de aceite
 

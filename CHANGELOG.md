@@ -6,6 +6,84 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — ADRs 0069 + 0070: Perfil como hub + Modo Solo + Insights cross-module + Timeline integrada
+
+Duas decisões interdependentes que transformam `/app/members/[id]` no hub central do profissional:
+
+**ADR 0069 — Perfil do paciente como hub operacional + Modo Solo:**
+
+- Reestrutura `/app/members/[id]` em 4 camadas fixas: header (identidade) · action bar (role-aware) · tabs por visão · corpo contextual
+- **Tabs por visão auto-detectadas por role**: Geral/Clínico/Treino/Alimentar/Financeiro/Comunicação/IA; filtradas por permission + vertical + consent
+- **Modo atendimento**: timer visível + header diferenciado + SOAP editor inline; ao finalizar pergunta "salvar evolução? cobrar? próxima consulta?"
+- **Sidebar direita**: histórico recente + favoritos (desktop); `user_member_favorites` + `user_recent_members` schemas
+- **Registry `registerMemberAction`**: cada sprint registra suas ações (~60 ações totais); handler navega OU executa inline (modal/sheet)
+- **Ações inline sempre** que possível — profissional permanece na página do paciente 80%+ do tempo
+- **Modo Solo (`tenants.mode='solo'`)** detectado por onboarding wizard (perfil autônomo + 1 user) — UX simplificada sem tabs; action bar expandida; dashboard enxuto focado em agenda do dia + cobranças + mensal
+- **Plano Solo R$ 49/mês** (R$ 39 anual) · 1 user · 80 clientes · overage R$ 0,80/member · cap +R$ 40 = sugere Starter; **Solo Combo R$ 69** com todas as verticais
+- **Onboarding wizard**: pergunta "como atua?" (autônomo/clínica/rede) + "qual profissão?" → sugere plano + carrega templates
+- **Templates pré-carregados por profissão** (CREF/CREFITO/CRN/CRP/Pilates/Esteticista): `services` típicos + escalas + CIDs + protocolos comuns
+- **Fiscal Solo simplificado**: MEI (recibo ou NFS-e conforme município) · ME Simples Nacional · PF autônomo com RPA
+
+**ADR 0070 — Insights cross-module computados + Timeline integrada:**
+
+- Camada de **funções puras determinísticas** em `packages/db/insights/` — sem IA: `calculateTMB()`, `calculateTDEE()`, `calculateKcalPerSession()`, `calculateWeeklyVolume()`, `calculateCaloricBalance()`, `detectContraindications()`, `detectOvertrainingSignals()`, `estimateBodyTrajectory()`
+- **9 insights no MVP**: TMB · gasto calórico sessão · volume semanal · frequência · TDEE · balanço calórico · adesão plano alimentar · contraindicações ativas · saldo créditos
+- **5 insights Fase 2** (Sprint 34 Nutri-Agent consome): projeção peso · overtraining · risco lesão · trajetória composição corporal · interações medicamentosas
+- **Exemplo canônico**: nutri vê treino do cliente → sistema calcula gasto calórico semanal (MET × peso × duração) + TDEE + sugere meta calórica do plano alimentar automaticamente
+- **Widget cross-module** via `registerMemberWidget` ampliado com `crossModuleRequires` (source vertical + permission + consent) + `insights[]` (array de insight keys)
+- **Timeline integrada**: materialized view `member_timeline` agrega consultas + sessões + food_log + avaliações + invoices em ordem cronológica; refresh 5min + invalidation por evento
+- **Alertas cross-module automáticos** no MVP (reusa cross-alert dispatcher Sprint 07): contraindicação em novo treino, overtraining, balanço calórico crítico, adesão baixa, mudança de peso brusca
+- **`exercises.met_value`** obrigatório (Sprint 11) + seed **Compendium of Physical Activities 2024** com ~800 exercícios curados
+- **`cid_exercise_contraindications`** seed global LogiFit (~200 contraindicações mais comuns: lombalgia, hérnia discal, lesão meniscal, tendinite, LCA, etc.) + tenant pode override
+- **Cache `member_insights`** com TTL variável (6h volume, 24h TDEE) + invalidação por evento; handlers em `packages/db/insights/invalidation.ts`
+- **Consent granular por contexto cross-module**: `nutri_sees_training`, `personal_sees_prontuario`, `nutri_sees_prontuario`, `personal_sees_nutri_plan`, `fisio_sees_training` — paciente controla em `/meu/privacidade`
+
+**Decisões do usuário (2026-04-24):**
+
+Hub operacional:
+1. Top tabs (não sidebar vertical)
+2. Modo atendimento no MVP
+3. Sidebar direita MVP
+4. Ações inline sempre
+5. Tabs auto por role sem customização
+
+Modo Solo:
+1. Plano Solo R$ 49/mês
+2. Solo 1 vertical · Solo Combo R$ 69 todas
+3. Modo auto-detectado no wizard
+4. Templates por profissão no MVP
+5. Perfil sem tabs no modo Solo
+
+Insights cross-module:
+1. MVP (não Fase 2)
+2. Timeline integrada MVP
+3. Alertas automáticos MVP
+4. Compendium 2024 no Sprint 11
+5. Contraindicações LogiFit-curadas
+6. Cache `member_insights` com invalidação por evento
+
+**Sprints ajustados**: 01a (wizard) · 02 (hub + timeline + cache + modo Solo) · 03 (agenda pessoal Solo) · 04 (plano Solo + pricing revisado) · 05 (templates por profissão) · 07 (dashboard adapta + cross-alert handlers) · 11 (met_value + Compendium 2024) · 12 (calculadoras em packages/db/insights/) · 15 (recibo MEI/RPA) · 20 (sheet SOAP inline) · 26 (portal Solo) · 27 (cid_exercise_contraindications) · 29 (usar TDEE + card treino) · 31 (food_log alimenta balance) · 34 (Nutri-Agent consome insights) · 36 (NFS-e opcional Solo)
+
+**Schema**:
+- `tenants.mode` enum (`solo`/`clinic`/`chain`/`hospital`)
+- `attendance_sessions` (modo atendimento com timer + SOAP rascunho)
+- `user_member_favorites` + `user_recent_members` (sidebar)
+- `exercises.met_value` numeric(3,1)
+- `cid_exercise_contraindications` (seed global + tenant override)
+- `member_insights` (cache com TTL + invalidação)
+- `member_timeline` materialized view
+- 5 novos `consent_purposes` cross-module
+
+**Pricing revisado (ADR 0066 + 0069):**
+- **Solo** R$ 49/mês (R$ 39 anual) — autônomo, 1 user, 80 clientes · NOVO
+- **Solo Combo** R$ 69 — autônomo com múltiplas verticais · NOVO
+- Starter R$ 79/mês mantido
+- Pro R$ 199/mês mantido
+- Business R$ 449/mês mantido
+- Enterprise sob consulta
+
+**Cobertura**: captura mercado de ~700k profissionais autônomos saúde/fitness no Brasil antes desatendidos + entrega valor clínico cross-module real (nutri calcula TDEE automaticamente do treino; fisio alerta contraindicação antes de sessão; personal adapta com consent).
+
 ### Added — ADR 0068: Catálogo de serviços + Preços contextuais + Construtor de planos + Link financeiro
 
 Resolve 3 fragmentações identificadas no modelo comercial durante análise do widget "Plano Premium · bundle":

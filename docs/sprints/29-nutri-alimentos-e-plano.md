@@ -8,7 +8,7 @@
 
 ## Goal
 
-Banco de dados nutricional nacional (TACO — Tabela Brasileira de Composição de Alimentos) + editor de plano alimentar interativo com cálculo em tempo real de kcal/macros/micros + lista automática de substituições + export PDF personalizado com branding da clínica. Núcleo técnico da vertical Nutri.
+Banco de dados nutricional nacional (TACO — Tabela Brasileira de Composição de Alimentos) + editor de plano alimentar interativo com cálculo em tempo real de kcal/macros/micros + lista automática de substituições + export PDF personalizado com branding da clínica. Núcleo técnico da vertical Nutri. **Integração cross-module (ADR 0070):** botão "Usar TDEE calculado" pré-preenche meta calórica com dados do treino do paciente (consome `member_insights.tdee`); card "Treino deste paciente" visível na aba Alimentar com consent `nutri_sees_training`; alertas automáticos quando balanço calórico incompatível com volume de treino.
 
 ## Critério de aceite
 

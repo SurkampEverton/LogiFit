@@ -8,7 +8,7 @@
 
 ## Goal
 
-Biblioteca de exercícios com vídeos + montagem de treinos + atribuição (prescrição) ao `member`. Model genérico para reuso por Fisio (protocolos de reabilitação) e Nutri (planos alimentares seguem o mesmo padrão de "prescrição ao member").
+Biblioteca de exercícios com vídeos + montagem de treinos + atribuição (prescrição) ao `member`. Model genérico para reuso por Fisio (protocolos de reabilitação) e Nutri (planos alimentares seguem o mesmo padrão de "prescrição ao member"). **`exercises.met_value` obrigatório (ADR 0070)** com seed de ~800 exercícios da Compendium of Physical Activities 2024 — base para cálculo automático de gasto calórico cross-module; `workout_sessions.calculated_kcal` preenchido automaticamente via `calculateKcalPerSession(met, weight, duration)` de `packages/db/insights/workout.ts`.
 
 ## Critério de aceite
 

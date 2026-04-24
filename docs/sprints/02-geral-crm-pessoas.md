@@ -8,7 +8,7 @@
 
 ## Goal
 
-Perfil único cross-module do aluno/paciente (`members`), timeline append-only (`member_events`), tags e anotações livres — base que todas as verticais (Academia, Fisio, Nutri) consomem.
+Perfil único cross-module do aluno/paciente (`members`), timeline append-only (`member_events`), tags e anotações livres — base que todas as verticais consomem. **Entrega também o "hub operacional"** do paciente (ADR 0069): header fixo + action bar + tabs por visão (auto por role) + modo atendimento + sidebar de histórico + registry `registerMemberAction`. Em `mode='solo'` (autônomo), perfil sem tabs e action bar expandida. Entrega também **timeline integrada** e **cache `member_insights`** (ADR 0070) — widgets cross-module consomem.
 
 ## Critério de aceite
 

@@ -10,7 +10,7 @@
 
 Dois módulos complementares para engajamento paciente-profissional:
 
-1. **Diário alimentar**: paciente registra refeições reais (com foto) no portal (Sprint 26) → nutri valida/comenta.
+1. **Diário alimentar**: paciente registra refeições reais (com foto) no portal (Sprint 26) → nutri valida/comenta. **Alimenta `calculateCaloricBalance` (ADR 0070)** — view `food_log_daily_summary` consumida pela função pura `packages/db/insights/nutrition.ts` para cálculo de balanço calórico diário + adesão ao plano.
 2. **Teleconsulta**: videoconferência integrada respeitando sigilo médico (LGPD + CFM/COFFITO/CFN) — alternativa à consulta presencial.
 
 ## Critério de aceite
