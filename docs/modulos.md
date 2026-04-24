@@ -85,6 +85,10 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 | Slots recorrentes | Geração lazy de slots semanais/diários | Academia, Fisio, Nutri | 03 | todo |
 | Agendamentos + waitlist | Booking, cancelamento, lista de espera, check-in manual | Academia, Fisio, Nutri | 03 | todo |
 | Planos (ofertas comerciais) | Catálogo de planos do tenant | Academia, Fisio, Nutri | 04 | todo |
+| **Catálogo de serviços (ADR 0068)** | Tenant cadastra serviços (sessão fisio, consulta nutri, mensalidade academia, avaliação, personal, produto) com preço avulso + duração + CBO/TUSS + chart_account + stock_item; fonte única de preço | Academia, Fisio, Nutri | 05 | todo |
+| **Construtor visual de planos (ADR 0068)** | UI `/app/settings/planos` com form + modal "Adicionar serviço"; define qtd incluída, período (per_cycle/total/lifetime), preço do extra, hard limit opcional; preview member antes de publicar | Academia, Fisio, Nutri | 05 | todo |
+| **Preços contextuais unificados (ADR 0068)** | Tabela `service_prices` com 7 contextos (default/plan/contract/member_custom/insurance/promotion/company); função `resolveServicePrice()` com prioridade decrescente; Sprint 22 migra `insurance_procedure_prices` | Academia, Fisio, Nutri | 05 | todo |
+| **Widget financeiro do member consolidado** | Visão unificada: plano + consumo + ARs em aberto + histórico + saldo cashback + ações (operador) ou pagamento (member); breakdown transparente na invoice | Academia, Fisio, Nutri | 02 (layout) + 04 (dados) + 26 (portal) | todo |
 | Contratos (member ↔ plano) | Matrícula com vigência e ciclo de renovação | Academia, Fisio, Nutri | 04 | todo |
 | Cobranças Asaas | Boleto, Pix, cartão recorrente; chave por company ou por tenant (ADR 0010) | Academia, Fisio, Nutri | 04 | todo |
 | Webhooks idempotentes | Recepção HMAC de eventos externos (`webhook_events.external_id`) | Academia, Fisio, Nutri | 04 | todo |

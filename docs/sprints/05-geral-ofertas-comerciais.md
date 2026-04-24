@@ -8,10 +8,19 @@
 
 ## Goal
 
-Camada comercial em cima do financeiro: promoções (cupons/descontos), pacotes (combos de planos e créditos de serviço), referrals (indicação premiada) e cashback. Tudo aplicável em `contracts` e `invoices` respeitando `topology` e `financial_mode`.
+Camada comercial em cima do financeiro: **catálogo de serviços (`services`)** + **construtor visual de planos** + **preços contextuais (`service_prices`)** + promoções (cupons/descontos) + bundles (combos cross-vertical) + referrals + cashback. Tudo aplicável em `contracts` e `invoices` respeitando `topology` e `financial_mode`. Fundamenta modelo comercial via [ADR 0068](../decisions/0068-catalogo-servicos-precos-contextuais-link-financeiro.md).
 
 ## Critério de aceite
 
+- **Catálogo `services`** (ADR 0068): tenant cadastra serviços (sessão fisio, consulta nutri, mensalidade academia, avaliação física, personal avulso, produto do estoque) com preço avulso default, duração, vertical, CBO/TUSS opcional, `chart_account_id`, `tax_nature_id` opcional, `stock_item_id` opcional
+- **`plan_items`** compõe plano a partir do catálogo: `included_quantity` (null=ilimitado), `period` (per_cycle/total/lifetime), `extra_price_cents` override, `extra_allowed` hard limit
+- **`service_prices`** — tabela única de overrides contextuais (ADR 0068): `context ∈ {default, plan, contract, member_custom, insurance, promotion, company}`; função `resolveServicePrice(input)` retorna preço final com fonte + explicação para audit
+- **5 telas admin** (ADR 0068):
+  - `/app/settings/servicos` — CRUD do catálogo
+  - `/app/settings/planos` — construtor de plano com form + modal "Adicionar serviço" (decisão 1B: sem drag-drop)
+  - `/app/settings/planos/[id]/preview` — preview como member veria
+  - `/app/settings/precos` — lista de overrides contextuais com filtros
+  - `/app/settings/promocoes` — cupons (auto-gera linhas em `service_prices` com `context='promotion'`)
 - Promoções: criar cupom com `code`, tipo (`percent`, `fixed`, `trial_days`), validade, teto de uso, planos aplicáveis
 - Aplicação de cupom no checkout diminui `invoice.amount_cents` e registra `promotion_uses`
 - Pacotes: cadastrar bundle composto de N `plan_items` com `quantity` (ex: "plano mensal + 4 PTs + 1 consulta nutri")

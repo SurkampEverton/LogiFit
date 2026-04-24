@@ -6,6 +6,41 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — ADR 0068: Catálogo de serviços + Preços contextuais + Construtor de planos + Link financeiro
+
+Resolve 3 fragmentações identificadas no modelo comercial durante análise do widget "Plano Premium · bundle":
+
+1. **Preço fragmentado** — mesmo serviço morava em `plans`, `bundles`, `insurance_procedure_prices` separados
+2. **Sem UI visual para admin montar planos** — só form simples no Sprint 04
+3. **Link cliente↔financeiro disperso** — contract + invoice + AR + credit_ledger + cashback sem view unificada
+
+Decisões do usuário (2026-04-24):
+1. Construtor = **B** (form + modal "Adicionar serviço"; sem drag-drop no MVP)
+2. Preços contextuais = **A** (tabela única `service_prices` com context discriminator)
+3. Preview member = **A** (tela dedicada reduz erro de config)
+4. Plano custom por member = **A** (via `service_prices` com `context='member_custom'`)
+5. Plus: **link financeiro completo** detalhado no ADR (contratação → consumo → renovação → pagamento → inadimplência)
+
+**Schema:**
+- `services` (catálogo do tenant com slug, vertical, kind, default_price, CBO/TUSS, chart_account, stock_item, tax_nature)
+- `plan_items` (composição do plano: qtd incluída, período, preço extra, hard limit)
+- `service_prices` (7 contextos: default/plan/contract/member_custom/insurance/promotion/company com priority)
+- `contracts` ganha discount_type/value/valid_until + referral_code_applied
+- `invoices` ganha breakdown jsonb (base + overage + discounts + surcharges + taxes)
+- `accounts_receivable` ganha member_id + service_id + appointment_id + parent_contract_id
+
+**5 telas admin** (`/app/settings/servicos`, `/app/settings/planos`, `/app/settings/planos/[id]/preview`, `/app/settings/precos`, `/app/settings/promocoes`)
+
+**Resolução de preço** — função pura `resolveServicePrice()` com prioridade decrescente (insurance > member_custom > promotion > contract > plan > company > default)
+
+**Link financeiro completo** — ciclo documentado: contratação → consumo (crédito ou AR extra via Asaas) → renovação mensal (reset credits + desconto aplicado) → pagamento (webhook) → inadimplência (régua Sprint 13 integrada)
+
+**Widget financeiro member unificado** — operador (`/app/members/[id]`) vê plano + consumo + extras em aberto + histórico + saldo cashback + ações administrativas; portal (`/meu/financeiro`) espelha com ações de autoatendimento (pagar, baixar recibo, usar cashback, portabilidade LGPD)
+
+**Sprints ajustados:** 04 (plan_items + invoices.breakdown + widget), 05 (services + construtor + 5 telas + service_prices), 15 (AR ganha member_id/service_id/appointment_id), 22 (migração `insurance_procedure_prices` → `service_prices`), 02 (widget financeiro), 26 (portal `/meu/financeiro`), 13 (régua consome AR overdue)
+
+**Descontos — 4 mecanismos integrados:** cupom/promoção (context='promotion'), desconto contratual (contracts.discount_*), preço VIP member (context='member_custom'), cashback acumulado (ledger opt-in aplicado na próxima invoice). Visualização consolidada no `invoices.breakdown`.
+
 ### Changed — ADR 0066 pricing revisado (Starter R$ 79 · Pro R$ 199 · Business R$ 449 · overage R$ 0,50/member)
 
 Após benchmark de mercado (Tecnofit Lite R$ 99, Pro R$ 199; iClinic Pro R$ 119; NutMed R$ 99-249; Amplimed R$ 139-369), pricing inicial foi considerado **acima da média para tenant pequeno**. Revisão:
