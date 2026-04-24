@@ -6,6 +6,37 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — 3 ADRs pré-Sprint 00: subdomínio + pricing + DPO (0065, 0066, 0067)
+
+Trinca de decisões pré-implementação fechando os últimos bloqueadores antes do Sprint 00 iniciar:
+
+- **ADR 0065 — Multi-tenant por subdomínio**: `{slug}.logifit.com.br`; middleware Next.js extrai slug do Host; wildcard DNS + SSL via Vercel; dev local com `*.localhost`; slug validation (3-30 chars, regex, reserved list); mudança de slug com redirect 301 por 90d; cookies escopo `.logifit.com.br`; rotas reservadas (`app`, `api`, `status`, `docs`); schema `tenants.slug` + `tenant_slug_history`
+- **ADR 0066 — Plano comercial LogiFit**:
+  - 3 planos: **Starter R$ 149/mês** (1 un, 150 members, 500 chamadas IA, 5GB), **Pro R$ 399/mês** (3 un, 500 members, 3k IA, 50GB, todas verticais, Focus NFe NFS-e, Device Hub, Pipeline Exames), **Enterprise sob consulta** (ilimitado + BYOK + SLA + white-label + DPO-as-a-service)
+  - **Trial 14 dias** sem cartão com features Pro
+  - Desconto anual ~14% (2 meses grátis)
+  - **Régua inadimplência** D+3/D+7/D+14/D+21 read-only/D+45 suspenso/D+135 anonimização LGPD
+  - Upgrade pró-rata imediato; downgrade fim do ciclo; cancelamento 2 etapas
+  - LogiFit usa Asaas próprio para cobrar tenants + emite NFS-e automática via Focus NFe (Sprint 36)
+  - Schema `logifit_plans` + `tenant_subscriptions`
+- **ADR 0067 — DPO + Governança Compliance LGPD/CFM**:
+  - **DPO interino (fundador)** até 50 tenants; **DPO-as-a-service** R$ 3-8k/mês na escala; DPO dedicado (200+ tenants)
+  - Canal público `privacidade@logifit.com.br` + portal `logifit.com.br/privacidade` pós-MVP
+  - **8 documentos públicos** (política privacidade, termos, DPA template, RIPD resumo, ROPA, cookies, sub-processors, política retenção)
+  - **`security_incidents` schema** + plano resposta 72h ANPD (LGPD art. 48 §1º)
+  - **Lista pública de sub-processors** (Supabase, Vercel, Google Cloud, Groq, Anthropic, OpenAI, Asaas, Resend, Sentry, PostHog, Logtail, Focus NFe, Upstash)
+  - Custo operacional escala com porte: Fase 0 R$ 2k/mês → Fase 3 R$ 29k/mês
+  - Auditoria interna trimestral (fundador) + externa anual (firma) na Fase 2
+  - Pasta nova `docs/compliance/` com templates e playbooks
+
+**`.env.example`** — `NEXT_PUBLIC_ROOT_DOMAIN`, `PRIVACY_EMAIL`, `COMMERCIAL_EMAIL`
+
+**`docs/modulos.md`** — 3 módulos novos em Fundação (multi-tenant subdomínio, planos comerciais, DPO + governança)
+
+**`CLAUDE.md`** — nova seção "Modelo comercial" consolidando pricing + IA embutida + DPO
+
+Com esses 3 ADRs, Sprint 00 pode iniciar. Bloqueadores resolvidos: subdomínio, pricing, repo privacy (próxima decisão externa do usuário), DPO formalizado.
+
 ### Added — ADR 0064: Arquitetura de IA (Gemini Flash default + BYOK + RAG + tasks tipadas + regra 32)
 
 Após 3 iterações sobre relação LogiFit ↔ IA ↔ tenant (revenda rejeitada · BYOK-only rejeitado) e análise da arquitetura de IA do projeto Deep Control, fechada arquitetura definitiva:

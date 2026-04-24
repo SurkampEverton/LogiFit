@@ -6,6 +6,15 @@
 
 LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutrição**, desenvolvido em modo **solo**. Lida com dados de saúde sensíveis (LGPD art. 11) e profissionais regulados (CFM, CRN, CREFITO). Arquitetura precisa ser robusta em isolamento de tenant, auditoria, criptografia e assinatura de prontuário desde o dia 1.
 
+## Modelo comercial
+
+- **3 planos** (ADR 0066): Starter R$ 149/mês · Pro R$ 399/mês · Enterprise sob consulta
+- **Trial 14 dias** sem cartão em Pro features; dados retidos 30 dias se não converter
+- **Multi-tenant por subdomínio** (ADR 0065): `{slug}.logifit.com.br`
+- **Cobrança**: Asaas próprio + NFS-e automática via Focus NFe (Sprint 36)
+- **IA embutida** no plano (Gemini Flash default LogiFit) + BYOK opcional — ADR 0064
+- **DPO + governança LGPD** (ADR 0067): `privacidade@logifit.com.br` + plano resposta incidente 72h + sub-processors públicos + auditoria interna trimestral
+
 ## Marcos regulatórios que norteiam o produto
 
 - **LGPD (Lei 13.709/2018) — art. 11** — dado de saúde é **sensível**; exige base legal explícita + RIPD versionado + consent granular + direitos do titular em 15 dias. Ver [ADR 0054](docs/decisions/0054-lgpd-art11-dados-saude-ripd-versionado.md) + regra 29.
