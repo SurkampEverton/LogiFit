@@ -16,11 +16,14 @@ Home do operador contextual por role (recepção / gerente / diretor / group_own
 - Gerente de filial vê KPIs da sua company/unit; diretor de rede vê tenant; group_owner vê agregados do group (views `group_*`, nunca dado individual)
 - Cards padrão: **Alunos Ativos** · **Faturamento 30d** · **MRR** · **Taxa de Retenção 90d** · **Overdue %** · **Inadimplência por Método** (cartão × PIX × boleto) · **Ocupação Agenda 7d** · **Horário de Pico (semanal)** · **Ocupação por Modalidade** · **Ticket Médio por Aluno** · **Conversão Gympass/TotalPass/Wellhub vs Direto** (quando integração wellness ativa) · **Últimas 10 atividades** (timeline cross-member)
 - Toggle light/dark persistente; zero shadow/`box-shadow` residual
+- **Layout responsivo (ADR 0063):** mobile (390px) usa `<BottomNav>` com 5 ícones (Home, Agenda, Financeiro, Pessoas, Mais) + header compacto; tablet (768px) usa `<Drawer>` colapsável; desktop (1280px+) usa `<Sidebar>` fixa; cards do dashboard colapsam 4→3→2→1 conforme breakpoint
+- **Command Palette em touch:** botão 🔍 sempre visível no header mobile (substitui atalho Ctrl+K que não existe em celular); input da palette fica full-screen em mobile
 - Tokens aplicados: `surface`, `text`, `action-primary`, `success`, `warning`, `danger`
 - Cross-alert dispatcher: função genérica `dispatchAlert(event)` com tabela `alert_subscribers` vazia (sem subscribers no MVP — preparado para Fase 2)
 - Dashboard atualiza em tempo quase real via Realtime para contadores de agenda/check-ins
 - Teste E2E: group_owner com 2 tenants vê agregados; ao "entrar" em 1 tenant, passa a ver detalhes operacionais daquele
 - Teste visual (Playwright snapshot) confirma sem sombras no dark mode
+- Teste visual em 3 viewports canônicos (mobile 390, tablet 768, desktop 1280) — layout adapta; zero overflow horizontal em mobile; touch targets ≥44px (regra 31)
 - **Pesquisa global (ADR 0062):** atalho `Ctrl+K` (Windows/Linux) e `Cmd+K` (Mac) abre `<CommandPalette>` em qualquer página; busca retorna resultados categorizados por tipo (Pessoas · Agendamentos · Financeiro · Configurações · Ações rápidas); navegação por setas + Enter; modificadores `>` ações / `/` rotas / `@` pessoas / `#` tags; debounce 200ms; histórico local
 - Teste E2E: recepção busca "maria" → vê member "Maria Silva" mas **não** vê prontuários (sem `prontuario.read`); audit não grava (não clicou em sensível)
 - Teste E2E: fisio busca "dor lombar" → acha consultas com essa descrição; clicar grava `audit_log` com termo + resultado
@@ -104,7 +107,9 @@ Não publica eventos de negócio; só renderiza os dos outros sprints.
 - [ ] Função `dispatchAlert` em `packages/ai/alerts.ts` — itera subscribers registrados, publica
 - [ ] **API pública `registerCrossAlertHandler({ event, handler, requiredPermission? })`** em `packages/ai/alerts/registry.ts` — sprints consumidores (Sprint 08 acesso bloqueios, Sprint 13 régua, Sprint 19 churn, Sprint 27 lesão→treino, Sprint 32 device alerts, Sprint 33 exame crítico) registram handlers declarativamente; dispatcher invoca em ordem + audit
 - [ ] Server Action `getDashboardData`
-- [ ] Páginas `/app/dashboard/*` por role
+- [ ] Páginas `/app/dashboard/*` por role — usando `<AppLayout>` do Sprint 00 (bottom-nav mobile / drawer tablet / sidebar desktop decidido automaticamente)
+- [ ] `<BottomNav>` populado com 5 slots por role (ex: recepção = Home/Agenda/Check-in/Pessoas/Mais; gerente = Home/Financeiro/Dashboard/Pessoas/Mais)
+- [ ] Botão 🔍 do Command Palette visível no header mobile (ADR 0063)
 - [ ] Componentes de card reusáveis em `packages/ui/cards/`
 - [ ] Realtime counters nos cards de check-in e agenda
 - [ ] Redirect `/app` → home contextual

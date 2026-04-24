@@ -6,6 +6,29 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — Responsividade total mobile-first (ADR 0063 + regra 31)
+
+- **ADR 0063** — Responsividade total (`docs/decisions/0063-responsividade-total-mobile-first.md`). Toda UI `/app/*` e `/meu/*` adapta em 5 breakpoints (default/sm/md/lg/xl/2xl) via biblioteca de componentes base em `packages/ui/layout/*`. Mobile-first, touch targets ≥44px, safe-area-inset, testes Playwright em 3 viewports canônicos (mobile 390, tablet 768, desktop 1280). Zero serviço externo (Tailwind + shadcn nativos).
+- **Regra 31** em `docs/rules.md` — proíbe layout próprio duplicado; exige componentes base de `packages/ui/layout/*`; CI bloqueia `<button>` com altura <44px e `<table>` fora de `<ResponsiveTable>`.
+- **Sprint 00** — entrega biblioteca completa:
+  - `<AppLayout>` (sidebar desktop ↔ bottom-nav mobile ↔ drawer tablet)
+  - `<PortalLayout>` (`/meu/*` PWA com safe-area-inset)
+  - `<ResponsiveModal>` (full-screen mobile ↔ centered desktop)
+  - `<ResponsiveTable>` (table ↔ card-list com prioridade de colunas)
+  - `<ResponsiveForm>` + `<StickyFooter>` (grid 2-col ↔ stack 1-col com rodapé fixo mobile)
+  - `<BottomNav>` (tab bar inferior com 5 slots configuráveis por role)
+  - `<Drawer>` (gaveta lateral com swipe tablet)
+  - Tokens `min-h-touch` (44px) + `min-h-input` (48px) + `safe-area-*`
+  - Helper `packages/config/playwright-viewports.ts` com matrix de viewports
+  - Regra Biome "no-desktop-only-layout" (CI)
+- **Sprint 07** — Dashboard adapta: mobile usa `<BottomNav>` (Home/Agenda/Financeiro/Pessoas/Mais); tablet usa `<Drawer>`; desktop usa `<Sidebar>` fixa; cards colapsam 4→3→2→1; Command Palette ganha botão 🔍 visível em mobile (substitui Ctrl+K).
+- **Sprint 08** — QR do aluno otimizado mobile portrait; UI recepção aceita tablet landscape; feed live usa `<ResponsiveTable>` (cards em mobile).
+- **Sprint 26** — Portal paciente confirma PWA mobile-first com safe-area-inset, bottom nav 4 slots, install prompt após 2ª visita, Lighthouse PWA ≥95.
+- **`docs/sprints/_template.md`** — Definition of Done ganha 3 itens: responsividade (3 viewports), busca global (search_index), i18n (3 locales).
+- **`docs/modulos.md`** — módulo "Componentes base responsivos" em Fundação.
+- **`CLAUDE.md`** — regra operacional 16 + contagem 31 regras.
+- Viewports de teste canônicos: iphone-13, pixel-5, ipad-portrait, ipad-landscape, desktop-1280, desktop-1920.
+
 ### Added — Pesquisa global Command Palette Ctrl+K (ADR 0062 + regra 30)
 
 - **ADR 0062** — Pesquisa global via Command Palette (`docs/decisions/0062-pesquisa-global-command-palette.md`). Atalho `Ctrl+K` (Windows/Linux) e `Cmd+K` (Mac) abre overlay em qualquer tela; busca cross-module respeitando RLS + permission + consent + regra 25; modificadores `>` ações / `/` rotas / `@` pessoas / `#` tags; full-text PostgreSQL (tsvector) + trigram (pg_trgm) + unaccent; zero serviço externo (Algolia/Meilisearch rejeitados por custo + LGPD).

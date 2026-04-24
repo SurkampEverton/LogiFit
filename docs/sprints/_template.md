@@ -42,6 +42,9 @@ O que esta funcionalidade entrega, em uma frase.
 - [ ] Feature flag criada (se feature nova)
 - [ ] Testes unit + e2e verdes
 - [ ] Teste RLS verificado (se mexeu em tabela)
+- [ ] **Responsividade:** UI renderiza em mobile (390px) + tablet (768px) + desktop (1280px); testes visuais Playwright passam; zero overflow horizontal em mobile; touch targets ≥44px (ADR 0063, regra 31)
+- [ ] **Busca global:** se criou tabela pesquisável, registrou em `search_index` com `required_permission` explícita (ADR 0062, regra 30)
+- [ ] **i18n:** todas as strings de UI em `t('namespace.key')` com 3 locales (pt-BR/en-US/es-419); `pnpm i18n:check` passa (regra 27)
 - [ ] Migrations Drizzle aplicadas e revisadas
 - [ ] CHANGELOG.md atualizado
 - [ ] docs/roadmap.md atualizado (status → done)

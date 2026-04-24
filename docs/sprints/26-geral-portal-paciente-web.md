@@ -23,8 +23,11 @@ Portal web self-service do paciente/aluno, entregue como PWA para funcionar como
 - Prontuário resumido (Fisio) — só liberado via consent explícito do paciente
 - QR Code dinâmico para acesso na catraca (reusa HMAC Sprint 08)
 - Portal marca como PWA instalável (manifest + service worker)
-- Teste E2E: member recebe magic link por email → logga → vê agenda → cancela → paga cobrança pendente
-- Performance: Lighthouse >90 em mobile
+- **Responsividade mobile-first total (ADR 0063):** portal usa `<PortalLayout>` do Sprint 00 com **safe-area-inset** respeitado (iPhone notch + home indicator), bottom nav persistente em mobile com 4 ícones principais (Agenda, Financeiro, Treino, Mais); desktop aceito mas é caso secundário (paciente quase sempre no celular); ícone de instalação PWA exibido após 2ª visita via `beforeinstallprompt`; Lighthouse PWA score ≥95
+- Testes visuais Playwright em 3 viewports (mobile 390/tablet 768/desktop 1280) cobrindo todas as rotas `/meu/*`
+- Teste E2E: member recebe magic link por email → logga → vê agenda → cancela → paga cobrança pendente (rodado em iPhone 13 viewport)
+- Teste de instalação PWA: Playwright simula `beforeinstallprompt` → instala → ícone aparece na tela inicial (teste em Chrome/Edge)
+- Performance: Lighthouse >90 em mobile (Performance, Accessibility, Best Practices, SEO) + ≥95 em PWA
 
 ## Dependências
 

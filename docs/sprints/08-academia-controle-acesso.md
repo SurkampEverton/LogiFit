@@ -21,6 +21,7 @@ Aluno da Academia entra na unidade via QR code dinâmico (HMAC rotativo 60s) lid
 - Heartbeat da catraca (`POST /api/acesso/heartbeat`) cada 30s; alerta Sentry se silêncio >2min
 - Dispositivo (`access_devices`) cadastrado por unit com token próprio HMAC distinto do QR
 - Teste E2E: gerar QR, bater na catraca, verificar allow=true; esperar 90s, repetir → token antigo rejeitado
+- **Responsividade (ADR 0063):** QR do aluno em `/app/members/[id]/qr` renderiza otimizado para mobile portrait (QR ocupa maior área disponível, bordas arredondadas, zoom automático se user pinch); UI da recepção `/app/acesso/checkins` suporta tablet landscape (dispositivo fixo no balcão); feed live usa `<ResponsiveTable>` — tabela em desktop, cards empilhados em mobile (gerente acompanhando visita filial pelo celular)
 - Teste E2E: member com invoice vencida +15d não consegue passar; paga invoice → libera em <5s
 - **Gate CREF para personal trainer (ADR 0055):** onboarding de user com role `personal` ou `instrutor` exige ao menos 1 `professional_registrations` ativo com `council_body='CREF'` (Lei 9.696/1998 art. 3º). Operador do tenant é orientado no fluxo a cadastrar o CREF antes de atribuir a role. Nota jurídica exibida na UI.
 - Teste E2E: tentar criar user com role `personal` sem CREF ativo → fluxo bloqueia com mensagem "Personal trainer exige CREF ativo (Lei 9.696/1998); cadastre em /app/pessoas/[id]/registros"
