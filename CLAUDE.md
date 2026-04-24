@@ -8,10 +8,11 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 
 ## Modelo comercial
 
-- **3 planos** (ADR 0066): Starter R$ 149/mês · Pro R$ 399/mês · Enterprise sob consulta
-- **Trial 14 dias** sem cartão em Pro features; dados retidos 30 dias se não converter
+- **4 planos** (ADR 0066): **Starter R$ 79** (100 members, Academia) · **Pro R$ 199** (500 members, todas verticais, Focus NFe, Device Hub, Pipeline Exames) · **Business R$ 449** (2.000 members, multi-company, intercompany, adquirência) · **Enterprise sob consulta** (BYOK IA + SLA + white-label + DPO-as-a-service)
+- **Overage suave R$ 0,50/member** acima do incluído; cap por tier força upgrade sugerido
+- **Trial 14 dias** sem cartão com features Pro; dados retidos 30 dias se não converter
 - **Multi-tenant por subdomínio** (ADR 0065): `{slug}.logifit.com.br`
-- **Cobrança**: Asaas próprio + NFS-e automática via Focus NFe (Sprint 36)
+- **Cobrança**: Asaas próprio LogiFit + NFS-e automática via Focus NFe (Sprint 36)
 - **IA embutida** no plano (Gemini Flash default LogiFit) + BYOK opcional — ADR 0064
 - **DPO + governança LGPD** (ADR 0067): `privacidade@logifit.com.br` + plano resposta incidente 72h + sub-processors públicos + auditoria interna trimestral
 

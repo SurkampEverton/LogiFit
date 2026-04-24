@@ -6,6 +6,41 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Changed — ADR 0066 pricing revisado (Starter R$ 79 · Pro R$ 199 · Business R$ 449 · overage R$ 0,50/member)
+
+Após benchmark de mercado (Tecnofit Lite R$ 99, Pro R$ 199; iClinic Pro R$ 119; NutMed R$ 99-249; Amplimed R$ 139-369), pricing inicial foi considerado **acima da média para tenant pequeno**. Revisão:
+
+- **Starter:** R$ 149 → **R$ 79/mês** (anual R$ 69) · 100 members · 1 un · só Academia
+- **Pro:** R$ 399 → **R$ 199/mês** (anual R$ 179) · 500 members · 3 un · todas verticais + Focus NFe + Device Hub + Pipeline Exames
+- **Business (NOVO):** **R$ 449/mês** (anual R$ 399) · 2.000 members · 10 un · multi-company + intercompany + adquirência integrada — fecha gap entre Pro e Enterprise
+- **Enterprise:** sob consulta (a partir de R$ 1.199/mês) · ilimitado + BYOK IA + SLA 99,9% + white-label + DPO-as-a-service
+- **Free plan rejeitado** na decisão (opção B escolhida) — trial 14 dias substitui; reavaliar após 12 meses se conversão ficar baixa
+
+**Overage suave por member:**
+- R$ 0,50/member acima do incluído (Starter/Pro); R$ 0,40 (Business)
+- Cap por tier força upgrade sugerido (ex: Starter +R$ 120 overage = 240 members → sugere Pro)
+- Tenant que cresce de 95 para 130 members paga R$ 79 + R$ 15 overage (proporcional) sem upgrade hostil
+- 3 ciclos acima do threshold = upgrade forçado no próximo ciclo (aviso 30d)
+
+**Margem analisada:**
+- Starter: 68% (R$ 54 líquido após ~R$ 25 de custo)
+- Pro: 80% (R$ 159 líquido)
+- Business: 82% (R$ 369 líquido)
+- Enterprise: 83%+ (R$ 999+ líquido)
+
+**Schema adicional:**
+- `tenant_usage_snapshots` (period_ym, members_active, overage_amount_cents) para rastrear overage mensal
+- `logifit_plans` ganha `members_included`, `members_overage_rate_cents`, `members_overage_cap_cents`
+- `tenant_subscriptions` ganha `members_included_override` para Enterprise customizado
+
+**Decisões do usuário (2026-04-24):**
+1. Free plan = **B** (não adotar; trial 14d é suficiente)
+2. Reduzir Starter para R$ 79 e Pro para R$ 199 = **A** (sim)
+3. Business R$ 449 intermediário = **A** (sim)
+4. Overage R$ 0,50/member suave = **A** (sim)
+
+`docs/modulos.md` · `CLAUDE.md` · `CHANGELOG.md` atualizados.
+
 ### Added — 3 ADRs pré-Sprint 00: subdomínio + pricing + DPO (0065, 0066, 0067)
 
 Trinca de decisões pré-implementação fechando os últimos bloqueadores antes do Sprint 00 iniciar:
