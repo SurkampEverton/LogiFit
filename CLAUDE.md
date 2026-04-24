@@ -23,7 +23,7 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 ## Documentação de referência (leia antes de planejar)
 
 - [`docs/arquitetura.md`](docs/arquitetura.md) — visão geral da arquitetura e stack
-- [`docs/rules.md`](docs/rules.md) — **31 regras duras** (arquiteturais, processo, código, i18n, IA, LGPD, pesquisa global, responsividade)
+- [`docs/rules.md`](docs/rules.md) — **32 regras duras** (arquiteturais, processo, código, i18n, IA, LGPD, pesquisa global, responsividade, arquitetura IA)
 - [`docs/modulos.md`](docs/modulos.md) — catálogo de módulos por área (fundação, geral, academia, fisio, nutri) + quais verticais usam
 - [`docs/multiempresa.md`](docs/multiempresa.md) — hierarquia group → tenant → company → unit + flags de topology
 - [`docs/acesso-e-autorizacao.md`](docs/acesso-e-autorizacao.md) — 4 camadas (identidade, tenant, RBAC, consent)
@@ -50,6 +50,7 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 14. **Nunca** criar módulo que processa dado de saúde sem registro em `ripd_documents` com versão vigente + consent por finalidade explícita. CI bloqueia. Ver [ADR 0054](docs/decisions/0054-lgpd-art11-dados-saude-ripd-versionado.md) e regra 29.
 15. **Módulo novo com dado pesquisável** registra-se em `search_index` com `required_permission` explícita (trigger `search_index_sync()` + kind/label/url/searchable_text). Omissão viola regra 30. Ver [ADR 0062](docs/decisions/0062-pesquisa-global-command-palette.md).
 16. **Toda UI mobile-first** — usar `<AppLayout>`/`<ResponsiveTable>`/`<ResponsiveModal>`/`<ResponsiveForm>` de `packages/ui/layout/*`; testes Playwright em 3 viewports (390/768/1280); touch targets ≥44px. Proibido construir layout próprio duplicado. Ver [ADR 0063](docs/decisions/0063-responsividade-total-mobile-first.md) e regra 31.
+17. **Chamada de IA via `resolveModelForTask(task, featureKey?, tenantCtx)`** — nunca hardcode provider/modelo. Tasks canônicas: chat/embedding/classification/extraction/vision/transcription/reasoning. Tool calling sempre via Server Actions tipadas (proibido SQL arbitrário do LLM). System prompt via `buildSystemPrompt()` composto. Ver [ADR 0064](docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md) e regra 32.
 
 Lista completa em [`docs/rules.md`](docs/rules.md).
 
@@ -59,7 +60,7 @@ Lista completa em [`docs/rules.md`](docs/rules.md).
 - **Backend:** Next.js server-side (Server Components + Server Actions + API Routes) — sem serviço separado
 - **Banco/Auth/Realtime/Storage:** Supabase
 - **ORM:** Drizzle (fonte única de schema)
-- **IA:** Vercel AI SDK (Claude default; fallback OpenAI/Gemini) + cache semântico pgvector + rate limit Upstash Redis
+- **IA:** Vercel AI SDK com **Gemini 2.5 Flash (Vertex AI SP) como default LogiFit** + **Groq Whisper para STT** + BYOK opcional (Claude/GPT/Maritaca/Anthropic) + fallback cascade; tasks tipadas (chat/embedding/classification/extraction/vision/transcription/reasoning); `resolveModelForTask()` nunca hardcode; cache semântico pgvector + quota mensal + rate limit Upstash Redis. Ver [ADR 0064](docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md).
 - **Pagamentos:** Asaas
 - **Email:** Resend
 - **Observabilidade:** Sentry + PostHog + Logtail/Axiom

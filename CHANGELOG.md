@@ -6,6 +6,40 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — ADR 0064: Arquitetura de IA (Gemini Flash default + BYOK + RAG + tasks tipadas + regra 32)
+
+Após 3 iterações sobre relação LogiFit ↔ IA ↔ tenant (revenda rejeitada · BYOK-only rejeitado) e análise da arquitetura de IA do projeto Deep Control, fechada arquitetura definitiva:
+
+- **ADR 0064** — `docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md`. Define:
+  - **Default LogiFit:** Gemini 2.5 Flash via Vertex AI São Paulo (resolve LGPD data residency) — custo absorvido no plano (~R$ 1,50-17/mês/tenant conforme plano)
+  - **BYOK opcional:** admin tenant cola API key própria (Anthropic/OpenAI/Gemini/Groq/Maritaca) em `/app/settings/ia` → bypass quota
+  - **Quota por plano:** 500 (Starter) / 3.000 (Pro) / 10.000 (Enterprise) chamadas/mês; excedida = circuit breaker + CTA BYOK (sem overage pago)
+  - **Cache semântico pgvector** reduz 40-60% consumo
+  - **STT embutido** via Groq Whisper-large-v3-turbo (Sprint 31 teleconsulta) — ~US$ 0,30/tenant/mês absorvido
+  - **Fallback cascade** automático Gemini → OpenAI → Anthropic em caso de 429/500/timeout
+  - **7 tabelas** (`ai_providers`, `ai_models`, `ai_provider_configs`, `ai_task_routing`, `ai_tenant_usage`, `ai_documents`, `ai_document_chunks`, `ai_semantic_cache`)
+  - **Tasks tipadas** (chat/embedding/classification/extraction/vision/transcription/reasoning) com `resolveModelForTask()` — nunca hardcode
+  - **RAG global curado LogiFit:** ADRs + Sprints + schema Drizzle + regulações (CFM 2.454, LGPD, TISS 4.01, CFN 599, COFFITO 414, ANVISA RDC) como seed; Copilot cita fonte
+  - **System prompt composto** (`buildSystemPrompt()` com agent + regras globais + user + RBAC + RAG)
+  - **Tool calling restrito** — Server Actions tipadas (proibido LLM emitir SQL arbitrário)
+  - **White-label** do nome do assistente (`tenant_settings.ai_assistant_name`)
+  - **Sistema mínimo de tickets** com tool `report_issue`
+- **Regra 32** em `docs/rules.md` — chamada IA via `resolveModelForTask()`; tool calling tipado; tier mínimo por feature clínica; CI bloqueia hardcode
+- **Regra operacional 17** em `CLAUDE.md` (total 32 regras)
+- **Sprint 06** — escopo cresce de 2 para 3-4 semanas: entrega infraestrutura IA completa (7 tabelas + RAG ingestion + quota + BYOK UI + white-label + tickets) além do Copilot
+- **Sprint 31** — STT Groq Whisper + **rascunho SOAP automático pós-teleconsulta** (transcript + contexto → IA gera 4 seções → profissional revisa/edita/assina — regra 28 supervisão humana)
+- `docs/modulos.md` — 9 módulos novos (arquitetura IA, RAG, BYOK, quota, white-label, STT, rascunho SOAP, tickets, etc.)
+- `CLAUDE.md` — stack atualizada: Gemini default + Groq STT + BYOK opcional; regra 17 adicionada
+- `.env.example` — GOOGLE_CLOUD_PROJECT, VERTEX_AI_LOCATION, GOOGLE_APPLICATION_CREDENTIALS, GROQ_API_KEY, ENCRYPTION_KEY adicionados
+
+Decisões confirmadas pelo usuário (2026-04-24):
+1. Default LogiFit = Gemini 2.5 Flash (custo R$ 5 / 3k chamadas/mês; datacenter SP)
+2. STT = Groq Whisper embutido no plano
+3. `ai_tenant_usage` para quota tracking mensal
+4. Quota excedida = bloqueio + CTA BYOK (sem overage pago)
+
+Inspiração: arquitetura de IA do projeto Deep Control (tasks tipadas + task routing + RAG completo + multimodal + white-label) adaptada ao contexto saúde com gates de compliance (CFM 2.454, LGPD art. 11, tier mínimo regra 32).
+
 ### Added — Sprint 00b Menu lateral + evolução ADR 0063 (hamburger overlay único)
 
 - **Sprint 00b (novo)** — `docs/sprints/00b-menu-lateral.md` com escopo detalhado de `<SideMenu>` hamburger overlay + registry por módulo + filtros automáticos de permission/vertical/consent/feature flag.

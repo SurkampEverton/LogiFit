@@ -31,9 +31,12 @@ Dois módulos complementares para engajamento paciente-profissional:
 - Sala criada sob demanda com URL única + token; só profissional e paciente entram
 - Gravação opcional (se consent) em Storage criptografado com retenção configurável
 - Chat em tempo real durante chamada
-- Transcrição automática da sessão via Whisper (opcional, consent-gated)
-- Integração com prontuário/evolução: pós-call, nutri/fisio registra consulta com link para gravação
-- Respeita LGPD: provider não armazena conteúdo além do contrato + criptografia ponta-a-ponta se provider suporta
+- **Transcrição automática via Groq Whisper-large-v3-turbo (ADR 0064)** — áudio da gravação → `task='transcription'` no task routing → transcript estruturado em turnos ({"speaker": "profissional"|"paciente", "at": timestamp, "text": "..."}) armazenado em `consultas.transcript jsonb` (quando consent); custo ~US$ 0,04 por 10min → ~US$ 0,30/tenant/mês absorvido pelo LogiFit
+- **Rascunho SOAP automático pós-transcrição** — após transcript pronto, dispara `task='chat'` agent `soap_drafter` que recebe transcript completo + contexto do paciente (última consulta, CIDs, plano ativo) + template SOAP da especialidade (Sprint 20 `assessment_types` com `category='anamnese'`) → gera rascunho em 4 seções (S subjetivo / O objetivo / A avaliação / P plano) preenchido → **profissional revisa, edita e assina** (não publica direto em prontuário oficial — regra 28 supervisão humana) → quando assinado vira `consulta.content` do Sprint 20
+- **Rascunho marcado claramente como "gerado por IA"** com badge visual; audit registra `ai_audit_log` com decisão humana (accepted/edited/rejected)
+- Feature flag `teleconsulta_stt_v1` permite desligar STT se tenant opt-out IA (ADR 0064)
+- Integração com prontuário/evolução: pós-call, nutri/fisio **já vê rascunho SOAP pronto** (se STT ativo) ou registra consulta manual (se não)
+- Respeita LGPD: provider de video não armazena conteúdo além do contrato + criptografia ponta-a-ponta se provider suporta; transcrição passa pelo Groq (DPA LogiFit + consent do titular cobre)
 
 Testes E2E:
 - Paciente registra 3 refeições no dia; nutri vê + comenta; paciente recebe notificação

@@ -89,8 +89,16 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 | Pacotes (bundles) + créditos | Plan composto + `appointment_credits` consumidos na agenda | Academia, Fisio, Nutri | 05 | todo |
 | Referrals (indicação premiada) | Código de indicação → desconto no referred + recompensa no referrer | Academia, Fisio, Nutri | 05 | todo |
 | Cashback (stretch) | Ledger de pontos/créditos ganhos por pagamento | Academia, Fisio, Nutri | 05 (stretch) | todo |
-| Copilot chat (IA) | Chat ancorado em contexto do member; consulta/sugestão, nunca prescrição | Academia, Fisio, Nutri | 06 | todo |
-| Cache semântico + rate-limit | `ai_cache` (pgvector) + Upstash Redis por tenant | Academia, Fisio, Nutri | 06 | todo |
+| Copilot chat (IA) | Chat ancorado em contexto do member; consulta/sugestão, nunca prescrição; agent `general` com tools tipadas (findMember, scheduleAppointment, findCidByDescription, report_issue) | Academia, Fisio, Nutri | 06 | todo |
+| **Arquitetura IA — Gemini Flash default + BYOK + RAG (ADR 0064)** | 7 tabelas (`ai_providers`, `ai_models`, `ai_provider_configs`, `ai_task_routing`, `ai_tenant_usage`, `ai_documents`, `ai_document_chunks`, `ai_semantic_cache`) + tasks tipadas (chat/embedding/classification/extraction/vision/transcription/reasoning) + cache semântico + quota por plano + fallback cascade | Academia, Fisio, Nutri | 06 | todo |
+| **RAG global curado LogiFit** | Seed de ADRs + Sprints + schema Drizzle + regulações (CFM 2.454, LGPD, TISS 4.01, CFN 599, COFFITO 414, ANVISA RDC) como `ai_documents` global; Copilot cita fonte | Academia, Fisio, Nutri | 06 | todo |
+| **BYOK — bring your own key** | Admin tenant cola API key própria em `/app/settings/ia`; criptografada AES-256-GCM; bypass quota LogiFit; tenant paga direto | Academia, Fisio, Nutri | 06 | todo |
+| **Quota IA por plano + circuit breaker** | 500/3k/10k chamadas/mês (Starter/Pro/Enterprise); cache semântico reduz ~50%; quota excedida = bloqueio + CTA "configure BYOK" (sem overage pago) | Academia, Fisio, Nutri | 06 | todo |
+| **White-label do assistente** | `tenant_settings.ai_assistant_name` configurável ("Copilot" default; tenant pode mudar para "Vital AI", "Dr. Clinica X"); hook `useAIAssistantName()` propaga para toda UI | Academia, Fisio, Nutri | 06 | todo |
+| **Transcription (STT) — Groq Whisper** | Áudio da teleconsulta (Sprint 31) → transcript estruturado em turnos; custo ~US$ 0,30/tenant/mês absorvido; base para SOAP automático | Academia, Fisio, Nutri | 06 (infra) + 31 (uso) | todo |
+| **Rascunho SOAP automático pós-teleconsulta** | Transcript + contexto do paciente + template de especialidade → IA gera rascunho em 4 seções (SOAP); profissional revisa/edita/assina; regra 28 supervisão humana | Fisio, Nutri | 31 | todo |
+| **Sistema mínimo de tickets** | `support_tickets` + tool `report_issue` (LLM pode abrir ticket com contexto rico); UI `/app/suporte` | Academia, Fisio, Nutri | 06 | todo |
+| Cache semântico + rate-limit | `ai_semantic_cache` (pgvector) + Upstash Redis por tenant | Academia, Fisio, Nutri | 06 | todo |
 | Dashboard "Equilíbrio Vital" | Home por role (recepção/gerente/diretor) + KPIs do negócio + tokens light/dark sem sombra | Academia, Fisio, Nutri | 07 | todo |
 | Dashboard do member | Home `/app/members/[id]` com widgets contribuídos por cada módulo (timeline, agenda, financeiro, copilot, acessos, créditos, conquistas, metas) | Academia, Fisio, Nutri | 02 (layout) + 03/04/05/06/08/09 (widgets) | todo |
 | Cross-alert dispatcher | Publisher/subscriber em cima de `domain_events` (consumidores reais nascem na Fase 2 e no Sprint 09) | todas | 07 | todo |

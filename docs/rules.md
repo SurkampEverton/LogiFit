@@ -1,6 +1,6 @@
 # Regras do Projeto LogiFit
 
-Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (multi-empresa, i18n, IA, LGPD, pesquisa global, responsividade). Violação = CI vermelho, revert, ou sprint não fecha.
+Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (multi-empresa, i18n, IA, LGPD, pesquisa global, responsividade, arquitetura IA). Violação = CI vermelho, revert, ou sprint não fecha.
 
 > **Como usar:** toda discussão técnica começa perguntando "isso fere alguma regra?". Se sim, ou mudamos a regra (ADR) ou mudamos a solução. Regras não são sugestões.
 
@@ -33,6 +33,8 @@ Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (multi
 **30.** **Módulo novo com dado pesquisável deve registrar-se em `search_index`** via trigger `search_index_sync()` declarando explicitamente: `kind` (identificador do tipo), `label`/`subtitle`/`url` (o que mostrar), `searchable_text` (campos buscáveis), **`required_permission`** (permission mínima para aparecer no resultado), `required_vertical` (quando aplicável), `required_consent_purpose` (quando cross-module), `is_sensitive` (true → clique grava audit). Omissão de `required_permission` é proibido — operador sem permission nunca pode ver o resultado, nem "provocar" clique para descobrir existência. Ver [ADR 0062](decisions/0062-pesquisa-global-command-palette.md).
 
 **31.** **Toda UI de `/app/*` e `/meu/*` é responsiva mobile-first** nos 3 viewports canônicos (mobile 390px, tablet 768px, desktop 1280px). Componente **deve** usar os componentes base de `packages/ui/layout/*` (`<ResponsiveTable>`, `<ResponsiveModal>`, `<ResponsiveForm>`, `<AppLayout>`, `<BottomNav>`); proibido construir layout próprio duplicado. Touch targets ≥44px (botões) e ≥48px (inputs). Teste Playwright visual em 3 viewports obrigatório em sprints com UI nova — falha CI. Exceção (ex: tela admin técnica desktop-only) exige ADR de sprint justificando. Ver [ADR 0063](decisions/0063-responsividade-total-mobile-first.md).
+
+**32.** **Chamada de IA nunca hardcode provider/modelo.** Toda invocação passa por `resolveModelForTask(task, featureKey?, tenantCtx)` que consulta `ai_task_routing`. Tasks canônicas: `chat`, `embedding`, `classification`, `extraction`, `vision`, `transcription`, `reasoning`. Feature clínica tem **tier mínimo imposto** por LogiFit (ex: Pipeline Exames interpretação não roda em modelo abaixo de Gemini Flash; CI bloqueia seed de `ai_task_routing` com modelo abaixo do mínimo). Tool calling sempre via Server Actions tipadas — **proibido LLM emitir SQL arbitrário**. System prompt composto por `buildSystemPrompt({ agent, tenant, user, permissions, ragChunks, globalRules })`, nunca string ad-hoc. Ver [ADR 0064](decisions/0064-ia-arquitetura-gemini-default-byok-rag.md).
 
 ---
 

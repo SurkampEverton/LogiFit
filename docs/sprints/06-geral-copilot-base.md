@@ -1,27 +1,85 @@
-# Sprint 06 — Geral · Copilot base (chat IA ancorado em member)
+# Sprint 06 — Geral · Copilot base + arquitetura IA (ADR 0064)
 
-- **Área:** geral
+- **Área:** geral (fundação IA transversal)
 - **Início:** planejado (depois do Sprint 05)
-- **Fim planejado:** +2 semanas
+- **Fim planejado:** **+3-4 semanas** (escopo cresceu com ADR 0064: schemas + RAG + tasks tipadas + quota + UI + STT + tickets)
 - **Status:** planejado
 - **Item do roadmap:** #8
 
 ## Goal
 
-Chat IA ancorado em contexto de um `member` selecionado — usa nome, plano, histórico de agenda/financeiro como contexto. Cache semântico para reduzir custo e rate-limit por tenant para evitar runaway bill. Copilot **consulta e sugere**, nunca prescreve (regra safety).
+**Entregar a arquitetura de IA completa do LogiFit (ADR 0064)** — não só Copilot, mas fundação que todos os sprints de IA posteriores consomem. Implementa:
+
+1. **Provider default LogiFit** (Gemini 2.5 Flash via Vertex AI São Paulo) + BYOK opcional
+2. **Tasks tipadas** (chat, embedding, classification, extraction, vision, transcription, reasoning)
+3. **Task routing** (qual modelo pra qual task, com scope global/tenant/feature)
+4. **RAG completo** (ADRs + Sprints + schema Drizzle + regulações como seed global)
+5. **Cache semântico** pgvector + quota tracking mensal por tenant
+6. **UI `/app/settings/ia`** (admin tenant cola BYOK opcional)
+7. **White-label** do nome do assistente
+8. **System prompt composto** (agent + global rules + user + RBAC + RAG)
+9. **Tool calling tipado** (nunca SQL arbitrário; sempre Server Actions)
+10. **Sistema mínimo de tickets** (`support_tickets` + tool `report_issue`)
+11. **Copilot chat ancorado em member** (feature cliente — `/app/copilot` + `/app/members/[id]/copilot`)
+
+Copilot **consulta e sugere**, nunca prescreve (regra safety 28). Guardrails ADR 0015 ativos.
 
 ## Critério de aceite
 
-- Sidepanel global (`/app/copilot`) e contextual (`/app/members/[id]/copilot`)
-- Streaming SSE da resposta do modelo
-- Cache semântico: segunda pergunta com similaridade >0.93 bate `ai_cache` sem chamar modelo
-- Rate-limit por tenant via Upstash Redis: 100 msg/hora/tenant (configurável por plano)
-- Provider plugável: Claude default, OpenAI/Gemini fallback quando erro 5xx
-- Disclaimer em toda resposta: "sugestão auxiliar — profissional humano decide"
-- System prompt proíbe prescrição de treino/dieta/medicação; resposta com essa intenção é truncada + log de incidente
+**Arquitetura IA (ADR 0064):**
+
+- **7 tabelas novas:** `ai_providers`, `ai_models`, `ai_provider_configs`, `ai_task_routing`, `ai_tenant_usage`, `ai_documents`, `ai_document_chunks`, `ai_semantic_cache`
+- **Seed global de providers:** Gemini (Vertex AI SP — default LogiFit), Anthropic, OpenAI, Groq, Maritaca
+- **Seed de modelos** com capabilities (function_calling, vision, streaming, context window, preço)
+- **Seed de task routing** com Gemini 2.5 Flash como priority 100 em `chat`, `embedding`, `classification`, `extraction`, `vision`; Groq `whisper-large-v3-turbo` para `transcription`; fallback cascade OpenAI/Anthropic
+- **Quota enforcement:** `ai_tenant_usage` rastreia calls/tokens/cost por mês; circuit breaker quando passar limite do plano (500/3k/10k chamadas)
+- **Cache semântico:** pergunta com similarity >0.93 no embedding retorna resposta cached sem nova chamada; redução estimada 40-60% do consumo
+- **Rate-limit por tenant** via Upstash Redis: 100 msg/hora/tenant como teto anti-burst (independente da quota mensal)
+- **Fallback cascade automático:** default Gemini → fallback OpenAI → fallback Anthropic em caso de 429/500/timeout; audit marca `fallback_used=true`
+
+**RAG (seed global LogiFit):**
+
+- Job `SeedRAGSystemDocuments` no boot ingere: todos os ADRs (`docs/decisions/*.md`), todos os Sprints (`docs/sprints/*.md`), schema Drizzle (tabelas + colunas + comentários), regulações curadas (CFM 2.454, LGPD art. 11/18, TISS 4.01, CFN 599, COFFITO 414, ANVISA RDC 657/751)
+- Chunking ~500 tokens com overlap 50; embedding Gemini `text-embedding-004` (768 dim)
+- Hash do conteúdo detecta mudança → deleta chunks antigos + reseed
+- Tenant pode subir docs próprios (`source_type='user_uploaded'`) via `/app/settings/ia/knowledge`
+
+**BYOK opcional:**
+
+- UI `/app/settings/ia` (role `super_admin_rede`) — admin cola API key própria de Anthropic/OpenAI/Gemini/Groq/Maritaca
+- Key criptografada em `ai_provider_configs.api_key_encrypted` (AES-256-GCM, chave em `ENCRYPTION_KEY`)
+- Botão "Testar" valida a key com uma chamada de eco
+- BYOK ativo: bypass da quota LogiFit; tenant paga direto ao provider
+- BYOK ausente: usa default LogiFit (Gemini Flash) sujeito à quota do plano
+
+**Copilot (feature cliente):**
+
+- Sidepanel global `/app/copilot` e contextual `/app/members/[id]/copilot`
+- Streaming SSE da resposta via Vercel AI SDK
 - Contexto inclui: dados do member (nome, idade, plano ativo), últimas 5 sessões de agenda, status financeiro — **nunca** prontuário Fisio ou dieta Nutri sem `consent` ativo
-- `audit_log` registra cada conversa + `consent_id` quando aplicável
-- Teste E2E: cache hit retorna resposta idêntica sem incrementar gasto de tokens; rate-limit bate em 101ª chamada
+- Disclaimer fixo em cada resposta: "sugestão auxiliar — profissional humano decide" (regra 15)
+- Guardrails ADR 0015: classificador de output detecta prescrição/diagnóstico → bloqueia + `ai_audit_log.guardrail_blocked=true`
+- Tools tipadas disponíveis no agent `general`: `findMember`, `scheduleAppointment`, `findCidByDescription`, `summarizeEvolutions` (com permission check), `report_issue`
+- **White-label:** nome do assistente configurável por tenant (default "Copilot")
+- `ai_audit_log` registra cada turn + consent_id + guardrail_result + tokens + custo + latência
+
+**Sistema mínimo de tickets:**
+
+- Tabela `support_tickets (id, tenant_id, user_id, category, title, description, context jsonb, status, created_at)`
+- Tool `report_issue(title, description)` — LLM pode abrir ticket com contexto rico (pergunta original, tools chamadas, SQL tentado, erro)
+- UI `/app/suporte` — lista tickets do tenant + detalhe
+- Notificação email para admin do tenant quando ticket aberto (Sprint 13 Resend)
+
+**Critérios de aceite:**
+
+- Cache hit retorna resposta idêntica sem incrementar gasto de tokens
+- Rate-limit bate em 101ª chamada na mesma hora
+- Quota bate no limit do plano → circuit breaker + UI "Configure BYOK" + bloqueia novas chamadas até próximo ciclo
+- BYOK configurado: primeira chamada usa key do tenant, audit mostra `provider_config_id` preenchido
+- Fallback automático: simulação de 429 no Gemini → próxima chamada usa OpenAI; audit registra
+- RAG: pergunta "o que a CFM 2.454 diz sobre Comitê de IA?" retorna resposta com citação do ADR 0053 (seed global ingeriu)
+- Tool `report_issue`: Copilot abre ticket com contexto capturado; aparece em `/app/suporte`
+- White-label: tenant muda nome para "Vital AI" → hook `useAIAssistantName()` propaga; header, sidepanel, Copilot usam o novo nome
 
 ## Dependências
 
@@ -32,7 +90,9 @@ Chat IA ancorado em contexto de um `member` selecionado — usa nome, plano, his
 ## Decisões tomadas / ADRs esperados
 
 - **ADR 0015 (esperado)** — Copilot: consulta/sugestão, nunca prescrição. System prompt fixo + classificador de output para detectar prescrição e bloquear.
+- [ADR 0064 — Arquitetura de IA (Gemini default + BYOK + RAG)](../decisions/0064-ia-arquitetura-gemini-default-byok-rag.md) — accepted
 - **Pergunta aberta:** limite de contexto — quanto da timeline incluir (últimas 5 interações? últimos 30 dias?). Decidir com análise de custo por conversa.
+- **Pergunta aberta:** chunking strategy do RAG — 500 tokens overlap 50 é padrão; pode precisar tunar para docs regulatórios longos.
 
 ## Módulos entregues
 
