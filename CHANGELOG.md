@@ -6,6 +6,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Regras — Regra 44 NOVA: ler design system antes de criar tela/componente UI
+
+- [docs/rules.md](docs/rules.md) — **Regra 44** em nova seção "Design system 'Equilíbrio Vital'" complementa regras 27 (i18n) e 31 (responsividade). Define fonte de verdade dual (pré/pós-Sprint 00), lista proibições (hardcode de hex/font/spacing/radius/font-size; construir primitivo do zero; `box-shadow` decorativa) e obrigações (nova variante entra primeiro no styleguide; mudança de token apenas em `tokens.css`). Lint `no-hardcoded-design-token` previsto pra Sprint 00
+- [CLAUDE.md](CLAUDE.md) — **item 29** sintetiza a regra 44 inline; rodapé da lista atualizado de "43 regras duras numeradas 1-8 + 21-43" para "44 regras duras numeradas 1-8 + 21-44"
+
 ### Prototipo — Design system styleguide "Equilíbrio Vital"
 
 Página única de documentação viva do design system, autossuficiente, dentro do protótipo HTML estático.

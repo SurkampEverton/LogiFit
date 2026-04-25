@@ -67,6 +67,32 @@
 
 ---
 
+## Design system "Equilíbrio Vital"
+
+**44.** **Antes de criar/modificar qualquer tela ou componente UI, ler o design system "Equilíbrio Vital".** Fonte de verdade dual conforme fase:
+
+- **Hoje (pré-Sprint 00):** [`prototipo/tokens.css`](../prototipo/tokens.css) (todos os tokens `--ev-*` light + dark) + [`prototipo/base.css`](../prototipo/base.css) (primitivos `.ev-btn`, `.ev-card`, `.ev-badge`, `.ev-input`, `.ev-table`, `.ev-dot`, `.ev-divider`, utilities `.ev-stack`/`.ev-row`/`.ev-grid`). Visualização ao vivo em [`prototipo/designsystem/index.html`](../prototipo/designsystem/index.html) (14 seções: Foundation + Componentes + Migração shadcn).
+- **Após Sprint 00:** `packages/ui/tokens.css` + `packages/ui/shadcn-mapping.css` (aliases shadcn → vars EV — preview pronto em [`prototipo/designsystem/shadcn-mapping.css`](../prototipo/designsystem/shadcn-mapping.css)) + componentes shadcn customizados em `packages/ui/components/*` que consomem os tokens. Styleguide portado pra `apps/web/app/styleguide/`.
+
+**Proibido:**
+
+- Hardcode de hex (`#3498DB`), font-family (`'Inter'`), spacing literal (`padding: 16px`), radius (`border-radius: 8px`), font-size (`font-size: 14px`), line-height, weight, z-index. Sempre via `var(--ev-*)` ou alias shadcn (`var(--primary)`, `var(--background)`, `var(--radius)`).
+- Construir botão/card/input/badge/tabela/dot do zero quando primitivo equivalente existe — usar `.ev-btn` (HTML protótipo) ou `<Button>` shadcn (React, pós-Sprint 00) que já consomem tokens.
+- Adicionar `box-shadow` decorativa — design system é **flat extremo** (filosofia central documentada em [arquitetura.md](arquitetura.md) §1). Única exceção: focus ring funcional via `var(--ev-focus-ring)` (já previsto nos tokens).
+- Importar fonte sem registrar em tokens.css. Ibrand é **fonte de marca**, restrita a logo/headings de identidade — nunca corpo.
+
+**Obrigatório:**
+
+- **Nova variante visual** (ex: novo tipo de badge, novo size de botão) entra **primeiro** no styleguide (atualizar `prototipo/designsystem/index.html` ou `apps/web/app/styleguide/` no pós-Sprint 00) com a variante documentada e renderizada — depois consumir nas telas. Sem doc no styleguide = lint reprova.
+- **Mudança em token** (ex: ajustar contraste de `--ev-primary` por A11y) muda SOMENTE em `tokens.css`; aliases shadcn herdam automaticamente. Migrar todas as referências hardcoded encontradas no caminho.
+- Mudança em token ou primitivo dispara revisão visual via `pnpm test:e2e --grep="@design-system"` (suite Playwright pós-Sprint 00 que compara snapshot do styleguide light + dark).
+
+**Lint pós-Sprint 00:** `no-hardcoded-design-token` bloqueia commit que introduz hex/spacing/radius/font-size literal em `apps/web/**/*.{ts,tsx,css}` (exceto o próprio `tokens.css`). Complementa regra 31 (responsividade) e regra 27 (i18n) — ambas governam a superfície UI.
+
+Ver [arquitetura.md §1](arquitetura.md), [ADR 0063](decisions/0063-responsividade-total-mobile-first.md), e CHANGELOG `[Unreleased] Prototipo — Design system styleguide "Equilíbrio Vital"`.
+
+---
+
 ## Arquitetura IA + tratamento de erros
 
 **32.** **Chamada de IA nunca hardcode provider/modelo.** Toda invocação passa por `resolveModelForTask(task, featureKey?, tenantCtx)` que consulta `ai_task_routing`. Tasks canônicas: `chat`, `embedding`, `classification`, `extraction`, `vision`, `transcription`, `reasoning`. Feature clínica tem **tier mínimo imposto** por LogiFit (ex: Pipeline Exames interpretação não roda em modelo abaixo de Gemini Flash; CI bloqueia seed de `ai_task_routing` com modelo abaixo do mínimo). Tool calling sempre via Server Actions tipadas — **proibido LLM emitir SQL arbitrário**. System prompt composto por `buildSystemPrompt({ agent, tenant, user, permissions, ragChunks, globalRules })`, nunca string ad-hoc. Ver [ADR 0064](decisions/0064-ia-arquitetura-gemini-default-byok-rag.md).
