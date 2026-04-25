@@ -42,6 +42,7 @@ Autenticação + **cadastro central `persons`** + hierarquia completa (group/ten
 - [ADR 0009 — Loja avulsa não vira nível próprio](../decisions/0009-loja-avulsa-nao-vira-nivel-proprio.md)
 - [ADR 0047 — Cadastro central de persons com FK em tabelas especializadas](../decisions/0047-cadastro-central-persons.md)
 - [ADR 0048 — Busca automática de CNPJ via provider abstrato](../decisions/0048-busca-cnpj-provider-abstrato.md)
+- [ADR 0078 — Hospedagem em duas fases](../decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md) — **Auth implementada de forma portátil**: JWT custom claims + cookie httpOnly próprio; **proibido `@supabase/auth-helpers-nextjs`** (lock-in que quebra Sprint 19b); usa `@supabase/supabase-js` apenas pra `signInWithOtp`/`signInWithOAuth`/`verifyOtp`, sessão extraída pra cookie próprio gerenciado pelo middleware Next.js
 
 ## Schemas Drizzle (esperado)
 
@@ -112,9 +113,10 @@ Em `apps/web/app/settings/users/actions.ts`:
 
 ## Commit
 
-- [ ] Supabase Auth + magic link + OAuth Google
+- [ ] Supabase Auth + magic link + OAuth Google — **uso minimalista**: só `signInWithOtp`/`signInWithOAuth`/`verifyOtp` (regra portabilidade ADR 0078); sessão extraída pra cookie httpOnly próprio gerenciado pelo middleware
+- [ ] **Cookie de sessão próprio** (`logifit_session`) com JWT assinado por `JWT_SECRET` LogiFit; middleware `apps/web/middleware.ts` valida e injeta contexto em `request.headers`; **NÃO usar `@supabase/auth-helpers-nextjs`** (regra portabilidade ADR 0078 — lock-in)
 - [ ] MFA obrigatório para roles profissionais (TOTP)
-- [ ] Supabase Auth Hook injetando `tenant_id` + `group_ids` no JWT
+- [ ] Supabase Auth Hook injetando `tenant_id` + `group_ids` no JWT — **espelhado** no JWT do cookie próprio (Sprint 19b vai gerar JWT direto sem Supabase Auth Hook)
 - [ ] Schema Drizzle: `persons` (central), `cnpj_cache` (global), `tenant_cnpj_settings`, `groups`, `tenants` (flags + `mode` enum), `companies` (com `person_id` FK + type + regras fiscais), `units` (sem person), `users` (com `person_id` FK + auth_user_id), `user_tenants`
 - [ ] **Schema `system_alerts` + `system_alert_occurrences`** (ADR 0071) com RLS por tenant_id + role-based visibility (`min_role`) + índices de fingerprint + request_id + member_id (LGPD link) + trigger SQL que cria `security_incidents` automaticamente quando `severity='critical'` + `category IN ('security','data_leak','compliance')`
 - [ ] **`audit_log` particionado por mês desde dia 1** (ADR 0072 + regra 34): PARTITION BY RANGE (at), 12 partições futuras criadas; indexes na partição (`tenant_id, at DESC`), (`tenant_id, user_id, at DESC`), (`tenant_id, resource_type, resource_id`); retenção 5 anos; `@volume_estimate_yearly: 50M+`

@@ -32,13 +32,18 @@ Este é um sistema que manipula **dados sensíveis de saúde** (LGPD art. 11), c
 - **next-intl** — i18n em 3 idiomas (`pt-BR` default, `en-US`, `es-419`); middleware + cookie `NEXT_LOCALE`; regulamentação Brasil-only (regra 27 + [ADR 0052](decisions/0052-i18n-tres-idiomas-pt-en-es.md))
 
 ### Backend, Banco e Autenticação
-- **Supabase** (Postgres gerenciado):
+
+> **Estratégia em 2 fases (ADR 0078):** Fase 1 (MVP, Sprint 00 → 19) usa Supabase Pro. Fase 2 (Sprint 19b+) migra pra Postgres self-hosted no Oracle Cloud OCI free tier + BetterAuth/Lucia + Cloudflare R2 + LISTEN/NOTIFY. **8 regras de portabilidade** ativas desde Sprint 00 garantem migração finita (~60h sem refactor de feature). Stack abaixo descreve o **estado-alvo** comum às duas fases (Postgres + Drizzle + pgvector + RLS); apenas o **provedor** muda.
+
+- **Postgres + Auth + Realtime + Storage**:
+  - **Fase 1 (MVP):** Supabase Pro (Postgres gerenciado + Auth + Realtime + Storage + Supavisor + pgvector)
+  - **Fase 2 (pós-Sprint 19b):** Oracle Cloud OCI (Postgres 17 self-hosted ARM Ampere 24GB) + BetterAuth/Lucia + LISTEN/NOTIFY + Cloudflare R2
+- **Constantes nas duas fases:**
   - **RLS** com `tenant_id` em toda tabela — decisão arquitetural raiz
-  - Auth (OAuth, Magic Link, MFA obrigatório para profissionais de saúde)
-  - Realtime (agenda, catraca, notificações)
-  - **Supavisor** (connection pool) habilitado desde o dia 1
-  - Storage criptografado para mídias clínicas (fotos de postura)
-- **Drizzle ORM** — fonte única de verdade do schema; migrations versionadas em `packages/db/migrations/`
+  - Auth com magic link + OAuth + MFA obrigatório para profissionais de saúde — **JWT custom claims via cookie httpOnly próprio** (não usa Supabase Auth UI helpers — regra portabilidade ADR 0078)
+  - Storage com **adapter pattern** (`StorageAdapter` interface + adapter por provider) — criptografado para mídias clínicas
+  - PgBouncer (Fase 2) substitui Supavisor (Fase 1) com mesma estratégia
+- **Drizzle ORM** — fonte única de verdade do schema; migrations versionadas em `packages/db/migrations/` — **portátil entre Supabase e Postgres self-hosted**
 - **pgvector** — extensão habilitada para RAG do copilot (busca semântica em prontuário/procedimentos)
 
 ### Integrações Externas
@@ -202,7 +207,8 @@ Precisa de dado no render inicial da página?
 ## Decisões Confirmadas
 
 - **Gateway financeiro:** Asaas (boleto + Pix + cartão recorrente)
-- **Infraestrutura:** Vercel (frontend) + Supabase (DB / Auth / Realtime / Storage)
+- **Infraestrutura — Fase 1 (MVP, Sprint 00 → 19):** Vercel (frontend/backend Next.js) + Supabase Pro (DB / Auth / Realtime / Storage)
+- **Infraestrutura — Fase 2 (Sprint 19b+):** Vercel + Postgres no Oracle Cloud OCI free tier + BetterAuth/Lucia + Cloudflare R2 + LISTEN/NOTIFY — formalizado no [ADR 0078](decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md). 8 regras de portabilidade ativas desde Sprint 00.
 
 ---
 

@@ -33,6 +33,7 @@ Monorepo funcional, Supabase local rodando, CI verde, observabilidade ligada, **
 - [ADR 0052 — i18n 3 idiomas](../decisions/0052-i18n-tres-idiomas-pt-en-es.md)
 - [ADR 0071 — Sistema de tratamento de erros + alertas em tempo real](../decisions/0071-sistema-tratamento-erros-alertas-tempo-real.md) — **entrega infra base aqui** (envelope + wrappers + middleware + translators stubs + sanitização LGPD + regra 33 + lint)
 - [ADR 0073 — Postura de segurança (defesa em profundidade)](../decisions/0073-postura-seguranca-defesa-em-profundidade.md) — **entrega camadas 1, 3 e 6 aqui** (security headers + CSP nonce + rate limit global + safeFetch + scanUpload + secret scanning + Dependabot/OSV-scanner + SBOM + `/.well-known/security.txt` + página `/seguranca` + regras 35-38 ativas em CI)
+- [ADR 0078 — Hospedagem em duas fases](../decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md) — **8 regras de portabilidade ativas desde aqui** (storage adapter pattern, RLS em SQL puro, JWT cookie próprio, sem Edge Functions, lint `no-supabase-functions` + `no-direct-supabase-query`)
 
 ## Commit
 
@@ -142,6 +143,17 @@ Monorepo funcional, Supabase local rodando, CI verde, observabilidade ligada, **
 - [ ] **Página pública `/seguranca`** em `apps/web/app/(public)/seguranca/page.tsx` — postura resumida (link para ADR 0073 simplificado), política de divulgação responsável (90d coordinated), hall da fama (vazio inicialmente), email `security@logifit.com.br`
 - [ ] DNS `security@logifit.com.br` configurado (Cloudflare Email Routing → fundador inicialmente)
 - [ ] Conta Cloudflare Turnstile (free) criada + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET` em Vercel env (Sprint 01a usa)
+
+**Portabilidade pra migração de hospedagem (ADR 0078 — 8 regras):**
+
+- [ ] **`packages/storage/`** com interface `StorageAdapter` + `SupabaseStorageAdapter` default; env var `STORAGE_PROVIDER=supabase` (Sprint 19b pluga `R2StorageAdapter` sem refactor de quem usa)
+- [ ] **RLS policies em SQL puro** em `packages/db/policies/*.sql` versionadas com Drizzle migrations — proibido criar policy via Supabase Studio (lint manual no PR review)
+- [ ] **Connection string via `DATABASE_URL` env** + Drizzle direto; **proibido `supabase.from(...).select()` pra queries** — lint custom Biome `no-direct-supabase-query` bloqueia commit
+- [ ] **PROIBIDO Supabase Edge Functions** — toda lógica server-side via Server Actions ou API Routes Next.js; lint custom `no-supabase-functions` bloqueia commit (`@supabase/functions-js` import)
+- [ ] **PgBouncer-friendly** — Drizzle config sem prepared statements long-lived; `transaction` mode pooler assumido (preparar pra Oracle)
+- [ ] Auth via JWT custom + cookie httpOnly próprio (Sprint 01a entrega — não usar `@supabase/auth-helpers-nextjs`)
+- [ ] Realtime: padrão `LISTEN/NOTIFY` documentado em `docs/dev/realtime.md`; Supabase Realtime usado APENAS quando justificável (broadcast pra ≥5 clients simultâneos)
+- [ ] Documentar em `docs/dev/portability.md` as 8 regras + checklist de "antes de adotar feature Supabase, isso quebra Sprint 19b?"
 
 **README e docs:**
 

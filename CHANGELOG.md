@@ -6,6 +6,39 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Decided — ADR 0078: Hospedagem em duas fases (MVP em Vercel + Supabase Pro · pós-Sprint 19 migra pra Vercel + Postgres Oracle Cloud free tier)
+
+Conversa de produto (2026-04-25) levantou questão fundamental nunca formalizada: onde LogiFit roda? Stack base (ADR 0001) listava "Vercel + Supabase" sem documentar quando esse modelo deixaria de servir. ADR 0077 (passaporte cross-tenant) acabou de aumentar carga no Postgres (cross-tenant queries em runtime, view materializada, audit log particionado mensal, função `has_cross_tenant_access` hot, trigger cruzando 2 tabelas). Custo Supabase escala mal (Pro $25 = shared CPU 1GB; upgrade pra Small $185-410). Oracle Cloud OCI free tier vitalício oferece 24GB ARM Ampere + 4 OCPU + 200GB grátis para sempre.
+
+**Decisão (2026-04-25):**
+
+- **Fase 1 (Sprint 00 → 19, ~6-8 meses):** Vercel + Supabase Pro — zero ops, foco em validar produto
+- **Fase 2 (Sprint 19b+, pós-MVP estável):** migrar pra Vercel + Postgres Oracle Cloud OCI + BetterAuth/Lucia + Cloudflare R2 + LISTEN/NOTIFY (~60h, janela cutover 2-4h madrugada)
+- **8 regras de portabilidade** ativas desde Sprint 00 garantem migração finita: storage adapter pattern, RLS em SQL puro (não via Studio), JWT cookie próprio (não `@supabase/auth-helpers-nextjs`), proibido Supabase Edge Functions, PgBouncer-friendly desde dia 1, connection via `DATABASE_URL` (não `supabase.from().select()`), Drizzle única fonte schema
+- **Lints custom em CI** (Sprint 00): `no-supabase-functions` + `no-direct-supabase-query` bloqueiam lock-in acidental
+- **Gatilhos pra antecipar migração** documentados: compute >70% sustained 2sem · latência cross-tenant >800ms · custo >R$ 600/mês · cliente Enterprise pediu BYOK · vazamento ou downtime >4h
+- **Custo comparativo:** decisão A→B gasta R$ 500 a mais que "começar B direto" mas adia 60h de ops pra depois do MVP validado; economiza ~R$ 1.500/mês vs continuar Supabase com upgrades
+
+**O que a decisão NÃO muda:**
+
+Drizzle como ORM (ADR 0004), RLS como isolamento primário (ADR 0002), particionamento (regra 34), sharding via `tenants.shard_url` preparado, audit hash chain (regra 39), IA via `resolveModelForTask` (regra 32), multi-tenant por subdomínio (ADR 0065), cross-tenant via vínculo (regra 42 / ADR 0077). Tudo agnóstico de hospedagem do PG.
+
+**Docs atualizados:**
+
+- `docs/decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md` — ADR completo (estratégia 2 fases + regras portabilidade + gatilhos antecipação + plano migração 7 fases + custo comparativo)
+- `docs/sprints/19b-migracao-hospedagem-oracle.md` — Sprint detalhado da migração (7 fases + cutover plan + rollback ≤30min + 60h estimadas + 30d observação pós-cutover)
+- `CLAUDE.md` — seção Stack indica 2 fases + 8 regras de portabilidade listadas
+- `docs/roadmap.md` — Sprint 19b adicionado entre Sprint 19 e Fase 2 (#22)
+- `docs/sprints/00-setup-infra.md` — checklist com storage adapter pattern + RLS SQL puro + lints + 8 regras portabilidade ativas desde dia 1
+- `docs/sprints/01a-identidade-e-topology.md` — Auth portátil: JWT custom claims + cookie httpOnly próprio; **proibido `@supabase/auth-helpers-nextjs`**; uso minimalista `@supabase/supabase-js` (só `signInWithOtp`/`verifyOtp`/`signInWithOAuth`)
+
+**Riscos abertos:**
+
+1. Oracle muda free tier — improvável (vitalício documentado), mitigação: AWS RDS / DigitalOcean Managed PG são alternativas com pricing previsível
+2. Janela de cutover dá problema — mitigação: backup pré-cutover + rollback plan documentado RTO ≤30min
+3. Cliente Enterprise no MVP exigindo hospedagem dedicada — caso especial faturado à parte, instância separada Supabase Pro ou Oracle dedicado
+4. Decisões pendentes pra Sprint 19b: BetterAuth vs Lucia (spike 4h), WebSocket onde rodar (Vercel Edge limitado vs Node container Oracle — spike 2h)
+
 ### Added — ADR 0077: Passaporte do paciente cross-tenant + vínculo por empresa com módulos explícitos + invite-link + auto-cadastro proativo
 
 Visão de produto (2026-04-25) revelou contradição: usuário queria "todos os profissionais [da rede LogiFit] podem acessar os dados de um paciente em tenants diferentes" — mas o modelo vigente proibia cross-tenant individual (princípio implícito em `docs/acesso-e-autorizacao.md`, referenciado erroneamente como "regra 26" — regra 26 real é sobre `groups`).

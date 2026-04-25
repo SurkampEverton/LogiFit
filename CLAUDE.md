@@ -81,14 +81,27 @@ Lista completa em [`docs/rules.md`](docs/rules.md) (42 regras duras).
 
 - **Frontend:** Next.js 15 (App Router), React 19, Tailwind CSS v4, shadcn/ui, Zustand, TanStack Query, React Hook Form, Zod, **next-intl (i18n — pt-BR default + en-US + es-419)**
 - **Backend:** Next.js server-side (Server Components + Server Actions + API Routes) — sem serviço separado
-- **Banco/Auth/Realtime/Storage:** Supabase
+- **Banco/Auth/Realtime/Storage:** Supabase **(MVP)** → migra pra **Postgres no Oracle Cloud OCI free tier + BetterAuth/Lucia + Cloudflare R2 + LISTEN/NOTIFY** no Sprint 19b. Ver [ADR 0078](docs/decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md).
 - **ORM:** Drizzle (fonte única de schema)
 - **IA:** Vercel AI SDK com **Gemini 2.5 Flash (Vertex AI SP) como default LogiFit** + **Groq Whisper para STT** + BYOK opcional (Claude/GPT/Maritaca/Anthropic) + fallback cascade; tasks tipadas (chat/embedding/classification/extraction/vision/transcription/reasoning); `resolveModelForTask()` nunca hardcode; cache semântico pgvector + quota mensal + rate limit Upstash Redis. Ver [ADR 0064](docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md).
 - **Pagamentos:** Asaas
 - **Email:** Resend
 - **Observabilidade:** Sentry + PostHog + Logtail/Axiom
 - **Qualidade:** Vitest + Playwright + GitHub Actions + Biome
-- **Infra:** Vercel + Supabase
+- **Infra:** **Fase 1 (MVP):** Vercel + Supabase Pro · **Fase 2 (pós-Sprint 19b):** Vercel + Oracle Cloud OCI (PG self-hosted) + Cloudflare R2. Estratégia em 2 fases — [ADR 0078](docs/decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md).
+
+### Regras de portabilidade durante MVP (ADR 0078)
+
+Pra migração no Sprint 19b ser tranquila, **8 regras de portabilidade** valem desde o Sprint 00:
+
+1. RLS policies em SQL puro em `packages/db/policies/*.sql` (NUNCA via Supabase Studio)
+2. Auth via JWT + cookie httpOnly próprio (NUNCA `@supabase/auth-helpers-nextjs`)
+3. Storage com adapter pattern em `packages/storage/` (interface + `SupabaseStorageAdapter` default)
+4. Realtime usa PG `LISTEN/NOTIFY` quando possível; Supabase Realtime apenas pra broadcast pra muitos clients
+5. **PROIBIDO Supabase Edge Functions** — toda lógica server-side via Server Actions/API Routes; lint `no-supabase-functions` em CI
+6. PgBouncer-friendly desde dia 1 (sem prepared statements long-lived)
+7. Connection string via `DATABASE_URL` env; Drizzle direto, NUNCA `supabase.from(...).select()` pra queries; lint `no-direct-supabase-query` em CI
+8. Drizzle como única fonte de schema (regra 3 já existente)
 
 ## Estrutura do monorepo
 

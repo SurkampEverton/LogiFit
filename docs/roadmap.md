@@ -32,8 +32,9 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 | 19 | [17](sprints/17-geral-bancos-open-finance.md) | **Bancos + Open Finance + conciliação + automação NF-e SEFAZ** | todo | — | — | 0 | depende #17 | — |
 | 20 | [18](sprints/18-geral-adquirencia.md) | **Adquirência (maquininhas Cielo/Stone/Rede/GetNet/PagSeguro + split + antecipação)** | todo | — | — | 0 | depende #17 | — |
 | 21 | [19](sprints/19-ia-previsao-churn.md) | IA preditiva de churn + intervenções de retenção | todo | — | — | 0 | depende #4-#18 | — |
+| 22 | [19b](sprints/19b-migracao-hospedagem-oracle.md) | **Migração de hospedagem: Vercel+Supabase → Vercel+Postgres Oracle Cloud (ADR 0078)** | todo | — | — | 0 | depende #21 (MVP fechado + estável 30d) | — |
 
-**MVP fecha no Sprint 19.** 21 sprints, ~6-8 meses de dev solo.
+**MVP fecha no Sprint 19.** 21 sprints + Sprint 19b (migração de hospedagem pós-MVP estável). ~6-8 meses de dev solo + 1.5-2 semanas de migração.
 
 ---
 
