@@ -86,7 +86,7 @@ Em `packages/db/schema/nutri.ts`:
 - `supplement_prescriptions` — `id`, `tenant_id`, `member_id`, `supplement_id`, `consulta_id nullable`, `professional_user_id`, `dose text`, `frequency text`, `route` enum (`oral`, `sublingual`, `topical`, `other`), `duration_days int nullable`, `started_at`, `ended_at nullable`, `notes`, `status` enum (`active`, `completed`, `discontinued`)
 - `lab_analytes` — `id`, `code text unique` (ex: `glicose_jejum`), `name text`, `category text` (bioquímico, hormonal, etc), `unit text`, `description text`
 - `lab_reference_ranges` — `analyte_id`, `sex` enum (`any`, `male`, `female`), `age_min_years`, `age_max_years`, `condition text nullable` (ex: "gestante"), `min_value numeric nullable`, `max_value numeric nullable`, `notes text`. Permite múltiplas faixas por analito.
-- `lab_results` — `id`, `tenant_id`, `member_id`, `analyte_id`, `value numeric`, `unit text`, `collected_at date`, `laboratory text nullable`, `consulta_id nullable`, `attachment_storage_path nullable`, `out_of_range bool` (calculado), `out_of_range_direction` enum nullable (`above`, `below`), `created_at`
+- `lab_results` — `id`, `tenant_id`, `member_id`, `analyte_id`, `value numeric`, `unit text`, `collected_at date`, `laboratory text nullable`, `consulta_id nullable`, `attachment_storage_path nullable`, `out_of_range bool` (calculado), `out_of_range_direction` enum nullable (`above`, `below`), `created_at`. **Particionado por ANO** (ADR 0072 + regra 34); `@volume_estimate_yearly: 6M+` (1k tenants × 1k members × 30 analitos × 2 exames/ano); **retenção 20 anos** (CFM 2.299/2021 — exame integra prontuário) — 5 anos hot + 15 anos cold storage Parquet zstd
 
 **RLS:** tenant_id + scope; dado sensível (regra 4); audit em leitura.
 

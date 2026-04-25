@@ -81,6 +81,18 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 - [ ] Testes E2E contra os 4 cenários canônicos
 - [ ] Testes E2E específicos de grants: criar, usar, revogar, expirar
 - [ ] Teste E2E de registro profissional: cadastro + atestação + mudança de situação + unicidade global
+- [ ] **`roles.requires_mfa bool`** (ADR 0073 camada 2) — Sprint 01b explicita gate: profissionais (médico/fisio/nutri/personal), admins (super_admin_rede, diretor_matriz, gerente_filial) e `contador_externo` têm `requires_mfa=true`; aluno e recepção (configurável por tenant); login bloqueia se requires_mfa e user.mfa_enabled=false
+- [ ] **PAM (Privileged Access Management) para super_admin LogiFit** (ADR 0073 camada 7):
+  - Schema `privileged_sessions (id, admin_user_id, started_at, ended_at nullable, justification text, target_scope text, ip text, user_agent text)` — particionado por mês, retenção 5 anos
+  - Schema `privileged_audit_log (id, privileged_session_id, action text, table_name text, row_id text, before_snapshot jsonb, after_snapshot jsonb, at)` — append-only, hash chain (regra 39), retenção 5 anos
+  - Endpoint `/app/super-admin/sessions/start` exige justificativa ≥20 chars + MFA recente (<5 min) — emite `privileged_sessions` + JWT secundário com claim `privileged=true` válido por 4h
+  - Acesso a `/app/super-admin/*` (database, tenants admin, restore) **exige** JWT com `privileged=true`; sem isso → 403 + audit `unauthorized_privileged_access`
+  - Toda Server Action durante sessão privilegiada grava `privileged_audit_log` com snapshot before/after via trigger
+  - **Alerta automático ao abrir sessão**: email para `security@logifit.com.br` + Telegram (canal só fundador) — "sessão privilegiada aberta às {at} por {admin} — justificativa: {text}"; se você abre sem se lembrar = comprometido
+  - **Monitoramento de comportamento**: query massiva (>10k linhas em 1 minuto) durante sessão privilegiada → `system_alerts severity=warning`; query >50k linhas → `severity=critical` + revogação automática da sessão
+  - Permission `super_admin.database.read` (Sprint 07) requer JWT privileged=true
+- [ ] Teste E2E PAM: super_admin tenta acessar `/app/super-admin/database` sem sessão privilegiada → 403; abre sessão com justificativa → acessa; sessão expira em 4h → 403 novamente
+- [ ] Teste E2E: query de 60k linhas durante sessão privilegiada → sessão revogada + alert critical disparado
 - [ ] ADR 0019 publicado
 - [ ] ADR 0055 publicado
 

@@ -6,6 +6,149 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — ADR 0073: Postura de segurança (defesa em profundidade) + Regras 35-40
+
+Pergunta do usuário: "agora vamos ver a segurança do código e do sistema". Análise identificou 7 gaps críticos (security headers ausentes, rate limit só em IA, sem brute force protection, sem backup/DR documentado, CSRF não documentado, sem virus scan em uploads, sem SSRF protection nos fetchers externos), 8 altos e 8 médios. Aplicada **Opção B** (ADR consolidado + 6 regras novas + ajustes pontuais nos sprints).
+
+**ADR 0073 — Defesa em profundidade em 7 camadas:**
+
+1. **Rede e perímetro** — Vercel WAF/DDoS (Pro tier requirement); TLS 1.3 obrigatório; HSTS preload; security headers via `next.config.ts headers()` (CSP com nonce dinâmico, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy strict-origin, Permissions-Policy restritiva, COOP/CORP); CORS restritivo same-origin; cookies escopo `.logifit.com.br` SameSite=Lax + Secure + HttpOnly
+2. **Autenticação e sessão** — MFA por role (`roles.requires_mfa`); login lockout (5 falhas/15min → 30min lockout + Turnstile); Cloudflare Turnstile no signup/login/forgot/trial; recovery codes TOTP; página `/meu/sessoes` lista + revoga; trocar senha invalida refresh tokens
+3. **Aplicação** — `wrapAction()` reforçado (Origin check + rate limit + auth + permissions + Zod + sanitize); rate limit por endpoint/IP/user (login 10/15min IP · read 100/min · write 30/min · IA 20/min); CSRF via Origin === Host (Next.js 15 nativo) + opcional `x-csrf-token`; **`safeFetch()` SSRF protection** (allowlist + bloqueio IP privado/loopback/link-local + timeout + maxBytes + redirect manual); **virus scan obrigatório em uploads** (MIME real, magic bytes, embed proibido, ClamAV); output encoding via React + DOMPurify+nonce em casos especiais
+4. **Dados em repouso e em trânsito** — TLS 1.3 fim-a-fim; AES-256-GCM em campos sensíveis com KEK por tenant via HKDF; cert A1 com KEK por company + senha cifrada separadamente; rotação anual via `encryption_key_version`; **hash chain no `audit_log`** (cada linha referencia hash anterior + anchor S3 Object Lock WORM 1h); **backup off-site AWS S3** semanal cifrado + Object Lock 90d (RPO 24h, RTO 4h); teste restauração trimestral
+5. **IA** — `redactBeforeLLM()` mascara CPF/CNPJ/RG/email/telefone/endereço/cartão/PIX antes do provider; `aggressive_redaction` Enterprise mascara nome próprio; classificador anti-prompt-injection; output que vaza system prompt = bloqueado; detecção de abuso (10x consumo médio → soft-block); tool calling sempre Server Action tipada
+6. **Operacional** — Vercel encrypted env (LogiFit-level); Supabase Vault (tenant-level: BYOK IA, cert A1); rotação anual de secrets; **Gitleaks** pre-commit + CI; **Dependabot** semanal; **OSV-scanner** CI bloqueia ≥high; **SBOM** CycloneDX por release; CI permissions read-all default + actions pinadas por SHA; logs sanitizados via `sanitizeForAlert()` em Sentry/Logtail
+7. **PAM (Privileged Access Management) super_admin LogiFit** — `privileged_sessions` 4h com MFA recente + justificativa ≥20 chars; `privileged_audit_log` com snapshot before/after + hash chain; JWT secundário `privileged=true` exigido em `/app/super-admin/*`; alerta automático ao abrir (email + Telegram fundador); revogação automática se query >50k linhas
+
+**Threat model STRIDE** aplicado obrigatoriamente em 5 features críticas (login, pagamento Asaas, prontuário, pipeline exames, WhatsApp inbound) durante seu sprint, registrado em `docs/threat-models/`.
+
+**OWASP Top 10 (2021)** mapeado item-a-item para mitigações LogiFit; `scripts/owasp-check.ts` em CI antes de release.
+
+**Documentos públicos:**
+- `/.well-known/security.txt` (RFC 9116) com `security@logifit.com.br` + Encryption + Policy + Canonical
+- Página pública `/seguranca` com postura resumida + política divulgação responsável (90d coordinated) + hall da fama
+- Disaster Recovery Plan público para tenants Enterprise
+
+**Pentest:** auditoria interna trimestral (fundador + jurídico) + pentest externo anual (Tempest/Conviso, R$ 8-15k MVP). Bug bounty informal Fase 2 (R$ 200-2k regular, R$ 5-10k critical).
+
+**Compliance roadmap:** LGPD/CFM 2.454/COFFITO/CFN cobertos no MVP. ISO 27001 e SOC 2 Type 1→2 mapeados como objetivo Fase 2-3 (não bloqueia MVP).
+
+**Regras 35-40 (novas) em `docs/rules.md` (total 40 regras):**
+- **35** Security headers (`next.config.ts headers()` com CSP nonce + HSTS preload + X-Frame DENY + X-Content nosniff + Referrer-Policy + Permissions-Policy + COOP/CORP)
+- **36** Rate limit Upstash em toda Server Action/API Route via wrapper (chave por tenant+user+ip+endpoint)
+- **37** `safeFetch()` único para fetch externo + lint `no-raw-fetch`
+- **38** `scanUpload()` único para upload em Storage + lint `no-unscanned-upload`
+- **39** Hash chain no `audit_log` + anchor S3 WORM
+- **40** Backup off-site + RPO 24h/RTO 4h + teste restauração trimestral
+
+**Regras operacionais 20-25 em `CLAUDE.md` (total 25 regras operacionais para Claude).**
+
+**Sprints ajustados (12):**
+
+| Sprint | Ajuste |
+|---|---|
+| **00 setup-infra** | Security headers + middleware CSP nonce + Upstash rate limit + `packages/security/safe-fetch.ts` + `packages/security/scan-upload.ts` + Gitleaks pre-commit + Dependabot config + OSV-scanner CI + script `pnpm sbom:generate` + `/.well-known/security.txt` + página `/seguranca` + DNS `security@logifit.com.br` + conta Cloudflare Turnstile |
+| **01a identidade** | `audit_log.previous_hash` + trigger SHA256 chain + `system_audit_anchor` + job verify-integrity + `auth_attempts` + `auth_lockouts` + Turnstile signup/login/forgot + página `/meu/sessoes` + recovery codes TOTP |
+| **01b RBAC** | `roles.requires_mfa` explícito + `privileged_sessions` + `privileged_audit_log` + JIT access super_admin + alerta automático abertura + revogação por data exfiltration |
+| **04 financeiro** | safeFetch Asaas (`asaas.com`, `sandbox.asaas.com`) + validação IP source no webhook |
+| **06 copilot** | `redactBeforeLLM()` em `buildSystemPrompt` + safeFetch nos providers IA (Gemini/Anthropic/OpenAI/Groq/Maritaca) + classificador anti-prompt-injection + detecção abuse |
+| **13 WhatsApp** | safeFetch nos providers (Twilio/Z-API/Resend) + safeFetch no media download + scanUpload nos anexos do paciente + validação HMAC + IP source |
+| **17 bancos+NF-e** | safeFetch Open Finance (Pluggy/Belvo) + safeFetch NFe providers (Arquivei/Sieg/Focus/SEFAZ direto) + scanUpload cert A1 + KEK por company + senha cifrada separadamente |
+| **20 prontuário** | STRIDE prontuário + cert A1 com KEK |
+| **21 evolução** | scanUpload em `evolucao_attachments` (raio-X PDF, vídeo execução) |
+| **32 device hub** | scanUpload em `importFile` (FIT/CSV) + safeFetch nos providers Garmin/Oura |
+| **33 pipeline exames** | STRIDE exames + scanUpload obrigatório em `lab-documents` (paciente sobe PDF malicioso disfarçado) + safeFetch OCR provider |
+| **36 fiscal Focus** | safeFetch Focus NFe (`focusnfe.com.br`, `homologacao.focusnfe.com.br`) + validação IP source + KEK por tenant em `fiscal_provider_credentials` |
+
+**Documentação:**
+- `docs/decisions/0073-postura-seguranca-defesa-em-profundidade.md` — ADR completo
+- `docs/rules.md` — regras 35-40 + header menciona "segurança em profundidade"
+- `docs/modulos.md` — 15 novos módulos na fundação (Security headers, Rate limit, safeFetch+SSRF, Virus scan, Login lockout, Hash chain, PAM, Backup+DR, Criptografia at-rest, PII redaction, Anti-injection, Secret scanning, security.txt, Threat model, OWASP checklist, Pentest)
+- `CLAUDE.md` — regras operacionais 20-25 + contador 40 regras
+
+**Custos operacionais adicionais MVP: R$ 0 fixo.** Decisão do fundador: zero custo extra de segurança no MVP — todos os componentes pagos foram substituídos por alternativas free OU postergados para Fase 2 (com receita).
+
+**Free no MVP:**
+- **Vercel Hobby** + **Cloudflare proxy free** (DDoS L3/L4 + 5 regras WAF + bot fight mode + 10k requests rate limit) — substitui Vercel Pro WAF
+- **Cloudflare Turnstile** (free)
+- **Upstash Redis** free tier (10k commands/dia) — suficiente MVP solo
+- **Scan próprio de upload** (`packages/security/scan-upload.ts` ~150 linhas TS): MIME real (file-type) + magic bytes + extension allowlist + size cap + embed detection (PDF JS, Office macro, polyglot) + hash SHA256 com seed `known_malicious_hashes` opcional. Provider abstrato permite plugar ClamAV em Fase 2 sem refactor.
+- **Backup off-site free**: `pg_dump` weekly cifrado GPG → **Cloudflare R2 free 10GB** OU **Backblaze B2 free 10GB** OU **GitHub Releases privado** — Vercel Cron weekly. Substitui AWS S3 (postergado).
+- **OWASP ZAP automated scan weekly** em GitHub Action — substitui pentest pago no MVP. Hall da Fama (sem recompensa monetária) substitui bug bounty pago.
+- **Better Stack** free tier (1 monitor, 5min interval) ou GitHub Pages com Action — substitui Better Stack pago
+- **DPO interino fundador** (ADR 0067 já permite) — substitui DPO externo retainer
+
+**Postergado para Fase 2 (gatilho: receita / 1º cliente Enterprise / volume > 5GB / clínica médico-hospitalar pagante):**
+- Vercel Pro $20-150/mês
+- ClamAV self-hosted Fly.io R$ 30/mês ou cloudmersive R$ 200/mês
+- AWS S3 backup off-site com Object Lock WORM R$ 100-300/mês
+- Better Stack status page completo R$ 30-50/mês
+- Pentest externo anual R$ 8-15k
+- DPO externo retainer R$ 2-5k/mês
+
+**Total Fase 2 (referência futura):** ~R$ 1.000-2.500/mês fixo + R$ 8-15k anual pentest. **Receita paga isso** — não bloqueia MVP. Adapter pattern em `packages/security/*.ts` permite trocar provider sem refactor de código consumidor.
+
+**Trade-offs aceitos no MVP:**
+- Scan próprio cobre ~90% dos casos comuns; malware 0-day sofisticado pode passar (aceitável solo, baixo volume)
+- R2/Backblaze 10GB limita volume — migração para S3 quando passar de 5GB (1k-3k tenants)
+- OWASP ZAP automated cobre menos que pentest humano experiente — upgrade Fase 2
+- Vercel Hobby tem limites (100GB bandwidth, sem preview env por PR) — upgrade quando volume real exigir
+
+---
+
+### Added — ADR 0072: Escalabilidade do banco (particionamento + retenção + cold storage) + Regra 34
+
+Pergunta do usuário: "Não corro o risco de ficar muito grande a base de dados?". Análise de volume sem mitigação: 100 tenants × 1 ano = 5B+ rows; com estratégia em camadas: ~50M hot + 200M cold (~80% redução de custo de storage). Aplicadas todas as 5 recomendações (1A · 2A · 3A · 4A · 5A).
+
+**ADR 0072 — 5 camadas de defesa em profundidade:**
+1. **Particionamento nativo PostgreSQL** — `PARTITION BY RANGE` temporal (mês/trimestre/ano) ou `PARTITION BY HASH (tenant_id)`. Drop = metadata-only (ms vs hours em DELETE row-by-row). Indexes vivem na partição.
+2. **Retenção por compliance** — 5a audit (LGPD) · 20a prontuário (CFM 2.299/2021 + COFFITO 415/2012) · 5a fiscal · 1a IA audit + 5a cold (CFM 2.454/2026)
+3. **Aggregation rollups** — raw drop após retenção, mas summary diário/mensal indefinido (`food_log_daily_summary`, `device_readings_daily_summary`, `member_events_summary_quarterly`, `workout_sessions_summary_quarterly`)
+4. **Materialized views** — `tenant_metrics_daily` com `REFRESH CONCURRENTLY` (hourly nas quentes, daily nas frias) reduz queries do dashboard de O(rows) para O(dias)
+5. **Cold storage Parquet zstd** — dados >2-5 anos exportados para Supabase Storage criptografado AES-256 com KMS; cold partitions preservam metadata leve na quente (member_id, signed_at, hash) para busca
+
+**Sharding multi-cluster preparado** — `tenants.shard_url text NULL` (NULL = compartilhado; preenchido = dedicated cluster); ativação futura quando 1 tenant >100k members ou banco >500GB. View `v_sharding_candidates` lista candidatos.
+
+**Regra 34 (nova)** em `docs/rules.md` (total **34 regras**):
+- Toda tabela com volume estimado >5M linhas/ano OU >50k linhas/dia **deve** nascer particionada
+- Migration declara `@volume_estimate_yearly: <N>` em comentário SQL; CI lint bloqueia se excede sem partição
+- Toda tabela com retenção definida tem job de partition lifecycle cadastrado: `create-next-partitions` (cria futuras), `drop-old-partitions` (descarta após retenção), `archive-cold-partitions` (move para Storage)
+
+**Regra operacional 19** em `CLAUDE.md` (total 19 regras operacionais para Claude).
+
+**Tabelas afetadas (12 sprints ajustados):**
+| Sprint | Tabela | Estratégia | @volume_estimate_yearly | Retenção |
+|---|---|---|---|---|
+| 01a | `audit_log` | Mensal | 50M+ | 5a (LGPD) |
+| 01a | `tenants.shard_url` (coluna) | — | — | preparação sharding |
+| 02 | `member_events` | Trimestral | 10M+ | 3a + summary perpétuo |
+| 06 | `ai_audit_log` | Mensal | 30M+ | 1a hot + 5a cold (CFM 2.454) |
+| 06 | `ai_semantic_cache` | TTL 30d | — | LRU eviction |
+| 06 | `member_insights` (cache) | TTL 6-24h | — | por insight_key |
+| 11 | `workout_sessions` | Trimestral | 8M+ | 5a + summary |
+| 11 | `workout_session_items` | Trimestral | 80M+ | 2a + summary |
+| 17 | `bank_transactions` | Trimestral | 6M+ | 5a fiscal + cold 2a+ |
+| 17 | `nfe_received` | Anual | 12M+ | 5a hot + 5a cold |
+| 20 | `consultas` | Trimestral | 5M+ | **20a** (CFM 2.299) — 5a hot + 15a cold AES-256 |
+| 21 | `evolucoes_sessao` | Trimestral | 12M+ | **20a** (COFFITO 415) — 5a hot + 15a cold |
+| 30 | `lab_results` | Anual | 6M+ | 20a (CFM 2.299) — 5a hot + 15a cold |
+| 31 | `meal_log_entries` | Mensal | 30M+ | 6m raw + summary perpétuo |
+| 32 | **`device_readings`** ⚠ | **DIÁRIA** | **180M+** | 90d raw + summary perpétuo + curated indefinido — **CRÍTICO** |
+| 33 | `exam_documents` | Anual | 2M+ | 20a (CFM 2.299) — 5a hot + 15a cold |
+
+**Sprints com infra de banco ajustada:**
+- **Sprint 01a** — `audit_log` + `system_alerts` (já preparado em ADR 0071) já nasceram particionados; adiciona `tenants.shard_url`; jobs Vercel Cron `create-next-partitions` (mensal), `monitor-database-size` (diário), `vacuum-analyze-partitions` (semanal); schemas `archive_jobs` + `compliance_retention_log`
+- **Sprint 07** — UI `/app/super-admin/database` (super-admin LogiFit fora do RBAC do tenant) com tamanho total + por tenant + projeção 12 meses + inventário de partições + histórico de jobs + cold storage usage + sharding candidates; permission `super_admin.database.read`; materialized view `tenant_metrics_daily` + jobs `aggregate-daily-summaries` + `refresh-materialized-views` + `monitor-database-size`
+- **Sprint 32** ⚠ **TABELA-MONSTRO**: `device_readings` particionada DIÁRIA desde dia 1; sem isso explode em meses; pipeline de migração para `device_readings_curated` antes do drop diário preserva rastreabilidade clínica de leituras validadas em `assessment_measurements`
+
+**Documentação atualizada:**
+- `docs/rules.md` — regra 34 completa com 5 sub-itens; header menciona "escalabilidade do banco"
+- `docs/modulos.md` — 4 novos módulos (Particionamento + retenção, Cold storage Parquet zstd, Monitoring de banco, Sharding multi-cluster preparado)
+- `CLAUDE.md` — regra operacional 19 + contador 34 regras
+- `docs/decisions/0072-*.md` — ADR completo com SQL examples (audit_log mensal, device_readings diário, food_log_daily_summary, materialized view), retention table, monitoring UI mockup, schemas (`archive_jobs`, `compliance_retention_log`)
+
+---
+
 ### Added — ADR 0071: Sistema de tratamento de erros + Alertas em tempo real + Regra 33
 
 Inspirado em modelo maduro do projeto Deep Control + corrige 3 pontos cegos reconhecidos (push ativo, role-based visibility, APM externo). Aplica todas as recomendações (1A-7A).
@@ -28,7 +171,7 @@ Inspirado em modelo maduro do projeto Deep Control + corrige 3 pontos cegos reco
 - Wrapper: request_id + auth + permissions + rate limit + gates IA classe II+ (regra 28) + consent cross-module (regra 6) + translator + alert async + audit + Sentry + retorno `{ ok, data | error }`
 - **Lint custom `no-unwrapped-action`** bloqueia commit se Server Action sem wrapper (exceção `// wrap-exempt: <motivo>`)
 
-**Regra operacional 18** em `CLAUDE.md` (total 33 regras).
+**Regra operacional 18** em `CLAUDE.md`.
 
 **Sprints ajustados:**
 - **Sprint 00** — `packages/errors/` completo (api-error + 3 wrappers + 10 translators stubs + sanitize + fingerprint) + middleware `x-request-id` + Sentry/PostHog/Logtail clients + lint `no-unwrapped-action` + i18n catalog de mensagens + teste E2E panic→envelope→alert→Sentry→toast

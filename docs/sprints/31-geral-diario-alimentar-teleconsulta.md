@@ -96,8 +96,9 @@ API Routes:
 
 Em `packages/db/schema/diario.ts`:
 
-- `meal_log_entries` — `id`, `tenant_id`, `member_id`, `meal_plan_id nullable` (linka ao plano ativo), `date`, `meal_name text`, `logged_at timestamptz`, `foods_structured jsonb` (array `{ food_id, grams, measure? }`), `free_text_description text nullable`, `photo_storage_path nullable`, `notes_member text`, `calculated_nutrition jsonb` (kcal, macros calculados)
-- `meal_log_reviews` — `entry_id`, `reviewed_by_user_id`, `status` enum (`approved`, `needs_adjustment`, `flagged`), `comment text`, `reviewed_at`
+- `meal_log_entries` (alias `food_log` na ADR 0072) — `id`, `tenant_id`, `member_id`, `meal_plan_id nullable` (linka ao plano ativo), `date`, `meal_name text`, `logged_at timestamptz`, `foods_structured jsonb` (array `{ food_id, grams, measure? }`), `free_text_description text nullable`, `photo_storage_path nullable`, `notes_member text`, `calculated_nutrition jsonb` (kcal, macros calculados). **Particionado por MÊS** (ADR 0072 + regra 34); `@volume_estimate_yearly: 30M+` (1k tenants × 1k members ativos × 5 refeições/dia × 30 = 150M no pior caso, MVP estima 30M); retenção 6 meses raw + agregado em `food_log_daily_summary` perpétuo (kcal/macros total por member×dia — alimenta `calculateCaloricBalance` ADR 0070); job `aggregate-daily-summaries` (Vercel Cron 02:00) popula sumário antes do drop; `photo_storage_path` em Supabase Storage com lifecycle 1 ano hot + cold tier
+- `food_log_daily_summary` — `tenant_id`, `member_id`, `date`, `total_kcal numeric`, `total_protein_g numeric`, `total_carb_g numeric`, `total_fat_g numeric`, `meals_count int`, `adherence_pct numeric` (% dos itens do plano que bateram). PK `(tenant_id, member_id, date)`. **Não particionado** (volume gerenciável: 1k members × 365 = 365k linhas/tenant; total ~365M para 1k tenants — mas linhas pequenas, ~100 bytes); índice `(member_id, date desc)`
+- `meal_log_reviews` — `entry_id`, `reviewed_by_user_id`, `status` enum (`approved`, `needs_adjustment`, `flagged`), `comment text`, `reviewed_at`. Acompanha particionamento da entry pai (FK + mesma chave de partição lógica)
 
 Em `packages/db/schema/teleconsulta.ts`:
 

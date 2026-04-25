@@ -43,14 +43,14 @@ Regra fundamental: **LogiFit não toca em motor tributário**. Focus NFe cuida d
 
 **Infra:**
 - [ ] `FiscalProvider` interface em `packages/ai/fiscal/provider.ts`
-- [ ] `packages/ai/fiscal/providers/focus-nfe.ts` — implementação primária (10 métodos: 7 emissões + 3 eventos)
+- [ ] `packages/ai/fiscal/providers/focus-nfe.ts` — implementação primária (10 métodos: 7 emissões + 3 eventos); **toda chamada HTTP via `safeFetch()` (ADR 0073 + regra 37)** com `allowedHosts: ['focusnfe.com.br', 'homologacao.focusnfe.com.br']`; rate limit respeitando Focus (HTTP 429 → `RATE_LIMITED`)
 - [ ] `packages/ai/fiscal/providers/mock.ts` — testes
 - [ ] Payload builders em `packages/ai/fiscal/emissions/*.ts` por tipo
 - [ ] Resolver CFOP em `packages/ai/fiscal/resolvers/cfop.ts` (operação + UF origem + UF destino + tipo → CFOP correto)
 - [ ] Resolver CBOS/CNAE em `packages/ai/fiscal/resolvers/cbos-cnae.ts` (serviço → código ABRASF/CNAE)
 - [ ] Catálogo `fiscal_service_catalog` populado pelo admin com serviços tributáveis do tenant (código LC 116/2003, alíquota ISS do município, retenções)
-- [ ] Webhook receiver `POST /api/fiscal/focus-nfe/callback` com HMAC + idempotência
-- [ ] Credenciais Focus por tenant em `tenant_settings.fiscal_provider_credentials` (criptografado)
+- [ ] Webhook receiver `POST /api/fiscal/focus-nfe/callback` com HMAC + idempotência **+ validação de IP source Focus NFe (allowlist documentada)**
+- [ ] Credenciais Focus por tenant em `tenant_settings.fiscal_provider_credentials` (AES-256-GCM, KEK por tenant; ADR 0073 camada 4)
 - [ ] Certificado A1 por company (reusa infra Sprint 17) — Focus usa quando configurado para transmissão direta
 
 **UI:**

@@ -68,8 +68,8 @@ API Routes:
 
 Em `packages/db/schema/fisio.ts`:
 
-- `evolucoes_sessao` — `id`, `tenant_id`, `company_id`, `member_id`, `appointment_id`, `professional_user_id`, `soap jsonb` (`{ subjetivo, objetivo, avaliacao, plano }`), `free_text text`, `signed_at nullable`, `signed_hash text nullable`, `created_at`
-- `evolucao_attachments` — `id`, `evolucao_id`, `kind` enum (`exame_imagem`, `video_execucao`, `documento`, `foto_postural`), `storage_path text`, `filename text`, `size_bytes bigint`, `mime_type text`, `uploaded_by_user_id`, `uploaded_at`, `soft_deleted_at nullable`
+- `evolucoes_sessao` — `id`, `tenant_id`, `company_id`, `member_id`, `appointment_id`, `professional_user_id`, `soap jsonb` (`{ subjetivo, objetivo, avaliacao, plano }`), `free_text text`, `signed_at nullable`, `signed_hash text nullable`, `created_at`. **Particionado por TRIMESTRE** (ADR 0072 + regra 34); `@volume_estimate_yearly: 12M+` (1k tenants × 1k pacientes × 1 sessão/semana × 52); **retenção 20 anos** (COFFITO 415/2012 art. 11; CFM 2.299/2021 art. 7º) — 5 anos hot + 15 anos cold storage Parquet zstd; cold partitions criptografadas AES-256
+- `evolucao_attachments` — `id`, `evolucao_id`, `kind` enum (`exame_imagem`, `video_execucao`, `documento`, `foto_postural`), `storage_path text`, `filename text`, `size_bytes bigint`, `mime_type text`, `uploaded_by_user_id`, `uploaded_at`, `soft_deleted_at nullable`. Metadata da tabela acompanha particionamento da `evolucoes_sessao` (FK garante coabitação trimestral); arquivos em si vivem em Supabase Storage com lifecycle policies próprias (1 ano hot tier + 19 anos cold tier via `archive-cold-attachments` job)
 
 **RLS:** tenant_id + scope; leitura exige `prontuario.read` + scope company; regra 25 vale.
 
@@ -83,7 +83,7 @@ Em `packages/db/schema/fisio.ts`:
 - [ ] Schema Drizzle: `evolucoes_sessao`, `evolucao_attachments`
 - [ ] RLS + testes + franchise check
 - [ ] Bucket Storage `fisio-evolucoes` privado com criptografia at-rest
-- [ ] API Route de upload multipart com validação MIME + tamanho
+- [ ] API Route de upload multipart com validação MIME + tamanho **+ `scanUpload()` obrigatório (ADR 0073 + regra 38)** — MVP usa scan próprio (MIME real via file-type, magic bytes, extension allowlist, embed detection PDF/Office, polyglot detection); bloqueia até `upload_scans.status='clean'`; falha = arquivo deletado + `system_alerts error`. Provider abstrato permite plugar ClamAV em Fase 2.
 - [ ] Geração de URL assinada TTL 10min
 - [ ] UI SOAP estruturada com autofocus para input rápido (mobile-friendly)
 - [ ] Player de vídeo inline para `video_execucao`

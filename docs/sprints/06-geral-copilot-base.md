@@ -29,6 +29,9 @@ Copilot **consulta e sugere**, nunca prescreve (regra safety 28). Guardrails ADR
 **Arquitetura IA (ADR 0064):**
 
 - **7 tabelas novas:** `ai_providers`, `ai_models`, `ai_provider_configs`, `ai_task_routing`, `ai_tenant_usage`, `ai_documents`, `ai_document_chunks`, `ai_semantic_cache`
+- **`ai_audit_log` particionado por mês** (ADR 0072 + regra 34) com `@volume_estimate_yearly: 30M+`; retenção 1 ano hot + 5 anos cold storage (CFM 2.454/2026 exige); job `archive-cold-partitions` exporta para Supabase Storage Parquet zstd
+- **`ai_semantic_cache` com TTL 30 dias** (não particionado; LRU eviction)
+- **`member_insights` (cache cross-module ADR 0070) com TTL 6-24h por insight_key** (não particionado)
 - **Seed global de providers:** Gemini (Vertex AI SP — default LogiFit), Anthropic, OpenAI, Groq, Maritaca
 - **Seed de modelos** com capabilities (function_calling, vision, streaming, context window, preço)
 - **Seed de task routing** com Gemini 2.5 Flash como priority 100 em `chat`, `embedding`, `classification`, `extraction`, `vision`; Groq `whisper-large-v3-turbo` para `transcription`; fallback cascade OpenAI/Anthropic
@@ -144,11 +147,14 @@ Rate-limit é **fonte primária em Redis** (Upstash), sem tabela persistente. Co
 - [ ] Schema Drizzle: `ai_conversations`, `ai_messages`, `ai_cache`, `ai_incidents`
 - [ ] Índice HNSW em `ai_cache.query_embedding` via migration raw
 - [ ] RLS em todas + testes
-- [ ] Wrapper `packages/ai/chat.ts` com provider plugável (Claude → OpenAI → Gemini)
+- [ ] Wrapper `packages/ai/chat.ts` com provider plugável (Claude → OpenAI → Gemini) — **toda chamada HTTP via `safeFetch()` (ADR 0073 + regra 37)** com allowlist por adapter (`generativelanguage.googleapis.com` + `vertex.googleapis.com` para Gemini · `api.anthropic.com` · `api.openai.com` · `api.groq.com` · `chat.maritaca.ai`)
 - [ ] Wrapper `packages/ai/cache.ts` (similaridade + TTL)
-- [ ] Rate-limit Upstash em `packages/ai/ratelimit.ts`
+- [ ] Rate-limit Upstash em `packages/ai/ratelimit.ts` — sobreposto à regra 36 (rate limit global) — IA tem cap próprio adicional (20/min/user)
 - [ ] System prompt fixo em `packages/ai/prompts/copilot.ts` com guardrails
-- [ ] Classificador de output (regex inicial; se sofisticar, virar ADR)
+- [ ] **`packages/ai/security/redact.ts` — `redactBeforeLLM(text)`** (ADR 0073 camada 5): mascara CPF/CNPJ/RG/email (mantém domínio)/telefone/endereço/cartão/PIX antes de enviar `ragChunks` ao provider; aplicado dentro de `buildSystemPrompt()`; teste unit garante que CPF "123.456.789-00" sai como "***.***.***-00"; `tenant_ai_settings.aggressive_redaction` (Enterprise) mascara também nome próprio
+- [ ] **Classificador anti-prompt-injection** (ADR 0073 camada 5) detecta padrões "ignore previous instructions", "system prompt:", "you are now" → marca `ai_audit_log.injection_detected=true` + bloqueia execução de tool calling se detectado; output que repete >200 chars do system prompt = vazamento, bloqueado
+- [ ] Classificador de output clínico (regex inicial; se sofisticar, virar ADR) — bloqueia "diagnóstico", "tem [doença]", "prescrever"
+- [ ] **Detecção de abuso por tenant** (ADR 0073 camada 5): tenant com 10x consumo médio em 24h → `system_alerts severity=warning` + soft-block até admin LogiFit aprovar; query em `ai_tenant_usage` agrupada por dia
 - [ ] API Route `/api/ai/chat` com SSE
 - [ ] UI sidepanel com Tailwind v4 + tokens "Equilíbrio Vital"
 - [ ] Widget "copilot do paciente" em `/app/members/[id]` (slot `copilot`): botão CTA abrindo conversa contextual pré-populada com `member_id` + últimas 2 perguntas resumidas. Registrar com `{ slot: 'copilot', requiredPermissions: ['copilot.use'], requiredVertical: null, consentPurpose: null, showWhen: () => true }`. Ver [modulos.md — matriz](../modulos.md#matriz-de-visibilidade-mvp--previsão-fase-23)

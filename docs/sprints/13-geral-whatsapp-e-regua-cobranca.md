@@ -100,7 +100,7 @@ Em `packages/db/schema/mensagens.ts`:
 
 - [ ] Schema Drizzle: `message_providers`, `message_templates`, `reguas`, `regua_executions`, `messages_sent`
 - [ ] RLS + audit
-- [ ] Wrapper de provider abstrato em `packages/ai/messaging/provider.ts` (interface `send(to, template, vars)`) — implementações `whatsapp-twilio.ts`, `whatsapp-zapi.ts`, `email-resend.ts`
+- [ ] Wrapper de provider abstrato em `packages/ai/messaging/provider.ts` (interface `send(to, template, vars)`) — implementações `whatsapp-twilio.ts` (allowlist `api.twilio.com`), `whatsapp-zapi.ts` (allowlist `api.z-api.io`), `email-resend.ts` (allowlist `api.resend.com`); **toda chamada HTTP via `safeFetch()` (ADR 0073 + regra 37)**; webhook entrada valida HMAC + IP source provider
 - [ ] DSL de régua validada por Zod em `packages/types/reguas.ts`
 - [ ] Evaluator de régua em `packages/ai/reguas/evaluator.ts` (consome `domain_events` + enfileira steps com delay)
 - [ ] Job tick a cada 5min (Vercel Cron)
@@ -116,6 +116,8 @@ Em `packages/db/schema/mensagens.ts`:
 - [ ] **Default handlers** já no Sprint 13: `copilot-question.ts` (roteia texto livre para Copilot Sprint 06), `fallback-human.ts` (vira tarefa em fila para atendente humano quando não resolve)
 - [ ] Handler registry com API `registerIntentHandler({ intent, handle })` — consumido por Sprints 15 (boleto), 33 (exame), 12 (foto) e 20/21 (receita)
 - [ ] Templates inbound registrados: `exam.received`, `exam.published`, `boleto.received`, `identity.needed`, `classification.confirm`, etc
+- [ ] **Media download via `safeFetch()` (ADR 0073 + regra 37)** — anexo do paciente vem como URL temporária do provider WhatsApp (`mmg.whatsapp.net`, `media-*.cdn.whatsapp.net` para Twilio; CDNs específicos Z-API); allowlist por adapter; download para bucket `whatsapp-media` privado
+- [ ] **`scanUpload()` obrigatório (ADR 0073 + regra 38)** após download de anexo — paciente envia PDF/imagem malicioso disfarçado de boleto/exame/foto = bloqueado antes de classificador IA processar; falha = arquivo deletado + handler responde "📛 Não consegui processar seu arquivo. Tente outro formato."
 - [ ] Consent `whatsapp_exchange` + UI em `/meu/privacidade` para ativar/desativar
 - [ ] Rate limit 10 msgs/min/telefone via Upstash Redis (reusa Sprint 06)
 - [ ] Dedupe por `provider_message_id`

@@ -62,11 +62,13 @@ Regras configuráveis por tenant; disparam via cross-alert dispatcher (Sprint 07
 - Dado cru (minuto a minuto HR) exige permission `devices.read_raw` + 2º consent do member; audit reforçado
 - Copilot (Sprint 06) via RAG acessa agregados normalizados + mostra transparência de fonte em respostas ("Última oficial: X; dispositivo hoje: Y")
 
-**Retenção:**
+**Retenção (ADR 0072 + regra 34):**
 
-- **Dado cru** (minuto a minuto, batimento a batimento): rotação **90 dias** — cobre análise detalhada de overtraining/sono; limpado por job mensal
-- **Agregados diários** (média HR do dia, peso do dia, recovery score do dia): retenção **indefinida** — alimenta histórico de evolução, tendências longas, IA futura
-- Job `cleanup_raw_readings` roda mensalmente e remove `device_readings` com `measured_at < now() - 90 days` onde a leitura não está referenciada em nenhuma `assessment_measurement` (curada) — curadas ficam para sempre
+- **Dado cru** (`device_readings`): partições **diárias**, retenção **90 dias** via `drop-old-partitions` (metadata-only, milissegundos vs hours em DELETE row-by-row)
+- **Agregados diários** (`device_readings_daily_summary`): retenção **indefinida** — popula tendências; volume gerenciável (~365 linhas/member/observation_code/ano)
+- **Leituras curadas** (`device_readings_curated`): leituras referenciadas em `assessment_measurements` migram via trigger `migrate_to_curated_on_validation` antes do drop diário — preserva rastreabilidade clínica para sempre
+- Job `aggregate-daily-summaries` (Vercel Cron 02:00 UTC) roda PRIMEIRO; só depois `drop-old-partitions` (00:00 UTC do dia seguinte) executa — ordem garantida via dependência de jobs no painel `/app/super-admin/database` (Sprint 07)
+- **Dado cru raw stream** (HR minuto-a-minuto pós-90d) **não é exportado para cold storage** — agregado diário substitui (decisão LGPD: minimização — não há valor em manter granularidade que excede necessidade)
 
 **LGPD e consent:**
 
@@ -146,7 +148,9 @@ API Routes:
 Em `packages/db/schema/devices.ts`:
 
 - `device_connections` — `id`, `tenant_id`, `member_id`, `provider` enum (`garmin`, `oura`, `fitbit`, `apple_health`, `google_health`, `ble_scale_omron`, `ble_scale_gtech`, `file_import`), `access_token_encrypted`, `refresh_token_encrypted`, `expires_at`, `external_user_id text`, `device_serial text nullable` (BLE), `status` enum (`active`, `error`, `revoked`), `last_synced_at`, `last_error text nullable`
-- `device_readings` — `id`, `tenant_id`, `member_id`, `connection_id`, `observation_code text` (enum virtualmente: HR, HR_RESTING, HR_MAX, VO2_MAX, HRV, WEIGHT, BODY_FAT_PCT, MUSCLE_MASS_KG, SLEEP_DURATION_MIN, SLEEP_EFFICIENCY, STEPS, DISTANCE_KM, CALORIES_KCAL, READINESS_SCORE, RECOVERY_SCORE, GLUCOSE_MG_DL, VELOCITY_M_S, ROM_DEGREES, etc), `value numeric`, `unit text`, `measured_at timestamptz`, `source_provider text`, `source_device_id text nullable`, `metadata jsonb`, `ingested_at timestamptz`. Índices: `(tenant_id, member_id, observation_code, measured_at DESC)`; possível partição mensal se volume crescer.
+- `device_readings` — `id`, `tenant_id`, `member_id`, `connection_id`, `observation_code text` (enum virtualmente: HR, HR_RESTING, HR_MAX, VO2_MAX, HRV, WEIGHT, BODY_FAT_PCT, MUSCLE_MASS_KG, SLEEP_DURATION_MIN, SLEEP_EFFICIENCY, STEPS, DISTANCE_KM, CALORIES_KCAL, READINESS_SCORE, RECOVERY_SCORE, GLUCOSE_MG_DL, VELOCITY_M_S, ROM_DEGREES, etc), `value numeric`, `unit text`, `measured_at timestamptz`, `source_provider text`, `source_device_id text nullable`, `metadata jsonb`, `ingested_at timestamptz`. **⚠ TABELA-MONSTRO — particionada por DIA desde dia 1** (ADR 0072 + regra 34); `@volume_estimate_yearly: 180M+` no pior caso (1k tenants × 1k members × 50k-500k leituras/ano = 50M-500M; HR minuto-a-minuto explode); **CRÍTICO: sem partição diária essa tabela mata o banco em meses**. Estratégia: (1) **retenção raw 90 dias** — partições diárias caem após 90d via `drop-old-partitions` (operação metadata-only, ms); (2) **agregado em `device_readings_daily_summary`** ANTES do drop via job `aggregate-daily-summaries` (Vercel Cron 02:00); (3) leituras curadas (`source_device_reading_id` referenciado em `assessment_measurements`) **migram para tabela `device_readings_curated`** sem retenção (preserva rastreabilidade clínica). Índices na partição: `(tenant_id, member_id, observation_code, measured_at DESC)` — não na parent.
+- `device_readings_daily_summary` — agregação diária por `(tenant_id, member_id, observation_code, date)` com `min`, `max`, `avg`, `count`, `unit`. PK composta. Retenção indefinida (alimenta tendências long-term, base do Uso 2 — Painel monitoramento contínuo). ~365 linhas/member/observation_code/ano = volume gerenciável (~10M/ano para 1k tenants).
+- `device_readings_curated` — leituras que viraram parte de `assessment_measurements` (curadoria profissional, Uso 1). Mesmas colunas de `device_readings` + `curated_at`, `curated_by_user_id`. Retenção indefinida (rastreabilidade clínica + LGPD: justificativa de cada medida oficial). Particionada por TRIMESTRE (volume baixo, 1k members × 12 avaliações/ano × 5 medidas = 60k/ano).
 - `device_sync_cursors` — `connection_id pk`, `last_synced_at timestamptz`, `last_observation_id text` (cursor do provider)
 - `device_consents` — `id`, `tenant_id`, `member_id`, `provider`, `granted_at`, `revoked_at nullable`, `purposes text[]` (ex: `['academia_hr', 'nutri_weight', 'fisio_rom']`), `raw_data_access_granted bool`
 - `device_incidents` — tracking de erros (rate limit, token expirado, calibração anômala)
@@ -174,6 +178,8 @@ Em `packages/db/schema/devices.ts`:
 - [ ] Parser FIT em `packages/ai/devices/parsers/fit.ts`
 - [ ] Parser TCX/GPX em `packages/ai/devices/parsers/tcx-gpx.ts`
 - [ ] Parser CSV InBody em `packages/ai/devices/parsers/inbody-csv.ts`
+- [ ] **`scanUpload()` obrigatório (ADR 0073 + regra 38)** em `importFile` — MVP usa scan próprio (MIME real, magic bytes, extension allowlist `.fit|.tcx|.gpx|.csv`, embed detection); arquivo malicioso disfarçado de FIT/CSV bloqueado. Fase 2 plugar ClamAV.
+- [ ] **safeFetch() obrigatório (ADR 0073 + regra 37)** em `packages/ai/devices/providers/garmin.ts` (allowlist `connectapi.garmin.com`) e `oura.ts` (allowlist `api.ouraring.com`); webhooks de provider validam HMAC + IP source quando suportado
 - [ ] API routes OAuth callback + job Vercel Cron horário
 - [ ] UI `/meu/dispositivos` completa
 - [ ] Widget "saúde 24h" em dashboard do member

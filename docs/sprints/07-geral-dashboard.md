@@ -8,7 +8,7 @@
 
 ## Goal
 
-Home do operador contextual por role (recepção / gerente / diretor / group_owner) com KPIs do scope correspondente. Tokens de design "Equilíbrio Vital" aplicados em light/dark, sem sombras residuais do shadcn. **Pesquisa global via Command Palette (Ctrl+K / Cmd+K)** cobrindo 7 tipos de entidade (pessoas, members, leads, suppliers, users, profissionais, agendamentos, AP/AR, settings, quick actions) — ADR 0062. **Modo Solo (ADR 0069)** detecta `tenants.mode='solo'` e renderiza visão simplificada (agenda do dia + cobranças + resumo mensal). Cross-alert dispatcher + handlers pro **MVP (ADR 0070)**: contraindicações CID×exercício, overtraining detectado, balanço calórico crítico, adesão baixa, mudança de peso brusca.
+Home do operador contextual por role (recepção / gerente / diretor / group_owner) com KPIs do scope correspondente. Tokens de design "Equilíbrio Vital" aplicados em light/dark, sem sombras residuais do shadcn. **Pesquisa global via Command Palette (Ctrl+K / Cmd+K)** cobrindo 7 tipos de entidade (pessoas, members, leads, suppliers, users, profissionais, agendamentos, AP/AR, settings, quick actions) — ADR 0062. **Modo Solo (ADR 0069)** detecta `tenants.mode='solo'` e renderiza visão simplificada (agenda do dia + cobranças + resumo mensal). Cross-alert dispatcher + handlers pro **MVP (ADR 0070)**: contraindicações CID×exercício, overtraining detectado, balanço calórico crítico, adesão baixa, mudança de peso brusca. **Inclui também `/app/super-admin/database`** (ADR 0072): UI exclusiva para super-admin LogiFit monitorar tamanho do banco, partições por tabela, retenção, jobs de lifecycle, cold storage e tenants candidatos a sharding.
 
 ## Critério de aceite
 
@@ -40,7 +40,8 @@ Home do operador contextual por role (recepção / gerente / diretor / group_own
 
 - **ADR 0016 (esperado)** — Tokens "Equilíbrio Vital": lista canônica + estratégia light/dark + override dos tokens padrão do shadcn (remover sombras). Fica em `packages/ui/tokens.ts` + `tailwind.config.ts`.
 - [ADR 0062 — Pesquisa global (Command Palette Ctrl+K)](../decisions/0062-pesquisa-global-command-palette.md) — accepted
-- **Pergunta aberta:** views materializadas vs live queries para KPIs. Começar live; medir latência; se >500ms em p95, materializar. Deferir decisão para o sprint (evitar over-engineering).
+- [ADR 0072 — Escalabilidade de banco (particionamento + retenção + cold storage)](../decisions/0072-escalabilidade-banco-particionamento-retencao-cold-storage.md) — UI de monitoramento materializada neste sprint
+- **Pergunta aberta:** views materializadas vs live queries para KPIs. Começar live; medir latência; se >500ms em p95, materializar (regra 34 + ADR 0072 já preveem materialized views para `tenant_metrics_daily`).
 
 ## Módulos entregues
 
@@ -58,6 +59,7 @@ Ver [`modulos.md` — Geral](../modulos.md#geral):
 - `/app/dashboard/diretor` — visão tenant (todas companies)
 - `/app/dashboard/grupo` — group_owner com agregados cross-tenant
 - `/app/settings/tema` — toggle e preview dos tokens
+- **`/app/super-admin/database`** (ADR 0072) — exclusivo para super-admin LogiFit; mostra: (1) tamanho total do banco + por tenant top-10 + projeção 12 meses; (2) lista de tabelas particionadas com #partições, oldest/newest, retenção configurada, próximo expurgo; (3) histórico jobs `create-next-partitions` / `drop-old-partitions` / `archive-cold-partitions` com status verde/vermelho; (4) cold storage usage no Supabase Storage; (5) tenants candidatos a sharding (`shard_url IS NULL` + size > threshold)
 
 ## Server Actions + API Routes
 
@@ -72,7 +74,9 @@ Sem nova API Route. Realtime via Supabase client direto (para live counters).
 Nenhuma tabela de domínio nova. Criar apenas:
 
 - Views: `dashboard_kpis_company`, `dashboard_kpis_tenant`, `dashboard_revenue_30d`, `dashboard_ocupacao_7d` — em `packages/db/views/` como SQL raw
+- **Materialized view `tenant_metrics_daily`** (ADR 0072) — pré-computa MRR, alunos ativos, faturamento, ocupação por tenant/dia; refresh `CONCURRENTLY` via job `refresh-materialized-views` (hourly nas quentes, daily nas frias); reduz custo de queries do dashboard de O(rows) para O(dias)
 - Views agregadas do group: `group_metrics`, `group_revenue_30d` (antecipa uso do group_owner — preview do que Fase 2 detalha)
+- **Views de monitoramento** (`/app/super-admin/database`): `v_database_size_by_tenant`, `v_partition_inventory` (com `pg_partition_tree` + tamanho por partição), `v_archive_jobs_recent`, `v_compliance_retention_status`, `v_sharding_candidates` (tenants > 50GB com `shard_url IS NULL`)
 - Tabela `alert_subscribers` — `id`, `tenant_id`, `event_kind text`, `target_role text`, `active bool`. Vazia no MVP — preparação para Fase 2.
 - **Tabela `search_index`** (ADR 0062) — `id uuid pk`, `tenant_id`, `source_table text`, `source_id uuid`, `kind text`, `label text`, `subtitle text`, `url text`, `searchable_text text`, `search_vector tsvector`, `required_permission text`, `required_vertical text`, `required_consent_purpose text`, `company_id nullable`, `is_sensitive bool default false`, `updated_at`. Índices: GIN em `search_vector`, GIN em `searchable_text` (trigram), `(tenant_id, kind)`. Pode virar **materialized view** se latência de write ficar >50ms p95.
 - **Tabela `search_telemetry`** (ADR 0062) — `id`, `tenant_id`, `user_id`, `query text`, `result_kind_clicked text nullable`, `result_id_clicked uuid nullable`, `results_count int`, `at timestamptz`. Usado para evolução de ranking + detectar gaps (termo buscado sem resultado).
@@ -131,6 +135,8 @@ Não publica eventos de negócio; só renderiza os dos outros sprints.
 - [ ] **UI `/app/admin/alertas`** (ADR 0071): KPIs (unread/critical/24h) + filtros (severity/módulo/status/período/busca) + lista com cards expansíveis + detalhe com timeline de ocorrências + similar alerts + ações [Acknowledge/Resolver/Dismiss/Escalar] + runbook inline; acesso via `has_permission('admin.alerts.read')` + `min_role` respeitado
 - [ ] Realtime subscribe `tenant:{id}:role:{min_role}` no layout global para badge + toast instantâneo
 - [ ] Jobs Vercel Cron: `/api/jobs/alert-auto-resolve` (hourly) + `/api/jobs/alert-retention-expurge` (daily)
+- [ ] **Jobs Vercel Cron de banco (ADR 0072 + regra 34):** `/api/jobs/aggregate-daily-summaries` (daily 02:00 — popula `*_daily_summary` a partir de raw) + `/api/jobs/refresh-materialized-views` (hourly nas quentes, daily nas frias) + `/api/jobs/monitor-database-size` (diário — alerta se tenant cresce >2x média)
+- [ ] **Página `/app/super-admin/database`** (ADR 0072): cards (tamanho total, # partições, # jobs falhos 24h, cold storage) + tabela de partições com filtro por tabela + histórico de jobs com retry button + tab "Sharding candidates" + permission `super_admin.database.read` (LogiFit-only, fora do RBAC do tenant)
 - [ ] ADR 0016 publicado
 
 ## Stretch

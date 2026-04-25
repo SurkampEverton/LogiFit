@@ -148,7 +148,7 @@ Em `packages/db/schema/bancos.ts`:
 
 - `bank_accounts` — `id`, `tenant_id`, `company_id`, `bank_code text`, `bank_name`, `agency`, `account_number`, `kind` enum (`checking`, `savings`, `business`), `current_balance_cents numeric`, `last_synced_at`, `openfinance_connection_id nullable`, `active`
 - `openfinance_connections` — `id`, `tenant_id`, `company_id`, `provider text` (do ADR), `access_token_encrypted`, `refresh_token_encrypted`, `expires_at`, `status` enum (`active`, `error`, `revoked`)
-- `bank_transactions` — `id`, `tenant_id`, `bank_account_id`, `external_id text` (do provider, unique), `posted_at timestamptz`, `amount_cents` (negativo = saída), `description text`, `raw_payload jsonb`, `reconciled_with_ap_id nullable`, `reconciled_with_ar_id nullable`, `reconciled_at nullable`, `reconciled_by_user_id nullable`
+- `bank_transactions` — `id`, `tenant_id`, `bank_account_id`, `external_id text` (do provider, unique), `posted_at timestamptz`, `amount_cents` (negativo = saída), `description text`, `raw_payload jsonb`, `reconciled_with_ap_id nullable`, `reconciled_with_ar_id nullable`, `reconciled_at nullable`, `reconciled_by_user_id nullable`. **Particionado por TRIMESTRE** (ADR 0072 + regra 34); `@volume_estimate_yearly: 6M+` (1k tenants × 500 transações/mês × 12); retenção 5 anos (compliance fiscal) + cold storage Parquet zstd após 2 anos
 - `reconciliation_rules` — `id`, `tenant_id`, `condition jsonb` (ex: `{description_contains: "aluguel", amount_min: 5000, amount_max: 5500}`), `action` enum (`auto_match_ap`, `auto_match_ar`, `auto_create_entry`, `flag_for_review`), `target_supplier_id nullable`, `target_chart_account_id nullable`, `active`, `priority int`
 
 Em `packages/db/schema/certificados.ts`:
@@ -156,7 +156,7 @@ Em `packages/db/schema/certificados.ts`:
 
 Em `packages/db/schema/nfe-recepcao.ts`:
 - `nfe_sefaz_cursors` — `id`, `company_id`, `provider text`, `last_nsu text` (número sequencial único do SEFAZ), `last_synced_at` — **criada neste sprint** (não existia no 15)
-- `nfe_received` — **já existe (Sprint 15, ADR 0056)**; neste sprint passa a receber linhas com `source='auto_sefaz'` (via job cursor) e `source='manual_key'` (via `fetchNfeByKey`)
+- `nfe_received` — **já existe (Sprint 15, ADR 0056)**; neste sprint passa a receber linhas com `source='auto_sefaz'` (via job cursor) e `source='manual_key'` (via `fetchNfeByKey`). **Alter neste sprint para particionamento ANUAL** (ADR 0072 + regra 34); `@volume_estimate_yearly: 12M+` (1k tenants × 1k NFs/mês × 12); retenção fiscal 5 anos hot + 5 anos cold storage Parquet (total 10 anos para auditoria fiscal); job `archive-cold-partitions` move XML completo para Storage após 2 anos preservando metadata na partição quente
 
 **RLS:** tenant_id + scope company + permission (`financeiro.bank.*`, `financeiro.nfe.*`). Certificado = acesso somente a `financeiro.admin`.
 
@@ -177,7 +177,7 @@ Em `packages/db/schema/nfe-recepcao.ts`:
 ## Commit (checklist)
 
 - [ ] Schema Drizzle: `bank_accounts`, `openfinance_connections`, `bank_transactions`, `reconciliation_rules`, `company_certificates`, `nfe_sefaz_cursors` (novo aqui); `nfe_received` **já existe do Sprint 15** — só alter para garantir `source='auto_sefaz'` e `'manual_key'` no enum
-- [ ] Implementações de `NfeFetcher` em `packages/ai/nfe/providers/`: `arquivei.ts`, `sieg.ts`, `focus.ts`, `sefaz-direct.ts` (com certificado A1) — cada uma implementa `fetchByKey`, `fetchByCnpjCursor` E `sendManifestation` (ADR 0057)
+- [ ] Implementações de `NfeFetcher` em `packages/ai/nfe/providers/`: `arquivei.ts` (allowlist `api.arquivei.com.br`), `sieg.ts` (allowlist `api.sieg.com`), `focus.ts` (allowlist `api.focusnfe.com.br`), `sefaz-direct.ts` (allowlist por UF — `nfe.fazenda.sp.gov.br`, `nfe.svrs.rs.gov.br`, etc com certificado A1) — cada uma implementa `fetchByKey`, `fetchByCnpjCursor` E `sendManifestation` (ADR 0057); **toda chamada HTTP via `safeFetch()` (ADR 0073 + regra 37)**
 - [ ] Habilitar botão "🔎 Por chave" na inbox do Sprint 15 + validador mod 11 da chave
 - [ ] Habilitar toggle "Download automático" em `/app/settings/financeiro/nfe` (Sprint 15 tinha placeholder) + toggle "Ciência automática" (default ON, ADR 0057)
 - [ ] **UI de manifestação na inbox** (ADR 0057): coluna "Manifestação" + botão [Manifestar] + modal com 4 opções + validação de justificativa mínima
@@ -188,11 +188,11 @@ Em `packages/db/schema/nfe-recepcao.ts`:
 - [ ] **Card "NFs a manifestar"** no dashboard gerente (Sprint 07 estendido)
 - [ ] Testes E2E: (a) admin liga toggle + cadastra cert → job roda → NFs aparecem na inbox com `source='auto_sefaz'`; (b) operador cola chave → NF aparece com `source='manual_key'`; (c) admin desliga toggle → job skippa company; (d) **NF baixada com ciência ON → evento 210210 automático dispara em <5s e `manifestation_status='ciencia'`**; (e) **operador desconhece NF com justificativa → evento 210220 enviado + audit com user_id**; (f) **NF sem manifestação por 180d → job marca `expired`**; (g) **company sem CNPJ → linhas marcadas `not_applicable`, UI esconde ações**
 - [ ] RLS + audit + criptografia at-rest dos tokens e certificados
-- [ ] Wrapper Open Finance em `packages/ai/openfinance/provider.ts` com interface comum (Pluggy/Belvo adapters)
+- [ ] Wrapper Open Finance em `packages/ai/openfinance/provider.ts` com interface comum (Pluggy adapter `api.pluggy.ai` / Belvo adapter `api.belvo.com`); **toda chamada HTTP via `safeFetch()` (ADR 0073 + regra 37)** com allowlist por adapter; webhook callback valida HMAC + IP source
 - [ ] Parser OFX (fallback) em `packages/db/bancos/ofx-parser.ts`
 - [ ] Motor de conciliação em `packages/db/bancos/reconcile.ts` (aplica rules + sugere matches por similaridade valor+data)
 - [ ] Wrapper NF-e recepção em `packages/ai/nfe/sefaz-provider.ts`
-- [ ] Upload de certificado com criptografia (Supabase Vault ou próprio)
+- [ ] Upload de certificado A1 com criptografia (Supabase Vault); **`scanUpload()` (regra 38)** valida que arquivo é `.pfx`/`.p12` real (magic bytes) antes de cifrar; **AES-256-GCM com KEK por company** (ADR 0073 camada 4) — `master_key_certificates` LogiFit + `kek_company_id` por company; senha do cert cifrada separadamente da pfx (defesa em profundidade)
 - [ ] Jobs: sync daily Open Finance + SEFAZ NFs
 - [ ] Projeção de fluxo de caixa em `packages/ai/financeiro/cashflow-forecast.ts`
 - [ ] UI todas as telas acima

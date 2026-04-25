@@ -104,9 +104,9 @@ Em `packages/db/schema/financeiro.ts`:
 - [ ] Schema Drizzle: `plans`, `contracts`, `invoices`, `payments`, `asaas_keys`, `webhook_events`
 - [ ] RLS + check constraint de `asaas_keys` (centralized vs distributed)
 - [ ] Zod schemas em `packages/types/financeiro.ts`
-- [ ] Wrapper Asaas em `packages/db/integrations/asaas.ts` (SDK HTTP tipado)
+- [ ] Wrapper Asaas em `packages/db/integrations/asaas.ts` (SDK HTTP tipado) — **toda chamada HTTP via `safeFetch()` (ADR 0073 + regra 37)** com `allowedHosts: ['asaas.com', 'sandbox.asaas.com']`; rate limit interno respeita limites Asaas (HTTP 429 mapeia para `RATE_LIMITED`)
 - [ ] Server Actions de plano + contrato
-- [ ] Webhook `/api/webhooks/asaas` com HMAC + idempotência
+- [ ] Webhook `/api/webhooks/asaas` com HMAC + idempotência **+ validação de IP source Asaas (allowlist documentada)** + safeFetch quando re-fetcha cobrança para reconciliação
 - [ ] Job diário de geração de cobranças (Vercel Cron)
 - [ ] Retry de webhook em dead-letter se processing falhar 3x
 - [ ] UI `/app/financeiro/*` com estado vazio e filtros
