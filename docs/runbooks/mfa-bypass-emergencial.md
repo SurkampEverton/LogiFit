@@ -53,6 +53,7 @@ Se nem o backup físico funcionar: **última opção é restaurar do backup PG a
            jsonb_build_object('reason', 'recovery após perda total credenciais', 'quorum_witness', '<videochamada timestamp>'));
    ```
 5. **Pessoa A** faz login (sem MFA, janela de 30 minutos)
+   > **Exceção controlada à regra 43** (`requireRecentMfa(maxAgeMin=15)`): essa janela de 30min é **maior** que o gate padrão da regra 43 (<15min) por necessidade prática — usuário acabou de perder TOTP+WebAuthn+recovery, é impossível exigir MFA recente. Justificativa de exceção: (a) procedimento exige **2 pessoas presentes** com vídeo gravado; (b) `audit_log` recebe linha `mfa.bypass_emergencial` com `quorum_witness` (passo 4); (c) único caminho permitido é **re-cadastrar MFA imediatamente** (passo 6) — qualquer outra ação no PG durante a janela é violação operacional. Bypass permanente exige ADR formal antes de virar padrão (não há até 2026-04-25). Ver [regra 43 em rules.md](../rules.md) e [ADR 0073 camada 2](../decisions/0073-postura-seguranca-defesa-em-profundidade.md).
 6. **Pessoa A** **imediatamente** re-cadastra MFA (TOTP + recovery codes + WebAuthn) em `/account/mfa`
 7. Verifica que MFA voltou ativo:
    ```sql

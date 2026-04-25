@@ -442,10 +442,11 @@ Isso só existe porque os dados cruzam. É o motivo de ter LogiFit em vez de 3 s
 
 ## Status
 
-Proposed — aguarda:
-- Confirmação do usuário sobre constraint global (1 módulo ativo por paciente em toda a rede) — implementação via trigger é viável mas tem custo
-- Definição do limite de invites/dia por tenant (default sugerido: 50)
-- Parecer jurídico cross-tenant clínico antes da implementação no Sprint 02
+**Accepted (2026-04-25)** — todas as 3 pendências da fase Proposed foram resolvidas e movidas para "Decisões em aberto durante implementação" (Sprint 02 endereça):
+
+- ✅ **Constraint global "1 módulo ativo por paciente em toda a rede":** confirmada; implementação via trigger `enforce_one_active_module_per_person` BEFORE INSERT/UPDATE em `patient_link_modules` ([Sprint 02](../sprints/02-geral-crm-pessoas.md) linhas 156, 204). Custo aceito.
+- ✅ **Limite de invites/dia por tenant:** default 50/dia validado; rate-limit Upstash (regra 36) chave `(tenant_id, 'patient_invites_daily')`; tenants Enterprise podem escalar via `tenant_settings.invite_daily_limit`. Detalhamento operacional fica no Sprint 02.
+- ⚠️ **Parecer jurídico cross-tenant clínico:** parecer interno do DPO LogiFit emitido (nas medidas declaradas em [`docs/compliance/ripd/v1.0-passaporte-paciente.md`](../compliance/ripd/v1.0-passaporte-paciente.md)); parecer externo formal **agendado pré-Sprint 02 entrar em `doing`** (gate explícito no kickoff do sprint). Não bloqueia status Accepted do ADR — bloqueia start de implementação se parecer externo divergir.
 
 ## Referências
 

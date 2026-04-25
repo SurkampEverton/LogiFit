@@ -6,6 +6,24 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — 8ª auditoria 2026-04-25 (ADR 0077 status coerente + exceção controlada MFA bypass)
+
+Oitava auditoria, recursiva sobre o commit `4b061e4` (6ª+7ª) + revisão semântica profunda. Agente A (cross-references nos novos artefatos) confirmou **zero regressões**. Agente B (contradições semânticas entre docs) propôs 5 achados; verificações diretas eliminaram **3 falsos positivos** (`patient_company_links` está em Sprint 02; WORM Object Lock está em Sprint 01a:130; nomes de role consistentes — zero `tenant_admin` ou `owner` standalone) + 1 P2 não-acionável (notificação trial coberta por consent prévio no signup).
+
+**2 ações reais executadas:**
+
+- **P0** — [docs/decisions/0077-passaporte-paciente-vinculo-cross-tenant.md](docs/decisions/0077-passaporte-paciente-vinculo-cross-tenant.md): seção `## Status` no fim do arquivo ainda dizia `Proposed — aguarda 3 itens`, mas header do ADR já estava `Accepted (2026-04-25)` e roadmap.md/CHANGELOG.md/rules.md/Sprint 02 já tratavam como decidido. Seção atualizada para `Accepted` com as 3 pendências resolvidas: (1) constraint global confirmada — trigger `enforce_one_active_module_per_person` em Sprint 02:156,204; (2) limite invites/dia 50 default via Upstash; (3) parecer DPO interno emitido (RIPD), parecer externo agendado pré-Sprint 02 entrar em `doing`. Elimina contradição interna do próprio ADR.
+
+- **P1** — [docs/runbooks/mfa-bypass-emergencial.md:55](docs/runbooks/mfa-bypass-emergencial.md): janela de 30min sem MFA pós-bypass conflitava com regra 43 (`requireRecentMfa(maxAgeMin=15)`). Adicionada **nota de exceção controlada** explicando: (a) impossibilidade prática de exigir MFA recente quando usuário acabou de perdê-lo; (b) procedimento exige 2 pessoas + vídeo gravado + `audit_log` `mfa.bypass_emergencial` com `quorum_witness`; (c) único caminho permitido é re-cadastrar MFA imediatamente; (d) bypass permanente exigiria ADR formal (não há até 2026-04-25). Não muda o procedimento — explicita por que é exceção legítima.
+
+**Falsos positivos descartados (verificações diretas):**
+- `patient_company_links` "nunca em sprint": Sprint 02 detalha schema + função SQL + trigger + tela
+- `S3 Object Lock WORM` "sem implementação": Sprint 01a:130 cria `system_audit_anchor` + job `/api/jobs/anchor-audit-hourly` em S3 us-east-1 com Object Lock 5y
+- `tenant_owner vs owner vs tenant_admin` "ambíguo": zero ocorrências de `tenant_admin` ou `owner` standalone em sprints; nomenclatura consistente
+- "anonimização trial sem notificação": consent prévio no signup cobre LGPD art. 18 + art. 8º; melhoria UX possível mas não é falha (P2 não-acionável agora)
+
+**Recomendação para 9ª:** rodar somente quando Sprint 03/04/06 entrarem em `doing` e expandirem v0.1 RIPDs para v1.0. Auditoria sem material novo gera retornos diminuintes.
+
 ### Docs — 7ª auditoria 2026-04-25 (cross-references + stubs RIPD faltantes + template ANPD)
 
 Sétima auditoria, focada em **falhas sutis sobreviventes às 6 anteriores**. 3 agentes Explore em paralelo cobriram cross-references, artefatos compliance/runbooks/threat-models e roadmap/sprints/CHANGELOG. Verificações diretas confirmaram cada P0 antes de propor fix (3 falsos positivos descartados sem alteração: P1-1 prontuário STRIDE-DoS já presente linha 44, P1-5 sprints "06c/19c/36c" não existem, P1-7 convenção ADRs reservados já documentada). **6 P0 corrigidos + 4 P1 + 4 stubs novos = 14 ações, todas conclusas.**
