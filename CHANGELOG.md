@@ -23,6 +23,45 @@ Página única de documentação viva do design system, autossuficiente, dentro 
 
 **Não altera:** `prototipo/tokens.css`, `prototipo/base.css` nem qualquer arquivo em `docs/` ou ADRs — design system já é coberto por ADR 0001 + ADR 0063 + arquitetura.md §1.
 
+### Docs — Auditoria 2026-04-25 (3ª passada — 18 issues + propagação da regra 44)
+
+Após 2ª rodada, terceira auditoria paralela (validação 2ª rodada + gaps estruturais sistêmicos) achou 18 issues remanescentes — alguns introduzidos pelas correções anteriores, outros estruturais. Em paralelo, **regra 44 (Design System) foi adicionada externamente em rules.md** — propagada para CLAUDE.md e arquivos dependentes. **Total: 18 issues + 1 mudança externa, todos endereçados.**
+
+**Críticos (7):**
+
+- [docs/rules.md](docs/rules.md) — contagem 43→**44**; novo header "Design system 'Equilíbrio Vital' (44)" no índice; bloco "Pesquisa global + responsividade (30–31)" reorganizado; `---` duplicado removido; **regra 43 expandida** com gate `requireRecentMfa(maxAgeMin=15)` + lista canônica de ações alto-risco em `packages/security/high-risk-actions.ts` + lint custom `high-risk-action-must-require-recent-mfa`
+- [CLAUDE.md](CLAUDE.md) — contagem 43→44 + **nota de precedência** "rules.md prevalece em conflito"; **regra 29 nova** sobre Design System na lista operacional; referência ao `docs/compliance/dpo.md`; `docs/compliance/`, `docs/runbooks/`, `docs/threat-models/` listados na seção de docs de referência
+- **NOVO** [docs/runbooks/_template.md](docs/runbooks/_template.md) + [restore-test.md](docs/runbooks/restore-test.md) + [ia-byok-emergencial.md](docs/runbooks/ia-byok-emergencial.md) + [restore-pg.md](docs/runbooks/restore-pg.md) — sprints 06/19b + ADR 0073 citavam runbooks que não existiam estruturalmente
+- **NOVO** [docs/compliance/ripd/_template.md](docs/compliance/ripd/_template.md) + [docs/compliance/samd-classification.md](docs/compliance/samd-classification.md) + [docs/compliance/lgpd-data-inventory.md](docs/compliance/lgpd-data-inventory.md) + [docs/threat-models/_template-stride.md](docs/threat-models/_template-stride.md) — ADRs 0054/0067/0073 prometiam, faltava criar
+- [Sprint 02](docs/sprints/02-geral-crm-pessoas.md) — checklist explícito "validar via migration smoke que `patient_data_access_log` existe + partição vigente do mês está criada; falha = bloqueia merge"
+- [Sprint 01a](docs/sprints/01a-identidade-e-topology.md) — **commit checklist completo de trial 30d retenção**: schema `subscription_status`/`trial_ends_at`, job diário `process-trial-lifecycle`, função SQL `anonymize_trial_data()` (preserva agregados, remove PII, cifra-com-chave-perdida via rotação KEK), trigger audit_log com `legal_basis='lgpd_art16_eliminacao'`, 2 testes E2E (D+44 anonimização vs D+10 conversão), playbook em `docs/compliance/data-deletion-playbook.md`
+- **NOVO** [docs/decisions/0035-ocr-boleto-provider-abstrato.md](docs/decisions/0035-ocr-boleto-provider-abstrato.md) — ADR formal para a "decisão fantasma" reconhecida no roadmap; OCR.space default + 5 adapters; BYOK pattern coerente com 0048/0064/0051; roadmap.md atualizado pra apontar pro arquivo
+
+**Maiores (7):**
+
+- [ADR 0066](docs/decisions/0066-plano-comercial-pricing-trial.md) — **seção "Versão vigente (2026-04-25)" no topo** com tabela canônica (6 tiers); histórico preservado mas marcado como "não-fonte de verdade"; retenção `audit_log` uniformizada **5 anos cross-tier** (era "60 meses" misturando unidades); 3 notas explicativas (retenção é regulatória; cota IA Solo Combo igual a Solo com racional; storage 2GB Solo Combo com gatilho de migração)
+- [docs/compliance/dpo.md](docs/compliance/dpo.md) — agora linkado em CLAUDE.md
+- [Sprint 02](docs/sprints/02-geral-crm-pessoas.md) — `patient_data_access_log` agora tem dependência explícita
+- Stubs Sprint 34/35 — comentário HTML apontando pro `_template.md`
+- ADR 0073 backup R2 — já fechado em 2ª rodada (sem mudança aqui)
+- ADR 0035 ghost — resolvido (criação acima)
+- Estruturas `runbooks/`, `threat-models/`, `compliance/` agora documentadas como dependências de Sprint 00
+
+**Menores (4):**
+
+- Cluster ADRs 24/25 — aceitável (conversa intensiva)
+- Tabela retenção em 4 fontes — risco fragmentação documentado para futuro `docs/retencao-compliance.md` se voltar a divergir
+- Sprint 35 stub: ADRs futuros >=0080 (era 0047/0048 fora da faixa reservada)
+- Pré-existente: numeração CLAUDE.md regra 28 vs rules.md 28 — agora resolvida via nota de precedência
+
+**Lições da 3ª passada:**
+
+- Estruturas de diretórios prometidas em ADRs precisam ser criadas pelo Sprint 00; ADR sozinho não materializa
+- Ghost ADRs (números citados sem arquivo) devem ser resolvidos com criação retroativa formal quando decisão já está em uso múltiplo
+- ADR com múltiplas revisões precisa de seção "Versão vigente" no topo
+- Cota IA não escala automaticamente com features adicionadas — racional precisa estar documentado
+- Quando regra nova é adicionada externamente em `rules.md`, propagar imediatamente para CLAUDE.md (contagem + lista operacional + índice)
+
 ### Docs — Auditoria 2026-04-25 (2ª passada — 14 issues remanescentes/introduzidas pela 1ª rodada)
 
 Após primeira rodada de correções (abaixo), nova auditoria paralela em 4 frentes (pricing, ADRs, sprints, compliance) achou novos gaps + alguns introduzidos pela própria 1ª rodada. **9 críticos + 5 maiores corrigidos.**

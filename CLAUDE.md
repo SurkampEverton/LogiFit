@@ -20,7 +20,7 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 - **Multi-tenant por subdomínio** (ADR 0065): `{slug}.logifit.com.br`
 - **Cobrança**: Asaas próprio LogiFit + NFS-e automática via Focus NFe (Sprint 36)
 - **IA embutida** no plano (Gemini Flash default LogiFit) + BYOK opcional — ADR 0064. **Cota mensal por plano** (Starter 500 / Pro 3.000 / Business 10.000 / Enterprise 25.000 chamadas/mês). Excedido = **hard-stop com convite a configurar BYOK** (não há overage IA pago)
-- **DPO interno LogiFit** ([ADR 0067](docs/decisions/0067-dpo-governanca-compliance-lgpd.md)): canal `privacidade@logifit.com.br` + plano resposta incidente 72h + sub-processors públicos + auditoria interna trimestral. **DPO MVP é o fundador** (papel formal interino); **DPO-as-a-service** (firma externa revendida pela LogiFit) é **add-on opcional do Enterprise** — não confundir os dois
+- **DPO interno LogiFit** ([ADR 0067](docs/decisions/0067-dpo-governanca-compliance-lgpd.md) + [`docs/compliance/dpo.md`](docs/compliance/dpo.md) — nomeação formal): canal `privacidade@logifit.com.br` + plano resposta incidente 72h + sub-processors públicos + auditoria interna trimestral. **DPO MVP é o fundador** (papel formal interino); **DPO-as-a-service** (firma externa revendida pela LogiFit) é **add-on opcional do Enterprise** — não confundir os dois
 
 ## Marcos regulatórios que norteiam o produto
 
@@ -42,7 +42,7 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 ## Documentação de referência (leia antes de planejar)
 
 - [`docs/arquitetura.md`](docs/arquitetura.md) — visão geral da arquitetura e stack
-- [`docs/rules.md`](docs/rules.md) — **43 regras duras** (arquiteturais, multi-empresa, i18n, IA + LGPD, pesquisa global, responsividade, arquitetura IA + erros, escalabilidade banco, segurança em profundidade, assistente IA universal, passaporte cross-tenant, MFA obrigatório, processo, código)
+- [`docs/rules.md`](docs/rules.md) — **44 regras duras** (arquiteturais, multi-empresa, i18n, IA + LGPD, pesquisa global, responsividade, arquitetura IA + erros, escalabilidade banco, segurança em profundidade, assistente IA universal, passaporte cross-tenant, MFA obrigatório, design system "Equilíbrio Vital", processo, código). **Em conflito com regras operacionais abaixo, [`docs/rules.md`](docs/rules.md) prevalece como fonte única de verdade** — regras 1-29 abaixo são subset operacional para uso direto pela Claude.
 - [`docs/modulos.md`](docs/modulos.md) — catálogo de módulos por área (fundação, geral, academia, fisio, nutri) + quais verticais usam
 - [`docs/multiempresa.md`](docs/multiempresa.md) — hierarquia group → tenant → company → unit + flags de topology
 - [`docs/acesso-e-autorizacao.md`](docs/acesso-e-autorizacao.md) — 4 camadas (identidade, tenant, RBAC, consent)
@@ -50,8 +50,13 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 - [`docs/sprints/`](docs/sprints/) — plano executável de cada sprint
 - [`docs/decisions/`](docs/decisions/) — ADRs (por que decidimos assim)
 - [`docs/comercial.md`](docs/comercial.md) — apresentação comercial (pitch para clientes/investidores; não é fonte técnica, só espelho em linguagem de venda)
+- [`docs/compliance/`](docs/compliance/) — documentos formais de conformidade (DPO, RIPDs por módulo, classificação SaMD, inventário LGPD)
+- [`docs/runbooks/`](docs/runbooks/) — procedimentos operacionais executáveis (restore de backup, BYOK emergencial, rollback PG, etc) — template em [`_template.md`](docs/runbooks/_template.md)
+- [`docs/threat-models/`](docs/threat-models/) — análises STRIDE de features críticas (login, pagamento, prontuário, exames, WhatsApp inbound) — template em [`_template-stride.md`](docs/threat-models/_template-stride.md)
 
 ## Regras que você (Claude) DEVE respeitar
+
+> **Numeração:** as regras 1-29 abaixo são **subset operacional** das **44 regras duras** em [`docs/rules.md`](docs/rules.md). Quando um doc citar "regra X", o número refere-se à numeração de `rules.md` (canônica). Em conflito, `rules.md` prevalece.
 
 1. **Nunca** crie tabela sem `tenant_id` + RLS.
 2. **Nunca** use `any` sem comentário `// why:`.

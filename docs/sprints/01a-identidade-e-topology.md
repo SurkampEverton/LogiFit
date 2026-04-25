@@ -156,6 +156,16 @@ Em `apps/web/app/settings/users/actions.ts`:
 - [ ] Componente `<PersonPicker>` reusável (autocomplete que busca persons + mostra papéis ativos) — usado nas telas especializadas
 - [ ] Wizard `/signup` cria tenant + persons matriz + company matriz + unit + user admin atomicamente
 - [ ] Logout global + revogação por dispositivo
+- [ ] **Trial 14d + ciclo de retenção 30d (ADR 0066)** — schema + jobs + UI completos:
+  - [ ] Coluna `tenants.subscription_status enum('trialing','active','trial_expired','suspended','anonymized') default 'trialing'` + `trial_ends_at timestamptz` populado em `/signup`
+  - [ ] Job Vercel Cron diário `/api/jobs/process-trial-lifecycle` que: (a) marca `trial_expired` em D+14 sem conversão; (b) bloqueia UI exceto export/conversão (banner amigável); (c) executa `anonymize_trial_data(tenant_id)` em D+44 (30d após expirar)
+  - [ ] Função SQL `anonymize_trial_data(tenant_id uuid)` — preserva agregados estatísticos (member_count, session_count, revenue_simulated) + remove PII: `persons.name='Anonimizado'`, `persons.document=NULL`, `persons.email=NULL`, `persons.phone=NULL`; cifra-com-chave-perdida em `prontuarios.content`, `assessments.notes` (rotação de KEK do tenant invalida acesso); muda `subscription_status='anonymized'`
+  - [ ] Trigger grava em `audit_log action='trial.anonymized'` + `legal_basis='lgpd_art16_eliminacao'` + summary do que foi anonimizado
+  - [ ] Conversão antes de D+44 (`subscription_status='active'`): preserva dados originais; cancela job pendente
+  - [ ] Schemas têm coluna `pii_eligible_for_anonymization bool` em colunas sensíveis para job filtrar (default `true` para colunas PII)
+  - [ ] Teste E2E Playwright: tenant criado em /signup → fast-forward 14d → status `trial_expired` + UI bloqueada → fast-forward +30d → `anonymized` + dados originais não recuperáveis (PII NULL/random)
+  - [ ] Teste E2E: conversão em D+10 → `active` + dados intactos
+  - [ ] Documentação: cascata de anonimização em `docs/compliance/data-deletion-playbook.md` (referenciada por ADR 0054)
 
 ## Stretch
 

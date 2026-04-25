@@ -1,6 +1,6 @@
 # Regras do Projeto LogiFit
 
-**43 regras duras e inquebráveis.** Organizadas em 4 blocos + regras transversais. Violação = CI vermelho, revert, ou sprint não fecha.
+**44 regras duras e inquebráveis.** Organizadas em 4 blocos + regras transversais. Violação = CI vermelho, revert, ou sprint não fecha.
 
 > **Como usar:** toda discussão técnica começa perguntando "isso fere alguma regra?". Se sim, ou mudamos a regra (ADR) ou mudamos a solução. Regras não são sugestões.
 
@@ -8,14 +8,15 @@
 - **Arquiteturais base (1–8)**
 - **Multi-empresa (21–26)**
 - **i18n (27)**
-- **IA + LGPD (28–30)**
-- **Responsividade (31)**
+- **IA + LGPD (28–29)**
+- **Pesquisa global + responsividade (30–31)**
 - **Arquitetura IA + erros (32–33)**
 - **Escalabilidade banco (34)**
 - **Segurança em profundidade (35–40)**
 - **Assistente IA universal (41)**
 - **Passaporte cross-tenant (42)**
 - **MFA obrigatório (43)**
+- **Design system "Equilíbrio Vital" (44)**
 - **Processo (9–15)**
 - **Código (16–20)**
 
@@ -143,11 +144,30 @@ Ver [arquitetura.md §1](arquitetura.md), [ADR 0063](decisions/0063-responsivida
 
 ---
 
----
-
 ## MFA obrigatório
 
-**43.** **Profissionais de saúde têm MFA obrigatório.** Roles `medico`, `fisio`, `nutri`, `personal`, `enfermeiro` (e qualquer role que herde de `professional_clinical`) têm `roles.requires_mfa=true` enforced no Supabase Auth — login sem TOTP/WebAuthn é bloqueado em todos os fluxos (magic link inclusive). Roles administrativas (`tenant_owner`, `dpo`, `super_admin`) também têm MFA obrigatório por dever de cuidado. Roles operacionais (`recepcao`, `member`) têm MFA **opcional** mas com badge incentivando ativação. CI tem teste E2E que tenta login sem MFA com role profissional e verifica falha. Tenant pode escalar exigência (ex: forçar MFA também na recepção) em `tenant_settings.mfa_extra_roles[]`. Setup obrigatório no primeiro login do profissional (wizard `/setup-mfa`) — pula = bloqueia acesso a `/app/clinico/*`. Recovery codes one-time gerados na ativação. Ver [ADR 0073](decisions/0073-postura-seguranca-defesa-em-profundidade.md) camada 2 + Sprint 01a.
+**43.** **Profissionais de saúde têm MFA obrigatório + ações de alto-risco exigem MFA recente <15min indistintamente do role.**
+
+**MFA por role (sempre exigido no login):**
+- Roles `medico`, `fisio`, `nutri`, `personal`, `enfermeiro` (e qualquer role que herde de `professional_clinical`) têm `roles.requires_mfa=true` enforced no Supabase Auth — login sem TOTP/WebAuthn é bloqueado em todos os fluxos (magic link inclusive)
+- Roles administrativas (`tenant_owner`, `dpo`, `super_admin`) também têm MFA obrigatório por dever de cuidado
+- Roles operacionais (`recepcao`, `member`) têm MFA **opcional** mas com badge incentivando ativação
+- Tenant pode escalar exigência (ex: forçar MFA também na recepção) em `tenant_settings.mfa_extra_roles[]`
+- Setup obrigatório no primeiro login do profissional (wizard `/setup-mfa`) — pula = bloqueia acesso a `/app/clinico/*`
+- Recovery codes one-time gerados na ativação
+
+**MFA recente para alto-risco (gate `requireRecentMfa(maxAgeMin=15)` no wrapper):**
+
+Independente do `requires_mfa` do role, ações listadas exigem **MFA recente em até 15 minutos**. Wrapper valida claim JWT `mfa_at`; expirado → forçar reauth com TOTP/WebAuthn antes de prosseguir. Audit grava `mfa_required=true` + `mfa_at_action`.
+
+Ações cobertas (lista canônica em `packages/security/high-risk-actions.ts`):
+- **Fiscal:** cancelar guia TISS, cancelar NF-e, anular invoice, alterar valor de invoice paga
+- **RBAC:** alterar role de outro user, criar role custom, conceder grant direto
+- **Financeiro:** alterar chave Asaas, configurar BYOK pagamento, executar `runOpenFinancePayment`
+- **Compliance:** anonimizar member, deletar dado clínico, exportar prontuário, encerrar tenant
+- **Super-admin:** abrir sessão privilegiada PAM (já enforced via ADR 0073 camada 7), restore de backup
+
+CI tem teste E2E que tenta cada ação sem MFA recente e verifica falha. Lint custom `high-risk-action-must-require-recent-mfa` bloqueia commit se Server Action listada não chama `requireRecentMfa()`. Ver [ADR 0073](decisions/0073-postura-seguranca-defesa-em-profundidade.md) camada 2 + Sprint 01a + CLAUDE.md regra 28.
 
 ---
 

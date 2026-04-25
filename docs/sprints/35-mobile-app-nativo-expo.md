@@ -1,3 +1,5 @@
+<!-- Stub. Quando virar `doing`, expandir para o formato completo de [`_template.md`](_template.md) — Goal, Critério de aceite, Dependências, Decisões/ADRs, Módulos entregues, Rotas, Server Actions/API, Schemas Drizzle, Eventos, Commit checklist, Stretch, Log, Definition of Done. -->
+
 # Sprint 35 — App Nativo Expo (aluno/paciente)
 
 - **Área:** mobile

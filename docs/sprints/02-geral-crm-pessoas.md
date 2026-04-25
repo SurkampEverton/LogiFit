@@ -36,6 +36,7 @@ Perfil único cross-module do aluno/paciente (`members`), timeline append-only (
 - Sprint 01b (RBAC com scope + consent)
 - Sprint 01a (`persons` central via [ADR 0047](../decisions/0047-cadastro-central-persons.md) — `members.person_id` FK)
 - Sprint 00 (Cloudflare Turnstile já provisionado para anti-bot no cadastro proativo)
+- **`patient_data_access_log` schema (criado em Sprint 01b — regra 42 + ADR 0072 retenção 5a particionado mensal)**: Sprint 02 é o **primeiro consumidor** efetivo da tabela (escreve no log a cada leitura cross-tenant). Commit checklist obrigatório: `[ ] Validar via migration smoke que tabela patient_data_access_log existe + partição vigente do mês está criada; falha = bloqueia merge.` Função `has_cross_tenant_access()` invocada em wrappers de leitura cross-tenant grava no log síncrono não-bloqueante.
 
 ## Decisões tomadas / ADRs esperados
 

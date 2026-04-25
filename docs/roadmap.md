@@ -137,7 +137,7 @@ ADRs no LogiFit seguem **numeração sequencial densa** com uma exceção legít
 | 0031 | Sprint 22 | Validador TISS proativo XSD + regras de negócio | a produzir (detalha ADR 0079) |
 | 0032 | Sprint 20 / 26 | Política de fechamento de prontuário + magic link member auth | a produzir |
 | 0033-0034 | reservados | (futuros) | livre |
-| 0035 | Sprint 15 | OCR de boleto: provider abstrato | **referência histórica — decisão tomada conversacionalmente, ADR formal será lavrado quando Sprint 15 começar** |
+| [0035](decisions/0035-ocr-boleto-provider-abstrato.md) | Sprint 15 | OCR de boleto: provider abstrato (OCR.space default + Google Vision + AWS Textract + Azure + Tesseract) | **Accepted (formalizado 2026-04-25)** |
 | 0036 | Sprint 16 | Motor de rateio + intercompany | a produzir |
 | 0037 | Sprint 17 | Provider Open Finance | a produzir |
 | 0038 | Sprint 17 | Provider NF-e recepção | a produzir |

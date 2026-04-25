@@ -1,7 +1,37 @@
 # ADR 0066 — Plano comercial LogiFit — pricing, trial, cobrança, limites
 
 - **Status:** Accepted
-- **Date:** 2026-04-24 (revisado 2026-04-24 com pricing benchmarkado; revisado 2026-04-25 com modelo de custo fiscal corrigido + overage por nota emitida; revisado 2026-04-25 com Starter R$ 79→R$ 99 + 1 vertical à escolha + 5 profissionais + 50 NFS-e inclusas — alinhado a ICP de pequeno negócio de saúde solo/equipe pequena)
+- **Date:** 2026-04-24 (versão inicial)
+- **Versão vigente:** 2026-04-25 (3ª revisão — ver seção [Versão vigente](#versão-vigente-2026-04-25) abaixo para o estado canônico)
+
+> **🟢 Para leitura rápida da versão vigente, pular para [Versão vigente (2026-04-25)](#versão-vigente-2026-04-25).** Seções "Decisões do usuário (2026-04-24)" + "Revisão 2026-04-25" abaixo são **histórico de evolução** preservado para rastreabilidade — **não são fonte de verdade operacional**.
+
+## Versão vigente (2026-04-25)
+
+| Plano | Preço mensal | Membros | Verticais | Profs | NFS-e/mês | IA/mês | Storage |
+|---|---|---|---|---|---|---|---|
+| **Solo** | R$ 49 | 30 | 1 à escolha | 1 | 20 | 200 | 1 GB |
+| **Solo Combo** | R$ 69 | 60 | até 3 simultâneas | 1 | 30 | 200 | 2 GB |
+| **Starter** | R$ 99 | 100 | **Academia (MVP)** — Fisio/Nutri liberam Fases 2/3 | 5 | 50 | 500 | 5 GB |
+| **Pro** | R$ 199 | 500 | todas simultâneas | 10 | 200 | 3.000 | 50 GB |
+| **Business** | R$ 449 | 2.000 | todas + multi-company (até 3 CNPJs) + intercompany + adquirência | 30 | 1.000 | 10.000 | 200 GB |
+| **Enterprise** | sob consulta (~R$ 1.199+) | ilimitado | todas + white-label + DPO add-on | ilimitado | 5.000 | 25.000 ou BYOK | 500 GB+ |
+
+**Cobrança LogiFit:** "1 active member por (paciente, tenant)" — passaporte cross-tenant ([ADR 0077](0077-passaporte-paciente-vinculo-cross-tenant.md)) **não duplica**.
+
+**Overage member:** R$ 0,50/member acima do incluído (Solo/Combo: R$ 0,40); cap por tier força upgrade sugerido após 2 ciclos consecutivos acima do threshold.
+
+**Overage NFS-e:** R$ 0,50 / 0,40 / 0,35 / 0,25 por nota emitida (cobre NFS-e + NF-e + NFC-e + devolução + transferência + conserto). **Eventos não contam** (cancelamento, CC-e, inutilização). Repasse calibrado sobre custo Focus NFe + margem operacional.
+
+**Cota IA hard-stop sem overage** ([ADR 0064](0064-ia-arquitetura-gemini-default-byok-rag.md)): excedido = bloqueio até próximo ciclo + convite BYOK; runbook emergencial em [`docs/runbooks/ia-byok-emergencial.md`](../runbooks/ia-byok-emergencial.md).
+
+**Trial:** 14d com features Pro, sem cartão; dados retidos 30d após expirar e então **anonimizados** (preserva agregados, remove PII — Sprint 01a job `process-trial-lifecycle`).
+
+**Retenção uniforme:** todas as tabelas auditáveis seguem a tabela única em [ADR 0072](0072-escalabilidade-banco-particionamento-retencao-cold-storage.md) — `audit_log` 5 anos, prontuário 20 anos (Lei 13.787/2018), fiscal 5 anos, IA audit 1a hot + 5a cold, `patient_data_access_log` 5 anos. **Não há retenção variável por plano** — compliance regulatória prevalece sobre tier comercial.
+
+---
+
+## Histórico de revisões (não-vigente — preservado para rastreabilidade)
 
 ## Context
 
@@ -118,8 +148,14 @@ Discussão com fundador (2026-04-25) sobre 3 clientes-piloto reais expôs duas f
 | **Overage por nota fiscal extra** | R$ 0,50/nota | R$ 0,50/nota | R$ 0,50/nota | R$ 0,40/nota | R$ 0,35/nota | R$ 0,25/nota |
 | **Eventos fiscais** (cancelamento, CC-e, inutilização) | **não contam** no overage | idem | idem | idem | idem | idem |
 | **Webhooks outgoing** | 1k/mês | 5k/mês | 10k/mês | 100k/mês | 500k/mês | 1M/mês |
-| **Retenção audit log** | 60 meses (LGPD mínimo) | 60 meses | 60 meses | 60 meses | 60 meses | 60 meses (alinhado a [ADR 0072](0072-escalabilidade-banco-particionamento-retencao-cold-storage.md) — 5 anos uniforme) |
+| **Retenção audit log** | 5 anos | 5 anos | 5 anos | 5 anos | 5 anos | 5 anos |
 | **Backup automático (Supabase point-in-time MVP / pgBackRest pós-19b)** | 7 dias | 7 dias | 7 dias | 14 dias | 30 dias | 90 dias |
+
+> **Nota retenção:** uniforme em **5 anos** cross-tier porque retenção de auditoria é exigência regulatória (LGPD + ADR 0072) — não pode variar por plano comercial. Outras tabelas auditáveis seguem tabela única em [ADR 0072](0072-escalabilidade-banco-particionamento-retencao-cold-storage.md).
+>
+> **Nota Solo Combo IA:** mesma cota (200 chamadas/mês) que Solo simples, **não escalada com 2-3 verticais**. Racional: cota IA é por **profissional autônomo individual** (1 user real consumindo); combinar verticais não duplica o uso de IA por user. Tenant que sente cota apertada migra pra **Starter R$ 99 (500 chamadas)** com 1 vertical, ou Pro com todas + 3.000 chamadas. Cliente Solo Combo que espera "mais cota por combinar áreas" recebe degrau natural pra Starter/Pro.
+>
+> **Nota Solo Combo storage:** 2 GB pode ficar apertado para profissional combinando Fisio (prontuário rico + mídia clínica) + Nutri (plano alimentar + diário) + outros. Monitorar via `tenant_usage_snapshots` (Sprint 04) e oferecer upgrade pra Pro 50 GB quando passar de 80% — tag pra acompanhar canibalização Solo Combo → Pro como sinal positivo (cliente cresceu) ou negativo (Solo Combo subdimensionado, ajustar pricing).
 
 ### Overage por member — regra suave
 
