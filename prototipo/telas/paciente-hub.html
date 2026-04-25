@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ana Paula Gomes · Hub operacional · LogiFit</title>
+  <link rel="icon" type="image/png" href="../img/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="../base.css" />
+  <link rel="stylesheet" href="../app-shell.css" />
+  <link rel="stylesheet" href="../side-menu.css" />
+  <script src="../theme.js" defer></script>
+  <script src="../side-menu.js" defer></script>
+  <style>
+    /* ========================================================
+     * Hub operacional do paciente · launchpad de todos módulos
+     * ======================================================== */
+
+    .icon { width: 18px; height: 18px; stroke-width: 1.75; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+    .icon-sm { width: 14px; height: 14px; stroke-width: 2; }
+    .icon-xs { width: 12px; height: 12px; stroke-width: 2; }
+    .icon-lg { width: 22px; height: 22px; }
+
+    .breadcrumb { display: flex; align-items: center; gap: var(--ev-space-2); font-size: var(--ev-text-xs); color: var(--ev-text-muted); margin-bottom: var(--ev-space-4); }
+    .breadcrumb a { color: var(--ev-text-muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--ev-text); }
+    .breadcrumb__sep { color: var(--ev-text-subtle); }
+
+    /* ===== Hero identity ===== */
+    .hero {
+      display: grid;
+      grid-template-columns: 100px 1fr auto;
+      gap: var(--ev-space-5);
+      padding: var(--ev-space-5);
+      margin-bottom: var(--ev-space-4);
+      align-items: center;
+    }
+    @media (max-width: 767px) { .hero { grid-template-columns: 80px 1fr; } .hero__actions { grid-column: 1 / -1; } }
+
+    .hero__avatar {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--ev-primary-soft), var(--ev-success-soft));
+      color: var(--ev-primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: var(--ev-text-4xl);
+      font-weight: var(--ev-weight-bold);
+      flex: 0 0 auto;
+    }
+    .hero__name { font-size: var(--ev-text-2xl); font-weight: var(--ev-weight-bold); letter-spacing: -0.02em; margin-bottom: 4px; }
+    .hero__meta { font-size: var(--ev-text-sm); color: var(--ev-text-muted); margin-bottom: var(--ev-space-2); }
+    .hero__tags { display: flex; gap: var(--ev-space-2); flex-wrap: wrap; }
+    .hero__actions { display: flex; gap: var(--ev-space-2); flex-wrap: wrap; }
+
+    /* ===== Vital strip ===== */
+    .vitals {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: var(--ev-space-3);
+      padding: var(--ev-space-4) var(--ev-space-5);
+      margin-bottom: var(--ev-space-5);
+    }
+    @media (max-width: 1080px) { .vitals { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 560px)  { .vitals { grid-template-columns: repeat(2, 1fr); } }
+
+    .vital { border-left: 2px solid var(--ev-border); padding-left: var(--ev-space-3); }
+    .vital__label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ev-text-subtle); font-weight: var(--ev-weight-semibold); margin-bottom: 2px; }
+    .vital__value { font-size: var(--ev-text-base); font-weight: var(--ev-weight-bold); font-feature-settings: var(--ev-font-feature-tabular); }
+    .vital__delta { font-size: 10px; color: var(--ev-text-muted); margin-top: 1px; }
+    .vital--warning { border-left-color: var(--ev-warning); }
+    .vital--danger  { border-left-color: var(--ev-danger); }
+    .vital--success { border-left-color: var(--ev-success); }
+
+    /* ===== Module grid ===== */
+    .modules {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--ev-space-4);
+      margin-bottom: var(--ev-space-5);
+    }
+    @media (max-width: 1280px) { .modules { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 1000px) { .modules { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px)  { .modules { grid-template-columns: 1fr; } }
+
+    .module {
+      padding: var(--ev-space-4);
+      position: relative;
+      transition: transform var(--ev-transition-fast);
+      border-left: 4px solid var(--ev-border);
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      min-height: 180px;
+    }
+    .module:hover { transform: translateY(-2px); }
+    .module--fisio   { border-left-color: var(--ev-success); }
+    .module--nutri   { border-left-color: var(--ev-energy); }
+    .module--treino  { border-left-color: #C77DFF; }
+    .module--primary { border-left-color: var(--ev-primary); }
+    .module--warning { border-left-color: var(--ev-warning); }
+
+    .module__head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--ev-space-2);
+      margin-bottom: var(--ev-space-3);
+    }
+    .module__icon {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex: 0 0 auto;
+    }
+    .module__icon--fisio   { background: var(--ev-success-soft); color: var(--ev-success); }
+    .module__icon--nutri   { background: var(--ev-energy-soft); color: var(--ev-energy); }
+    .module__icon--treino  { background: rgba(199, 125, 255, 0.15); color: #C77DFF; }
+    .module__icon--primary { background: var(--ev-primary-soft); color: var(--ev-primary); }
+    .module__icon--warning { background: var(--ev-warning-soft); color: var(--ev-warning); }
+
+    .module__badge {
+      font-size: 10px;
+      font-weight: var(--ev-weight-bold);
+      padding: 2px var(--ev-space-2);
+      border-radius: var(--ev-radius-pill);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .module__badge--alert { background: var(--ev-danger-soft); color: var(--ev-danger); }
+    .module__badge--pending { background: var(--ev-warning-soft); color: var(--ev-warning); }
+    .module__badge--ok { background: var(--ev-success-soft); color: var(--ev-success); }
+    .module__badge--new { background: var(--ev-primary-soft); color: var(--ev-primary); }
+
+    .module__label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ev-text-subtle); font-weight: var(--ev-weight-semibold); margin-bottom: 2px; }
+    .module__title { font-size: var(--ev-text-base); font-weight: var(--ev-weight-bold); margin-bottom: var(--ev-space-2); }
+
+    .module__info { font-size: var(--ev-text-xs); color: var(--ev-text-muted); line-height: 1.5; flex: 1; }
+    .module__info strong { color: var(--ev-text); font-weight: var(--ev-weight-semibold); }
+
+    .module__foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: var(--ev-space-3);
+      padding-top: var(--ev-space-3);
+      border-top: 1px solid var(--ev-border);
+      font-size: var(--ev-text-xs);
+    }
+    .module__last { color: var(--ev-text-subtle); }
+    .module__cta { color: var(--ev-primary); font-weight: var(--ev-weight-semibold); display: inline-flex; align-items: center; gap: 2px; }
+    .module__cta--fisio { color: var(--ev-success); }
+    .module__cta--nutri { color: var(--ev-energy); }
+    .module__cta--treino { color: #C77DFF; }
+
+    /* ===== Feed + alertas ===== */
+    .feed-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--ev-space-4); }
+    @media (max-width: 1080px) { .feed-grid { grid-template-columns: 1fr; } }
+
+    .feed-card { padding: var(--ev-space-5); }
+    .feed-card__head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--ev-space-4); gap: var(--ev-space-3); }
+    .feed-card__head h2 { font-size: var(--ev-text-base); font-weight: var(--ev-weight-bold); margin-bottom: 2px; }
+    .feed-card__head p { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+
+    .feed-item {
+      display: grid;
+      grid-template-columns: 32px 1fr auto;
+      gap: var(--ev-space-3);
+      padding: var(--ev-space-3) 0;
+      border-bottom: 1px solid var(--ev-border);
+      align-items: flex-start;
+    }
+    .feed-item:first-child { padding-top: 0; }
+    .feed-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .feed-item__dot {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex: 0 0 auto;
+    }
+    .feed-item__title { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-semibold); margin-bottom: 2px; }
+    .feed-item__meta { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+    .feed-item__when { font-size: var(--ev-text-xs); color: var(--ev-text-subtle); white-space: nowrap; font-feature-settings: var(--ev-font-feature-tabular); }
+    .feed-dot--success { background: var(--ev-success-soft); color: var(--ev-success); }
+    .feed-dot--energy  { background: var(--ev-energy-soft); color: var(--ev-energy); }
+    .feed-dot--treino  { background: rgba(199, 125, 255, 0.15); color: #C77DFF; }
+    .feed-dot--primary { background: var(--ev-primary-soft); color: var(--ev-primary); }
+    .feed-dot--warning { background: var(--ev-warning-soft); color: var(--ev-warning); }
+    .feed-dot--danger  { background: var(--ev-danger-soft); color: var(--ev-danger); }
+
+    .alert-block {
+      padding: var(--ev-space-4);
+      border-radius: var(--ev-radius-lg);
+      margin-bottom: var(--ev-space-3);
+    }
+    .alert-block:last-child { margin-bottom: 0; }
+    .alert-block--danger { background: var(--ev-danger-soft); border-left: 3px solid var(--ev-danger); }
+    .alert-block--warning { background: var(--ev-warning-soft); border-left: 3px solid var(--ev-warning); }
+    .alert-block--success { background: var(--ev-success-soft); border-left: 3px solid var(--ev-success); }
+    .alert-block__title { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-bold); margin-bottom: var(--ev-space-1); display: flex; align-items: center; gap: var(--ev-space-2); }
+    .alert-block__desc { font-size: var(--ev-text-xs); color: var(--ev-text); line-height: 1.5; }
+    .alert-block__actions { display: flex; gap: var(--ev-space-2); margin-top: var(--ev-space-2); flex-wrap: wrap; }
+
+    /* ===== Info sections (pessoal, plano, clínico, agenda, avaliações) ===== */
+    .section-head { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--ev-space-3); margin-bottom: var(--ev-space-4); }
+    .section-head h2 { font-size: var(--ev-text-base); font-weight: var(--ev-weight-bold); margin-bottom: 2px; }
+    .section-head p { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+
+    .section-card { padding: var(--ev-space-5); margin-bottom: var(--ev-space-5); }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ev-space-4); margin-bottom: var(--ev-space-5); }
+    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+    .info-row {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      gap: var(--ev-space-3);
+      padding: var(--ev-space-2) 0;
+      border-bottom: 1px solid var(--ev-border);
+      font-size: var(--ev-text-sm);
+    }
+    .info-row:first-child { padding-top: 0; }
+    .info-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .info-row__label {
+      font-size: var(--ev-text-xs);
+      color: var(--ev-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: var(--ev-weight-semibold);
+    }
+    .info-row__value { font-weight: var(--ev-weight-medium); color: var(--ev-text); font-feature-settings: var(--ev-font-feature-tabular); }
+
+    /* Plano */
+    .plan-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--ev-space-3);
+      background: var(--ev-primary-soft);
+      border-radius: var(--ev-radius-lg);
+      margin-bottom: var(--ev-space-3);
+    }
+    .plan-head__name { font-size: var(--ev-text-base); font-weight: var(--ev-weight-bold); color: var(--ev-primary); }
+    .plan-head__price { font-size: var(--ev-text-xl); font-weight: var(--ev-weight-bold); color: var(--ev-primary); font-feature-settings: var(--ev-font-feature-tabular); }
+
+    .plan-progress {
+      display: flex; align-items: center; gap: var(--ev-space-3);
+      padding: var(--ev-space-3) 0;
+      border-bottom: 1px solid var(--ev-border);
+    }
+    .plan-progress:last-of-type { border-bottom: none; }
+    .plan-progress__name { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-medium); flex: 1; }
+    .plan-progress__bar-wrap { width: 120px; }
+    .plan-progress__bar-bg { height: 8px; background: var(--ev-surface-muted); border-radius: var(--ev-radius-pill); overflow: hidden; }
+    .plan-progress__bar { height: 100%; border-radius: var(--ev-radius-pill); }
+    .plan-progress__count { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-bold); font-feature-settings: var(--ev-font-feature-tabular); min-width: 60px; text-align: right; }
+
+    /* Histórico clínico */
+    .clinical-head {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: var(--ev-space-3);
+      padding: var(--ev-space-3);
+      background: var(--ev-surface-muted);
+      border-radius: var(--ev-radius-lg);
+      margin-bottom: var(--ev-space-4);
+    }
+    @media (max-width: 767px) { .clinical-head { grid-template-columns: 1fr 1fr; } }
+    .clinical-head__item { display: flex; flex-direction: column; gap: 2px; }
+    .clinical-head__label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ev-text-subtle); font-weight: var(--ev-weight-semibold); }
+    .clinical-head__value { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-bold); }
+
+    .evolution-item {
+      display: grid;
+      grid-template-columns: 80px 1fr auto;
+      gap: var(--ev-space-3);
+      padding: var(--ev-space-3) 0;
+      border-bottom: 1px solid var(--ev-border);
+      align-items: flex-start;
+    }
+    .evolution-item:first-child { padding-top: 0; }
+    .evolution-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .evolution-item__date { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-bold); color: var(--ev-primary); font-feature-settings: var(--ev-font-feature-tabular); }
+    .evolution-item__weekday { font-size: 10px; color: var(--ev-text-subtle); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; font-weight: var(--ev-weight-semibold); }
+    .evolution-item__title { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-semibold); margin-bottom: 2px; }
+    .evolution-item__note { font-size: var(--ev-text-xs); color: var(--ev-text-muted); line-height: 1.5; }
+    .evolution-item__by { font-size: 11px; color: var(--ev-text-subtle); margin-top: 4px; }
+
+    .protocol-box {
+      padding: var(--ev-space-3);
+      background: var(--ev-success-soft);
+      border-radius: var(--ev-radius-lg);
+      border-left: 3px solid var(--ev-success);
+      margin-top: var(--ev-space-3);
+    }
+    .protocol-box__title { font-size: var(--ev-text-xs); font-weight: var(--ev-weight-bold); color: var(--ev-success); margin-bottom: var(--ev-space-1); text-transform: uppercase; letter-spacing: 0.04em; }
+    .protocol-box__desc { font-size: var(--ev-text-sm); line-height: 1.5; }
+
+    /* Próximos agendamentos */
+    .next-item {
+      display: grid;
+      grid-template-columns: 76px 1fr auto;
+      gap: var(--ev-space-3);
+      padding: var(--ev-space-3) 0;
+      border-bottom: 1px solid var(--ev-border);
+      align-items: center;
+    }
+    .next-item:first-child { padding-top: 0; }
+    .next-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .next-item__date { text-align: center; padding: var(--ev-space-2); background: var(--ev-surface-muted); border-radius: var(--ev-radius-md); }
+    .next-item__day { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: var(--ev-weight-bold); color: var(--ev-text-muted); }
+    .next-item__when { font-size: var(--ev-text-base); font-weight: var(--ev-weight-bold); font-feature-settings: var(--ev-font-feature-tabular); line-height: 1; margin-top: 2px; }
+    .next-item__title { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-semibold); margin-bottom: 2px; }
+    .next-item__meta { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+    .next-item__actions { display: flex; gap: 4px; }
+
+    /* Avaliações físicas */
+    .assess-item {
+      display: grid;
+      grid-template-columns: 76px 1fr auto;
+      gap: var(--ev-space-3);
+      padding: var(--ev-space-3) 0;
+      border-bottom: 1px solid var(--ev-border);
+      align-items: center;
+    }
+    .assess-item:first-child { padding-top: 0; }
+    .assess-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .assess-item__date {
+      font-size: var(--ev-text-sm);
+      font-weight: var(--ev-weight-bold);
+      font-feature-settings: var(--ev-font-feature-tabular);
+    }
+    .assess-item__title { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-semibold); margin-bottom: 2px; }
+    .assess-item__meta { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+    .assess-item__score { text-align: right; }
+    .assess-item__score-value { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-bold); font-feature-settings: var(--ev-font-feature-tabular); }
+    .assess-item__score-label { font-size: 10px; color: var(--ev-text-subtle); text-transform: uppercase; letter-spacing: 0.04em; }
+
+    /* Section actions row */
+    .section-actions {
+      display: flex;
+      gap: var(--ev-space-2);
+      margin-top: var(--ev-space-4);
+      padding-top: var(--ev-space-4);
+      border-top: 1px solid var(--ev-border);
+      flex-wrap: wrap;
+    }
+
+    .sub-head {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: var(--ev-weight-bold);
+      color: var(--ev-text-subtle);
+      margin-bottom: var(--ev-space-2);
+      margin-top: var(--ev-space-4);
+    }
+
+    /* ===== ADR 0069 · Hub operacional ===== */
+
+    /* Action bar sticky (camada 2) */
+    .action-bar {
+      position: sticky;
+      top: var(--ev-topbar-height);
+      z-index: 10;
+      background: var(--ev-surface);
+      border: 1px solid var(--ev-border);
+      border-radius: var(--ev-radius-xl);
+      padding: var(--ev-space-3) var(--ev-space-4);
+      display: flex;
+      gap: var(--ev-space-2);
+      flex-wrap: wrap;
+      margin-bottom: var(--ev-space-4);
+      align-items: center;
+    }
+    .action-bar__group { display: flex; gap: var(--ev-space-2); flex-wrap: wrap; }
+    .action-bar__spacer { flex: 1; }
+
+    /* Tabs (camada 3) */
+    .hub-tabs {
+      display: flex;
+      gap: var(--ev-space-1);
+      overflow-x: auto;
+      margin-bottom: var(--ev-space-5);
+      border-bottom: 1px solid var(--ev-border);
+      padding-bottom: 0;
+    }
+    .hub-tab {
+      padding: var(--ev-space-3) var(--ev-space-4);
+      font-size: var(--ev-text-sm);
+      font-weight: var(--ev-weight-semibold);
+      color: var(--ev-text-muted);
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -1px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--ev-space-2);
+      white-space: nowrap;
+      transition: color var(--ev-transition-fast), border-color var(--ev-transition-fast);
+    }
+    .hub-tab:hover { color: var(--ev-text); }
+    .hub-tab--active { color: var(--ev-primary); border-bottom-color: var(--ev-primary); }
+    .hub-tab__dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .hub-tab__count {
+      padding: 1px 6px;
+      font-size: 10px;
+      font-weight: var(--ev-weight-bold);
+      background: var(--ev-surface-muted);
+      border-radius: var(--ev-radius-pill);
+      color: var(--ev-text-muted);
+    }
+    .hub-tab--active .hub-tab__count { background: var(--ev-primary-soft); color: var(--ev-primary); }
+    .hub-tab--alert .hub-tab__count { background: var(--ev-danger-soft); color: var(--ev-danger); }
+
+    /* Hub layout: main + sidebar direita */
+    .hub-layout {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: var(--ev-space-5);
+    }
+    @media (max-width: 1200px) { .hub-layout { grid-template-columns: 1fr; } .hub-sidebar { display: none; } }
+
+    /* Sidebar direita */
+    .hub-sidebar { display: flex; flex-direction: column; gap: var(--ev-space-4); position: sticky; top: calc(var(--ev-topbar-height) + 80px); align-self: start; }
+    .hub-sidebar__card { padding: var(--ev-space-4); }
+    .hub-sidebar__title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ev-text-muted);
+      font-weight: var(--ev-weight-bold);
+      margin-bottom: var(--ev-space-3);
+      display: flex;
+      align-items: center;
+      gap: var(--ev-space-2);
+    }
+    .recent-item {
+      display: flex;
+      align-items: center;
+      gap: var(--ev-space-2);
+      padding: var(--ev-space-2) 0;
+      font-size: var(--ev-text-xs);
+      color: var(--ev-text);
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .recent-item:hover { color: var(--ev-primary); }
+    .recent-item__star { color: var(--ev-warning); }
+    .recent-item__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ev-text-subtle); }
+    .recent-item__dot--now { background: var(--ev-success); animation: pulse 2s infinite; }
+    .recent-item--current { font-weight: var(--ev-weight-bold); color: var(--ev-primary); }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Attendance mode CTA */
+    .attendance-cta {
+      padding: var(--ev-space-4);
+      background: linear-gradient(135deg, var(--ev-success-soft), var(--ev-primary-soft));
+      border-radius: var(--ev-radius-xl);
+      text-align: center;
+    }
+    .attendance-cta__label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: var(--ev-weight-bold); color: var(--ev-success); margin-bottom: var(--ev-space-2); }
+    .attendance-cta__text { font-size: var(--ev-text-xs); color: var(--ev-text-muted); margin-bottom: var(--ev-space-3); line-height: 1.5; }
+
+    /* Attendance mode (active banner) — mostra só quando em atendimento */
+    .attendance-active {
+      background: linear-gradient(135deg, #E74C3C, #C0392B);
+      color: white;
+      padding: var(--ev-space-3) var(--ev-space-4);
+      border-radius: var(--ev-radius-xl);
+      margin-bottom: var(--ev-space-4);
+      display: none;
+      align-items: center;
+      gap: var(--ev-space-3);
+    }
+    .attendance-active.is-active { display: flex; }
+    .attendance-active__pulse {
+      width: 10px; height: 10px;
+      background: white;
+      border-radius: 50%;
+      animation: pulse 1.2s infinite;
+    }
+    .attendance-active__title { font-weight: var(--ev-weight-bold); font-size: var(--ev-text-sm); }
+    .attendance-active__timer { font-family: var(--ev-font-mono); font-size: var(--ev-text-sm); font-feature-settings: var(--ev-font-feature-tabular); background: rgba(255,255,255,0.15); padding: 2px var(--ev-space-2); border-radius: var(--ev-radius-md); margin-left: auto; }
+
+    /* Tab content switching (prototype shows only Geral active) */
+    .tab-panel { display: none; }
+    .tab-panel--active { display: block; }
+    .tab-placeholder { padding: var(--ev-space-8); text-align: center; color: var(--ev-text-subtle); background: var(--ev-surface-muted); border-radius: var(--ev-radius-xl); }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+      <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></symbol>
+      <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+      <symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M6 2v6a4 4 0 0 0 8 0V2M10 16v2a4 4 0 0 0 8 0v-6M18 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/></symbol>
+      <symbol id="i-apple" viewBox="0 0 24 24"><path d="M12 4c-1 0-2-1-3-1-3 0-6 3-6 7s3 11 6 11c1 0 2-1 3-1s2 1 3 1c3 0 6-7 6-11s-3-7-6-7c-1 0-2 1-3 1Z"/></symbol>
+      <symbol id="i-dumbbell" viewBox="0 0 24 24"><path d="M14.4 14.4 9.6 9.6M18.66 5.34l.71.71M5.34 18.66l.71.71M21.88 8.12 15.76 2l-3.18 3.18 6.12 6.12L21.88 8.12ZM11.41 18.59 8.24 21.76l-6.12-6.12 3.18-3.18 6.11 6.13Z"/></symbol>
+      <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+      <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M20 12V8a2 2 0 0 0-2-2H5a1 1 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/><path d="M18 12a2 2 0 1 0 0 4h3v-4h-3Z"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol>
+      <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4 3 8 8 9 5-1 8-5 8-9V6l-8-3Z"/></symbol>
+      <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 0 12 0V3H6v6ZM6 3H2v3a4 4 0 0 0 4 4M18 3h4v3a4 4 0 0 1-4 4M12 15v6M8 21h8"/></symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z"/></symbol>
+      <symbol id="i-alert-triangle" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+      <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.902.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.908.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z"/></symbol>
+      <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></symbol>
+      <symbol id="i-more" viewBox="0 0 24 24" stroke-width="2.5"><circle cx="5" cy="12" r=".5"/><circle cx="12" cy="12" r=".5"/><circle cx="19" cy="12" r=".5"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M4 2v20l4-2 4 2 4-2 4 2V2l-4 2-4-2-4 2-4-2zM16 8H8M16 12H8M13 16H8"/></symbol>
+    </defs>
+  </svg>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar__brand">
+        <div class="topbar__brand-row">
+          <img class="topbar__brand-mark" src="../img/logo.png" alt="LogiFit" />
+          <span class="topbar__brand-name"><span style="color: var(--ev-success);">Logi</span>Fit</span>
+        </div>
+        <span class="topbar__brand-tagline">
+          <span style="color: var(--ev-energy);">Nutre</span>
+          <span class="topbar__brand-tagline__sep">|</span>
+          <span style="color: #C77DFF;">Treina</span>
+          <span class="topbar__brand-tagline__sep">|</span>
+          <span style="color: var(--ev-success);">Recupera</span>
+        </span>
+      </div>
+      <div class="topbar__tenant">
+        <div class="topbar__tenant-label">Paciente</div>
+        <div class="topbar__tenant-value">Ana Paula &middot; Hub operacional</div>
+      </div>
+      <button class="hamburger" data-side-menu-trigger aria-label="Abrir menu" aria-controls="side-menu"><svg class="icon" width="22" height="22"><use href="#i-menu"/></svg></button>
+      <div class="topbar__search">
+        <div style="position: relative;">
+          <svg class="icon icon-sm" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--ev-text-subtle);"><use href="#i-search"/></svg>
+          <input class="ev-input" placeholder="Buscar no perfil da paciente…" style="padding-left: 40px;" />
+        </div>
+      </div>
+      <div class="topbar__actions">
+        <button class="theme-toggle" data-theme-toggle>Tema escuro</button>
+        <button class="ev-btn ev-btn--ghost" aria-label="Notificações"><svg class="icon"><use href="#i-bell"/></svg></button>
+      </div>
+    </header>
+
+    <main class="main">
+      <nav class="breadcrumb">
+        <a href="./07-dashboard.html"><svg class="icon icon-xs"><use href="#i-arrow-left"/></svg></a>
+        <a href="./07-dashboard.html">Dashboard</a>
+        <span class="breadcrumb__sep">/</span>
+        <a href="#">Pessoas</a>
+        <span class="breadcrumb__sep">/</span>
+        <span>Ana Paula Gomes &middot; Hub</span>
+      </nav>
+
+      <!-- Hero identity -->
+      <article class="ev-card hero">
+        <div class="hero__avatar">AP</div>
+        <div>
+          <div class="hero__name">Ana Paula Gomes</div>
+          <div class="hero__meta">38 anos &middot; F &middot; ID #8471 &middot; member desde mar/2023 (3 anos) &middot; unidade Moema</div>
+          <div class="hero__tags">
+            <span class="ev-badge ev-badge--primary"><svg class="icon icon-xs"><use href="#i-check"/></svg>Ativa</span>
+            <span class="ev-badge ev-badge--success">Plano Premium</span>
+            <span class="ev-badge"><svg class="icon icon-xs"><use href="#i-dumbbell"/></svg>Academia</span>
+            <span class="ev-badge"><svg class="icon icon-xs"><use href="#i-stethoscope"/></svg>Fisioterapia</span>
+            <span class="ev-badge"><svg class="icon icon-xs"><use href="#i-apple"/></svg>Nutrição</span>
+            <span class="ev-badge ev-badge--danger"><svg class="icon icon-xs"><use href="#i-heart"/></svg>Restrição cardio ativa</span>
+          </div>
+        </div>
+        <div class="hero__actions">
+          <button class="ev-btn ev-btn--ghost" title="Ligar"><svg class="icon"><use href="#i-phone"/></svg></button>
+          <button class="ev-btn ev-btn--ghost" title="Mensagem"><svg class="icon"><use href="#i-message"/></svg></button>
+          <button class="ev-btn"><svg class="icon icon-sm"><use href="#i-file"/></svg>Documentos</button>
+          <button class="ev-btn ev-btn--primary"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Novo agendamento</button>
+          <button class="ev-btn ev-btn--ghost" title="Mais"><svg class="icon"><use href="#i-more"/></svg></button>
+        </div>
+      </article>
+
+      <!-- Vital strip: números-chave -->
+      <article class="ev-card vitals">
+        <div class="vital vital--success">
+          <div class="vital__label">Peso atual</div>
+          <div class="vital__value">65,2 kg</div>
+          <div class="vital__delta">-1,3 kg · 90d</div>
+        </div>
+        <div class="vital vital--success">
+          <div class="vital__label">% gordura</div>
+          <div class="vital__value">22,0%</div>
+          <div class="vital__delta">-3,0 pp · 90d</div>
+        </div>
+        <div class="vital">
+          <div class="vital__label">Aderência 30d</div>
+          <div class="vital__value">89%</div>
+          <div class="vital__delta">acad 18/22 · fisio 6/6</div>
+        </div>
+        <div class="vital">
+          <div class="vital__label">Próxima consulta</div>
+          <div class="vital__value">Hoje 17:15</div>
+          <div class="vital__delta">fisio · retorno cardio</div>
+        </div>
+        <div class="vital vital--warning">
+          <div class="vital__label">Financeiro</div>
+          <div class="vital__value">Atenção</div>
+          <div class="vital__delta">1 extra fisio · R$ 120</div>
+        </div>
+        <div class="vital vital--danger">
+          <div class="vital__label">Alertas ativos</div>
+          <div class="vital__value">1 crítico</div>
+          <div class="vital__delta">cruzamento clínico</div>
+        </div>
+      </article>
+
+      <!-- Alertas críticos em destaque -->
+      <div class="alert-block alert-block--danger" style="margin-bottom: var(--ev-space-5);">
+        <div class="alert-block__title">
+          <svg class="icon icon-sm" style="color: var(--ev-danger);"><use href="#i-alert-triangle"/></svg>
+          Conflito cruzado · academia × fisio
+        </div>
+        <div class="alert-block__desc">
+          HIIT marcado <strong>hoje 17:15</strong> entra em conflito com restrição cardiovascular registrada por Rafael Prado em 22/abr (CID-11 MG30.02, evitar HIIT por 14 dias).
+          Daniel Otávio (acad) já trocou a modalidade para cardio zona 2 automaticamente — <strong>validar com Ana antes das 17h</strong>.
+        </div>
+        <div class="alert-block__actions">
+          <button class="ev-btn ev-btn--danger ev-btn--sm">Cancelar HIIT</button>
+          <button class="ev-btn ev-btn--sm">Manter zona 2</button>
+          <button class="ev-btn ev-btn--ghost ev-btn--sm">Ver contexto completo</button>
+        </div>
+      </div>
+
+      <!-- ========== ADR 0069 · Camada 2 · ACTION BAR role-aware ========== -->
+      <section class="action-bar">
+        <div class="action-bar__group">
+          <button class="ev-btn ev-btn--primary"><svg class="icon icon-sm"><use href="#i-stethoscope"/></svg>Iniciar atendimento</button>
+          <button class="ev-btn"><svg class="icon icon-sm"><use href="#i-file"/></svg>Nova evolução</button>
+          <button class="ev-btn"><svg class="icon icon-sm"><use href="#i-calendar"/></svg>Agendar</button>
+        </div>
+        <div class="action-bar__spacer"></div>
+        <div class="action-bar__group">
+          <button class="ev-btn ev-btn--ghost"><svg class="icon icon-sm"><use href="#i-message"/></svg>WhatsApp</button>
+          <button class="ev-btn ev-btn--ghost"><svg class="icon icon-sm"><use href="#i-wallet"/></svg>Cobrar sessão</button>
+          <button class="ev-btn ev-btn--ghost"><svg class="icon icon-sm"><use href="#i-receipt"/></svg>Recibo</button>
+          <button class="ev-btn ev-btn--ghost"><svg class="icon icon-sm"><use href="#i-sparkles"/></svg>mais <svg class="icon icon-xs"><use href="#i-arrow-right"/></svg></button>
+        </div>
+      </section>
+
+      <!-- Attendance mode banner (ativo quando profissional inicia atendimento) -->
+      <div class="attendance-active" role="status">
+        <span class="attendance-active__pulse"></span>
+        <span><svg class="icon icon-sm"><use href="#i-stethoscope"/></svg></span>
+        <span class="attendance-active__title">Em atendimento · Ana Paula</span>
+        <span class="attendance-active__timer">⏱ 05:23 / 30:00</span>
+        <button class="ev-btn ev-btn--sm" style="background: white; color: var(--ev-danger); border: none;">Finalizar</button>
+      </div>
+
+      <!-- ========== ADR 0069 · Camada 3 · TABS por visão ========== -->
+      <nav class="hub-tabs" role="tablist">
+        <button class="hub-tab hub-tab--active" role="tab" aria-selected="true">
+          <svg class="icon icon-sm"><use href="#i-users"/></svg>
+          Geral
+        </button>
+        <button class="hub-tab hub-tab--alert" role="tab">
+          <svg class="icon icon-sm"><use href="#i-stethoscope"/></svg>
+          Clínico <span class="hub-tab__count">1</span>
+        </button>
+        <button class="hub-tab" role="tab">
+          <svg class="icon icon-sm"><use href="#i-dumbbell"/></svg>
+          Treino
+        </button>
+        <button class="hub-tab" role="tab">
+          <svg class="icon icon-sm"><use href="#i-apple"/></svg>
+          Alimentar
+        </button>
+        <button class="hub-tab" role="tab">
+          <svg class="icon icon-sm"><use href="#i-wallet"/></svg>
+          Financeiro <span class="hub-tab__count">1</span>
+        </button>
+        <button class="hub-tab" role="tab">
+          <svg class="icon icon-sm"><use href="#i-message"/></svg>
+          Comunicação <span class="hub-tab__count">2</span>
+        </button>
+        <button class="hub-tab" role="tab">
+          <svg class="icon icon-sm"><use href="#i-sparkles"/></svg>
+          IA
+        </button>
+      </nav>
+
+      <!-- ========== ADR 0069 · Camada 4 · LAYOUT main + sidebar ========== -->
+      <div class="hub-layout">
+        <div class="hub-content">
+
+          <!-- Tab panel: Geral (ativo) -->
+          <div class="tab-panel tab-panel--active" role="tabpanel">
+
+            <!-- Informações pessoais + Plano (2 col) -->
+            <div class="two-col">
+              <article class="ev-card section-card">
+                <div class="section-head">
+                  <div>
+                    <h2>Informações pessoais</h2>
+                    <p>Dados cadastrais &middot; `persons` central</p>
+                  </div>
+                  <button class="ev-btn ev-btn--ghost ev-btn--sm">Editar</button>
+                </div>
+                <div class="info-row"><span class="info-row__label">Nascimento</span><span class="info-row__value">12/08/1987 · 38 anos</span></div>
+                <div class="info-row"><span class="info-row__label">CPF</span><span class="info-row__value">345.678.901-23</span></div>
+                <div class="info-row"><span class="info-row__label">Profissão</span><span class="info-row__value">Arquiteta</span></div>
+                <div class="info-row"><span class="info-row__label">Endereço</span><span class="info-row__value">Rua dos Pinheiros, 420 · Moema · SP</span></div>
+                <div class="info-row"><span class="info-row__label">Contato emergência</span><span class="info-row__value">Roberto Gomes · (11) 98765-4321</span></div>
+                <div class="info-row"><span class="info-row__label">Convênio</span><span class="info-row__value">Bradesco Saúde · Top Nacional</span></div>
+                <div class="info-row"><span class="info-row__label">Alergias</span><span class="info-row__value" style="color: var(--ev-danger);">Dipirona &middot; amendoim</span></div>
+                <div class="info-row"><span class="info-row__label">Condições ativas</span><span class="info-row__value" style="color: var(--ev-danger);">Restrição cardio (MG30.02 · 14d)</span></div>
+              </article>
+
+              <article class="ev-card section-card">
+                <div class="section-head">
+                  <div>
+                    <h2>Plano + consumo do bundle</h2>
+                    <p>ADR 0068 · catálogo de serviços</p>
+                  </div>
+                  <button class="ev-btn ev-btn--ghost ev-btn--sm">Alterar</button>
+                </div>
+                <div class="plan-head">
+                  <div>
+                    <div class="plan-head__name">Plano Premium · bundle</div>
+                    <div style="font-size: var(--ev-text-xs); color: var(--ev-text-muted);">Cartão 4412 · próx 05/mai · recorrente</div>
+                  </div>
+                  <div class="plan-head__price">R$ 349<small style="font-size: var(--ev-text-xs); font-weight: 400;">/mês</small></div>
+                </div>
+                <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ev-text-subtle); font-weight: var(--ev-weight-bold); margin-bottom: var(--ev-space-2);">Consumo · abril</div>
+                <div class="plan-progress">
+                  <span class="plan-progress__name">Academia · check-ins</span>
+                  <div class="plan-progress__bar-wrap"><div class="plan-progress__bar-bg"><div class="plan-progress__bar" style="width: 100%; background: var(--ev-primary);"></div></div></div>
+                  <span class="plan-progress__count">ilimitado</span>
+                </div>
+                <div class="plan-progress">
+                  <span class="plan-progress__name">Fisio · sessões incluídas</span>
+                  <div class="plan-progress__bar-wrap"><div class="plan-progress__bar-bg"><div class="plan-progress__bar" style="width: 100%; background: var(--ev-warning);"></div></div></div>
+                  <span class="plan-progress__count" style="color: var(--ev-warning);">5/4 · <strong>+1 extra</strong></span>
+                </div>
+                <div class="plan-progress">
+                  <span class="plan-progress__name">Nutri · consultas</span>
+                  <div class="plan-progress__bar-wrap"><div class="plan-progress__bar-bg"><div class="plan-progress__bar" style="width: 100%; background: var(--ev-energy);"></div></div></div>
+                  <span class="plan-progress__count">1/1</span>
+                </div>
+                <div class="section-actions">
+                  <button class="ev-btn ev-btn--ghost ev-btn--sm">Cobrar R$ 120 extra</button>
+                  <button class="ev-btn ev-btn--ghost ev-btn--sm">Histórico</button>
+                  <button class="ev-btn ev-btn--ghost ev-btn--sm">Renovar</button>
+                </div>
+              </article>
+            </div>
+
+            <!-- Histórico clínico expandido -->
+            <article class="ev-card section-card">
+              <div class="section-head">
+                <div>
+                  <h2>Histórico clínico &middot; fisio</h2>
+                  <p>Queixa, CID, evoluções, protocolo &middot; Rafael Prado · CREFITO-3/78291-F</p>
+                </div>
+                <button class="ev-btn ev-btn--ghost ev-btn--sm">Prontuário completo</button>
+              </div>
+
+              <div class="clinical-head">
+                <div class="clinical-head__item">
+                  <span class="clinical-head__label">Queixa ativa</span>
+                  <span class="clinical-head__value" style="color: var(--ev-danger);">Dor lombar lateral</span>
+                </div>
+                <div class="clinical-head__item">
+                  <span class="clinical-head__label">CID-11</span>
+                  <span class="clinical-head__value">MG30.02 · M54.5</span>
+                </div>
+                <div class="clinical-head__item">
+                  <span class="clinical-head__label">Desde</span>
+                  <span class="clinical-head__value">15/mar · 6 sem</span>
+                </div>
+                <div class="clinical-head__item">
+                  <span class="clinical-head__label">Sessões</span>
+                  <span class="clinical-head__value">12 feitas &middot; 2 restantes</span>
+                </div>
+              </div>
+
+              <div class="sub-head" style="margin-top: 0;">Últimas evoluções</div>
+
+              <div class="evolution-item">
+                <div>
+                  <div class="evolution-item__date">22/abr</div>
+                  <div class="evolution-item__weekday">ter · sessão 12</div>
+                </div>
+                <div>
+                  <div class="evolution-item__title">Restrição cardiovascular registrada</div>
+                  <div class="evolution-item__note">"Durante execução de exercício em alta carga, relatou desconforto torácico leve. Suspendo HIIT por 14d e indico cardio zona 2. Encaminho para cardio reavaliação em 06/mai. Orientei Daniel Otávio (acad)."</div>
+                  <div class="evolution-item__by">Rafael Prado · CREFITO-3/78291-F</div>
+                </div>
+                <span class="ev-badge ev-badge--danger">alerta</span>
+              </div>
+
+              <div class="evolution-item">
+                <div>
+                  <div class="evolution-item__date">18/abr</div>
+                  <div class="evolution-item__weekday">qui · sessão 10</div>
+                </div>
+                <div>
+                  <div class="evolution-item__title">ADM ombro D progrediu 120° → 150°</div>
+                  <div class="evolution-item__note">"Progresso significativo em flexão. Introduzida estabilização lombar em prancha. Exercícios domiciliares mantidos 3×/semana. Oswestry caiu de 32 para 24 pontos."</div>
+                  <div class="evolution-item__by">Rafael Prado · CREFITO-3/78291-F</div>
+                </div>
+              </div>
+
+              <div class="evolution-item">
+                <div>
+                  <div class="evolution-item__date">15/abr</div>
+                  <div class="evolution-item__weekday">seg · sessão 9</div>
+                </div>
+                <div>
+                  <div class="evolution-item__title">Liberação miofascial + mobilização ativa</div>
+                  <div class="evolution-item__note">"Técnica McKenzie modificada, 3 séries de mobilização lombar. Paciente tolerou bem. Dor EVA 6 → 3. Progresso constante."</div>
+                  <div class="evolution-item__by">Rafael Prado · CREFITO-3/78291-F</div>
+                </div>
+              </div>
+
+              <div class="protocol-box">
+                <div class="protocol-box__title">Protocolo em uso &middot; exercícios domiciliares 3×/semana</div>
+                <div class="protocol-box__desc">
+                  <strong>McKenzie modificado</strong> + estabilização lombar + fortalecimento CORE. Próxima revisão do protocolo: <strong>após reavaliação cardio em 06/mai</strong>.
+                </div>
+              </div>
+
+              <div class="section-actions">
+                <button class="ev-btn ev-btn--primary" style="background: var(--ev-success); border-color: var(--ev-success);">Nova evolução (SOAP)</button>
+                <button class="ev-btn ev-btn--ghost">Ajustar protocolo</button>
+                <button class="ev-btn ev-btn--ghost">Prescrever HEP</button>
+                <button class="ev-btn ev-btn--ghost">Gerar guia TISS</button>
+                <button class="ev-btn ev-btn--ghost" style="color: var(--ev-danger);">Dar alta</button>
+              </div>
+            </article>
+
+            <!-- Próximos agendamentos -->
+            <article class="ev-card section-card">
+              <div class="section-head">
+                <div>
+                  <h2>Próximos agendamentos</h2>
+                  <p>4 compromissos &middot; semana de 24 abr a 01 mai</p>
+                </div>
+                <div style="display: flex; gap: var(--ev-space-2);">
+                  <button class="ev-btn ev-btn--ghost ev-btn--sm">Agenda completa</button>
+                  <button class="ev-btn ev-btn--primary ev-btn--sm"><svg class="icon icon-xs"><use href="#i-plus"/></svg>Agendar</button>
+                </div>
+              </div>
+
+              <div class="next-item">
+                <div class="next-item__date">
+                  <div class="next-item__day">hoje</div>
+                  <div class="next-item__when">17:15</div>
+                </div>
+                <div>
+                  <div class="next-item__title">Cardio zona 2 · academia <span class="ev-badge ev-badge--danger" style="margin-left: 8px;">substituído HIIT</span></div>
+                  <div class="next-item__meta">Moema &middot; Daniel Otávio (CREF) &middot; 60 min &middot; restrição cardio ativa</div>
+                </div>
+                <div class="next-item__actions">
+                  <button class="ev-btn ev-btn--ghost ev-btn--sm">Reagendar</button>
+                  <button class="ev-btn ev-btn--ghost ev-btn--sm" style="color: var(--ev-danger);">Cancelar</button>
+                </div>
+              </div>
+
+              <div class="next-item">
+                <div class="next-item__date">
+                  <div class="next-item__day">sáb 26</div>
+                  <div class="next-item__when">09:00</div>
+                </div>
+                <div>
+                  <div class="next-item__title">Consulta fisio · sessão 13/14</div>
+                  <div class="next-item__meta">Moema &middot; Rafael Prado (CREFITO) &middot; 50 min &middot; avaliação de evolução</div>
+                </div>
+                <div class="next-item__actions">
+                  <button class="ev-btn ev-btn--ghost ev-btn--sm">Reagendar</button>
+                  <button class="ev-btn ev-btn--ghost ev-btn--sm" style="color: var(--ev-danger);">Cancelar</button>
+                </div>
+              </div>
+
+              <div class="next-item">
+                <div class="next-item__date">
+                  <div class="next-item__day">seg 28</div>
+                  <div class="next-item__when">10:30</div>
+                </div>
+                <div>
+                  <div class="next-item__title">Avaliação antropométrica</div>
+                  <div class="next-item__meta">Moema &middot; Daniel Otávio &middot; 45 min &middot; medições trimestrais</div>
+                </div>
+                <div class="next-item__actions">
+                  <button class="ev-btn ev-btn--ghost ev-btn--sm">Reagendar</button>
+                  <button class="ev-btn ev-btn--ghost ev-btn--sm" style="color: var(--ev-danger);">Cancelar</button>
+                </div>
+              </div>
+
+              <div class="next-item">
+                <div class="next-item__date">
+                  <div class="next-item__day">qua 30</div>
+                  <div class="next-item__when">15:00</div>
+                </div>
+                <div>
+                  <div class="next-item__title">Consulta nutricional · retorno</div>
+                  <div class="next-item__meta">Ipiranga &middot; Júlia Martinez (CRN) &middot; 60 min &middot; revisão plano v4</div>
+                </div>
+                <div class="next-item__actions">
+                  <button class="ev-btn ev-btn--ghost ev-btn--sm">Reagendar</button>
+                  <button class="ev-btn ev-btn--ghost ev-btn--sm" style="color: var(--ev-danger);">Cancelar</button>
+                </div>
+              </div>
+            </article>
+
+            <!-- Avaliações físicas -->
+            <article class="ev-card section-card">
+              <div class="section-head">
+                <div>
+                  <h2>Avaliações físicas &amp; funcionais</h2>
+                  <p>Histórico de avaliações &middot; Sprint 12 · `assessment_types`</p>
+                </div>
+                <div style="display: flex; gap: var(--ev-space-2);">
+                  <button class="ev-btn ev-btn--ghost ev-btn--sm">Comparar evoluções</button>
+                  <button class="ev-btn ev-btn--primary ev-btn--sm"><svg class="icon icon-xs"><use href="#i-plus"/></svg>Nova avaliação</button>
+                </div>
+              </div>
+
+              <div class="assess-item">
+                <div>
+                  <div class="assess-item__date">19/abr</div>
+                  <div style="font-size: 10px; color: var(--ev-text-subtle); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px;">há 5 dias</div>
+                </div>
+                <div>
+                  <div class="assess-item__title">Bioimpedância InBody 570</div>
+                  <div class="assess-item__meta">Júlia Martinez (nutri) · 65,2 kg · 22% gord · 50,1 kg MM · RCQ 0,76</div>
+                </div>
+                <div class="assess-item__score">
+                  <div class="assess-item__score-value" style="color: var(--ev-success);">-1,3 kg</div>
+                  <div class="assess-item__score-label">90 dias</div>
+                </div>
+              </div>
+
+              <div class="assess-item">
+                <div>
+                  <div class="assess-item__date">18/mar</div>
+                  <div style="font-size: 10px; color: var(--ev-text-subtle); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px;">há 5 sem</div>
+                </div>
+                <div>
+                  <div class="assess-item__title">Escalas fisio · Oswestry + Tampa + ADM lombar</div>
+                  <div class="assess-item__meta">Rafael Prado (fisio) · Oswestry 32→24 · Tampa 48 · ADM flexão 60°</div>
+                </div>
+                <div class="assess-item__score">
+                  <div class="assess-item__score-value" style="color: var(--ev-success);">↓ 25%</div>
+                  <div class="assess-item__score-label">Oswestry</div>
+                </div>
+              </div>
+
+              <div class="assess-item">
+                <div>
+                  <div class="assess-item__date">23/mar</div>
+                  <div style="font-size: 10px; color: var(--ev-text-subtle); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px;">há 4 sem</div>
+                </div>
+                <div>
+                  <div class="assess-item__title">Teste de força · 1RM estimado</div>
+                  <div class="assess-item__meta">Daniel Otávio (acad) · agachamento 60 kg (+12 kg) · leg press 120 kg</div>
+                </div>
+                <div class="assess-item__score">
+                  <div class="assess-item__score-value" style="color: var(--ev-success);">PR</div>
+                  <div class="assess-item__score-label">agachamento</div>
+                </div>
+              </div>
+
+              <div class="assess-item">
+                <div>
+                  <div class="assess-item__date">15/fev</div>
+                  <div style="font-size: 10px; color: var(--ev-text-subtle); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px;">há 10 sem</div>
+                </div>
+                <div>
+                  <div class="assess-item__title">Avaliação postural completa</div>
+                  <div class="assess-item__meta">Rafael Prado (fisio) · PAR-Q · análise de marcha · pé plano leve esq</div>
+                </div>
+                <div class="assess-item__score">
+                  <div class="assess-item__score-value" style="color: var(--ev-text-muted);">baseline</div>
+                  <div class="assess-item__score-label">inicial</div>
+                </div>
+              </div>
+            </article>
+
+            <!-- Sub-head: acesso rápido a módulos -->
+            <div class="section-head" style="margin-bottom: var(--ev-space-3); margin-top: var(--ev-space-4);">
+              <div>
+                <h2>Atalhos · módulos completos</h2>
+                <p>Deep work em cada área &middot; abre tela inteira com mais ações</p>
+              </div>
+            </div>
+
+      <!-- Módulos operacionais -->
+      <section class="modules">
+
+        <!-- Prontuário clínico (fisio) -->
+        <a class="ev-card module module--fisio" href="./02-member-home.html">
+          <div class="module__head">
+            <span class="module__icon module__icon--fisio"><svg class="icon icon-lg"><use href="#i-stethoscope"/></svg></span>
+            <span class="module__badge module__badge--alert">restrição</span>
+          </div>
+          <div class="module__label">Prontuário clínico · fisio</div>
+          <div class="module__title">Em tratamento · ombro D</div>
+          <p class="module__info">
+            CID M75.1 &middot; sessão <strong>8/12</strong> &middot; ADM 150°→170° (meta). Última entrada: <strong>22/abr</strong> registrou restrição cardio MG30.02.
+          </p>
+          <div class="module__foot">
+            <span class="module__last">Rafael Prado · CREFITO-3/78291-F</span>
+            <span class="module__cta module__cta--fisio">Abrir <svg class="icon icon-xs"><use href="#i-arrow-right"/></svg></span>
+          </div>
+        </a>
+
+        <!-- Plano alimentar (nutri) -->
+        <a class="ev-card module module--nutri" href="./nutri-plano-alimentar.html">
+          <div class="module__head">
+            <span class="module__icon module__icon--nutri"><svg class="icon icon-lg"><use href="#i-apple"/></svg></span>
+            <span class="module__badge module__badge--ok">v4 ativo</span>
+          </div>
+          <div class="module__label">Plano alimentar · nutri</div>
+          <div class="module__title">1.850 kcal · 5 refeições</div>
+          <p class="module__info">
+            Déficit 300 kcal &middot; C <strong>209g</strong> / P <strong>128g</strong> / G <strong>56g</strong>. Próxima revisão em <strong>2 semanas</strong>. Diário alimentar com 87% de aderência.
+          </p>
+          <div class="module__foot">
+            <span class="module__last">Atualizado há 5 dias · Júlia</span>
+            <span class="module__cta module__cta--nutri">Abrir <svg class="icon icon-xs"><use href="#i-arrow-right"/></svg></span>
+          </div>
+        </a>
+
+        <!-- Treino atual (academia) -->
+        <a class="ev-card module module--treino" href="./treino-acompanhamento.html">
+          <div class="module__head">
+            <span class="module__icon module__icon--treino"><svg class="icon icon-lg"><use href="#i-dumbbell"/></svg></span>
+            <span class="module__badge" style="background: rgba(199, 125, 255, 0.15); color: #C77DFF;">ciclo 3</span>
+          </div>
+          <div class="module__label">Acompanhamento treino · acad</div>
+          <div class="module__title">Hipertrofia · semana 4/12</div>
+          <p class="module__info">
+            Próximo: <strong>Push B hoje 09:00</strong>. Meta do ciclo: agachamento <strong>70 kg × 5</strong> até jul — em 71%. Streak <strong>3 semanas</strong>.
+          </p>
+          <div class="module__foot">
+            <span class="module__last">Daniel Otávio · CREF 019283-G</span>
+            <span class="module__cta module__cta--treino">Abrir <svg class="icon icon-xs"><use href="#i-arrow-right"/></svg></span>
+          </div>
+        </a>
+
+        <!-- Antropometria -->
+        <a class="ev-card module module--primary" href="./antropometria.html">
+          <div class="module__head">
+            <span class="module__icon module__icon--primary"><svg class="icon icon-lg"><use href="#i-activity"/></svg></span>
+            <span class="module__badge module__badge--ok">em dia</span>
+          </div>
+          <div class="module__label">Antropometria · evolução</div>
+          <div class="module__title">65,2 kg · 22% BF</div>
+          <p class="module__info">
+            Massa magra <strong>+2,1 kg</strong> · gordura <strong>-3,0 pp</strong> em 90d. Cintura <strong>-4 cm</strong>. Próxima bioimpedância em 20 dias.
+          </p>
+          <div class="module__foot">
+            <span class="module__last">Última: 19/abr · InBody 570</span>
+            <span class="module__cta">Abrir <svg class="icon icon-xs"><use href="#i-arrow-right"/></svg></span>
+          </div>
+        </a>
+
+        <!-- Agenda -->
+        <a class="ev-card module module--primary" href="#">
+          <div class="module__head">
+            <span class="module__icon module__icon--primary"><svg class="icon icon-lg"><use href="#i-calendar"/></svg></span>
+            <span class="module__badge module__badge--new">4 próximos</span>
+          </div>
+          <div class="module__label">Agenda · compromissos</div>
+          <div class="module__title">Hoje 17:15 &middot; fisio</div>
+          <p class="module__info">
+            Próximos: <strong>hoje HIIT→zona 2</strong> · amanhã 09:00 fisio retorno · seg 10:30 avaliação antropométrica · qua 15:00 nutri.
+          </p>
+          <div class="module__foot">
+            <span class="module__last">Vista semanal · confirmados</span>
+            <span class="module__cta">Abrir <svg class="icon icon-xs"><use href="#i-arrow-right"/></svg></span>
+          </div>
+        </a>
+
+        <!-- Financeiro -->
+        <a class="ev-card module module--warning" href="#">
+          <div class="module__head">
+            <span class="module__icon module__icon--warning"><svg class="icon icon-lg"><use href="#i-wallet"/></svg></span>
+            <span class="module__badge module__badge--pending">1 pendente</span>
+          </div>
+          <div class="module__label">Financeiro · plano e extras</div>
+          <div class="module__title">Premium · R$ 349/mês</div>
+          <p class="module__info">
+            Mensalidade <strong>em dia</strong> (próx 05/mai). Consumo bundle: fisio 5/4 (<strong>1 extra R$ 120 aberto</strong>) · nutri 1/1 · acad ilimitada.
+          </p>
+          <div class="module__foot">
+            <span class="module__last">Asaas · cartão 4412</span>
+            <span class="module__cta">Abrir <svg class="icon icon-xs"><use href="#i-arrow-right"/></svg></span>
+          </div>
+        </a>
+
+        <!-- Documentos / Exames -->
+        <a class="ev-card module module--primary" href="#">
+          <div class="module__head">
+            <span class="module__icon module__icon--primary"><svg class="icon icon-lg"><use href="#i-file"/></svg></span>
+            <span class="module__badge module__badge--new">3 novos</span>
+          </div>
+          <div class="module__label">Documentos · exames &amp; PDFs</div>
+          <div class="module__title">14 arquivos</div>
+          <p class="module__info">
+            Recentes: <strong>hemograma 18/abr</strong> · ECG de esforço 20/abr · consent LGPD v3 · contrato plano Premium · relatório bioimpedância.
+          </p>
+          <div class="module__foot">
+            <span class="module__last">12,4 MB · criptografado</span>
+            <span class="module__cta">Abrir <svg class="icon icon-xs"><use href="#i-arrow-right"/></svg></span>
+          </div>
+        </a>
+
+        <!-- Comunicação -->
+        <a class="ev-card module module--primary" href="#">
+          <div class="module__head">
+            <span class="module__icon module__icon--primary"><svg class="icon icon-lg"><use href="#i-message"/></svg></span>
+            <span class="module__badge module__badge--new">2 não lidas</span>
+          </div>
+          <div class="module__label">Mensagens · chat com a paciente</div>
+          <div class="module__title">3 profissionais ativos</div>
+          <p class="module__info">
+            Última da Ana: há 2h &middot; "Rafael, posso subir a carga do agachamento amanhã?". Conversas abertas com <strong>Rafael, Júlia e Daniel</strong>.
+          </p>
+          <div class="module__foot">
+            <span class="module__last">Auditável · consent válido</span>
+            <span class="module__cta">Abrir <svg class="icon icon-xs"><use href="#i-arrow-right"/></svg></span>
+          </div>
+        </a>
+
+        <!-- Equipe -->
+        <a class="ev-card module module--primary" href="#">
+          <div class="module__head">
+            <span class="module__icon module__icon--primary"><svg class="icon icon-lg"><use href="#i-users"/></svg></span>
+            <span class="module__badge module__badge--ok">3 ativos</span>
+          </div>
+          <div class="module__label">Equipe · profissionais</div>
+          <div class="module__title">Responsáveis</div>
+          <p class="module__info">
+            <strong>Daniel Otávio</strong> (CREF 019283-G · acad) &middot;
+            <strong>Rafael Prado</strong> (CREFITO-3/78291-F · fisio) &middot;
+            <strong>Júlia Martinez</strong> (CRN-3/2245 · nutri).
+          </p>
+          <div class="module__foot">
+            <span class="module__last">Coordenação ativa · cruzamento ok</span>
+            <span class="module__cta">Abrir <svg class="icon icon-xs"><use href="#i-arrow-right"/></svg></span>
+          </div>
+        </a>
+
+        <!-- Conquistas / Evolução -->
+        <a class="ev-card module module--primary" href="./26-member-portal.html">
+          <div class="module__head">
+            <span class="module__icon" style="background: var(--ev-warning-soft); color: var(--ev-warning);"><svg class="icon icon-lg"><use href="#i-trophy"/></svg></span>
+            <span class="module__badge module__badge--ok">12 marcos</span>
+          </div>
+          <div class="module__label">Conquistas · portal do member</div>
+          <div class="module__title">PR 60 kg · agachamento</div>
+          <p class="module__info">
+            <strong>3 marcos recentes:</strong> PR agachamento há 1 mês · 324/500 check-ins · 2 anos de member. Streak ativa de <strong>3 semanas</strong>.
+          </p>
+          <div class="module__foot">
+            <span class="module__last">Visão B2C da paciente</span>
+            <span class="module__cta">Abrir <svg class="icon icon-xs"><use href="#i-arrow-right"/></svg></span>
+          </div>
+        </a>
+
+        <!-- Consentimento LGPD -->
+        <a class="ev-card module module--primary" href="#">
+          <div class="module__head">
+            <span class="module__icon module__icon--primary"><svg class="icon icon-lg"><use href="#i-shield"/></svg></span>
+            <span class="module__badge module__badge--ok">tudo ok</span>
+          </div>
+          <div class="module__label">Consentimentos · LGPD art. 11</div>
+          <div class="module__title">5 finalidades ativas</div>
+          <p class="module__info">
+            Dados clínicos cruzam <strong>acad → fisio → nutri</strong> (consent v3). Uso de IA clínica autorizado. Direito ao esquecimento disponível.
+          </p>
+          <div class="module__foot">
+            <span class="module__last">RIPD v3 · LGPD/CFM/COFFITO/CFN</span>
+            <span class="module__cta">Abrir <svg class="icon icon-xs"><use href="#i-arrow-right"/></svg></span>
+          </div>
+        </a>
+
+        <!-- Cross-alert dispatcher -->
+        <a class="ev-card module" style="border-left-color: var(--ev-danger);" href="#">
+          <div class="module__head">
+            <span class="module__icon" style="background: var(--ev-danger-soft); color: var(--ev-danger);"><svg class="icon icon-lg"><use href="#i-sparkles"/></svg></span>
+            <span class="module__badge module__badge--alert">1 ativo</span>
+          </div>
+          <div class="module__label">Alertas cruzados · copilot</div>
+          <div class="module__title">Cruzamento clínico</div>
+          <p class="module__info">
+            <strong>Restrição cardio × HIIT hoje</strong> — já coordenado entre fisio e academia. Ver histórico completo de cruzamentos e sugestões do copilot.
+          </p>
+          <div class="module__foot">
+            <span class="module__last">IA + regras · auditado</span>
+            <span class="module__cta" style="color: var(--ev-danger);">Abrir <svg class="icon icon-xs"><use href="#i-arrow-right"/></svg></span>
+          </div>
+        </a>
+      </section>
+
+      <!-- Feed + alertas -->
+      <section class="feed-grid">
+        <article class="ev-card feed-card">
+          <div class="feed-card__head">
+            <div>
+              <h2>Atividade recente · cross-vertical</h2>
+              <p>Todos os eventos dos últimos 7 dias, das 3 áreas unificados em ordem cronológica</p>
+            </div>
+            <button class="ev-btn ev-btn--ghost ev-btn--sm">Linha do tempo completa</button>
+          </div>
+
+          <div class="feed-item">
+            <span class="feed-item__dot feed-dot--treino"><svg class="icon icon-sm"><use href="#i-dumbbell"/></svg></span>
+            <div>
+              <div class="feed-item__title">Check-in academia &middot; Moema</div>
+              <div class="feed-item__meta">Catraca 02 &middot; sessão Push A &middot; 67 min &middot; puxada PR 30 kg × 10</div>
+            </div>
+            <span class="feed-item__when">hoje · 14:30</span>
+          </div>
+
+          <div class="feed-item">
+            <span class="feed-item__dot feed-dot--danger"><svg class="icon icon-sm"><use href="#i-alert-triangle"/></svg></span>
+            <div>
+              <div class="feed-item__title">Alerta cruzado disparado · HIIT × restrição</div>
+              <div class="feed-item__meta">Copilot detectou conflito entre agenda 17:15 e CID MG30.02. Daniel notificado automaticamente.</div>
+            </div>
+            <span class="feed-item__when">hoje · 08:15</span>
+          </div>
+
+          <div class="feed-item">
+            <span class="feed-item__dot feed-dot--success"><svg class="icon icon-sm"><use href="#i-stethoscope"/></svg></span>
+            <div>
+              <div class="feed-item__title">Consulta fisio &middot; Rafael Prado</div>
+              <div class="feed-item__meta">CID-11 MG30.02 registrado &middot; restrição cardio por 14 dias &middot; evitar HIIT</div>
+            </div>
+            <span class="feed-item__when">22 abr · há 2 dias</span>
+          </div>
+
+          <div class="feed-item">
+            <span class="feed-item__dot feed-dot--energy"><svg class="icon icon-sm"><use href="#i-activity"/></svg></span>
+            <div>
+              <div class="feed-item__title">Bioimpedância &middot; Júlia Martinez</div>
+              <div class="feed-item__meta">65,2 kg &middot; 22% gordura &middot; 50,1 kg massa magra &middot; -1,3 kg em 90d</div>
+            </div>
+            <span class="feed-item__when">19 abr · há 5 dias</span>
+          </div>
+
+          <div class="feed-item">
+            <span class="feed-item__dot feed-dot--warning"><svg class="icon icon-sm"><use href="#i-receipt"/></svg></span>
+            <div>
+              <div class="feed-item__title">Cobrança &middot; sessão fisio extra</div>
+              <div class="feed-item__meta">1 sessão fisio além do bundle &middot; R$ 120 em aberto &middot; vence 25/abr</div>
+            </div>
+            <span class="feed-item__when">15 abr · há 1 semana</span>
+          </div>
+
+          <div class="feed-item">
+            <span class="feed-item__dot feed-dot--treino"><svg class="icon icon-sm"><use href="#i-trophy"/></svg></span>
+            <div>
+              <div class="feed-item__title">PR desbloqueado &middot; leg press 120 kg</div>
+              <div class="feed-item__meta">Daniel registrou &middot; +35 kg em 90 dias &middot; conquista publicada no portal da Ana</div>
+            </div>
+            <span class="feed-item__when">15 abr · há 1 semana</span>
+          </div>
+
+          <div class="feed-item">
+            <span class="feed-item__dot feed-dot--energy"><svg class="icon icon-sm"><use href="#i-apple"/></svg></span>
+            <div>
+              <div class="feed-item__title">Plano alimentar v4 &middot; Júlia Martinez</div>
+              <div class="feed-item__meta">Déficit 300 kcal &middot; macros ajustados pra ciclo de hipertrofia do Daniel</div>
+            </div>
+            <span class="feed-item__when">10 abr · há 2 semanas</span>
+          </div>
+        </article>
+
+        <!-- Sidebar: alertas + notas clínicas -->
+        <div>
+          <article class="ev-card" style="padding: var(--ev-space-5); margin-bottom: var(--ev-space-4);">
+            <div class="feed-card__head">
+              <div>
+                <h2>Alertas e observações</h2>
+                <p>Todos os flags clínicos e operacionais</p>
+              </div>
+            </div>
+
+            <div class="alert-block alert-block--danger">
+              <div class="alert-block__title">
+                <svg class="icon icon-xs" style="color: var(--ev-danger);"><use href="#i-heart"/></svg>
+                Restrição cardio · ativa por 14 dias
+              </div>
+              <div class="alert-block__desc">
+                Registrada em 22/abr por Rafael Prado (CID-11 MG30.02). Evitar HIIT e exercícios acima de FC 140 bpm. Validade até <strong>06/mai</strong>.
+              </div>
+            </div>
+
+            <div class="alert-block alert-block--warning">
+              <div class="alert-block__title">
+                <svg class="icon icon-xs" style="color: var(--ev-warning);"><use href="#i-wallet"/></svg>
+                R$ 120 em aberto · fisio extra
+              </div>
+              <div class="alert-block__desc">
+                Sessão além do bundle. Vencimento 25/abr. Asaas já enviou lembrete ao paciente.
+              </div>
+            </div>
+
+            <div class="alert-block alert-block--success">
+              <div class="alert-block__title">
+                <svg class="icon icon-xs" style="color: var(--ev-success);"><use href="#i-sparkles"/></svg>
+                Coordenação ativa entre 3 profissionais
+              </div>
+              <div class="alert-block__desc">
+                Fisio, nutri e acad com consent cross-vertical v3. Copilot monitorando conflitos 24/7.
+              </div>
+            </div>
+          </article>
+
+          <article class="ev-card" style="padding: var(--ev-space-5);">
+            <div class="feed-card__head">
+              <div>
+                <h2>Copilot sugere</h2>
+                <p>IA + regras clínicas</p>
+              </div>
+            </div>
+            <div class="alert-block" style="background: var(--ev-primary-soft); border-left: 3px solid var(--ev-primary);">
+              <div class="alert-block__title">
+                <svg class="icon icon-xs" style="color: var(--ev-primary);"><use href="#i-sparkles"/></svg>
+                Agendar avaliação de alta clínica
+              </div>
+              <div class="alert-block__desc">
+                Em 14 dias a restrição cardio vence. Sugiro agendar <strong>reavaliação com Rafael em 06/mai</strong> pra liberar progressão de intensidade.
+              </div>
+              <div class="alert-block__actions">
+                <button class="ev-btn ev-btn--primary ev-btn--sm">Agendar em 06/mai</button>
+                <button class="ev-btn ev-btn--ghost ev-btn--sm">Ignorar</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+          </div><!-- /tab-panel Geral -->
+
+          <!-- Placeholders pras outras 6 abas (protótipo mostra só Geral ativa) -->
+          <div class="tab-panel" role="tabpanel" hidden>
+            <div class="tab-placeholder">Conteúdo específico da aba selecionada carrega aqui (widgets + ações filtradas por role/vertical/permission).</div>
+          </div>
+
+        </div><!-- /hub-content -->
+
+        <!-- ========== ADR 0069 · Sidebar direita · histórico + favoritos + atendimento ========== -->
+        <aside class="hub-sidebar">
+          <!-- Attendance mode CTA -->
+          <article class="ev-card attendance-cta">
+            <div class="attendance-cta__label">
+              <svg class="icon icon-xs" style="display: inline; vertical-align: middle;"><use href="#i-stethoscope"/></svg>
+              Atendimento
+            </div>
+            <div class="attendance-cta__text">Inicie a sessão pra ativar timer, SOAP editor ao vivo e workflow de finalização (cobrança + próxima).</div>
+            <button class="ev-btn ev-btn--primary" style="width: 100%; justify-content: center; background: var(--ev-success); border-color: var(--ev-success);">Iniciar atendimento</button>
+          </article>
+
+          <!-- Histórico recente -->
+          <article class="ev-card hub-sidebar__card">
+            <div class="hub-sidebar__title">
+              <svg class="icon icon-xs"><use href="#i-clock"/></svg>
+              Histórico recente
+            </div>
+            <a class="recent-item recent-item--current">
+              <span class="recent-item__dot recent-item__dot--now"></span>
+              <span>Ana Paula Gomes</span>
+              <span style="margin-left: auto; font-size: 10px; opacity: 0.7;">agora</span>
+            </a>
+            <a class="recent-item">
+              <span class="recent-item__star">★</span>
+              <span>Maria Souza</span>
+              <span style="margin-left: auto; font-size: 10px; color: var(--ev-text-subtle);">há 10 min</span>
+            </a>
+            <a class="recent-item">
+              <span class="recent-item__star">★</span>
+              <span>Pedro Alves</span>
+              <span style="margin-left: auto; font-size: 10px; color: var(--ev-text-subtle);">há 25 min</span>
+            </a>
+            <a class="recent-item">
+              <span class="recent-item__dot"></span>
+              <span>Carlos Mendes</span>
+              <span style="margin-left: auto; font-size: 10px; color: var(--ev-text-subtle);">há 1h</span>
+            </a>
+            <a class="recent-item">
+              <span class="recent-item__dot"></span>
+              <span>Marina Costa</span>
+              <span style="margin-left: auto; font-size: 10px; color: var(--ev-text-subtle);">há 2h</span>
+            </a>
+            <a class="recent-item">
+              <span class="recent-item__dot"></span>
+              <span>Rodrigo Lima</span>
+              <span style="margin-left: auto; font-size: 10px; color: var(--ev-text-subtle);">hoje</span>
+            </a>
+            <a class="recent-item">
+              <span class="recent-item__dot"></span>
+              <span>Camila Torres</span>
+              <span style="margin-left: auto; font-size: 10px; color: var(--ev-text-subtle);">hoje</span>
+            </a>
+          </article>
+
+          <!-- Copilot mini -->
+          <article class="ev-card hub-sidebar__card">
+            <div class="hub-sidebar__title">
+              <svg class="icon icon-xs" style="color: var(--ev-primary);"><use href="#i-sparkles"/></svg>
+              Copilot
+            </div>
+            <div style="font-size: var(--ev-text-xs); color: var(--ev-text); line-height: 1.5; margin-bottom: var(--ev-space-3);">
+              <strong>Sugestão:</strong> agendar reavaliação cardio com Rafael em <strong style="color: var(--ev-primary);">06/mai</strong> (fim da restrição de 14d).
+            </div>
+            <button class="ev-btn ev-btn--ghost ev-btn--sm" style="width: 100%; justify-content: center;">Perguntar ao Copilot</button>
+          </article>
+        </aside>
+      </div><!-- /hub-layout -->
+
+    </main>
+  </div>
+</body>
+</html>

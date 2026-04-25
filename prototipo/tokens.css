@@ -7,10 +7,10 @@
  */
 
 :root {
-  /* ===== Superfícies — LIGHT ===== */
-  --ev-bg: #F4F7F6;              /* fundo geral */
-  --ev-surface: #FFFFFF;         /* cards, drawers, modais */
-  --ev-surface-muted: #EEF2F1;   /* áreas secundárias (hover de row, pill) */
+  /* ===== Superfícies — LIGHT (off-white com leve tom grafite) ===== */
+  --ev-bg: #D8DDDB;              /* fundo geral — cinza mais presente */
+  --ev-surface: #F3F5F4;         /* cards, drawers, modais — off-white */
+  --ev-surface-muted: #CFD4D2;   /* áreas secundárias (hover de row, pill) */
   --ev-border: rgba(44, 62, 80, 0.10);   /* borda padrão (grafite 10%) */
   --ev-border-strong: rgba(44, 62, 80, 0.20); /* borda ativa/focada */
 
@@ -77,19 +77,20 @@
   --ev-space-12: 3rem;    /* 48px */
   --ev-space-16: 4rem;    /* 64px */
 
-  /* ===== Raios (flat: conservador) ===== */
+  /* ===== Raios (flat + orgânico suave, WebDiet-inspired) ===== */
   --ev-radius-none: 0;
-  --ev-radius-sm: 2px;
-  --ev-radius-md: 4px;      /* padrão (cards, inputs, buttons) */
-  --ev-radius-lg: 6px;      /* modais, drawers */
-  --ev-radius-pill: 9999px; /* badges, avatares */
+  --ev-radius-sm: 4px;
+  --ev-radius-md: 8px;      /* pequenos internos (chips, badges quadrados) */
+  --ev-radius-lg: 16px;     /* modais, drawers */
+  --ev-radius-xl: 24px;     /* cards prominentes (padrão de card) */
+  --ev-radius-pill: 9999px; /* buttons, inputs, badges pill, avatares */
 
   /* ===== Bordas (substituem sombra em flat design) ===== */
   --ev-border-width: 1px;
   --ev-border-style: solid;
 
   /* ===== Layout ===== */
-  --ev-topbar-height: 56px;
+  --ev-topbar-height: 88px;
   --ev-sidebar-width: 240px;
   --ev-sidebar-collapsed-width: 64px;
   --ev-container-max: 1440px;
@@ -100,6 +101,9 @@
 
   /* ===== Foco acessível ===== */
   --ev-focus-ring: 0 0 0 2px var(--ev-surface), 0 0 0 4px var(--ev-primary);
+
+  /* ===== Logo filter — neutro em light, brilho+saturação em dark ===== */
+  --ev-logo-filter: none;
 
   /* ===== Z-index ===== */
   --ev-z-dropdown: 100;
@@ -121,6 +125,9 @@
   --ev-text-muted: #BDC3C7;
   --ev-text-subtle: #7F8C8D;
   --ev-text-inverse: #1A252F;
+
+  /* Logo com brilho e saturação extras pra não apagar no fundo escuro */
+  --ev-logo-filter: brightness(1.2) saturate(1.2) drop-shadow(0 0 6px rgba(93, 173, 226, 0.15));
 
   --ev-primary: #5DADE2;
   --ev-primary-hover: #3498DB;
@@ -159,5 +166,6 @@
     --ev-warning-soft: rgba(245, 176, 65, 0.15);
     --ev-energy-soft: rgba(235, 152, 78, 0.15);
     --ev-danger-soft: rgba(236, 112, 99, 0.15);
+    --ev-logo-filter: brightness(1.2) saturate(1.2) drop-shadow(0 0 6px rgba(93, 173, 226, 0.15));
   }
 }

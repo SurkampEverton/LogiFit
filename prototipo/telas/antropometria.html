@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Antropometria · Ana Paula · LogiFit</title>
+  <link rel="icon" type="image/png" href="../img/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="../base.css" />
+  <link rel="stylesheet" href="../app-shell.css" />
+  <link rel="stylesheet" href="../side-menu.css" />
+  <script src="../theme.js" defer></script>
+  <script src="../side-menu.js" defer></script>
+  <style>
+    .icon { width: 18px; height: 18px; stroke-width: 1.75; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+    .icon-sm { width: 14px; height: 14px; stroke-width: 2; }
+    .icon-xs { width: 12px; height: 12px; stroke-width: 2; }
+
+    .breadcrumb { display: flex; align-items: center; gap: var(--ev-space-2); font-size: var(--ev-text-xs); color: var(--ev-text-muted); margin-bottom: var(--ev-space-4); }
+    .breadcrumb a { color: var(--ev-text-muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--ev-text); }
+    .breadcrumb__sep { color: var(--ev-text-subtle); }
+
+    .hero { display: flex; gap: var(--ev-space-5); padding: var(--ev-space-5); margin-bottom: var(--ev-space-5); align-items: center; }
+    .hero__avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--ev-primary-soft); color: var(--ev-primary); display: flex; align-items: center; justify-content: center; font-size: var(--ev-text-2xl); font-weight: var(--ev-weight-bold); flex: 0 0 auto; }
+    .hero__name { font-size: var(--ev-text-xl); font-weight: var(--ev-weight-bold); margin-bottom: 2px; }
+    .hero__meta { font-size: var(--ev-text-sm); color: var(--ev-text-muted); }
+    .hero__actions { display: flex; gap: var(--ev-space-2); margin-left: auto; }
+
+    /* Big numbers */
+    .big-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--ev-space-4); margin-bottom: var(--ev-space-5); }
+    @media (max-width: 1080px) { .big-stats { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px)  { .big-stats { grid-template-columns: 1fr; } }
+    .stat { padding: var(--ev-space-5); text-align: center; }
+    .stat__label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ev-text-subtle); font-weight: var(--ev-weight-semibold); margin-bottom: var(--ev-space-2); }
+    .stat__value { font-size: var(--ev-text-3xl); font-weight: var(--ev-weight-bold); font-feature-settings: var(--ev-font-feature-tabular); line-height: 1; letter-spacing: -0.02em; }
+    .stat__unit { font-size: var(--ev-text-base); color: var(--ev-text-muted); font-weight: var(--ev-weight-medium); margin-left: 2px; }
+    .stat__delta { font-size: var(--ev-text-xs); margin-top: var(--ev-space-2); display: inline-flex; align-items: center; gap: 3px; justify-content: center; font-weight: var(--ev-weight-semibold); }
+    .stat__delta--down { color: var(--ev-success); }
+    .stat__delta--up   { color: var(--ev-success); }
+    .stat__delta--neutral { color: var(--ev-text-muted); }
+
+    /* Chart wrapper */
+    .chart-card { padding: var(--ev-space-5); margin-bottom: var(--ev-space-5); }
+    .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--ev-space-4); gap: var(--ev-space-3); }
+    .card-head h2 { font-size: var(--ev-text-base); font-weight: var(--ev-weight-bold); }
+    .card-head p { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+    .chart-svg { width: 100%; height: 260px; display: block; }
+    .chart-legend { display: flex; gap: var(--ev-space-5); justify-content: center; margin-top: var(--ev-space-3); font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+    .chart-legend__item { display: inline-flex; align-items: center; gap: 6px; }
+    .chart-legend__sw { width: 12px; height: 2px; background: currentColor; }
+
+    /* Comparativo tabela */
+    .compare-card { padding: var(--ev-space-5); margin-bottom: var(--ev-space-5); }
+    .compare-table { width: 100%; border-collapse: collapse; font-size: var(--ev-text-sm); }
+    .compare-table th, .compare-table td { padding: var(--ev-space-3); text-align: right; border-bottom: 1px solid var(--ev-border); font-feature-settings: var(--ev-font-feature-tabular); }
+    .compare-table th:first-child, .compare-table td:first-child { text-align: left; font-weight: var(--ev-weight-semibold); font-feature-settings: normal; }
+    .compare-table thead th { font-size: var(--ev-text-xs); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ev-text-muted); font-weight: var(--ev-weight-semibold); padding-top: 0; }
+    .compare-table thead th.current { color: var(--ev-primary); }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table td.delta-pos { color: var(--ev-success); }
+    .compare-table td.delta-neg { color: var(--ev-danger); }
+
+    /* Perimetria */
+    .perim-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--ev-space-4); margin-bottom: var(--ev-space-5); }
+    @media (max-width: 767px) { .perim-grid { grid-template-columns: 1fr; } }
+    .perim-card { padding: var(--ev-space-4); }
+    .perim-card__label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ev-text-subtle); font-weight: var(--ev-weight-semibold); margin-bottom: var(--ev-space-2); }
+    .perim-card__value { display: flex; align-items: baseline; gap: var(--ev-space-2); }
+    .perim-card__value strong { font-size: var(--ev-text-xl); font-weight: var(--ev-weight-bold); font-feature-settings: var(--ev-font-feature-tabular); }
+    .perim-card__delta { font-size: var(--ev-text-xs); font-weight: var(--ev-weight-semibold); }
+    .perim-card__spark { width: 100%; height: 28px; margin-top: var(--ev-space-2); }
+
+    /* Info meta */
+    .info-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--ev-space-4); }
+    @media (max-width: 1080px) { .info-grid { grid-template-columns: 1fr; } }
+
+    .info-row { display: flex; justify-content: space-between; padding: var(--ev-space-3) 0; border-bottom: 1px solid var(--ev-border); font-size: var(--ev-text-sm); }
+    .info-row:first-child { padding-top: 0; }
+    .info-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .info-row__label { color: var(--ev-text-muted); }
+    .info-row__value { font-weight: var(--ev-weight-medium); }
+
+    /* Fotos placeholder */
+    .photos-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--ev-space-3); }
+    .photo-slot {
+      aspect-ratio: 3/4;
+      border-radius: var(--ev-radius-lg);
+      background: var(--ev-surface-muted);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: var(--ev-text-subtle);
+      font-size: var(--ev-text-xs);
+      text-align: center;
+      gap: var(--ev-space-2);
+      padding: var(--ev-space-3);
+    }
+    .photo-slot__date { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: var(--ev-weight-bold); color: var(--ev-text-muted); }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+      <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></symbol>
+      <symbol id="i-arrow-down" viewBox="0 0 24 24"><path d="m19 12-7 7-7-7M12 5v14"/></symbol>
+      <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7M12 19V5"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></symbol>
+      <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+    </defs>
+  </svg>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar__brand">
+        <div class="topbar__brand-row">
+          <img class="topbar__brand-mark" src="../img/logo.png" alt="LogiFit" />
+          <span class="topbar__brand-name"><span style="color: var(--ev-success);">Logi</span>Fit</span>
+        </div>
+        <span class="topbar__brand-tagline">
+          <span style="color: var(--ev-energy);">Nutre</span>
+          <span class="topbar__brand-tagline__sep">|</span>
+          <span style="color: #C77DFF;">Treina</span>
+          <span class="topbar__brand-tagline__sep">|</span>
+          <span style="color: var(--ev-success);">Recupera</span>
+        </span>
+      </div>
+      <div class="topbar__tenant">
+        <div class="topbar__tenant-label">Paciente</div>
+        <div class="topbar__tenant-value">Ana Paula &middot; antropometria</div>
+      </div>
+      <button class="hamburger" data-side-menu-trigger aria-label="Abrir menu" aria-controls="side-menu"><svg class="icon" width="22" height="22"><use href="#i-menu"/></svg></button>
+      <div class="topbar__search">
+        <div style="position: relative;">
+          <svg class="icon icon-sm" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--ev-text-subtle);"><use href="#i-search"/></svg>
+          <input class="ev-input" placeholder="Buscar paciente…" style="padding-left: 40px;" />
+        </div>
+      </div>
+      <div class="topbar__actions">
+        <button class="theme-toggle" data-theme-toggle>Tema escuro</button>
+        <button class="ev-btn ev-btn--ghost" aria-label="Notificações"><svg class="icon"><use href="#i-bell"/></svg></button>
+        <div class="topbar__user">
+          <span class="topbar__avatar" style="background: var(--ev-energy-soft); color: var(--ev-energy);">JM</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <nav class="breadcrumb">
+        <a href="./nutri-dashboard.html"><svg class="icon icon-xs"><use href="#i-arrow-left"/></svg></a>
+        <a href="./nutri-dashboard.html">Pacientes</a>
+        <span class="breadcrumb__sep">/</span>
+        <a href="./02-member-home.html">Ana Paula Gomes</a>
+        <span class="breadcrumb__sep">/</span>
+        <span>Antropometria</span>
+      </nav>
+
+      <!-- Hero -->
+      <article class="ev-card hero">
+        <div class="hero__avatar">AP</div>
+        <div style="flex: 1;">
+          <div class="hero__name">Ana Paula Gomes · antropometria</div>
+          <div class="hero__meta">Última medição: <strong style="color: var(--ev-text);">há 5 dias</strong> &middot; bioimpedância InBody 570 &middot; jejum 8h &middot; por Júlia Martinez (nutri)</div>
+        </div>
+        <div class="hero__actions">
+          <button class="ev-btn ev-btn--ghost"><svg class="icon icon-sm"><use href="#i-file"/></svg>Histórico (12)</button>
+          <button class="ev-btn"><svg class="icon icon-sm"><use href="#i-camera"/></svg>Nova foto</button>
+          <button class="ev-btn ev-btn--primary"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Nova medição</button>
+        </div>
+      </article>
+
+      <!-- Big stats -->
+      <section class="big-stats">
+        <article class="ev-card stat">
+          <div class="stat__label">Peso</div>
+          <div class="stat__value">65,2<span class="stat__unit">kg</span></div>
+          <div class="stat__delta stat__delta--down"><svg class="icon icon-xs"><use href="#i-arrow-down"/></svg>-1,3 kg · 90d</div>
+        </article>
+        <article class="ev-card stat">
+          <div class="stat__label">% gordura</div>
+          <div class="stat__value">22,0<span class="stat__unit">%</span></div>
+          <div class="stat__delta stat__delta--down"><svg class="icon icon-xs"><use href="#i-arrow-down"/></svg>-3,0 pp · 90d</div>
+        </article>
+        <article class="ev-card stat">
+          <div class="stat__label">Massa magra</div>
+          <div class="stat__value">50,1<span class="stat__unit">kg</span></div>
+          <div class="stat__delta stat__delta--up"><svg class="icon icon-xs"><use href="#i-arrow-up"/></svg>+2,1 kg · 90d</div>
+        </article>
+        <article class="ev-card stat">
+          <div class="stat__label">IMC</div>
+          <div class="stat__value">23,1</div>
+          <div class="stat__delta stat__delta--neutral">eutrófica</div>
+        </article>
+        <article class="ev-card stat">
+          <div class="stat__label">Cintura</div>
+          <div class="stat__value">74<span class="stat__unit">cm</span></div>
+          <div class="stat__delta stat__delta--down"><svg class="icon icon-xs"><use href="#i-arrow-down"/></svg>-4 cm · 90d</div>
+        </article>
+      </section>
+
+      <!-- Chart evolução -->
+      <article class="ev-card chart-card">
+        <div class="card-head">
+          <div>
+            <h2>Evolução · últimos 6 meses</h2>
+            <p>Peso e % gordura medidos mensalmente por bioimpedância</p>
+          </div>
+          <button class="ev-btn ev-btn--ghost ev-btn--sm">6 meses <svg class="icon icon-xs"><use href="#i-arrow-down"/></svg></button>
+        </div>
+
+        <svg class="chart-svg" viewBox="0 0 640 260" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="area-weight" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3498DB" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#3498DB" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Grid horizontal -->
+          <g stroke="currentColor" stroke-opacity="0.08" stroke-width="1">
+            <line x1="40" y1="40" x2="620" y2="40"/>
+            <line x1="40" y1="90" x2="620" y2="90"/>
+            <line x1="40" y1="140" x2="620" y2="140"/>
+            <line x1="40" y1="190" x2="620" y2="190"/>
+          </g>
+
+          <!-- Y labels (peso) -->
+          <g font-size="10" fill="currentColor" opacity="0.5" font-family="Inter, sans-serif">
+            <text x="34" y="44" text-anchor="end">68 kg</text>
+            <text x="34" y="94" text-anchor="end">66 kg</text>
+            <text x="34" y="144" text-anchor="end">64 kg</text>
+            <text x="34" y="194" text-anchor="end">62 kg</text>
+          </g>
+          <!-- Y labels (% gordura) right -->
+          <g font-size="10" fill="#E67E22" opacity="0.7" font-family="Inter, sans-serif">
+            <text x="626" y="44">30%</text>
+            <text x="626" y="94">26%</text>
+            <text x="626" y="144">22%</text>
+            <text x="626" y="194">18%</text>
+          </g>
+
+          <!-- Peso area + line (6 pontos: nov, dez, jan, fev, mar, abr) -->
+          <!-- Peso: 66.5, 66.2, 66.0, 65.8, 65.5, 65.2 -->
+          <!-- Map 62-68 -> y 200-40 (160px para 6kg) -->
+          <!-- 66.5 → y 200 - (66.5-62)/6 * 160 = 200 - 120 = 80
+               66.2 → y 200 - 4.2/6 * 160 = 200 - 112 = 88
+               66.0 → y 200 - 4.0/6 * 160 = 200 - 106.67 ≈ 93
+               65.8 → y 200 - 3.8/6 * 160 = 200 - 101.33 ≈ 99
+               65.5 → y 200 - 3.5/6 * 160 = 200 - 93.33 ≈ 107
+               65.2 → y 200 - 3.2/6 * 160 = 200 - 85.33 ≈ 115 -->
+          <path d="M 70 80 L 180 88 L 290 93 L 400 99 L 510 107 L 610 115 L 610 200 L 70 200 Z" fill="url(#area-weight)"/>
+          <path d="M 70 80 L 180 88 L 290 93 L 400 99 L 510 107 L 610 115" fill="none" stroke="#3498DB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <!-- % gordura line (laranja) -->
+          <!-- 25.0, 24.2, 23.5, 23.0, 22.5, 22.0 -->
+          <!-- Map 18-30% -> y 200-40 (160px para 12pp) -->
+          <!-- 25.0 → y 200 - 7/12*160 = 200 - 93.33 = 107
+               24.2 → y 200 - 6.2/12*160 = 200 - 82.67 = 117
+               23.5 → y 200 - 5.5/12*160 = 200 - 73.33 = 127
+               23.0 → y 200 - 5/12*160 = 200 - 66.67 = 133
+               22.5 → y 200 - 4.5/12*160 = 200 - 60 = 140
+               22.0 → y 200 - 4/12*160 = 200 - 53.33 = 147 -->
+          <path d="M 70 107 L 180 117 L 290 127 L 400 133 L 510 140 L 610 147" fill="none" stroke="#E67E22" stroke-width="2.5" stroke-dasharray="6 3" stroke-linecap="round"/>
+
+          <!-- Dots peso -->
+          <g fill="white" stroke="#3498DB" stroke-width="2">
+            <circle cx="70"  cy="80" r="3"/>
+            <circle cx="180" cy="88" r="3"/>
+            <circle cx="290" cy="93" r="3"/>
+            <circle cx="400" cy="99" r="3"/>
+            <circle cx="510" cy="107" r="3"/>
+          </g>
+          <circle cx="610" cy="115" r="6" fill="#3498DB" stroke="white" stroke-width="2.5"/>
+
+          <!-- Dots % gordura -->
+          <g fill="white" stroke="#E67E22" stroke-width="2">
+            <circle cx="70"  cy="107" r="3"/>
+            <circle cx="180" cy="117" r="3"/>
+            <circle cx="290" cy="127" r="3"/>
+            <circle cx="400" cy="133" r="3"/>
+            <circle cx="510" cy="140" r="3"/>
+          </g>
+          <circle cx="610" cy="147" r="6" fill="#E67E22" stroke="white" stroke-width="2.5"/>
+
+          <!-- Value badge atual -->
+          <g font-family="Inter, sans-serif">
+            <rect x="556" y="92" width="60" height="18" rx="4" fill="#3498DB"/>
+            <text x="586" y="105" text-anchor="middle" fill="white" font-size="10" font-weight="700">65,2 kg</text>
+          </g>
+
+          <!-- X labels -->
+          <g font-size="11" fill="currentColor" opacity="0.6" font-family="Inter, sans-serif">
+            <text x="70"  y="225" text-anchor="middle">nov</text>
+            <text x="180" y="225" text-anchor="middle">dez</text>
+            <text x="290" y="225" text-anchor="middle">jan</text>
+            <text x="400" y="225" text-anchor="middle">fev</text>
+            <text x="510" y="225" text-anchor="middle">mar</text>
+            <text x="610" y="225" text-anchor="middle" font-weight="700" fill="#3498DB">abr</text>
+          </g>
+        </svg>
+
+        <div class="chart-legend">
+          <span class="chart-legend__item" style="color: #3498DB;"><span class="chart-legend__sw"></span><span style="color: var(--ev-text-muted);">Peso (kg)</span></span>
+          <span class="chart-legend__item" style="color: #E67E22;"><span class="chart-legend__sw" style="background: none; border-top: 2px dashed currentColor; height: 0;"></span><span style="color: var(--ev-text-muted);">% gordura</span></span>
+        </div>
+      </article>
+
+      <!-- Perimetria -->
+      <article class="ev-card" style="padding: var(--ev-space-5); margin-bottom: var(--ev-space-5);">
+        <div class="card-head">
+          <div>
+            <h2>Perimetria corporal</h2>
+            <p>Medições com fita &middot; variação nos últimos 90 dias</p>
+          </div>
+        </div>
+        <div class="perim-grid">
+          <div class="perim-card" style="background: var(--ev-surface-muted); border-radius: var(--ev-radius-lg);">
+            <div class="perim-card__label">Braço direito (contraído)</div>
+            <div class="perim-card__value"><strong>29,5 cm</strong><span class="perim-card__delta stat__delta--up">+1,2 cm</span></div>
+            <svg class="perim-card__spark" viewBox="0 0 100 28" preserveAspectRatio="none">
+              <path d="M0 18 L20 17 L40 15 L60 12 L80 10 L100 8" fill="none" stroke="#2ECC71" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="perim-card" style="background: var(--ev-surface-muted); border-radius: var(--ev-radius-lg);">
+            <div class="perim-card__label">Cintura (umbigo)</div>
+            <div class="perim-card__value"><strong>74 cm</strong><span class="perim-card__delta stat__delta--down">-4,0 cm</span></div>
+            <svg class="perim-card__spark" viewBox="0 0 100 28" preserveAspectRatio="none">
+              <path d="M0 8 L20 10 L40 14 L60 18 L80 21 L100 24" fill="none" stroke="#2ECC71" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="perim-card" style="background: var(--ev-surface-muted); border-radius: var(--ev-radius-lg);">
+            <div class="perim-card__label">Quadril</div>
+            <div class="perim-card__value"><strong>98 cm</strong><span class="perim-card__delta stat__delta--down">-2,0 cm</span></div>
+            <svg class="perim-card__spark" viewBox="0 0 100 28" preserveAspectRatio="none">
+              <path d="M0 10 L25 12 L50 15 L75 18 L100 20" fill="none" stroke="#2ECC71" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="perim-card" style="background: var(--ev-surface-muted); border-radius: var(--ev-radius-lg);">
+            <div class="perim-card__label">Coxa direita (medial)</div>
+            <div class="perim-card__value"><strong>55 cm</strong><span class="perim-card__delta stat__delta--up">+0,5 cm</span></div>
+            <svg class="perim-card__spark" viewBox="0 0 100 28" preserveAspectRatio="none">
+              <path d="M0 16 L25 15 L50 13 L75 12 L100 10" fill="none" stroke="#2ECC71" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="perim-card" style="background: var(--ev-surface-muted); border-radius: var(--ev-radius-lg);">
+            <div class="perim-card__label">Panturrilha direita</div>
+            <div class="perim-card__value"><strong>35 cm</strong><span class="perim-card__delta stat__delta--neutral">= 0</span></div>
+            <svg class="perim-card__spark" viewBox="0 0 100 28" preserveAspectRatio="none">
+              <path d="M0 14 L25 14 L50 14 L75 14 L100 14" fill="none" stroke="var(--ev-text-subtle)" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="perim-card" style="background: var(--ev-surface-muted); border-radius: var(--ev-radius-lg);">
+            <div class="perim-card__label">Relação cintura/quadril</div>
+            <div class="perim-card__value"><strong>0,76</strong><span class="perim-card__delta stat__delta--down">-0,02</span></div>
+            <svg class="perim-card__spark" viewBox="0 0 100 28" preserveAspectRatio="none">
+              <path d="M0 8 L25 10 L50 12 L75 15 L100 18" fill="none" stroke="#2ECC71" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+      </article>
+
+      <!-- Comparativo tabela -->
+      <article class="ev-card compare-card">
+        <div class="card-head">
+          <div>
+            <h2>Comparativo &middot; últimas 5 medições</h2>
+            <p>Delta mostrado em relação à coluna anterior</p>
+          </div>
+          <button class="ev-btn ev-btn--ghost ev-btn--sm">Exportar CSV</button>
+        </div>
+
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Métrica</th>
+              <th>23 jan</th>
+              <th>15 fev</th>
+              <th>12 mar</th>
+              <th>05 abr</th>
+              <th class="current">19 abr (atual)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Peso (kg)</td>
+              <td>66,5</td>
+              <td>66,2</td>
+              <td>65,8</td>
+              <td>65,5</td>
+              <td class="delta-pos"><strong>65,2</strong></td>
+            </tr>
+            <tr>
+              <td>% gordura</td>
+              <td>25,0</td>
+              <td>24,2</td>
+              <td>23,0</td>
+              <td>22,5</td>
+              <td class="delta-pos"><strong>22,0</strong></td>
+            </tr>
+            <tr>
+              <td>Massa magra (kg)</td>
+              <td>48,0</td>
+              <td>48,5</td>
+              <td>49,2</td>
+              <td>49,7</td>
+              <td class="delta-pos"><strong>50,1</strong></td>
+            </tr>
+            <tr>
+              <td>Cintura (cm)</td>
+              <td>78</td>
+              <td>77</td>
+              <td>76</td>
+              <td>75</td>
+              <td class="delta-pos"><strong>74</strong></td>
+            </tr>
+            <tr>
+              <td>Quadril (cm)</td>
+              <td>100</td>
+              <td>99,5</td>
+              <td>99</td>
+              <td>98,5</td>
+              <td class="delta-pos"><strong>98</strong></td>
+            </tr>
+            <tr>
+              <td>Braço D contraído (cm)</td>
+              <td>28,3</td>
+              <td>28,8</td>
+              <td>29,0</td>
+              <td>29,3</td>
+              <td class="delta-pos"><strong>29,5</strong></td>
+            </tr>
+            <tr>
+              <td>IMC</td>
+              <td>23,6</td>
+              <td>23,5</td>
+              <td>23,3</td>
+              <td>23,2</td>
+              <td><strong>23,1</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <!-- Info + fotos -->
+      <div class="info-grid">
+        <article class="ev-card" style="padding: var(--ev-space-5);">
+          <div class="card-head">
+            <div>
+              <h2>Protocolo da medição atual</h2>
+              <p>Registrado em 19/abr 09:15</p>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="info-row__label">Método</span>
+            <span class="info-row__value">Bioimpedância tetrapolar</span>
+          </div>
+          <div class="info-row">
+            <span class="info-row__label">Equipamento</span>
+            <span class="info-row__value">InBody 570 · calibrado 03/abr</span>
+          </div>
+          <div class="info-row">
+            <span class="info-row__label">Condições</span>
+            <span class="info-row__value">Jejum 8h · sem líquidos nas últimas 2h · bexiga vazia</span>
+          </div>
+          <div class="info-row">
+            <span class="info-row__label">Horário</span>
+            <span class="info-row__value">09:15 &middot; manhã</span>
+          </div>
+          <div class="info-row">
+            <span class="info-row__label">Ciclo menstrual</span>
+            <span class="info-row__value">Dia 14 · fase folicular tardia</span>
+          </div>
+          <div class="info-row">
+            <span class="info-row__label">Responsável</span>
+            <span class="info-row__value">Júlia Martinez · CRN-3/2245</span>
+          </div>
+          <div class="info-row">
+            <span class="info-row__label">Perimetria &middot; responsável</span>
+            <span class="info-row__value">Daniel Otávio (educador físico) · mesma data</span>
+          </div>
+        </article>
+
+        <article class="ev-card" style="padding: var(--ev-space-5);">
+          <div class="card-head">
+            <div>
+              <h2>Fotos de evolução</h2>
+              <p>Frente &middot; perfil &middot; costas</p>
+            </div>
+            <button class="ev-btn ev-btn--ghost ev-btn--sm"><svg class="icon icon-xs"><use href="#i-plus"/></svg></button>
+          </div>
+          <div class="photos-row">
+            <div class="photo-slot">
+              <svg class="icon" style="opacity: 0.4;"><use href="#i-camera"/></svg>
+              <span>frente</span>
+              <span class="photo-slot__date">19 abr</span>
+            </div>
+            <div class="photo-slot">
+              <svg class="icon" style="opacity: 0.4;"><use href="#i-camera"/></svg>
+              <span>perfil</span>
+              <span class="photo-slot__date">19 abr</span>
+            </div>
+            <div class="photo-slot">
+              <svg class="icon" style="opacity: 0.4;"><use href="#i-camera"/></svg>
+              <span>costas</span>
+              <span class="photo-slot__date">19 abr</span>
+            </div>
+          </div>
+          <div style="margin-top: var(--ev-space-3); font-size: var(--ev-text-xs); color: var(--ev-text-muted); text-align: center;">
+            Armazenadas com <strong>criptografia</strong> · consent clínico válido · LGPD art. 11
+          </div>
+        </article>
+      </div>
+
+    </main>
+  </div>
+</body>
+</html>

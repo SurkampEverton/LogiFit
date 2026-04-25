@@ -6,6 +6,16 @@
 @import url('./tokens.css');
 /* Inter carregada via <link rel="stylesheet"> no <head> de cada HTML (não-bloqueante). */
 
+/* Ibrand — fonte de marca, local ao protótipo.
+   OTF é OK pra dev; pra produção ideal converter pra WOFF2 (menor e amplamente suportado). */
+@font-face {
+  font-family: 'Ibrand';
+  src: url('./fonts/ibrand.otf') format('opentype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ===== Reset ===== */
 *,
 *::before,
@@ -86,21 +96,21 @@ textarea:focus-visible {
 
 /* ===== Componentes primitivos ===== */
 
-/* Button */
+/* Button (pill default · WebDiet-inspired) */
 .ev-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--ev-space-2);
-  padding: var(--ev-space-2) var(--ev-space-4);
+  padding: var(--ev-space-3) var(--ev-space-5);
   font-family: inherit;
   font-size: var(--ev-text-sm);
-  font-weight: var(--ev-weight-medium);
+  font-weight: var(--ev-weight-semibold);
   line-height: 1;
   color: var(--ev-text);
   background-color: transparent;
   border: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
-  border-radius: var(--ev-radius-md);
+  border-radius: var(--ev-radius-pill);
   cursor: pointer;
   transition: background-color var(--ev-transition-fast), border-color var(--ev-transition-fast), color var(--ev-transition-fast);
   white-space: nowrap;
@@ -125,13 +135,13 @@ textarea:focus-visible {
 }
 .ev-btn--danger:hover { background-color: var(--ev-danger-hover); border-color: var(--ev-danger-hover); }
 
-.ev-btn--sm { padding: var(--ev-space-1) var(--ev-space-3); font-size: var(--ev-text-xs); }
+.ev-btn--sm { padding: var(--ev-space-2) var(--ev-space-4); font-size: var(--ev-text-xs); }
 
-/* Card */
+/* Card (radius generoso · WebDiet-inspired) */
 .ev-card {
   background-color: var(--ev-surface);
   border: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
-  border-radius: var(--ev-radius-md);
+  border-radius: var(--ev-radius-xl);
   padding: var(--ev-space-6);
 }
 .ev-card__header {
@@ -168,17 +178,17 @@ textarea:focus-visible {
 .ev-badge--energy  { background-color: var(--ev-energy-soft); color: var(--ev-energy); }
 .ev-badge--danger  { background-color: var(--ev-danger-soft); color: var(--ev-danger); }
 
-/* Input */
+/* Input (pill default · WebDiet-inspired) */
 .ev-input {
   width: 100%;
-  padding: var(--ev-space-2) var(--ev-space-3);
+  padding: var(--ev-space-3) var(--ev-space-4);
   font-family: inherit;
   font-size: var(--ev-text-sm);
   line-height: 1.4;
   color: var(--ev-text);
   background-color: var(--ev-surface);
   border: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
-  border-radius: var(--ev-radius-md);
+  border-radius: var(--ev-radius-pill);
   transition: border-color var(--ev-transition-fast);
 }
 .ev-input:focus {

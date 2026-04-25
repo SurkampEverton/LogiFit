@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fisioterapeuta · Rafael Prado · LogiFit</title>
+  <link rel="icon" type="image/png" href="../img/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="../base.css" />
+  <link rel="stylesheet" href="../app-shell.css" />
+  <link rel="stylesheet" href="../side-menu.css" />
+  <script src="../theme.js" defer></script>
+  <script src="../side-menu.js" defer></script>
+  <style>
+    /* Fisio dashboard · profissional autônomo · cor dominante verde success */
+    .icon { width: 18px; height: 18px; stroke-width: 1.75; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+    .icon-sm { width: 14px; height: 14px; stroke-width: 2; }
+    .icon-xs { width: 12px; height: 12px; stroke-width: 2; }
+
+    .greeting { display: grid; grid-template-columns: 1fr auto; gap: var(--ev-space-5); align-items: flex-end; margin-bottom: var(--ev-space-6); }
+    .greeting h1 { font-size: var(--ev-text-2xl); font-weight: var(--ev-weight-bold); margin-bottom: var(--ev-space-1); }
+    .greeting p { font-size: var(--ev-text-sm); color: var(--ev-text-muted); }
+    .greeting p strong { color: var(--ev-success); font-weight: var(--ev-weight-semibold); }
+    .greeting__actions { display: flex; gap: var(--ev-space-2); flex-wrap: wrap; }
+
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--ev-space-4); margin-bottom: var(--ev-space-6); }
+    @media (max-width: 1080px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px)  { .kpis { grid-template-columns: 1fr; } }
+    .kpi { padding: var(--ev-space-5); border-left: 4px solid var(--ev-border); }
+    .kpi--success { border-left-color: var(--ev-success); }
+    .kpi--primary { border-left-color: var(--ev-primary); }
+    .kpi--warning { border-left-color: var(--ev-warning); }
+    .kpi--danger  { border-left-color: var(--ev-danger); }
+    .kpi__label { display: inline-flex; align-items: center; gap: var(--ev-space-2); font-size: var(--ev-text-xs); color: var(--ev-text-muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: var(--ev-weight-semibold); margin-bottom: var(--ev-space-3); }
+    .kpi__value { font-size: var(--ev-text-3xl); font-weight: var(--ev-weight-bold); font-feature-settings: var(--ev-font-feature-tabular); line-height: 1; letter-spacing: -0.02em; }
+    .kpi__delta { font-size: var(--ev-text-xs); color: var(--ev-text-muted); margin-top: var(--ev-space-2); }
+    .kpi__delta--up { color: var(--ev-success); }
+
+    .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--ev-space-4); margin-bottom: var(--ev-space-6); }
+    @media (max-width: 1080px) { .main-grid { grid-template-columns: 1fr; } }
+
+    .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--ev-space-4); gap: var(--ev-space-3); }
+    .card-head h2 { font-size: var(--ev-text-base); font-weight: var(--ev-weight-bold); }
+    .card-head p { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+
+    .today-card, .actions-card, .clients-card { padding: var(--ev-space-5); }
+    .clients-card { margin-bottom: var(--ev-space-6); }
+
+    .appt { display: grid; grid-template-columns: 64px 1fr auto; gap: var(--ev-space-4); padding: var(--ev-space-3) 0; border-bottom: 1px solid var(--ev-border); align-items: center; }
+    .appt:first-child { padding-top: 0; }
+    .appt:last-child { border-bottom: none; padding-bottom: 0; }
+    .appt__time { font-size: var(--ev-text-lg); font-weight: var(--ev-weight-bold); font-feature-settings: var(--ev-font-feature-tabular); line-height: 1; }
+    .appt__duration { font-size: 10px; color: var(--ev-text-subtle); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+    .appt__title { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-semibold); margin-bottom: 2px; }
+    .appt__meta { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+    .appt--now { background: var(--ev-success-soft); border-radius: var(--ev-radius-lg); padding: var(--ev-space-3) var(--ev-space-4); border-bottom: none; margin-bottom: var(--ev-space-2); }
+
+    .action-item { display: flex; gap: var(--ev-space-3); padding: var(--ev-space-3) 0; border-bottom: 1px solid var(--ev-border); align-items: flex-start; }
+    .action-item:first-child { padding-top: 0; }
+    .action-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .action-item__dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex: 0 0 auto; }
+    .action-item__title { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-medium); margin-bottom: 2px; }
+    .action-item__meta { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+
+    .clients-table { width: 100%; border-collapse: collapse; font-size: var(--ev-text-sm); }
+    .clients-table th, .clients-table td { padding: var(--ev-space-3); text-align: left; border-bottom: 1px solid var(--ev-border); }
+    .clients-table tr:last-child td { border-bottom: none; }
+    .clients-table th { font-size: var(--ev-text-xs); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ev-text-muted); font-weight: var(--ev-weight-semibold); padding-top: 0; }
+    .clients-table tr:hover td { background: var(--ev-surface-muted); }
+    .clients-table td.num { text-align: right; font-feature-settings: var(--ev-font-feature-tabular); }
+    .client-cell { display: flex; align-items: center; gap: var(--ev-space-3); }
+    .client-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--ev-success-soft); color: var(--ev-success); display: flex; align-items: center; justify-content: center; font-size: var(--ev-text-xs); font-weight: var(--ev-weight-bold); }
+    .client-cell__name { font-weight: var(--ev-weight-semibold); font-size: var(--ev-text-sm); }
+    .client-cell__meta { font-size: 11px; color: var(--ev-text-muted); }
+
+    .sessions-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px var(--ev-space-2);
+      border-radius: var(--ev-radius-pill);
+      font-size: 11px;
+      font-weight: var(--ev-weight-semibold);
+      background: var(--ev-primary-soft);
+      color: var(--ev-primary);
+    }
+
+    .insights { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--ev-space-4); }
+    @media (max-width: 1080px) { .insights { grid-template-columns: 1fr; } }
+    .insight { padding: var(--ev-space-4); }
+    .insight__icon { width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: var(--ev-space-3); }
+    .insight__title { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-semibold); margin-bottom: var(--ev-space-1); }
+    .insight__desc { font-size: var(--ev-text-xs); color: var(--ev-text-muted); line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+      <symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M6 2v6a4 4 0 0 0 8 0V2M10 16v2a4 4 0 0 0 8 0v-6M18 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></symbol>
+      <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M20 12V8a2 2 0 0 0-2-2H5a1 1 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/><path d="M18 12a2 2 0 1 0 0 4h3v-4h-3Z"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4 3 8 8 9 5-1 8-5 8-9V6l-8-3Z"/></symbol>
+      <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></symbol>
+      <symbol id="i-trend-up" viewBox="0 0 24 24"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></symbol>
+      <symbol id="i-alert-triangle" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+      <symbol id="i-sign" viewBox="0 0 24 24"><path d="M3 21s6-8 12-8 6 8 6 8"/><path d="M8 13V3l4 4 4-4"/></symbol>
+      <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M4 2v20l4-2 4 2 4-2 4 2V2l-4 2-4-2-4 2-4-2zM16 8H8M16 12H8M13 16H8"/></symbol>
+    </defs>
+  </svg>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar__brand">
+        <div class="topbar__brand-row">
+          <img class="topbar__brand-mark" src="../img/logo.png" alt="LogiFit" />
+          <span class="topbar__brand-name"><span style="color: var(--ev-success);">Logi</span>Fit</span>
+        </div>
+        <span class="topbar__brand-tagline">
+          <span style="color: var(--ev-energy);">Nutre</span>
+          <span class="topbar__brand-tagline__sep">|</span>
+          <span style="color: #C77DFF;">Treina</span>
+          <span class="topbar__brand-tagline__sep">|</span>
+          <span style="color: var(--ev-success);">Recupera</span>
+        </span>
+      </div>
+      <div class="topbar__tenant">
+        <div class="topbar__tenant-label">Profissional</div>
+        <div class="topbar__tenant-value">CREFITO-3/78291-F</div>
+      </div>
+      <button class="hamburger" data-side-menu-trigger aria-label="Abrir menu" aria-controls="side-menu"><svg class="icon" width="22" height="22"><use href="#i-menu"/></svg></button>
+      <div class="topbar__search">
+        <div style="position: relative;">
+          <svg class="icon icon-sm" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--ev-text-subtle);"><use href="#i-search"/></svg>
+          <input class="ev-input" placeholder="Buscar paciente, prontuário, CID…" style="padding-left: 40px;" />
+        </div>
+      </div>
+      <div class="topbar__actions">
+        <button class="theme-toggle" data-theme-toggle>Tema escuro</button>
+        <button class="ev-btn ev-btn--ghost" aria-label="Notificações"><svg class="icon"><use href="#i-bell"/></svg></button>
+        <div class="topbar__user">
+          <span class="topbar__avatar" style="background: var(--ev-success-soft); color: var(--ev-success);">RP</span>
+          <div class="topbar__user-text">
+            <div style="font-size: var(--ev-text-sm); font-weight: var(--ev-weight-semibold);">Rafael Prado</div>
+            <div style="font-size: var(--ev-text-xs); color: var(--ev-text-muted);">Fisioterapeuta</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="greeting">
+        <div>
+          <h1>Bom dia, Rafael 🩺</h1>
+          <p>Sexta, 24 de abril &middot; <strong>6 atendimentos hoje</strong> &middot; primeiro paciente às 08:00 (Ana Paula, retorno cardio).</p>
+        </div>
+        <div class="greeting__actions">
+          <button class="ev-btn ev-btn--ghost"><svg class="icon icon-sm"><use href="#i-file"/></svg>Novo prontuário</button>
+          <button class="ev-btn ev-btn--primary" style="background: var(--ev-success); border-color: var(--ev-success);"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Nova consulta</button>
+        </div>
+      </section>
+
+      <section class="kpis">
+        <article class="ev-card kpi kpi--success">
+          <div class="kpi__label"><svg class="icon icon-sm" style="color: var(--ev-success);"><use href="#i-calendar"/></svg>Atendimentos hoje</div>
+          <div class="kpi__value">6</div>
+          <div class="kpi__delta">4 retornos &middot; 1 avaliação &middot; 1 alta</div>
+        </article>
+        <article class="ev-card kpi kpi--primary">
+          <div class="kpi__label"><svg class="icon icon-sm" style="color: var(--ev-primary);"><use href="#i-wallet"/></svg>Faturamento · abr</div>
+          <div class="kpi__value">R$ 9.800</div>
+          <div class="kpi__delta kpi__delta--up"><svg class="icon icon-xs" style="vertical-align: middle;"><use href="#i-trend-up"/></svg> +7% vs. março</div>
+        </article>
+        <article class="ev-card kpi kpi--success">
+          <div class="kpi__label"><svg class="icon icon-sm" style="color: var(--ev-success);"><use href="#i-users"/></svg>Em tratamento</div>
+          <div class="kpi__value">18</div>
+          <div class="kpi__delta">12 particular &middot; 6 convênio TISS</div>
+        </article>
+        <article class="ev-card kpi kpi--warning">
+          <div class="kpi__label"><svg class="icon icon-sm" style="color: var(--ev-warning);"><use href="#i-sign"/></svg>A assinar (ICP)</div>
+          <div class="kpi__value">4</div>
+          <div class="kpi__delta">prontuários fechados esta semana</div>
+        </article>
+      </section>
+
+      <section class="main-grid">
+        <article class="ev-card today-card">
+          <div class="card-head">
+            <div><h2>Agenda de hoje</h2><p>Sexta 24/abr &middot; 6 atendimentos das 08:00 às 18:00</p></div>
+            <button class="ev-btn ev-btn--ghost ev-btn--sm">Semana</button>
+          </div>
+
+          <div class="appt appt--now">
+            <div><div class="appt__time">08:00</div><div class="appt__duration">50 min</div></div>
+            <div>
+              <div class="appt__title">Ana Paula Gomes &middot; retorno cardio</div>
+              <div class="appt__meta">Consultório &middot; avaliar restrição registrada em 22/abr &middot; CID MG30.02</div>
+            </div>
+            <button class="ev-btn ev-btn--primary ev-btn--sm" style="background: var(--ev-success); border-color: var(--ev-success);"><svg class="icon icon-xs"><use href="#i-check"/></svg>Iniciar</button>
+          </div>
+
+          <div class="appt">
+            <div><div class="appt__time">09:30</div><div class="appt__duration">50 min</div></div>
+            <div>
+              <div class="appt__title">Marina Costa &middot; sessão 8/12</div>
+              <div class="appt__meta">Reabilitação ombro D &middot; ADM atingiu 150° (meta 170°)</div>
+            </div>
+            <span class="sessions-pill">8/12</span>
+          </div>
+
+          <div class="appt">
+            <div><div class="appt__time">11:00</div><div class="appt__duration">60 min</div></div>
+            <div>
+              <div class="appt__title">Pedro Santana &middot; avaliação inicial</div>
+              <div class="appt__meta">Lombalgia crônica &middot; encaminhamento Dr. Oliveira &middot; Bradesco Saúde</div>
+            </div>
+            <span class="ev-badge ev-badge--primary">convênio</span>
+          </div>
+
+          <div class="appt">
+            <div><div class="appt__time">14:00</div><div class="appt__duration">50 min</div></div>
+            <div>
+              <div class="appt__title">Rodrigo Lima &middot; sessão 12/12 &middot; alta</div>
+              <div class="appt__meta">Pós-cirúrgico LCA &middot; teste de força final + prescrição de manutenção</div>
+            </div>
+            <span class="ev-badge ev-badge--success">alta prevista</span>
+          </div>
+
+          <div class="appt">
+            <div><div class="appt__time">15:30</div><div class="appt__duration">50 min</div></div>
+            <div>
+              <div class="appt__title">Camila Torres &middot; sessão 4/10</div>
+              <div class="appt__meta">Cervicalgia &middot; liberação miofascial + exercícios</div>
+            </div>
+            <span class="sessions-pill">4/10</span>
+          </div>
+
+          <div class="appt">
+            <div><div class="appt__time">17:00</div><div class="appt__duration">50 min</div></div>
+            <div>
+              <div class="appt__title">Lucas Antunes &middot; sessão 6/8</div>
+              <div class="appt__meta">Tendinite patelar &middot; progressão isométrica</div>
+            </div>
+            <span class="sessions-pill">6/8</span>
+          </div>
+        </article>
+
+        <article class="ev-card actions-card">
+          <div class="card-head">
+            <div><h2>Pendências</h2><p>clínicas e administrativas</p></div>
+          </div>
+
+          <div class="action-item">
+            <span class="action-item__dot" style="background: var(--ev-danger);"></span>
+            <div>
+              <div class="action-item__title">Assinar 4 prontuários (ICP-Brasil)</div>
+              <div class="action-item__meta">Fechados essa semana &middot; COFFITO 414/2012</div>
+            </div>
+          </div>
+          <div class="action-item">
+            <span class="action-item__dot" style="background: var(--ev-warning);"></span>
+            <div>
+              <div class="action-item__title">Guia TISS &middot; Pedro Santana</div>
+              <div class="action-item__meta">Bradesco Saúde &middot; enviar após avaliação hoje 11:00</div>
+            </div>
+          </div>
+          <div class="action-item">
+            <span class="action-item__dot" style="background: var(--ev-warning);"></span>
+            <div>
+              <div class="action-item__title">2 guias em recurso &middot; Unimed</div>
+              <div class="action-item__meta">Glosadas &middot; prazo 30/abr pro recurso</div>
+            </div>
+          </div>
+          <div class="action-item">
+            <span class="action-item__dot" style="background: var(--ev-primary);"></span>
+            <div>
+              <div class="action-item__title">Prescrição de manutenção &middot; Rodrigo</div>
+              <div class="action-item__meta">Alta hoje 14:00 &middot; exercícios domiciliares 4 semanas</div>
+            </div>
+          </div>
+          <div class="action-item">
+            <span class="action-item__dot" style="background: var(--ev-primary);"></span>
+            <div>
+              <div class="action-item__title">Relatório pro Daniel &middot; Ana Paula</div>
+              <div class="action-item__meta">Atualizar status da restrição após retorno hoje</div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <article class="ev-card clients-card">
+        <div class="card-head">
+          <div><h2>Pacientes em tratamento</h2><p>18 ativos &middot; ordenados por próxima sessão</p></div>
+          <div style="display: flex; gap: var(--ev-space-2);">
+            <button class="ev-btn ev-btn--ghost ev-btn--sm">Filtros</button>
+            <button class="ev-btn ev-btn--ghost ev-btn--sm">Ver todos</button>
+          </div>
+        </div>
+
+        <table class="clients-table">
+          <thead>
+            <tr>
+              <th>Paciente</th>
+              <th>Hipótese / CID</th>
+              <th>Progresso</th>
+              <th>Pagador</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar">AP</span>
+                  <div>
+                    <div class="client-cell__name">Ana Paula Gomes</div>
+                    <div class="client-cell__meta">38 anos &middot; retorno hoje 08:00</div>
+                  </div>
+                </div>
+              </td>
+              <td style="font-size: 12px;">MG30.02 &middot; restrição cardio</td>
+              <td><span class="sessions-pill">3/4 reavaliações</span></td>
+              <td>Particular</td>
+              <td><span class="ev-badge ev-badge--danger">alerta ativo</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar">MC</span>
+                  <div>
+                    <div class="client-cell__name">Marina Costa</div>
+                    <div class="client-cell__meta">34 anos &middot; ombro direito</div>
+                  </div>
+                </div>
+              </td>
+              <td style="font-size: 12px;">M75.1 &middot; síndrome do impacto</td>
+              <td><span class="sessions-pill">8/12</span></td>
+              <td>Particular</td>
+              <td><span class="ev-badge ev-badge--success">evoluindo</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar" style="background: var(--ev-primary-soft); color: var(--ev-primary);">PS</span>
+                  <div>
+                    <div class="client-cell__name">Pedro Santana</div>
+                    <div class="client-cell__meta">52 anos &middot; avaliação hoje</div>
+                  </div>
+                </div>
+              </td>
+              <td style="font-size: 12px;">M54.5 &middot; lombalgia crônica</td>
+              <td><span style="color: var(--ev-text-muted); font-size: 11px;">avaliação inicial</span></td>
+              <td>Bradesco Saúde</td>
+              <td><span class="ev-badge">novo</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar">RL</span>
+                  <div>
+                    <div class="client-cell__name">Rodrigo Lima</div>
+                    <div class="client-cell__meta">28 anos &middot; pós LCA</div>
+                  </div>
+                </div>
+              </td>
+              <td style="font-size: 12px;">S83.5 &middot; LCA direito operado</td>
+              <td><span class="sessions-pill">12/12</span></td>
+              <td>Particular</td>
+              <td><span class="ev-badge ev-badge--success">alta hoje</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar">CT</span>
+                  <div>
+                    <div class="client-cell__name">Camila Torres</div>
+                    <div class="client-cell__meta">29 anos &middot; cervical</div>
+                  </div>
+                </div>
+              </td>
+              <td style="font-size: 12px;">M54.2 &middot; cervicalgia postural</td>
+              <td><span class="sessions-pill">4/10</span></td>
+              <td>Particular</td>
+              <td><span class="ev-badge ev-badge--primary">em dia</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar">LA</span>
+                  <div>
+                    <div class="client-cell__name">Lucas Antunes</div>
+                    <div class="client-cell__meta">24 anos &middot; joelho D</div>
+                  </div>
+                </div>
+              </td>
+              <td style="font-size: 12px;">M76.5 &middot; tendinite patelar</td>
+              <td><span class="sessions-pill">6/8</span></td>
+              <td>Unimed</td>
+              <td><span class="ev-badge ev-badge--warning">1 guia glosada</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <section class="insights">
+        <article class="ev-card insight">
+          <span class="insight__icon" style="background: var(--ev-success-soft); color: var(--ev-success);"><svg class="icon"><use href="#i-heart"/></svg></span>
+          <div class="insight__title">Rodrigo Lima: alta hoje</div>
+          <div class="insight__desc">12 sessões completas após LCA. Força simétrica em testes de IK e hop test. Prescrever manutenção e retornar ao esporte gradualmente.</div>
+        </article>
+        <article class="ev-card insight">
+          <span class="insight__icon" style="background: var(--ev-danger-soft); color: var(--ev-danger);"><svg class="icon"><use href="#i-alert-triangle"/></svg></span>
+          <div class="insight__title">Ana Paula &middot; conflito cruzado</div>
+          <div class="insight__desc">A restrição cardiovascular que registrei afeta o treino dela com Daniel (academia). Sistema cruzou automaticamente — ele já ajustou o HIIT pra zona 2.</div>
+        </article>
+        <article class="ev-card insight">
+          <span class="insight__icon" style="background: var(--ev-warning-soft); color: var(--ev-warning);"><svg class="icon"><use href="#i-receipt"/></svg></span>
+          <div class="insight__title">2 guias Unimed em recurso</div>
+          <div class="insight__desc">Lucas Antunes glosadas (código de procedimento). Prazo 30/abr pra enviar recurso com justificativa clínica.</div>
+        </article>
+      </section>
+
+    </main>
+  </div>
+</body>
+</html>

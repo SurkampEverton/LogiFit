@@ -31,23 +31,64 @@
 }
 .topbar__brand {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-right: 0;
+  /* Puxa o brand pra esquerda, encostando na borda do topbar */
+  margin-left: calc(var(--ev-space-4) * -1);
+  /* Brand posicionado a 2px do topo, outros elementos do topbar seguem centralizados */
+  align-self: flex-start;
+  margin-top: 2px;
+}
+/* Linha de cima: logo + LogiFit lado a lado */
+.topbar__brand-row {
+  display: flex;
   align-items: center;
-  gap: var(--ev-space-2);
-  font-size: var(--ev-text-base);
-  font-weight: var(--ev-weight-semibold);
-  margin-right: var(--ev-space-2);
+  gap: 0;
+}
+/* O PNG do logo tem padding transparente interno — margin negativa no texto compensa */
+.topbar__brand-name {
+  /* Ibrand instalada no Windows — funciona localmente.
+     Pra produção precisa licença web + @font-face com arquivo hospedado. */
+  font-family: 'Ibrand', 'Ibrand Regular', var(--ev-font-sans);
+  font-size: 36px;
+  font-weight: var(--ev-weight-bold);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-left: 3px;
+  margin-top: 6px;
+  color: var(--ev-primary);
+}
+/* Linha de baixo: tagline colorida, tight abaixo do LogiFit */
+.topbar__brand-tagline {
+  font-family: 'Poppins', var(--ev-font-sans);
+  font-size: 12px;
+  font-weight: var(--ev-weight-regular);
+  letter-spacing: 0.08em;
+  display: inline-flex;
+  gap: 0;
+  align-items: baseline;
+  line-height: 1;
+  margin-left: 10px;
+  margin-top: -7px;
+}
+.topbar__brand-tagline__sep {
+  color: var(--ev-text-subtle);
+  opacity: 0.5;
+  padding: 0 2px;
+}
+/* Esconde tagline só em telas muito estreitas (phones) — no restante fica visível */
+@media (max-width: 479px) {
+  .topbar__brand-tagline { display: none; }
 }
 .topbar__brand-mark {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--ev-radius-md);
-  background-color: var(--ev-primary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ev-text-inverse);
-  font-size: var(--ev-text-xs);
-  font-weight: var(--ev-weight-bold);
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  display: block;
+  flex: 0 0 auto;
+  filter: var(--ev-logo-filter);
 }
 .topbar__search {
   flex: 1;
@@ -85,8 +126,12 @@
 .topbar__tenant {
   display: flex;
   flex-direction: column;
-  padding-right: var(--ev-space-4);
+  padding: 0 var(--ev-space-4);
+  margin: 0 var(--ev-space-2);
+  border-left: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
   border-right: var(--ev-border-width) var(--ev-border-style) var(--ev-border);
+  align-self: stretch;
+  justify-content: center;
 }
 /* Esconde label de tenant em tablet/mobile — espaço escasso */
 @media (max-width: 767px) {

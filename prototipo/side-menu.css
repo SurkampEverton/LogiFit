@@ -105,16 +105,12 @@
   font-weight: var(--ev-weight-semibold);
 }
 .side-menu__brand-mark {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--ev-radius-md);
-  background-color: var(--ev-primary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ev-text-inverse);
-  font-size: var(--ev-text-sm);
-  font-weight: var(--ev-weight-bold);
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  display: block;
+  flex: 0 0 auto;
+  filter: var(--ev-logo-filter);
 }
 .side-menu__close {
   display: inline-flex;

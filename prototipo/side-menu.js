@@ -140,7 +140,7 @@
     const html = `
       <div class="side-menu__header">
         <span class="side-menu__brand">
-          <span class="side-menu__brand-mark">L</span>
+          <img class="side-menu__brand-mark" src="../img/logo.png" alt="LogiFit" />
           <span>LogiFit</span>
         </span>
         <button class="side-menu__close" data-side-menu-close aria-label="Fechar menu">

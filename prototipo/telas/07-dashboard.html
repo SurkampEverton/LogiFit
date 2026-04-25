@@ -4,9 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard · LogiFit</title>
+  <link rel="icon" type="image/png" href="../img/logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600&display=swap" />
   <link rel="stylesheet" href="../base.css" />
   <link rel="stylesheet" href="../app-shell.css" />
   <link rel="stylesheet" href="../side-menu.css" />
@@ -540,17 +541,26 @@
 
     <!-- Topbar com hamburger (SideMenu overlay injetado via side-menu.js) -->
     <header class="topbar">
-      <button class="hamburger" data-side-menu-trigger aria-label="Abrir menu" aria-controls="side-menu">
-        <svg class="icon" width="22" height="22"><use href="#i-menu"/></svg>
-      </button>
       <div class="topbar__brand">
-        <span class="topbar__brand-mark">L</span>
-        <span>LogiFit</span>
+        <div class="topbar__brand-row">
+          <img class="topbar__brand-mark" src="../img/logo.png" alt="LogiFit" />
+          <span class="topbar__brand-name"><span style="color: var(--ev-success);">Logi</span>Fit</span>
+        </div>
+        <span class="topbar__brand-tagline">
+          <span style="color: var(--ev-energy);">Nutre</span>
+          <span class="topbar__brand-tagline__sep">|</span>
+          <span style="color: #C77DFF;">Treina</span>
+          <span class="topbar__brand-tagline__sep">|</span>
+          <span style="color: var(--ev-success);">Recupera</span>
+        </span>
       </div>
       <div class="topbar__tenant">
         <div class="topbar__tenant-label">Tenant</div>
         <div class="topbar__tenant-value">Vital Club Rede</div>
       </div>
+      <button class="hamburger" data-side-menu-trigger aria-label="Abrir menu" aria-controls="side-menu">
+        <svg class="icon" width="22" height="22"><use href="#i-menu"/></svg>
+      </button>
       <div class="topbar__search">
         <div style="position: relative;">
           <svg class="icon icon-sm" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ev-text-subtle);"><use href="#i-search"/></svg>

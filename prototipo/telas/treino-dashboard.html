@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Educador físico · Daniel Otávio · LogiFit</title>
+  <link rel="icon" type="image/png" href="../img/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="../base.css" />
+  <link rel="stylesheet" href="../app-shell.css" />
+  <link rel="stylesheet" href="../side-menu.css" />
+  <script src="../theme.js" defer></script>
+  <script src="../side-menu.js" defer></script>
+  <style>
+    /* Treino dashboard · profissional autônomo · cor dominante roxo #C77DFF */
+    :root { --treina-accent: #C77DFF; --treina-soft: rgba(199, 125, 255, 0.15); }
+
+    .icon { width: 18px; height: 18px; stroke-width: 1.75; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+    .icon-sm { width: 14px; height: 14px; stroke-width: 2; }
+    .icon-xs { width: 12px; height: 12px; stroke-width: 2; }
+
+    .greeting { display: grid; grid-template-columns: 1fr auto; gap: var(--ev-space-5); align-items: flex-end; margin-bottom: var(--ev-space-6); }
+    .greeting h1 { font-size: var(--ev-text-2xl); font-weight: var(--ev-weight-bold); margin-bottom: var(--ev-space-1); }
+    .greeting p { font-size: var(--ev-text-sm); color: var(--ev-text-muted); }
+    .greeting p strong { color: var(--treina-accent); font-weight: var(--ev-weight-semibold); }
+    .greeting__actions { display: flex; gap: var(--ev-space-2); flex-wrap: wrap; }
+
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--ev-space-4); margin-bottom: var(--ev-space-6); }
+    @media (max-width: 1080px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px)  { .kpis { grid-template-columns: 1fr; } }
+    .kpi { padding: var(--ev-space-5); border-left: 4px solid var(--ev-border); }
+    .kpi--treina  { border-left-color: var(--treina-accent); }
+    .kpi--success { border-left-color: var(--ev-success); }
+    .kpi--primary { border-left-color: var(--ev-primary); }
+    .kpi--warning { border-left-color: var(--ev-warning); }
+    .kpi__label { display: inline-flex; align-items: center; gap: var(--ev-space-2); font-size: var(--ev-text-xs); color: var(--ev-text-muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: var(--ev-weight-semibold); margin-bottom: var(--ev-space-3); }
+    .kpi__value { font-size: var(--ev-text-3xl); font-weight: var(--ev-weight-bold); font-feature-settings: var(--ev-font-feature-tabular); line-height: 1; letter-spacing: -0.02em; }
+    .kpi__delta { font-size: var(--ev-text-xs); color: var(--ev-text-muted); margin-top: var(--ev-space-2); }
+    .kpi__delta--up { color: var(--ev-success); }
+
+    .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--ev-space-4); margin-bottom: var(--ev-space-6); }
+    @media (max-width: 1080px) { .main-grid { grid-template-columns: 1fr; } }
+
+    .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--ev-space-4); gap: var(--ev-space-3); }
+    .card-head h2 { font-size: var(--ev-text-base); font-weight: var(--ev-weight-bold); }
+    .card-head p { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+
+    .today-card, .actions-card, .clients-card { padding: var(--ev-space-5); }
+    .clients-card { margin-bottom: var(--ev-space-6); }
+
+    .appt { display: grid; grid-template-columns: 64px 1fr auto; gap: var(--ev-space-4); padding: var(--ev-space-3) 0; border-bottom: 1px solid var(--ev-border); align-items: center; }
+    .appt:first-child { padding-top: 0; }
+    .appt:last-child { border-bottom: none; padding-bottom: 0; }
+    .appt__time { font-size: var(--ev-text-lg); font-weight: var(--ev-weight-bold); font-feature-settings: var(--ev-font-feature-tabular); line-height: 1; }
+    .appt__duration { font-size: 10px; color: var(--ev-text-subtle); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+    .appt__title { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-semibold); margin-bottom: 2px; }
+    .appt__meta { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+    .appt--now { background: var(--treina-soft); border-radius: var(--ev-radius-lg); padding: var(--ev-space-3) var(--ev-space-4); border-bottom: none; margin-bottom: var(--ev-space-2); }
+
+    .action-item { display: flex; gap: var(--ev-space-3); padding: var(--ev-space-3) 0; border-bottom: 1px solid var(--ev-border); align-items: flex-start; }
+    .action-item:first-child { padding-top: 0; }
+    .action-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .action-item__dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex: 0 0 auto; }
+    .action-item__title { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-medium); margin-bottom: 2px; }
+    .action-item__meta { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+
+    .clients-table { width: 100%; border-collapse: collapse; font-size: var(--ev-text-sm); }
+    .clients-table th, .clients-table td { padding: var(--ev-space-3); text-align: left; border-bottom: 1px solid var(--ev-border); }
+    .clients-table tr:last-child td { border-bottom: none; }
+    .clients-table th { font-size: var(--ev-text-xs); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ev-text-muted); font-weight: var(--ev-weight-semibold); padding-top: 0; }
+    .clients-table tr:hover td { background: var(--ev-surface-muted); }
+    .clients-table td.num { text-align: right; font-feature-settings: var(--ev-font-feature-tabular); }
+    .client-cell { display: flex; align-items: center; gap: var(--ev-space-3); }
+    .client-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--treina-soft); color: var(--treina-accent); display: flex; align-items: center; justify-content: center; font-size: var(--ev-text-xs); font-weight: var(--ev-weight-bold); }
+    .client-cell__name { font-weight: var(--ev-weight-semibold); font-size: var(--ev-text-sm); }
+    .client-cell__meta { font-size: 11px; color: var(--ev-text-muted); }
+
+    .streak-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px var(--ev-space-2);
+      border-radius: var(--ev-radius-pill);
+      font-size: 11px;
+      font-weight: var(--ev-weight-semibold);
+      background: var(--ev-energy-soft);
+      color: var(--ev-energy);
+    }
+
+    .insights { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--ev-space-4); }
+    @media (max-width: 1080px) { .insights { grid-template-columns: 1fr; } }
+    .insight { padding: var(--ev-space-4); }
+    .insight__icon { width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: var(--ev-space-3); }
+    .insight__title { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-semibold); margin-bottom: var(--ev-space-1); }
+    .insight__desc { font-size: var(--ev-text-xs); color: var(--ev-text-muted); line-height: 1.5; }
+
+    .pr-banner {
+      display: flex; align-items: center; gap: var(--ev-space-3);
+      background: var(--treina-soft);
+      padding: var(--ev-space-3) var(--ev-space-4);
+      border-radius: var(--ev-radius-lg);
+      margin-bottom: var(--ev-space-4);
+    }
+    .pr-banner__icon { width: 36px; height: 36px; background: var(--treina-accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+      <symbol id="i-dumbbell" viewBox="0 0 24 24"><path d="M14.4 14.4 9.6 9.6M18.66 5.34l.71.71M5.34 18.66l.71.71M21.88 8.12 15.76 2l-3.18 3.18 6.12 6.12L21.88 8.12ZM11.41 18.59 8.24 21.76l-6.12-6.12 3.18-3.18 6.11 6.13Z"/></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></symbol>
+      <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M20 12V8a2 2 0 0 0-2-2H5a1 1 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/><path d="M18 12a2 2 0 1 0 0 4h3v-4h-3Z"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol>
+      <symbol id="i-video" viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 0 12 0V3H6v6ZM6 3H2v3a4 4 0 0 0 4 4M18 3h4v3a4 4 0 0 1-4 4M12 15v6M8 21h8"/></symbol>
+      <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 2s4 6 4 10a4 4 0 0 1-8 0c0-2 1-4 1-4s-3 2-3 6a6 6 0 0 0 12 0c0-5-6-12-6-12Z"/></symbol>
+      <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></symbol>
+      <symbol id="i-trend-up" viewBox="0 0 24 24"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></symbol>
+      <symbol id="i-trend-down" viewBox="0 0 24 24"><path d="M22 17 13.5 8.5 8.5 13.5 2 7"/><path d="M16 17h6v-6"/></symbol>
+      <symbol id="i-alert-triangle" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+      <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+    </defs>
+  </svg>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar__brand">
+        <div class="topbar__brand-row">
+          <img class="topbar__brand-mark" src="../img/logo.png" alt="LogiFit" />
+          <span class="topbar__brand-name"><span style="color: var(--ev-success);">Logi</span>Fit</span>
+        </div>
+        <span class="topbar__brand-tagline">
+          <span style="color: var(--ev-energy);">Nutre</span>
+          <span class="topbar__brand-tagline__sep">|</span>
+          <span style="color: #C77DFF;">Treina</span>
+          <span class="topbar__brand-tagline__sep">|</span>
+          <span style="color: var(--ev-success);">Recupera</span>
+        </span>
+      </div>
+      <div class="topbar__tenant">
+        <div class="topbar__tenant-label">Profissional</div>
+        <div class="topbar__tenant-value">CREF 019283-G &middot; SP</div>
+      </div>
+      <button class="hamburger" data-side-menu-trigger aria-label="Abrir menu" aria-controls="side-menu"><svg class="icon" width="22" height="22"><use href="#i-menu"/></svg></button>
+      <div class="topbar__search">
+        <div style="position: relative;">
+          <svg class="icon icon-sm" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--ev-text-subtle);"><use href="#i-search"/></svg>
+          <input class="ev-input" placeholder="Buscar aluno, exercício, planilha…" style="padding-left: 40px;" />
+        </div>
+      </div>
+      <div class="topbar__actions">
+        <button class="theme-toggle" data-theme-toggle>Tema escuro</button>
+        <button class="ev-btn ev-btn--ghost" aria-label="Notificações"><svg class="icon"><use href="#i-bell"/></svg></button>
+        <div class="topbar__user">
+          <span class="topbar__avatar" style="background: var(--treina-soft); color: var(--treina-accent);">DO</span>
+          <div class="topbar__user-text">
+            <div style="font-size: var(--ev-text-sm); font-weight: var(--ev-weight-semibold);">Daniel Otávio</div>
+            <div style="font-size: var(--ev-text-xs); color: var(--ev-text-muted);">Educador físico</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="greeting">
+        <div>
+          <h1>Bom dia, Daniel 💪</h1>
+          <p>Sexta, 24 de abril &middot; <strong>8 treinos hoje</strong> &middot; primeiro aluno às 06:00 (Bruno Silva, força).</p>
+        </div>
+        <div class="greeting__actions">
+          <button class="ev-btn ev-btn--ghost"><svg class="icon icon-sm"><use href="#i-file"/></svg>Nova planilha</button>
+          <button class="ev-btn ev-btn--primary" style="background: var(--treina-accent); border-color: var(--treina-accent);"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Novo aluno</button>
+        </div>
+      </section>
+
+      <section class="kpis">
+        <article class="ev-card kpi kpi--treina">
+          <div class="kpi__label"><svg class="icon icon-sm" style="color: var(--treina-accent);"><use href="#i-calendar"/></svg>Treinos hoje</div>
+          <div class="kpi__value">8</div>
+          <div class="kpi__delta">6 personal &middot; 2 online</div>
+        </article>
+        <article class="ev-card kpi kpi--success">
+          <div class="kpi__label"><svg class="icon icon-sm" style="color: var(--ev-success);"><use href="#i-wallet"/></svg>Faturamento · abr</div>
+          <div class="kpi__value">R$ 12.600</div>
+          <div class="kpi__delta kpi__delta--up"><svg class="icon icon-xs" style="vertical-align: middle;"><use href="#i-trend-up"/></svg> +18% vs. março</div>
+        </article>
+        <article class="ev-card kpi kpi--primary">
+          <div class="kpi__label"><svg class="icon icon-sm" style="color: var(--ev-primary);"><use href="#i-users"/></svg>Alunos ativos</div>
+          <div class="kpi__value">22</div>
+          <div class="kpi__delta">aderência média 89%</div>
+        </article>
+        <article class="ev-card kpi kpi--warning">
+          <div class="kpi__label"><svg class="icon icon-sm" style="color: var(--ev-warning);"><use href="#i-file"/></svg>Pendências</div>
+          <div class="kpi__value">5</div>
+          <div class="kpi__delta">3 planilhas &middot; 2 avaliações físicas</div>
+        </article>
+      </section>
+
+      <section class="main-grid">
+        <article class="ev-card today-card">
+          <div class="card-head">
+            <div><h2>Agenda de hoje</h2><p>Sexta 24/abr &middot; 8 treinos das 06:00 às 20:00</p></div>
+            <button class="ev-btn ev-btn--ghost ev-btn--sm">Semana</button>
+          </div>
+
+          <div class="appt appt--now">
+            <div>
+              <div class="appt__time">06:00</div>
+              <div class="appt__duration">60 min</div>
+            </div>
+            <div>
+              <div class="appt__title">Bruno Silva &middot; treino de força</div>
+              <div class="appt__meta">Studio &middot; Push A &middot; tentativa de PR supino 100 kg</div>
+            </div>
+            <button class="ev-btn ev-btn--primary ev-btn--sm" style="background: var(--treina-accent); border-color: var(--treina-accent);"><svg class="icon icon-xs"><use href="#i-check"/></svg>Iniciar</button>
+          </div>
+
+          <div class="appt">
+            <div><div class="appt__time">07:00</div><div class="appt__duration">60 min</div></div>
+            <div>
+              <div class="appt__title">Marina Costa &middot; funcional</div>
+              <div class="appt__meta">Studio &middot; semana 4/12 &middot; hipertrofia MMII</div>
+            </div>
+            <span class="streak-pill"><svg class="icon icon-xs"><use href="#i-flame"/></svg>5 sem</span>
+          </div>
+
+          <div class="appt">
+            <div><div class="appt__time">09:00</div><div class="appt__duration">90 min</div></div>
+            <div>
+              <div class="appt__title">Ana Paula Gomes &middot; reavaliação</div>
+              <div class="appt__meta">Studio &middot; antropometria + teste de força &middot; trimestre</div>
+            </div>
+            <span class="ev-badge ev-badge--warning">antropometria pendente</span>
+          </div>
+
+          <div class="appt">
+            <div><div class="appt__time">14:00</div><div class="appt__duration">60 min</div></div>
+            <div>
+              <div class="appt__title">Rafael Prado &middot; técnica &middot; online</div>
+              <div class="appt__meta">Google Meet &middot; vídeo-análise de agachamento</div>
+            </div>
+            <button class="ev-btn ev-btn--ghost ev-btn--sm"><svg class="icon icon-xs"><use href="#i-video"/></svg>Sala</button>
+          </div>
+
+          <div class="appt">
+            <div><div class="appt__time">17:30</div><div class="appt__duration">60 min</div></div>
+            <div>
+              <div class="appt__title">Paulo Henrique &middot; pernas</div>
+              <div class="appt__meta">Studio &middot; deload week &middot; recuperação</div>
+            </div>
+            <span class="ev-badge ev-badge--primary">confirmado</span>
+          </div>
+
+          <div class="appt">
+            <div><div class="appt__time">19:00</div><div class="appt__duration">60 min</div></div>
+            <div>
+              <div class="appt__title">Juliana Ramos &middot; corrida</div>
+              <div class="appt__meta">Parque Ibirapuera &middot; meta 5 km em 26 min</div>
+            </div>
+            <span class="ev-badge">outdoor</span>
+          </div>
+        </article>
+
+        <article class="ev-card actions-card">
+          <div class="card-head">
+            <div><h2>Pendências</h2><p>5 itens a resolver essa semana</p></div>
+          </div>
+
+          <div class="action-item">
+            <span class="action-item__dot" style="background: var(--ev-danger);"></span>
+            <div>
+              <div class="action-item__title">Planilha &middot; Marina Costa</div>
+              <div class="action-item__meta">Ciclo 5/12 &middot; enviar até domingo</div>
+            </div>
+          </div>
+          <div class="action-item">
+            <span class="action-item__dot" style="background: var(--ev-warning);"></span>
+            <div>
+              <div class="action-item__title">Planilha &middot; Paulo Henrique</div>
+              <div class="action-item__meta">Pós deload &middot; progressão de carga</div>
+            </div>
+          </div>
+          <div class="action-item">
+            <span class="action-item__dot" style="background: var(--ev-warning);"></span>
+            <div>
+              <div class="action-item__title">Planilha &middot; Juliana Ramos</div>
+              <div class="action-item__meta">Ajuste de paces pra meta 5 km</div>
+            </div>
+          </div>
+          <div class="action-item">
+            <span class="action-item__dot" style="background: var(--ev-primary);"></span>
+            <div>
+              <div class="action-item__title">Avaliação antropométrica &middot; Ana Paula</div>
+              <div class="action-item__meta">Agendada hoje 09:00</div>
+            </div>
+          </div>
+          <div class="action-item">
+            <span class="action-item__dot" style="background: var(--ev-primary);"></span>
+            <div>
+              <div class="action-item__title">Registrar PR &middot; Bruno Silva</div>
+              <div class="action-item__meta">Se bater 100 kg no supino hoje</div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <article class="ev-card clients-card">
+        <div class="pr-banner">
+          <div class="pr-banner__icon"><svg class="icon"><use href="#i-trophy"/></svg></div>
+          <div style="flex: 1;">
+            <div style="font-weight: var(--ev-weight-semibold); font-size: var(--ev-text-sm);">3 PRs batidos nas últimas 2 semanas</div>
+            <div style="font-size: var(--ev-text-xs); color: var(--ev-text-muted);">Ana Paula agachamento 60 kg · Bruno supino 95 kg · Marina leg-press 180 kg</div>
+          </div>
+          <button class="ev-btn ev-btn--ghost ev-btn--sm">Ver todos</button>
+        </div>
+
+        <div class="card-head">
+          <div><h2>Alunos em acompanhamento</h2><p>22 ativos &middot; ordenados por consistência</p></div>
+          <div style="display: flex; gap: var(--ev-space-2);">
+            <button class="ev-btn ev-btn--ghost ev-btn--sm">Filtros</button>
+            <button class="ev-btn ev-btn--ghost ev-btn--sm">Ver todos</button>
+          </div>
+        </div>
+
+        <table class="clients-table">
+          <thead>
+            <tr>
+              <th>Aluno</th>
+              <th>Próximo treino</th>
+              <th>Consistência 30d</th>
+              <th>Streak</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar">BS</span>
+                  <div>
+                    <div class="client-cell__name">Bruno Silva</div>
+                    <div class="client-cell__meta">29 anos &middot; força &middot; 5× semana</div>
+                  </div>
+                </div>
+              </td>
+              <td>Hoje 06:00</td>
+              <td><strong style="color: var(--ev-success);">96%</strong> &middot; 21/22</td>
+              <td><span class="streak-pill"><svg class="icon icon-xs"><use href="#i-flame"/></svg>12 sem</span></td>
+              <td><span class="ev-badge ev-badge--success">consistente</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar">MC</span>
+                  <div>
+                    <div class="client-cell__name">Marina Costa</div>
+                    <div class="client-cell__meta">34 anos &middot; funcional &middot; 4× semana</div>
+                  </div>
+                </div>
+              </td>
+              <td>Hoje 07:00</td>
+              <td><strong style="color: var(--ev-success);">92%</strong> &middot; 18/19</td>
+              <td><span class="streak-pill"><svg class="icon icon-xs"><use href="#i-flame"/></svg>5 sem</span></td>
+              <td><span class="ev-badge ev-badge--success">evoluindo</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar">AP</span>
+                  <div>
+                    <div class="client-cell__name">Ana Paula Gomes</div>
+                    <div class="client-cell__meta">38 anos &middot; hipertrofia &middot; 4× semana</div>
+                  </div>
+                </div>
+              </td>
+              <td>Hoje 09:00</td>
+              <td><strong>82%</strong> &middot; 16/19</td>
+              <td><span class="streak-pill"><svg class="icon icon-xs"><use href="#i-flame"/></svg>3 sem</span></td>
+              <td><span class="ev-badge ev-badge--primary">reavaliação</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar">PH</span>
+                  <div>
+                    <div class="client-cell__name">Paulo Henrique</div>
+                    <div class="client-cell__meta">42 anos &middot; perda de peso &middot; 3× semana</div>
+                  </div>
+                </div>
+              </td>
+              <td>Hoje 17:30</td>
+              <td><strong>78%</strong> &middot; 11/14</td>
+              <td>—</td>
+              <td><span class="ev-badge">deload</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar">JR</span>
+                  <div>
+                    <div class="client-cell__name">Juliana Ramos</div>
+                    <div class="client-cell__meta">31 anos &middot; corrida &middot; 3× semana</div>
+                  </div>
+                </div>
+              </td>
+              <td>Hoje 19:00</td>
+              <td><strong>85%</strong> &middot; 12/14</td>
+              <td><span class="streak-pill"><svg class="icon icon-xs"><use href="#i-flame"/></svg>2 sem</span></td>
+              <td><span class="ev-badge ev-badge--success">no ritmo</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar">RP</span>
+                  <div>
+                    <div class="client-cell__name">Rafael Prado</div>
+                    <div class="client-cell__meta">36 anos &middot; técnica &middot; online</div>
+                  </div>
+                </div>
+              </td>
+              <td>Hoje 14:00</td>
+              <td><strong>100%</strong> &middot; 8/8</td>
+              <td><span class="streak-pill"><svg class="icon icon-xs"><use href="#i-flame"/></svg>8 sem</span></td>
+              <td><span class="ev-badge ev-badge--success">exemplar</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <section class="insights">
+        <article class="ev-card insight">
+          <span class="insight__icon" style="background: var(--treina-soft); color: var(--treina-accent);"><svg class="icon"><use href="#i-trophy"/></svg></span>
+          <div class="insight__title">Bruno de olho no 100 kg no supino</div>
+          <div class="insight__desc">Últimos 4 ciclos: 87,5 → 90 → 92,5 → 95 kg. Hoje tenta o 1RM histórico — prepara o celular pra registrar.</div>
+        </article>
+        <article class="ev-card insight">
+          <span class="insight__icon" style="background: var(--ev-success-soft); color: var(--ev-success);"><svg class="icon"><use href="#i-trend-up"/></svg></span>
+          <div class="insight__title">Consistência da carteira: 89%</div>
+          <div class="insight__desc">Maior que a média do mercado (72% pra personal 1:1). 3 alunos com streak de 8+ semanas.</div>
+        </article>
+        <article class="ev-card insight">
+          <span class="insight__icon" style="background: var(--ev-warning-soft); color: var(--ev-warning);"><svg class="icon"><use href="#i-alert-triangle"/></svg></span>
+          <div class="insight__title">Cruzamento clínico &middot; Ana Paula</div>
+          <div class="insight__desc">A fisio registrou restrição cardiovascular em 22/abr. Ajustar HIIT da próxima semana — já conversei com Rafael Prado.</div>
+        </article>
+      </section>
+
+    </main>
+  </div>
+</body>
+</html>

@@ -4,9 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LogiFit · Protótipo</title>
+  <link rel="icon" type="image/png" href="./img/logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600&display=swap" />
   <link rel="stylesheet" href="./base.css" />
   <script src="./theme.js" defer></script>
   <style>
@@ -102,11 +103,14 @@
 </head>
 <body>
   <main class="hub">
-    <header class="hub__header">
-      <h1>LogiFit · Protótipo de telas</h1>
-      <p>ERP SaaS · Academia + Fisioterapia + Nutrição</p>
-      <div class="hub__actions">
-        <button class="theme-toggle" data-theme-toggle>Tema escuro</button>
+    <header class="hub__header" style="display: flex; gap: var(--ev-space-6); align-items: center;">
+      <img src="./img/logo.png" alt="LogiFit" style="width: 96px; height: 96px; object-fit: contain; flex: 0 0 auto;" />
+      <div style="flex: 1;">
+        <h1 style="margin-bottom: var(--ev-space-2);">LogiFit · Protótipo de telas</h1>
+        <p>ERP SaaS · Academia + Fisioterapia + Nutrição</p>
+        <div class="hub__actions">
+          <button class="theme-toggle" data-theme-toggle>Tema escuro</button>
+        </div>
       </div>
     </header>
 
@@ -203,6 +207,58 @@
           <span class="screen-card__sprint">Sprint 08 · acessos</span>
           <div class="screen-card__title">Controle de catraca</div>
           <p class="screen-card__desc">Tempo real de entradas/saídas, status da catraca, facial.</p>
+        </a>
+        <a class="screen-card" href="./telas/26-member-portal.html">
+          <span class="screen-card__sprint">Sprint 26 · portal</span>
+          <div class="screen-card__title">Portal do member (B2C)</div>
+          <p class="screen-card__desc">Ana vendo a própria jornada — conquistas, streaks, progress rings, mensagens dos profissionais. Tom amigável, verde success dominante.</p>
+        </a>
+      </div>
+    </section>
+
+    <section class="hub__section">
+      <h2>Dashboards por profissional autônomo</h2>
+      <div class="screen-grid">
+        <a class="screen-card" href="./telas/nutri-dashboard.html" style="border-left: 4px solid var(--ev-energy);">
+          <span class="screen-card__sprint" style="color: var(--ev-energy);">Nutre · laranja</span>
+          <div class="screen-card__title">Nutricionista autônoma</div>
+          <p class="screen-card__desc">Júlia Martinez · CRN-3/2245. Consultas do dia, pacientes em acompanhamento, planos a revisar, insights por copilot.</p>
+        </a>
+        <a class="screen-card" href="./telas/treino-dashboard.html" style="border-left: 4px solid #C77DFF;">
+          <span class="screen-card__sprint" style="color: #C77DFF;">Treina · roxo</span>
+          <div class="screen-card__title">Educador físico autônomo</div>
+          <p class="screen-card__desc">Daniel Otávio · CREF 019283-G. Treinos do dia, alunos com consistência, PRs recentes, planilhas pendentes.</p>
+        </a>
+        <a class="screen-card" href="./telas/fisio-dashboard.html" style="border-left: 4px solid var(--ev-success);">
+          <span class="screen-card__sprint" style="color: var(--ev-success);">Recupera · verde</span>
+          <div class="screen-card__title">Fisioterapeuta autônomo</div>
+          <p class="screen-card__desc">Rafael Prado · CREFITO-3/78291-F. Atendimentos do dia, pacientes em tratamento com CIDs, guias TISS, prontuários a assinar.</p>
+        </a>
+      </div>
+    </section>
+
+    <section class="hub__section">
+      <h2>Telas de trabalho · aluno atual (Ana Paula)</h2>
+      <div class="screen-grid">
+        <a class="screen-card" href="./telas/nutri-plano-alimentar.html" style="border-left: 4px solid var(--ev-energy);">
+          <span class="screen-card__sprint" style="color: var(--ev-energy);">Nutre · montagem</span>
+          <div class="screen-card__title">Plano alimentar</div>
+          <p class="screen-card__desc">Editor de dieta com 5 refeições, alvos kcal/macros, donut de distribuição, copilot clínico e lista de substituições.</p>
+        </a>
+        <a class="screen-card" href="./telas/antropometria.html" style="border-left: 4px solid var(--ev-primary);">
+          <span class="screen-card__sprint" style="color: var(--ev-primary);">Cross · avaliação</span>
+          <div class="screen-card__title">Antropometria</div>
+          <p class="screen-card__desc">Big stats · chart de evolução 6 meses · perimetria com sparklines · comparativo das últimas 5 medições · protocolo + fotos.</p>
+        </a>
+        <a class="screen-card" href="./telas/treino-acompanhamento.html" style="border-left: 4px solid #C77DFF;">
+          <span class="screen-card__sprint" style="color: #C77DFF;">Treina · acompanhamento</span>
+          <div class="screen-card__title">Acompanhamento de treino</div>
+          <p class="screen-card__desc">Ciclo 3 semana 4/12 · próximo treino com exercícios · última sessão · PRs · progressão de carga · calendário consistência · metas.</p>
+        </a>
+        <a class="screen-card" href="./telas/paciente-hub.html" style="border-left: 4px solid var(--ev-primary);">
+          <span class="screen-card__sprint" style="color: var(--ev-primary);">Cross · hub operacional</span>
+          <div class="screen-card__title">Perfil da paciente · Hub</div>
+          <p class="screen-card__desc">Launchpad unificado: hero + 6 vitais + alerta cruzado + 12 módulos (prontuário, plano, treino, antropometria, agenda, financeiro, docs, msgs, equipe, conquistas, LGPD, copilot) + feed cross-vertical.</p>
         </a>
       </div>
     </section>

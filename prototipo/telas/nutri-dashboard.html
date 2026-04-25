@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nutricionista · Júlia Martinez · LogiFit</title>
+  <link rel="icon" type="image/png" href="../img/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="../base.css" />
+  <link rel="stylesheet" href="../app-shell.css" />
+  <link rel="stylesheet" href="../side-menu.css" />
+  <script src="../theme.js" defer></script>
+  <script src="../side-menu.js" defer></script>
+  <style>
+    /* ==============================================
+     * Nutri dashboard · profissional autônomo
+     * Cor dominante: energy (laranja)
+     * ============================================== */
+
+    .icon { width: 18px; height: 18px; stroke-width: 1.75; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+    .icon-sm { width: 14px; height: 14px; stroke-width: 2; }
+    .icon-xs { width: 12px; height: 12px; stroke-width: 2; }
+    .icon-lg { width: 22px; height: 22px; }
+
+    /* ===== Greeting ===== */
+    .greeting {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--ev-space-5);
+      align-items: flex-end;
+      margin-bottom: var(--ev-space-6);
+    }
+    .greeting h1 {
+      font-size: var(--ev-text-2xl);
+      font-weight: var(--ev-weight-bold);
+      margin-bottom: var(--ev-space-1);
+    }
+    .greeting p {
+      font-size: var(--ev-text-sm);
+      color: var(--ev-text-muted);
+    }
+    .greeting p strong { color: var(--ev-energy); font-weight: var(--ev-weight-semibold); }
+    .greeting__actions { display: flex; gap: var(--ev-space-2); flex-wrap: wrap; }
+
+    /* ===== KPIs ===== */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--ev-space-4);
+      margin-bottom: var(--ev-space-6);
+    }
+    @media (max-width: 1080px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px)  { .kpis { grid-template-columns: 1fr; } }
+
+    .kpi {
+      padding: var(--ev-space-5);
+      border-left: 4px solid var(--ev-border);
+    }
+    .kpi--energy  { border-left-color: var(--ev-energy); }
+    .kpi--success { border-left-color: var(--ev-success); }
+    .kpi--primary { border-left-color: var(--ev-primary); }
+    .kpi--warning { border-left-color: var(--ev-warning); }
+
+    .kpi__label {
+      display: inline-flex; align-items: center; gap: var(--ev-space-2);
+      font-size: var(--ev-text-xs);
+      color: var(--ev-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: var(--ev-weight-semibold);
+      margin-bottom: var(--ev-space-3);
+    }
+    .kpi__value {
+      font-size: var(--ev-text-3xl);
+      font-weight: var(--ev-weight-bold);
+      font-feature-settings: var(--ev-font-feature-tabular);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--ev-text);
+    }
+    .kpi__delta {
+      font-size: var(--ev-text-xs);
+      color: var(--ev-text-muted);
+      margin-top: var(--ev-space-2);
+    }
+    .kpi__delta--up { color: var(--ev-success); }
+
+    /* ===== Grid principal ===== */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: var(--ev-space-4);
+      margin-bottom: var(--ev-space-6);
+    }
+    @media (max-width: 1080px) { .main-grid { grid-template-columns: 1fr; } }
+
+    /* ===== Agenda do dia ===== */
+    .today-card { padding: var(--ev-space-5); }
+    .card-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: var(--ev-space-4);
+      gap: var(--ev-space-3);
+    }
+    .card-head h2 {
+      font-size: var(--ev-text-base);
+      font-weight: var(--ev-weight-bold);
+    }
+    .card-head p { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+
+    .appt {
+      display: grid;
+      grid-template-columns: 64px 1fr auto;
+      gap: var(--ev-space-4);
+      padding: var(--ev-space-3) 0;
+      border-bottom: 1px solid var(--ev-border);
+      align-items: center;
+    }
+    .appt:first-child { padding-top: 0; }
+    .appt:last-child { border-bottom: none; padding-bottom: 0; }
+    .appt__time {
+      font-size: var(--ev-text-lg);
+      font-weight: var(--ev-weight-bold);
+      font-feature-settings: var(--ev-font-feature-tabular);
+      line-height: 1;
+    }
+    .appt__duration { font-size: 10px; color: var(--ev-text-subtle); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+    .appt__title { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-semibold); margin-bottom: 2px; }
+    .appt__meta { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+    .appt__meta-icons { display: inline-flex; gap: 6px; align-items: center; margin-left: 4px; }
+    .appt--now {
+      background: var(--ev-energy-soft);
+      border-radius: var(--ev-radius-lg);
+      padding: var(--ev-space-3) var(--ev-space-4);
+      border-bottom: none;
+      margin-bottom: var(--ev-space-2);
+    }
+    .appt--now + .appt { padding-top: var(--ev-space-3); }
+
+    /* ===== Ações pendentes ===== */
+    .actions-card { padding: var(--ev-space-5); }
+    .action-item {
+      display: flex;
+      gap: var(--ev-space-3);
+      padding: var(--ev-space-3) 0;
+      border-bottom: 1px solid var(--ev-border);
+      align-items: flex-start;
+    }
+    .action-item:first-child { padding-top: 0; }
+    .action-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .action-item__dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-top: 6px;
+      flex: 0 0 auto;
+    }
+    .action-item__title { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-medium); margin-bottom: 2px; }
+    .action-item__meta { font-size: var(--ev-text-xs); color: var(--ev-text-muted); }
+
+    /* ===== Clientes ===== */
+    .clients-card { padding: var(--ev-space-5); margin-bottom: var(--ev-space-6); }
+    .clients-table { width: 100%; border-collapse: collapse; font-size: var(--ev-text-sm); }
+    .clients-table th, .clients-table td { padding: var(--ev-space-3); text-align: left; border-bottom: 1px solid var(--ev-border); }
+    .clients-table tr:last-child td { border-bottom: none; }
+    .clients-table th {
+      font-size: var(--ev-text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ev-text-muted);
+      font-weight: var(--ev-weight-semibold);
+      padding-top: 0;
+    }
+    .clients-table tr:hover td { background: var(--ev-surface-muted); }
+    .clients-table td.num {
+      text-align: right;
+      font-feature-settings: var(--ev-font-feature-tabular);
+    }
+    .client-cell {
+      display: flex; align-items: center; gap: var(--ev-space-3);
+    }
+    .client-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--ev-energy-soft);
+      color: var(--ev-energy);
+      display: flex; align-items: center; justify-content: center;
+      font-size: var(--ev-text-xs);
+      font-weight: var(--ev-weight-bold);
+    }
+    .client-cell__name { font-weight: var(--ev-weight-semibold); font-size: var(--ev-text-sm); }
+    .client-cell__meta { font-size: 11px; color: var(--ev-text-muted); }
+
+    .progress {
+      display: inline-block;
+      width: 100px;
+      height: 6px;
+      background: var(--ev-surface-muted);
+      border-radius: 4px;
+      overflow: hidden;
+      vertical-align: middle;
+      margin-right: var(--ev-space-2);
+    }
+    .progress__bar { height: 100%; background: var(--ev-energy); border-radius: 4px; }
+    .progress__bar--success { background: var(--ev-success); }
+
+    /* ===== Insights ===== */
+    .insights { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--ev-space-4); }
+    @media (max-width: 1080px) { .insights { grid-template-columns: 1fr; } }
+    .insight {
+      padding: var(--ev-space-4);
+    }
+    .insight__icon {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-bottom: var(--ev-space-3);
+    }
+    .insight__title { font-size: var(--ev-text-sm); font-weight: var(--ev-weight-semibold); margin-bottom: var(--ev-space-1); }
+    .insight__desc { font-size: var(--ev-text-xs); color: var(--ev-text-muted); line-height: 1.5; }
+  </style>
+</head>
+<body>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+      <symbol id="i-apple" viewBox="0 0 24 24"><path d="M12 4c-1 0-2-1-3-1-3 0-6 3-6 7s3 11 6 11c1 0 2-1 3-1s2 1 3 1c3 0 6-7 6-11s-3-7-6-7c-1 0-2 1-3 1Z"/><path d="M12 4c0-2 1-3 3-3"/></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+      <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M20 12V8a2 2 0 0 0-2-2H5a1 1 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/><path d="M18 12a2 2 0 1 0 0 4h3v-4h-3Z"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol>
+      <symbol id="i-video" viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16V9M12 16V5M17 16v-4"/></symbol>
+      <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></symbol>
+      <symbol id="i-trend-up" viewBox="0 0 24 24"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></symbol>
+      <symbol id="i-trend-down" viewBox="0 0 24 24"><path d="M22 17 13.5 8.5 8.5 13.5 2 7"/><path d="M16 17h6v-6"/></symbol>
+      <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
+      <symbol id="i-alert-triangle" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z"/></symbol>
+      <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+    </defs>
+  </svg>
+
+  <div class="app">
+
+    <header class="topbar">
+      <div class="topbar__brand">
+        <div class="topbar__brand-row">
+          <img class="topbar__brand-mark" src="../img/logo.png" alt="LogiFit" />
+          <span class="topbar__brand-name"><span style="color: var(--ev-success);">Logi</span>Fit</span>
+        </div>
+        <span class="topbar__brand-tagline">
+          <span style="color: var(--ev-energy);">Nutre</span>
+          <span class="topbar__brand-tagline__sep">|</span>
+          <span style="color: #C77DFF;">Treina</span>
+          <span class="topbar__brand-tagline__sep">|</span>
+          <span style="color: var(--ev-success);">Recupera</span>
+        </span>
+      </div>
+      <div class="topbar__tenant">
+        <div class="topbar__tenant-label">Profissional</div>
+        <div class="topbar__tenant-value">CRN-3/2245 &middot; SP</div>
+      </div>
+      <button class="hamburger" data-side-menu-trigger aria-label="Abrir menu" aria-controls="side-menu">
+        <svg class="icon" width="22" height="22"><use href="#i-menu"/></svg>
+      </button>
+      <div class="topbar__search">
+        <div style="position: relative;">
+          <svg class="icon icon-sm" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--ev-text-subtle);"><use href="#i-search"/></svg>
+          <input class="ev-input" placeholder="Buscar paciente, plano, alimento…" style="padding-left: 40px;" />
+        </div>
+      </div>
+      <div class="topbar__actions">
+        <button class="theme-toggle" data-theme-toggle>Tema escuro</button>
+        <button class="ev-btn ev-btn--ghost" aria-label="Notificações"><svg class="icon"><use href="#i-bell"/></svg></button>
+        <div class="topbar__user">
+          <span class="topbar__avatar" style="background: var(--ev-energy-soft); color: var(--ev-energy);">JM</span>
+          <div class="topbar__user-text">
+            <div style="font-size: var(--ev-text-sm); font-weight: var(--ev-weight-semibold);">Júlia Martinez</div>
+            <div style="font-size: var(--ev-text-xs); color: var(--ev-text-muted);">Nutricionista</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+
+      <!-- Greeting -->
+      <section class="greeting">
+        <div>
+          <h1>Bom dia, Júlia ✨</h1>
+          <p>Sexta, 24 de abril &middot; <strong>4 consultas hoje</strong> &middot; a próxima é Ana Paula às 09:00 (retorno).</p>
+        </div>
+        <div class="greeting__actions">
+          <button class="ev-btn ev-btn--ghost"><svg class="icon icon-sm"><use href="#i-file"/></svg>Novo plano</button>
+          <button class="ev-btn ev-btn--primary" style="background: var(--ev-energy); border-color: var(--ev-energy);">
+            <svg class="icon icon-sm"><use href="#i-plus"/></svg>Nova consulta
+          </button>
+        </div>
+      </section>
+
+      <!-- KPIs -->
+      <section class="kpis">
+        <article class="ev-card kpi kpi--energy">
+          <div class="kpi__label"><svg class="icon icon-sm" style="color: var(--ev-energy);"><use href="#i-calendar"/></svg>Consultas hoje</div>
+          <div class="kpi__value">4</div>
+          <div class="kpi__delta">3 presenciais &middot; 1 online</div>
+        </article>
+        <article class="ev-card kpi kpi--success">
+          <div class="kpi__label"><svg class="icon icon-sm" style="color: var(--ev-success);"><use href="#i-wallet"/></svg>Faturamento · abr</div>
+          <div class="kpi__value">R$ 8.400</div>
+          <div class="kpi__delta kpi__delta--up"><svg class="icon icon-xs" style="vertical-align: middle;"><use href="#i-trend-up"/></svg> +12% vs. março</div>
+        </article>
+        <article class="ev-card kpi kpi--primary">
+          <div class="kpi__label"><svg class="icon icon-sm" style="color: var(--ev-primary);"><use href="#i-users"/></svg>Pacientes ativos</div>
+          <div class="kpi__value">28</div>
+          <div class="kpi__delta">+3 novos esse mês</div>
+        </article>
+        <article class="ev-card kpi kpi--warning">
+          <div class="kpi__label"><svg class="icon icon-sm" style="color: var(--ev-warning);"><use href="#i-file"/></svg>Pendências</div>
+          <div class="kpi__value">6</div>
+          <div class="kpi__delta">2 planos &middot; 1 anamnese &middot; 3 evoluções</div>
+        </article>
+      </section>
+
+      <!-- Grid: agenda + ações -->
+      <section class="main-grid">
+
+        <article class="ev-card today-card">
+          <div class="card-head">
+            <div>
+              <h2>Agenda de hoje</h2>
+              <p>Sexta 24/abr &middot; das 09:00 às 17:45</p>
+            </div>
+            <button class="ev-btn ev-btn--ghost ev-btn--sm">Semana</button>
+          </div>
+
+          <div class="appt appt--now">
+            <div>
+              <div class="appt__time">09:00</div>
+              <div class="appt__duration">60 min</div>
+            </div>
+            <div>
+              <div class="appt__title">Ana Paula Gomes &middot; retorno</div>
+              <div class="appt__meta">
+                Consultório &middot; avaliação de evolução &middot; plano Premium
+                <span class="appt__meta-icons"><svg class="icon icon-xs" style="color: var(--ev-success);"><use href="#i-check"/></svg>anamnese ok</span>
+              </div>
+            </div>
+            <button class="ev-btn ev-btn--primary ev-btn--sm" style="background: var(--ev-energy); border-color: var(--ev-energy);">
+              <svg class="icon icon-xs"><use href="#i-check"/></svg>Iniciar
+            </button>
+          </div>
+
+          <div class="appt">
+            <div>
+              <div class="appt__time">11:00</div>
+              <div class="appt__duration">90 min</div>
+            </div>
+            <div>
+              <div class="appt__title">Carlos Mendes &middot; 1ª consulta</div>
+              <div class="appt__meta">Consultório &middot; indicação Instagram &middot; foco hipertrofia</div>
+            </div>
+            <span class="ev-badge ev-badge--warning">anamnese pendente</span>
+          </div>
+
+          <div class="appt">
+            <div>
+              <div class="appt__time">14:30</div>
+              <div class="appt__duration">60 min</div>
+            </div>
+            <div>
+              <div class="appt__title">Patrícia Coelho &middot; retorno + plano novo</div>
+              <div class="appt__meta">Consultório &middot; objetivo: déficit 300 kcal &middot; 3ª consulta</div>
+            </div>
+            <span class="ev-badge ev-badge--primary">confirmado</span>
+          </div>
+
+          <div class="appt">
+            <div>
+              <div class="appt__time">17:00</div>
+              <div class="appt__duration">45 min</div>
+            </div>
+            <div>
+              <div class="appt__title">Pedro Almeida &middot; online</div>
+              <div class="appt__meta">
+                Google Meet &middot; retorno trimestral
+                <span class="appt__meta-icons"><svg class="icon icon-xs" style="color: var(--ev-primary);"><use href="#i-video"/></svg></span>
+              </div>
+            </div>
+            <button class="ev-btn ev-btn--ghost ev-btn--sm"><svg class="icon icon-xs"><use href="#i-video"/></svg>Sala</button>
+          </div>
+        </article>
+
+        <article class="ev-card actions-card">
+          <div class="card-head">
+            <div>
+              <h2>Pendências</h2>
+              <p>6 itens a resolver essa semana</p>
+            </div>
+          </div>
+
+          <div class="action-item">
+            <span class="action-item__dot" style="background: var(--ev-danger);"></span>
+            <div>
+              <div class="action-item__title">Plano alimentar · Patrícia Coelho</div>
+              <div class="action-item__meta">Enviar hoje antes da consulta 14:30</div>
+            </div>
+          </div>
+          <div class="action-item">
+            <span class="action-item__dot" style="background: var(--ev-warning);"></span>
+            <div>
+              <div class="action-item__title">Plano alimentar · Pedro Almeida</div>
+              <div class="action-item__meta">Revisão trimestral &middot; prazo hoje</div>
+            </div>
+          </div>
+          <div class="action-item">
+            <span class="action-item__dot" style="background: var(--ev-warning);"></span>
+            <div>
+              <div class="action-item__title">Anamnese · Carlos Mendes</div>
+              <div class="action-item__meta">1ª consulta às 11:00 &middot; formulário enviado ontem</div>
+            </div>
+          </div>
+          <div class="action-item">
+            <span class="action-item__dot" style="background: var(--ev-primary);"></span>
+            <div>
+              <div class="action-item__title">Avaliar fotos de evolução</div>
+              <div class="action-item__meta">3 pacientes enviaram essa semana</div>
+            </div>
+          </div>
+          <div class="action-item">
+            <span class="action-item__dot" style="background: var(--ev-primary);"></span>
+            <div>
+              <div class="action-item__title">Mensagem de reengajamento</div>
+              <div class="action-item__meta">Luana Ribeiro &middot; 18 dias sem contato</div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- Pacientes em acompanhamento -->
+      <article class="ev-card clients-card">
+        <div class="card-head">
+          <div>
+            <h2>Pacientes em acompanhamento</h2>
+            <p>28 ativos &middot; ordenados por próxima consulta</p>
+          </div>
+          <div style="display: flex; gap: var(--ev-space-2);">
+            <button class="ev-btn ev-btn--ghost ev-btn--sm">Filtros</button>
+            <button class="ev-btn ev-btn--ghost ev-btn--sm">Ver todos</button>
+          </div>
+        </div>
+
+        <table class="clients-table">
+          <thead>
+            <tr>
+              <th>Paciente</th>
+              <th>Próxima</th>
+              <th>Evolução do objetivo</th>
+              <th class="num">Última consulta</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar">AP</span>
+                  <div>
+                    <div class="client-cell__name">Ana Paula Gomes</div>
+                    <div class="client-cell__meta">38 anos &middot; perder 4 kg até jul</div>
+                  </div>
+                </div>
+              </td>
+              <td>Hoje 09:00</td>
+              <td>
+                <span class="progress"><span class="progress__bar progress__bar--success" style="width: 67%;"></span></span>
+                <span style="font-weight: 600;">67%</span>
+              </td>
+              <td class="num">há 3 sem</td>
+              <td><span class="ev-badge ev-badge--success">evoluindo bem</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar" style="background: var(--ev-primary-soft); color: var(--ev-primary);">CM</span>
+                  <div>
+                    <div class="client-cell__name">Carlos Mendes</div>
+                    <div class="client-cell__meta">32 anos &middot; ganho de massa</div>
+                  </div>
+                </div>
+              </td>
+              <td>Hoje 11:00</td>
+              <td><span style="color: var(--ev-text-muted); font-size: var(--ev-text-xs);">1ª consulta</span></td>
+              <td class="num">—</td>
+              <td><span class="ev-badge">novo</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar" style="background: var(--ev-success-soft); color: var(--ev-success);">PC</span>
+                  <div>
+                    <div class="client-cell__name">Patrícia Coelho</div>
+                    <div class="client-cell__meta">45 anos &middot; manutenção</div>
+                  </div>
+                </div>
+              </td>
+              <td>Hoje 14:30</td>
+              <td>
+                <span class="progress"><span class="progress__bar" style="width: 50%;"></span></span>
+                <span style="font-weight: 600;">50%</span>
+              </td>
+              <td class="num">há 1 mês</td>
+              <td><span class="ev-badge ev-badge--primary">em dia</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar" style="background: var(--ev-energy-soft); color: var(--ev-energy);">PA</span>
+                  <div>
+                    <div class="client-cell__name">Pedro Almeida</div>
+                    <div class="client-cell__meta">28 anos &middot; esportista &middot; online</div>
+                  </div>
+                </div>
+              </td>
+              <td>Hoje 17:00</td>
+              <td>
+                <span class="progress"><span class="progress__bar progress__bar--success" style="width: 82%;"></span></span>
+                <span style="font-weight: 600;">82%</span>
+              </td>
+              <td class="num">há 3 meses</td>
+              <td><span class="ev-badge ev-badge--success">ótimo</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar" style="background: var(--ev-warning-soft); color: var(--ev-warning);">LR</span>
+                  <div>
+                    <div class="client-cell__name">Luana Ribeiro</div>
+                    <div class="client-cell__meta">26 anos &middot; perda de peso</div>
+                  </div>
+                </div>
+              </td>
+              <td>Seg 27/abr</td>
+              <td>
+                <span class="progress"><span class="progress__bar" style="width: 30%; background: var(--ev-warning);"></span></span>
+                <span style="font-weight: 600;">30%</span>
+              </td>
+              <td class="num">há 18 dias</td>
+              <td><span class="ev-badge ev-badge--warning">sem contato</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="client-cell">
+                  <span class="client-avatar">FL</span>
+                  <div>
+                    <div class="client-cell__name">Fernando Luz</div>
+                    <div class="client-cell__meta">52 anos &middot; controle glicêmico</div>
+                  </div>
+                </div>
+              </td>
+              <td>Qua 29/abr</td>
+              <td>
+                <span class="progress"><span class="progress__bar progress__bar--success" style="width: 74%;"></span></span>
+                <span style="font-weight: 600;">74%</span>
+              </td>
+              <td class="num">há 2 sem</td>
+              <td><span class="ev-badge ev-badge--success">evoluindo</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <!-- Insights -->
+      <section class="insights">
+        <article class="ev-card insight">
+          <span class="insight__icon" style="background: var(--ev-success-soft); color: var(--ev-success);">
+            <svg class="icon"><use href="#i-trend-up"/></svg>
+          </span>
+          <div class="insight__title">5 pacientes bateram meta semanal</div>
+          <div class="insight__desc">Ana, Pedro, Fernando, Rafael e Marina — aderência acima de 80% nos registros do diário alimentar.</div>
+        </article>
+        <article class="ev-card insight">
+          <span class="insight__icon" style="background: var(--ev-energy-soft); color: var(--ev-energy);">
+            <svg class="icon"><use href="#i-sparkles"/></svg>
+          </span>
+          <div class="insight__title">Copilot sugere: revisar plano da Patrícia</div>
+          <div class="insight__desc">Dados do diário indicam dificuldade em atingir macros de proteína. Ajuste sugerido: +15 g/dia.</div>
+        </article>
+        <article class="ev-card insight">
+          <span class="insight__icon" style="background: var(--ev-warning-soft); color: var(--ev-warning);">
+            <svg class="icon"><use href="#i-alert-triangle"/></svg>
+          </span>
+          <div class="insight__title">1 paciente em gap de contato</div>
+          <div class="insight__desc">Luana está há 18 dias sem interação. Recomendo mensagem proativa — risco de churn alto.</div>
+        </article>
+      </section>
+
+    </main>
+  </div>
+</body>
+</html>
