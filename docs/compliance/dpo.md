@@ -24,12 +24,47 @@
 
 | Compromisso | SLA | Como cumprir |
 |---|---|---|
-| Resposta a titular (LGPD art. 18) | 15 dias | Portal `/meu/privacidade` (Sprint 26) + email `privacidade@logifit.com.br` |
+| Resposta a titular (LGPD art. 18) | 15 dias úteis (Resolução ANPD 2/2024) | Portal `/meu/privacidade` (Sprint 26) + email `privacidade@logifit.com.br` |
 | Notificação de incidente à ANPD | 72 horas | Plano de resposta documentado em [ADR 0067](../decisions/0067-dpo-governanca-compliance-lgpd.md) + tabela `security_incidents` |
 | Atualização de RIPDs (Relatório de Impacto à Proteção de Dados) | Semestral | `docs/compliance/ripd/` versionado em git |
-| Revisão da lista de sub-processadores | Quando muda + 30d aviso a tenants pagantes | `logifit.com.br/sub-processors` + lista canônica em [ADR 0067](../decisions/0067-dpo-governanca-compliance-lgpd.md) |
+| Revisão da lista de sub-processadores | Quando muda + 30d aviso a tenants pagantes | `logifit.com.br/sub-processors` + tabela canônica neste documento (seção "Inventário de sub-processadores") espelhada em [ADR 0067](../decisions/0067-dpo-governanca-compliance-lgpd.md) |
 | Auditoria interna de compliance | Trimestral | Checklist documentado em [ADR 0067](../decisions/0067-dpo-governanca-compliance-lgpd.md) |
 | Comunicação pública | A cada mudança de DPO ou política | Atualização deste documento + Política de Privacidade do site |
+
+## Inventário de sub-processadores
+
+> **Obrigação LGPD art. 6º + Resolução ANPD nº 18/2024.** Lista pública mantida em `logifit.com.br/sub-processors` (a publicar no Sprint 00) com mesma versão deste documento. Tenants pagantes recebem aviso 30 dias antes de qualquer adição/troca.
+
+| # | Provider | Categoria | Dado tratado | Jurisdição | Fase | Contrato/DPA | Link público |
+|---|---|---|---|---|---|---|---|
+| 1 | **Vercel** | Hospedagem aplicação + edge | Logs HTTP, env vars cifradas, código | US (multi-region edge) | MVP + Fase 2 | DPA Vercel padrão | [vercel.com/legal/dpa](https://vercel.com/legal/dpa) |
+| 2 | **Supabase** | Banco PG + Auth + Storage + Realtime | Dados aplicação completos (cifrados at-rest) | SP — Brasil (region SA-East-1) | MVP (até Sprint 19b) | DPA Supabase padrão (BR data residency) | [supabase.com/legal](https://supabase.com/legal) |
+| 3 | **Oracle Cloud OCI** | Postgres self-hosted (ARM Ampere free tier) | Dados aplicação completos (cifrados at-rest) | SP — Brasil | **Fase 2** (pós-Sprint 19b — [ADR 0078](../decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md)) | DPA Oracle Cloud | [oracle.com/legal/cloud](https://www.oracle.com/legal/cloud/) |
+| 4 | **Cloudflare R2** | Object storage (mídia + backup off-site MVP) | Mídia clínica cifrada + dumps PG cifrados GPG | Multi-region (BR opt-in via Workers) | MVP + Fase 2 | DPA Cloudflare | [cloudflare.com/cloudflare-customer-dpa](https://www.cloudflare.com/cloudflare-customer-dpa) |
+| 5 | **AWS S3** | Backup off-site Object Lock WORM | Dumps PG cifrados (camada extra além R2) | us-east-1 | **Fase 2** (regra 40 — [ADR 0073](../decisions/0073-postura-seguranca-defesa-em-profundidade.md)) | DPA AWS GDPR addendum | [aws.amazon.com/compliance/gdpr-center](https://aws.amazon.com/compliance/gdpr-center/) |
+| 6 | **Asaas** | Pagamentos (boleto/Pix/cartão) + cobrança recorrente | Dados financeiros + identificação tenant/member | BR (SP) | MVP + Fase 2 | DPA Asaas + LogiFit | [asaas.com/termos](https://www.asaas.com/) |
+| 7 | **Focus NFe** | Emissão fiscal unificada (NFS-e + NF-e + NFC-e + eventos) | Dados fiscais + cadastrais empresa/cliente | BR | MVP + Fase 2 ([ADR 0059](../decisions/0059-ciclo-fiscal-emissao-focus-nfe.md)) | DPA Focus NFe | [focusnfe.com.br/termos-de-uso](https://focusnfe.com.br/termos-de-uso/) |
+| 8 | **Resend** | Email transacional | Email destinatário + corpo (sem dado clínico) | US/EU (multi-region) | MVP + Fase 2 | DPA Resend | [resend.com/legal/dpa](https://resend.com/legal/dpa) |
+| 9 | **Sentry** | Error tracking + APM | Logs sanitizados (sem PII clínica via scrubber) | US (self-hosted EU opt) | MVP + Fase 2 | DPA Sentry | [sentry.io/legal/dpa](https://sentry.io/legal/dpa/) |
+| 10 | **PostHog** | Product analytics | Eventos pseudonimizados (não-PII) | US (EU opt) | MVP + Fase 2 | DPA PostHog | [posthog.com/dpa](https://posthog.com/dpa) |
+| 11 | **Logtail / Axiom** | Logs estruturados | Logs aplicação + audit não-clínico | US/EU | MVP + Fase 2 | DPA respectivo | [logtail.com](https://betterstack.com/) / [axiom.co](https://axiom.co/) |
+| 12 | **Upstash Redis** | Rate limit + cache (chaves transientes) | Chaves de rate limit por (tenant_id, user_id, ip, endpoint) | US/EU (Global) | MVP + Fase 2 (regra 36) | DPA Upstash | [upstash.com/dpa](https://upstash.com/dpa) |
+| 13 | **Google Cloud Vertex AI** | LLM default (Gemini 2.5 Flash) + OCR + embeddings | Prompts + respostas IA + extração documentos | **SP — Brasil (region southamerica-east1)** | MVP + Fase 2 ([ADR 0064](../decisions/0064-ia-arquitetura-gemini-default-byok-rag.md)) | DPA Google Cloud + region BR | [cloud.google.com/terms/data-processing-addendum](https://cloud.google.com/terms/data-processing-addendum) |
+| 14 | **Groq** | Speech-to-Text (Whisper) | Áudio transcrição (teleconsulta + diário voz) | US | MVP + Fase 2 ([ADR 0064](../decisions/0064-ia-arquitetura-gemini-default-byok-rag.md)) | DPA Groq | [groq.com/dpa](https://groq.com/) |
+
+### Sub-processadores opcionais (BYOK — responsabilidade do tenant)
+
+Tenants podem optar por **trazer sua própria chave** (BYOK) para serviços de IA + pagamento, hipótese em que o provider do tenant **não é** sub-processador da LogiFit:
+
+- **Anthropic / OpenAI / Maritaca** — IA BYOK ([ADR 0064](../decisions/0064-ia-arquitetura-gemini-default-byok-rag.md))
+- **Asaas BYOK por company** — quando tenant opera com conta Asaas própria
+
+### Política de mudança
+
+1. **Adição/troca de sub-processador:** comunicação 30 dias antes via banner no app + email aos tenant_owner
+2. **Tenant pode opor-se:** hipótese rara; LogiFit avalia caso a caso (downgrade de feature ou rescisão amistosa)
+3. **Auditoria interna trimestral** valida que cada sub-processador tem DPA atualizado e jurisdição declarada bate com lista
+4. **Hash da lista** publicado em `logifit.com.br/sub-processors/hash` para detectar mudança não-anunciada
 
 ## Limites do papel interino
 

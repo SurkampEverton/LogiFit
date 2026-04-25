@@ -11,7 +11,7 @@
 ## Pré-requisitos
 
 - [ ] Acesso a `{{sistema}}` com credenciais válidas
-- [ ] MFA recente (<15min) — gate `requireRecentMfa()` se aplicável (regra 43)
+- [ ] MFA recente (<15min) — gate `requireRecentMfa()` **obrigatório** para qualquer ação de alto-risco (regra 43): cancelar guia TISS, anular invoice, alterar role, executar runbook destrutivo, recovery emergencial. Marcar **N/A** apenas se runbook é **read-only** (consulta sem efeito) — justificar a exceção no preenchimento.
 - [ ] Sessão privilegiada PAM aberta se acesso super-admin (ADR 0073 camada 7)
 - [ ] Ferramenta `{{X}}` instalada localmente
 - [ ] Backup recente confirmado (RPO 24h — regra 40)

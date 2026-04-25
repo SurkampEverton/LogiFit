@@ -50,9 +50,12 @@ Esta migração estava planejada desde o início do projeto ([ADR 0078](../decis
 
 ## Decisões tomadas
 
-- [ADR 0078 — Hospedagem em duas fases](../decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md)
-- Decisão pendente: **BetterAuth vs Lucia** — fechar no início da sprint via spike de 4h em ambos. Critérios: maturidade Next.js 15, suporte TOTP MFA, recovery codes, magic link, OAuth, hooks pra custom claims (`tenant_id`, `group_ids`, `topology`).
-- Decisão pendente: **WebSocket onde rodar** — Vercel Edge Runtime tem limitações de long-lived connections; alternativa Node container no próprio Oracle (mesma VM do PG, separado por porta). Spike 2h.
+- [ADR 0078 — Hospedagem em duas fases](../decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md) (accepted 2026-04-25; vigente desde Sprint 00 via 8 regras de portabilidade)
+
+> **Nota sobre decisões pendentes abaixo:** os spikes BetterAuth/Lucia e WebSocket runtime são **detalhes de implementação derivados de ADR 0078** — não criam novo ADR. Apenas registram-se em `## Log` deste sprint quando resolvidos. Caso o spike revele uma decisão arquitetural que **subverte** ADR 0078 (ex: descobrir que BetterAuth não tem maturidade e migrar para outro stack — Auth.js, Clerk self-hosted), aí sim novo ADR é exigido (regra 12 + ADR amend).
+
+- Decisão pendente (impl): **BetterAuth vs Lucia** — fechar no início da sprint via spike de 4h em ambos. Critérios: maturidade Next.js 15, suporte TOTP MFA, recovery codes, magic link, OAuth, hooks pra custom claims (`tenant_id`, `group_ids`, `topology`). **Não cria novo ADR** — apenas escolha de lib derivada de ADR 0078.
+- Decisão pendente (impl): **WebSocket onde rodar** — Vercel Edge Runtime tem limitações de long-lived connections; alternativa Node container no próprio Oracle (mesma VM do PG, separado por porta). Spike 2h. **Não cria novo ADR** — apenas escolha de runtime derivada de ADR 0078.
 
 ## Fases da migração (7 fases + monitoring final)
 

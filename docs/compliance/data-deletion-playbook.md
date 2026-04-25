@@ -28,11 +28,13 @@ LGPD **art. 18 IV** garante direito ao titular de "anonimização, bloqueio ou e
 
 ### Tipo A — Solicitação do titular (LGPD art. 18)
 
-- Member/paciente pede via `/meu/privacidade` → cria `data_subject_requests` com `right='anonymization'` ou `'elimination'` + deadline 15d
+- Member/paciente pede via `/meu/privacidade` → cria `data_subject_requests` com `right='anonymization'` ou `'elimination'` + deadline **15 dias úteis** (Resolução ANPD nº 2/2024)
 - Admin tenant + DPO LogiFit avaliam:
   - Se sem retenção legal pendente → eliminação
   - Se retenção legal vigente → anonimização preservando dado retido
 - Resultado documentado em `fulfilled_payload` + email ao titular
+
+> **Pré-Sprint 26 (canal alternativo):** o portal `/meu/privacidade` só fica completo no Sprint 26. Antes disso, titular contata DPO via **`privacidade@logifit.com.br`**; equipe DPO registra **manualmente** em `data_subject_requests` (Sprint 01b cria o schema; UI completa vem em 26) + cria registro em `security_incidents` se requisição revela vazamento ou erro de tratamento. SLA 15d úteis vale desde dia 1 — **não esperar Sprint 26**.
 
 ### Tipo B — Trial expirado D+44 (Sprint 01a)
 

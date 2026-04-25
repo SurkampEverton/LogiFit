@@ -33,17 +33,18 @@ Visão funcional do sistema, agrupada por **área**. Cada módulo tem "quais ver
 | **`<PersonPicker>` reutilizável** | Componente de autocomplete que busca persons e mostra papéis ativos; usado em toda tela de cadastro especializado | todas | 01a | todo |
 | **Busca automática de dados por CNPJ** | Ao digitar 14 dígitos preenche razão social, endereço, CNAE, porte, regime tributário, situação cadastral vindos da Receita. BrasilAPI (default) + ReceitaWS (fallback) + CNPJá! (pago, opcional). Admin configura via `/app/settings/pessoas/cnpj` | todas | 01a | todo |
 | **Cache de CNPJ + validação periódica de situação** | Cache global 7 dias; botão manual de refresh; job semanal detecta empresa baixada/suspensa | todas | 01a | todo |
-| **Device Hub (wearables + clínicos)** | Ingestão normalizada FHIR-like de Garmin, Oura, BLE bioimpedância, FIT/CSV; provider abstrato; expande com Apple Health + Google Health Connect no Sprint 36 App Nativo | todas | 34 | futuro |
-| **Curadoria profissional de leituras para avaliação** | Profissional seleciona leituras de `device_readings` + valida/edita + importa para `assessment_measurements` com rastreabilidade (`source_device_reading_id`, `validated_by_user_id`) | todas | 34 | futuro |
-| **Monitoramento contínuo por categoria** | Tracks de peso/HR/sono/recovery/passos entre avaliações formais com tendências visuais | todas | 34 | futuro |
-| **Alertas inteligentes de saúde** | Regras declarativas (mesma DSL do Sprint 13) consomem `device_readings` e disparam via cross-alert dispatcher: HR em repouso subiu, % gordura aumenta, sedentarismo | todas | 34 | futuro |
-| **Timeline enriquecida no member** | Widget de timeline ganha tracks paralelos: avaliações oficiais + dados de dispositivo (agregados) + alertas disparados | todas | 34 | futuro |
-| **Consent granular por provider + retenção 90d raw** | Member autoriza cada integração separadamente; dado cru rotaciona 90 dias, agregados diários indefinidos | todas | 34 | futuro |
-| **Pipeline inteligente de exames laboratoriais** | Upload PDF → OCR → IA extrai analitos estruturados → IA sugere padrões e hipóteses (conservador, nunca diagnostica) → profissional revisa lado-a-lado → publica em `lab_results` oficial | todas | 35 | futuro |
-| **Self-upload de exame pelo paciente** | Portal `/meu/exames/upload` com consent específico; exame entra em fila de revisão antes de virar histórico oficial | todas | 35 | futuro |
-| **Classificador de output clínico** | Guardrail IA que bloqueia termos proibidos ("tem [doença]", "diagnóstico de", etc); ADR 0015 será produzido no Sprint 06 (Copilot Safety) — ver convenção em `roadmap.md` sobre ADRs reservados a sprints | todas | 35 | futuro |
-| **Categorização sensível de exames** | Permission `exam.sensitive.read` para HIV/psiquiátrico/genético/paternidade; audit reforçado | Fisio + Nutri | 35 | futuro |
-| **Opt-out de IA em exames por tenant** | Admin pode desabilitar IA e manter só OCR + revisão humana (para tenants com LGPD mais restritivo) | todas | 35 | futuro |
+| **Device Hub (wearables + clínicos)** | Ingestão normalizada FHIR-like de Garmin, Oura, BLE bioimpedância, FIT/CSV; provider abstrato; expande com Apple Health + Google Health Connect no Sprint 35 App Nativo | todas | 32 | futuro |
+| **Curadoria profissional de leituras para avaliação** | Profissional seleciona leituras de `device_readings` + valida/edita + importa para `assessment_measurements` com rastreabilidade (`source_device_reading_id`, `validated_by_user_id`) | todas | 32 | futuro |
+| **Monitoramento contínuo por categoria** | Tracks de peso/HR/sono/recovery/passos entre avaliações formais com tendências visuais | todas | 32 | futuro |
+| **Alertas inteligentes de saúde** | Regras declarativas (mesma DSL do Sprint 13) consomem `device_readings` e disparam via cross-alert dispatcher: HR em repouso subiu, % gordura aumenta, sedentarismo | todas | 32 | futuro |
+| **Timeline enriquecida no member** | Widget de timeline ganha tracks paralelos: avaliações oficiais + dados de dispositivo (agregados) + alertas disparados | todas | 32 | futuro |
+| **Consent granular por provider + retenção 90d raw** | Member autoriza cada integração separadamente; dado cru rotaciona 90 dias, agregados diários indefinidos | todas | 32 | futuro |
+| **Reconhecimento facial (consent opt-in)** | Biometria facial para entrada na unidade (alternativa a QR/catraca); LGPD art. 11 (dado biométrico sensível) — consent explícito obrigatório, retenção raw D+90, embeddings cifrados, revogação D+0 com purge imediato. RIPD `v1.0-reconhecimento-facial.md` cobre risco residual e decisão DPO. | Academia (MVP) + opcional Fisio/Nutri | 32 (junto com Device Hub — provider biométrico abstrato) | futuro |
+| **Pipeline inteligente de exames laboratoriais** | Upload PDF → OCR → IA extrai analitos estruturados → IA sugere padrões e hipóteses (conservador, nunca diagnostica) → profissional revisa lado-a-lado → publica em `lab_results` oficial | todas | 33 | futuro |
+| **Self-upload de exame pelo paciente** | Portal `/meu/exames/upload` com consent específico; exame entra em fila de revisão antes de virar histórico oficial | todas | 33 | futuro |
+| **Classificador de output clínico** | Guardrail IA que bloqueia termos proibidos ("tem [doença]", "diagnóstico de", etc); ADR 0015 será produzido no Sprint 06 (Copilot Safety) — ver convenção em `roadmap.md` sobre ADRs reservados a sprints | todas | 33 | futuro |
+| **Categorização sensível de exames** | Permission `exam.sensitive.read` para HIV/psiquiátrico/genético/paternidade; audit reforçado | Fisio + Nutri | 33 | futuro |
+| **Opt-out de IA em exames por tenant** | Admin pode desabilitar IA e manter só OCR + revisão humana (para tenants com LGPD mais restritivo) | todas | 33 | futuro |
 | Identidade + MFA | Login (magic link + OAuth), TOTP obrigatório para profissionais | todas | 01a | todo |
 | Hierarquia group→tenant→company→unit | Schema multi-tenant com RLS raiz, 4 cenários canônicos no seed | todas | 01a | todo |
 | Login contextual + troca de tenant | Usuário multi-tenant escolhe contexto; JWT é reassinado | todas | 01a | todo |
@@ -71,7 +72,7 @@ Visão funcional do sistema, agrupada por **área**. Cada módulo tem "quais ver
 | **Dashboard de conformidade IA** | `/app/compliance/ia` lista features IA ativas + classe SaMD + última revisão do comitê + log de decisões humanas (CFM 2.454/2026) | todas | 01b | todo |
 | **RIPD versionado por módulo crítico (LGPD art. 11 — ADR 0054)** | `ripd_documents` + `ripd_versions` com SHA-256 hash, riscos identificados, mitigações, parecer DPO; revisão semestral obrigatória | todas | 01b | todo |
 | **Consent granular por finalidade (LGPD art. 8º + art. 11)** | `consent_purposes (key, label, required, lawful_basis, data_categories[])` + `consents (member_id, purpose_key, given_at, revoked_at)` com trilha completa | todas | 01b | todo |
-| **Direitos do titular (LGPD art. 18 — 8 direitos completos)** | Portal `/meu/privacidade` com 8 botões (confirmação/acesso/correção/anonimização/portabilidade/info-compartilhamento/info-consequências/revogação); apagamento **é solicitação**, não automático (obrigações de retenção: prontuário 20a CFM 2.299, fiscal 5a); SLA 15 dias; `data_subject_requests` + timeline visível ao titular; admin atende via `/app/compliance/titular-requests` | todas | 01b (scaffold) + 26 (portal completo) | todo |
+| **Direitos do titular (LGPD art. 18 — 8 direitos completos)** | Portal `/meu/privacidade` com 8 botões (confirmação/acesso/correção/anonimização/portabilidade/info-compartilhamento/info-consequências/revogação); apagamento **é solicitação**, não automático (obrigações de retenção: prontuário 20a CFM 2.299, fiscal 5a); SLA **15 dias úteis** (Resolução ANPD nº 2/2024); `data_subject_requests` + timeline visível ao titular; admin atende via `/app/compliance/titular-requests` | todas | 01b (scaffold) + 26 (portal completo) | todo |
 | **Retenção e descarte automatizado** | `retention_policies (data_category, retention_period, legal_basis)` + job de expurgo + audit | todas | 01b | todo |
 | **Particionamento + retenção (ADR 0072 + regra 34)** | Toda tabela com volume estimado >5M linhas/ano OU >50k linhas/dia nasce particionada (`PARTITION BY RANGE` temporal — mês/trimestre/ano — ou `PARTITION BY HASH (tenant_id)`). Migration declara `@volume_estimate_yearly: <N>` em comentário SQL; CI lint bloqueia se excede sem partição. Retenções aplicadas: 5 anos audit (LGPD), 20 anos prontuário (CFM 2.299/2021 + COFFITO 415/2012), 5 anos fiscal, 1 ano IA audit (CFM 2.454/2026) + 5 anos cold storage. Drop de partição = metadata-only (ms vs hours em DELETE row-by-row). | todas | 01a (audit_log + jobs base) + 02 (member_events) + 06 (ai_audit_log) + 07 (UI monitoring) + 11/17/20/21/30/31/32/33 (tabelas específicas) | todo |
 | **Cold storage Parquet zstd (ADR 0072)** | Dados >2-5 anos exportados para Supabase Storage como Parquet zstd compactado; retenção legal preservada com custo ~80% menor que disco quente. Schema `archive_jobs` + `compliance_retention_log` rastreia migrações. Cold partitions criptografadas AES-256 + KMS (prontuário, exames, diário alimentar). Job `archive-cold-partitions` quadrimestral. | todas | 01b (schemas) + 07 (UI) + sprints específicos | todo |
@@ -215,6 +216,33 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 | Bloqueio por inadimplência (`access_blocks`) | Bloqueia QR quando contrato está em atraso X dias | Academia | 08 | todo |
 
 **Fora do MVP (mapeado):** offline-first da catraca — check-in local grava e sincroniza depois. Vira sprint na Fase 2 se requisito duro aparecer.
+
+---
+
+## Personal Training
+
+> Vertical canônica (regra 27, ADR 0077). Atende profissional autônomo (CONFEF/CREF) ou personal contratado por academia. Sobreposição grande com Academia — diferencia na granularidade de prescrição (1:1, periodização) e modelo comercial (sessão avulsa vs mensalidade).
+
+| Módulo | Descrição | Verticais | Sprint | Status |
+|---|---|---|---|---|
+| Sessão personal 1:1 | Reserva exclusiva profissional↔aluno em `slots` com tipo `personal_session`; cobrança por sessão ou pacote | Personal | 03 + 04 | todo |
+| Periodização de treino | Mesociclo/microciclo em `workout_plans` com progressão de carga e volume; templates por objetivo (hipertrofia/emagrecimento/funcional) | Personal + Academia | 09 | todo |
+| Prescrição via WhatsApp | Envio de plano + vídeos via webhook outbound (regra 25 + Sprint 13); paciente confirma execução | Personal + Academia + Fisio | 13 | todo |
+| Onboarding com PAR-Q + anamnese | Questionário de prontidão obrigatório antes de prescrição; gate em feature flag para liberar treinos | Personal | 08 | todo |
+| Plano Solo / Solo Combo (ADR 0069) | UX simplificada `tenants.mode='solo'` para personal autônomo (templates por profissão, sem multi-empresa) | Personal | 01a | todo |
+
+---
+
+## Pilates
+
+> Vertical canônica (regra 27, ADR 0077). Modelo de turma reduzida (3-6 alunos), agendamento por aparelho (reformer/cadillac/chair), progressão por exercício e nível. Pode rodar standalone ou anexo a Academia/Fisio.
+
+| Módulo | Descrição | Verticais | Sprint | Status |
+|---|---|---|---|---|
+| Turmas reduzidas + agendamento por aparelho | `slots` com capacidade 3-6 + `resources` por aparelho; conflito de aparelho bloqueia booking | Pilates | 03 | todo |
+| Progressão por exercício e nível | Catálogo `pilates_exercises` (Mat, Reformer, Cadillac, Chair, Barrel) com nível básico/intermediário/avançado; tracking de evolução por aluno | Pilates | 09 | futuro |
+| Avaliação postural inicial | Template específico em `assessment_types` com fotos pré/pós + observações de desbalanço | Pilates + Fisio | 12 | futuro |
+| Pacotes mensais com aulas/semana | Plano comercial limita N aulas/semana via `member_quota`; consumo cai a cada check-in | Pilates | 04 | todo |
 
 ---
 

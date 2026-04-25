@@ -98,6 +98,12 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 - **Busca automática de CNPJ** — ADR 0048 accepted (BrasilAPI default + ReceitaWS fallback + CNPJá! opcional; cache 7d)
 - **Device Hub (wearables + clínicos)** — ADR 0049 accepted (padrão FHIR-like Observation + provider abstrato; Garmin/Oura + BLE bioimpedância + import FIT/CSV no Sprint 32; Apple Health + Google Health Connect no Sprint 37 App Nativo)
 - **Pipeline inteligente de exames laboratoriais** — ADR 0050 accepted (OCR → IA extração → IA interpretação conservadora → revisão profissional → `lab_results` oficial; paciente sobe via portal com fila de revisão; nunca diagnostica; classificador de output bloqueia termos proibidos)
+- **DPO + Governança Compliance LGPD** — [ADR 0067](decisions/0067-dpo-governanca-compliance-lgpd.md) accepted (DPO interno fundador no MVP; `privacidade@logifit.com.br`; plano resposta 72h; sub-processors públicos; auditoria trimestral)
+- **Plano comercial / pricing / trial** — [ADR 0066](decisions/0066-plano-comercial-pricing-trial.md) accepted (revisado 2026-04-25 — 4 tiers principais + Solo/Combo + cota IA hard-stop + NFS-e inclusas + overage)
+- **NFS-e Padrão Nacional como provider complementar futuro** — [ADR 0076](decisions/0076-nfse-nacional-provider-complementar.md) accepted 2026-04-25 (não substitui Focus NFe; pós-Sprint 36 estável 3 meses + 10k notas/mês + 30% emissões em municípios aderidos)
+- **Passaporte do paciente (vínculo cross-tenant)** — [ADR 0077](decisions/0077-passaporte-paciente-vinculo-cross-tenant.md) accepted 2026-04-25 (Modelo C híbrido + 5 módulos canônicos + 5 níveis de dados + audit log particionado)
+- **Hospedagem em duas fases (MVP Supabase → Pós-MVP Oracle Cloud OCI)** — [ADR 0078](decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md) accepted 2026-04-25 (cutover Sprint 19b + 8 regras de portabilidade vigentes desde Sprint 00)
+- **TISS 4.01 ANS padrão vigente** — [ADR 0079](decisions/0079-tiss-401-ans-padrao-vigente.md) accepted 2026-04-25 (Ofício-Circular ANS nº 1/2026; pipeline atualização semestral; ADRs 0029/0030/0031/0042 detalham implementação)
 
 ## Decisões já fechadas
 
@@ -107,9 +113,11 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 
 ## Convenção sobre sprints em alto nível
 
-Sprints **34** (Nutri-Agent IA), **35** (App Nativo Expo) e **37 pós-MVP** (Prescrição Adaptativa IA por RPE) aparecem na tabela da Fase 3 **apenas como entrada de roadmap** — não têm arquivo detalhado em `docs/sprints/NN-*.md` ainda. Isso é **deliberado**: arquivo de sprint profundo nasce quando o sprint vira candidato a `doing` (próximos 1-2 na fila). Evita doc especulativa que fica obsoleta antes de executar. Quando chegar a hora, o arquivo é criado via mesmo template + extensão (formato profundo: Goal, Aceite, Dependências, Schemas, Rotas, Server Actions, Eventos, Commit checklist, DoD).
+Sprints **34** (Nutri-Agent IA), **35** (App Nativo Expo), **pós-35** (Prescrição Adaptativa IA por RPE), **37** (Apuração Receita), **38** (Guias DAS/DARF), **39** (Obrigações Acessórias SPED) e **40** (Folha CLT + eSocial) aparecem na tabela da Fase 3 **apenas como entrada de roadmap** — não têm arquivo detalhado em `docs/sprints/NN-*.md` ainda. Isso é **deliberado**: arquivo de sprint profundo nasce quando o sprint vira candidato a `doing` (próximos 1-2 na fila). Evita doc especulativa que fica obsoleta antes de executar. Quando chegar a hora, o arquivo é criado via mesmo template + extensão (formato profundo: Goal, Aceite, Dependências, Schemas, Rotas, Server Actions, Eventos, Commit checklist, DoD).
 
 Sprints **36** (Fiscal Focus NFe) **possui** arquivo detalhado já — foi escrito com profundidade pra orientar planejamento da decisão fiscal (ADR 0059). O fato dele existir antes dos 34/35 não viola a convenção — apenas reflete a sequência cronológica de quando precisaram ser planejados.
+
+> **Nota de leitura:** quando uma célula da coluna "Sprint" mostra apenas o número (ex: `34`, `35`, `37`) sem link markdown, isso significa que ainda não há arquivo `docs/sprints/NN-*.md` correspondente. Não é link quebrado — é placeholder intencional conforme convenção acima.
 
 ## Convenção de numeração de ADRs
 
@@ -150,7 +158,11 @@ ADRs no LogiFit seguem **numeração sequencial densa** com uma exceção legít
 | 0045 | Sprint 35 | Stack mobile: Expo bare vs managed; React Native vs Flutter | a produzir |
 | 0046 | Sprint 35 | Estratégia de release (app stores vs OTA Expo Updates) | a produzir |
 
-**Referências a esses ADRs em outros documentos** (ex: regra que cita "ADR 0015") são **válidas como compromisso de produção** — quando o Sprint 06 rodar, ADR 0015 nasce e o link passa a resolver. Até lá, links como `(ADR 0015)` em corpo de texto são aceitos sem `.md` resolvendo.
+**Referências a esses ADRs em outros documentos** (ex: regra que cita "ADR 0015") são **válidas como compromisso de produção** — quando o Sprint 06 rodar, ADR 0015 nasce e o link passa a resolve. Até lá, links como `(ADR 0015)` em corpo de texto são aceitos sem `.md` resolvendo.
+
+### Numeração pós-0046 (faixa fora-de-sprint)
+
+A faixa **0011-0046 está reservada** (acima); a faixa **0047+ é alocada sequencialmente** para ADRs **fora-de-sprint** (decisões transversais que não nascem dentro de uma sprint específica — DPO, hospedagem, passaporte, fiscal arquitetural). Atualmente: 0047-0050 (decisões recentes), 0051 livre, 0052-0079 publicados sequencialmente. **Próximo ADR fora-de-sprint disponível: 0080+**. Caso um sprint reservado precise produzir ADR mas a faixa 0011-0046 já alocou outro tema correlato, alocar próximo número livre acima de 0080 e referenciar back na tabela acima.
 
 ## Operação
 

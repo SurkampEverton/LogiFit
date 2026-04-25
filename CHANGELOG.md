@@ -6,6 +6,88 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — 7ª auditoria 2026-04-25 (cross-references + stubs RIPD faltantes + template ANPD)
+
+Sétima auditoria, focada em **falhas sutis sobreviventes às 6 anteriores**. 3 agentes Explore em paralelo cobriram cross-references, artefatos compliance/runbooks/threat-models e roadmap/sprints/CHANGELOG. Verificações diretas confirmaram cada P0 antes de propor fix (3 falsos positivos descartados sem alteração: P1-1 prontuário STRIDE-DoS já presente linha 44, P1-5 sprints "06c/19c/36c" não existem, P1-7 convenção ADRs reservados já documentada). **6 P0 corrigidos + 4 P1 + 4 stubs novos = 14 ações, todas conclusas.**
+
+**P0 corrigidos:**
+
+- [docs/rules.md](docs/rules.md) regra 24 — termo legado `aluno` → `member` (canônico do schema; UI pode rotular conforme vertical)
+- [docs/modulos.md](docs/modulos.md) — Device Hub mapeado para Sprint **32** (era 34, errado); Pipeline Exames para Sprint **33** (era 35); App Nativo para Sprint **35** (era 36)
+- [docs/compliance/anpd-notification-template.md](docs/compliance/anpd-notification-template.md) — **Template ANPD criado** (LGPD art. 48 + Resolução ANPD nº 15/2024) com 9 seções: cabeçalho, natureza, categorias titulares/dados, medidas técnicas/admin, riscos, comunicação a titulares, anexos obrigatórios, compromissos pós-incidente, assinaturas. Runbook [`incidente-lgpd-72h.md:57`](docs/runbooks/incidente-lgpd-72h.md) atualizado para apontar ao template (não mais "a criar")
+- [docs/compliance/ripd/v1.0-prontuario-fisio.md](docs/compliance/ripd/v1.0-prontuario-fisio.md) — Estratégia de retenção 20a (Lei 13.787) materializada em §5.1: particionamento mensal + quente PG até D+5a + cold R2/S3 Parquet zstd até D+20a + drop só com dupla confirmação DPO + tenant_owner + integridade hash chain. Liga ao runbook [`falha-hash-chain.md`](docs/runbooks/falha-hash-chain.md)
+- [docs/runbooks/falha-nfe.md:20](docs/runbooks/falha-nfe.md) — Gate `requireRecentMfa({maxAgeMinutes:15})` explicitado (backend, não UX); referência cruzada a regra 43 + ADR 0073 + runbook [`mfa-bypass-emergencial.md`](docs/runbooks/mfa-bypass-emergencial.md) para emergência
+- [CLAUDE.md](CLAUDE.md) — **Renumeração canônica:** seção "Regras" deixa de usar numeração local 1-29 e passa a usar a numeração de [`docs/rules.md`](docs/rules.md) (1, 3, 5, 7, 11, 13-16, 27-44). Convenções específicas do agente Claude (nunca commit sem pedir, paths absolutos, sprint ativo) movidas para bloco "Convenções de colaboração" sem número canônico. Elimina ambiguidade quando outro doc cita "regra N"
+
+**P1 corrigidos:**
+
+- [docs/modulos.md](docs/modulos.md) — Adicionadas seções "## Personal Training" (sessão 1:1, periodização, prescrição WhatsApp, PAR-Q, Solo plan) e "## Pilates" (turmas reduzidas, agendamento por aparelho, progressão, pacotes mensais) como verticais canônicas próprias (regra 27 + ADR 0077). Antes só existiam embutidas em Academia
+- [docs/modulos.md](docs/modulos.md) — Adicionada linha "Reconhecimento facial (consent opt-in)" em Fundação (Sprint 32 junto com Device Hub) — RIPD existente passa a ter contraparte em modulos.md
+- [docs/compliance/samd-classification.md](docs/compliance/samd-classification.md) — Nova seção "Gatilhos & SLA por classe" com tabela detalhando: evento gatilho (merge PR), quem detecta/dispara, SLA até feature ir live (D+0 classe I, D+30 classe II, hard-block III/IV, 72h recall), bloqueios CI por classe. Linkagem explícita aos RIPDs classe II+
+- [docs/compliance/ripd/v1.0-exames-laboratoriais.md](docs/compliance/ripd/v1.0-exames-laboratoriais.md) — Próximos passos materializa SLA: Tech Lead preenche template ANVISA → DPO submete → arquiva protocolo → CI `feature-flag-blocked-without-anvisa-protocol` libera flag
+- [docs/roadmap.md](docs/roadmap.md) — Convenção sobre sprints alto-nível expandida para incluir 37-40 (fiscal pós-MVP); nota de leitura sobre células sem link markdown adicionada para clarificar placeholders intencionais
+
+**Stubs RIPD novos (3 — preenche lacuna de cobertura LGPD art. 11 / regra 29):**
+
+- [docs/compliance/ripd/v0.1-cobranca-financeiro.md](docs/compliance/ripd/v0.1-cobranca-financeiro.md) — RIPD financeiro: invoices+pagamentos+fiscal Asaas+Focus NFe; CID/procedimento clínico em linha (TISS Sprint 22); retenção 5a fiscal vs 20a se ligado a prontuário; tokenização cartão Asaas; threat-model `pagamento-asaas.md` referenciado
+- [docs/compliance/ripd/v0.1-ia-copilot-clinico.md](docs/compliance/ripd/v0.1-ia-copilot-clinico.md) — RIPD assistente IA universal (3 camadas help/insight/action); RAG tenant-isolated; sanitização PII pré-prompt; classifier output (regra 28); Comitê IA gate; quota mensal hard-stop por plano (ADR 0066); cross-border declarado (Vertex AI SP / Groq US / Anthropic US BYOK)
+- [docs/compliance/ripd/v0.1-agendamento.md](docs/compliance/ripd/v0.1-agendamento.md) — RIPD agenda como metadado clínico (vínculo paciente↔profissional + motivo); template WhatsApp **sem** motivo clínico; retenção 20a se booking clínico (Lei 13.787) vs 5a operacional; flag `discretion_mode` para slots sensíveis (psicologia futuro)
+
+**Falsos positivos descartados (3):**
+
+- P1-1: `docs/threat-models/prontuario.md:44` já contém cenário formal "D - Denial of Service" na tabela STRIDE (ICP-Brasil signer cai); 6 vetores cobertos
+- P1-5: nenhuma ocorrência de "Sprint 06c", "19c", "36c" em roadmap.md (alegação infundada)
+- P1-7: convenção "ADRs 0011-0046 reservados" já documentada explicitamente em [`docs/roadmap.md`](docs/roadmap.md) "Convenção de numeração de ADRs"
+
+**Verificação:** ver § "Verificação" do plano em `~/.claude/plans/fa-a-uma-revis-o-completa-cozy-candle.md`. Sem testes automatizados (mudanças docs-only). Validação por leitura humana + grep dirigido.
+
+### Docs — 6ª auditoria 2026-04-25 (19 issues + materialização de artefatos compliance)
+
+Sexta auditoria após estabilização da 5ª. Foco: **artefatos formais ainda não materializados** (RIPDs, threat-models STRIDE, runbooks operacionais, inventário de sub-processadores) + inconsistências factuais residuais. **3 críticos + 7 altos + 6 médios + 3 baixos = 19 issues, todos endereçados.** 3 falsos-positivos descartados. Materializa **19 novos artefatos** (8 RIPDs stub + 5 threat-models STRIDE stub + 6 runbooks stub) que preenchem expectativas das regras 28-43 mesmo antes dos sprints específicos rodarem.
+
+**Críticos (3):**
+
+- [docs/compliance/ripd/](docs/compliance/ripd/) — **8 RIPDs stub criados** (`v1.0-prontuario-fisio.md`, `v1.0-exames-laboratoriais.md`, `v1.0-nutri-diario.md`, `v1.0-reconhecimento-facial.md`, `v1.0-device-hub.md`, `v1.0-academia-treino.md`, `v1.0-nutri-plano.md`, `v1.0-whatsapp.md`). Cada um marcado `v0.1-skeleton — expandir em Sprint XX` com identificação do tratamento + base legal LGPD art. 7+11 + medidas de segurança + avaliação de risco preliminar. Cumpre regra 29 antes de pipeline CI implementar (Sprint 01b)
+- [docs/threat-models/](docs/threat-models/) — **5 threat-models STRIDE stub criados** (`login-mfa.md`, `pagamento-asaas.md`, `prontuario.md`, `pipeline-exames.md`, `whatsapp-inbound.md`). Cada um com diagrama de fluxo + análise STRIDE 6 categorias × cenários × mitigações amarradas a regras (33-43) + ADRs + riscos residuais aceitos. Cumpre exigência ADR 0073 antes de feature em produção
+- [docs/compliance/dpo.md](docs/compliance/dpo.md) — **Inventário de sub-processadores** materializado (14 entradas: Vercel, Supabase, Oracle Cloud OCI, Cloudflare R2, AWS S3, Asaas, Focus NFe, Resend, Sentry, PostHog, Logtail/Axiom, Upstash Redis, Vertex AI SP, Groq) com categoria, dado tratado, jurisdição, fase MVP/Fase 2, link público de DPA. Cumpre LGPD art. 6º + Resolução ANPD nº 18/2024
+
+**Altos (7):**
+
+- [docs/runbooks/](docs/runbooks/) — **6 runbooks stub criados** (`incidente-lgpd-72h.md`, `mfa-bypass-emergencial.md`, `lockout-conta.md`, `falha-hash-chain.md`, `exfiltracao-detectada.md`, `falha-nfe.md`). Cobrem operações críticas exigidas por ADR 0067 + ADR 0073 + regra 39 + regra 43 + Sprint 36
+- [docs/compliance/samd-classification.md](docs/compliance/samd-classification.md) — Procedimento ANVISA RDC 657/2022 detalhado: tabela de gatilhos (quando notificar) + responsáveis (DPO + tech lead + Comitê IA tenant) + documento técnico mínimo (8 seções obrigatórias + ISO 14971) + fluxo de submissão portal ANVISA + repositório local em `docs/compliance/anvisa-notifications/{ano}/` + riscos de não-cumprimento
+- [CLAUDE.md](CLAUDE.md) — Cota IA por plano completada: linha 22 agora cita **Solo 200 / Solo Combo 200** (alinhado a ADR 0066 tabela 142-144 que já contemplava)
+- [docs/roadmap.md](docs/roadmap.md) — Seção "Decisões já fechadas (recente)" expandida com 6 ADRs accepted ausentes do índice (0066, 0067, 0076, 0077, 0078, 0079); nova subseção "Numeração pós-0046 (faixa fora-de-sprint)" documenta como alocar ADRs 0080+
+- [docs/sprints/19b-migracao-hospedagem-oracle.md](docs/sprints/19b-migracao-hospedagem-oracle.md) — Clarificação: spikes BetterAuth/Lucia + WebSocket runtime são **detalhes de implementação derivados de ADR 0078, não criam novo ADR**. Critério: novo ADR só se spike subverte ADR 0078
+
+**Médios (6):**
+
+- [docs/rules.md](docs/rules.md) regra 29 + [docs/modulos.md](docs/modulos.md) + [docs/compliance/dpo.md](docs/compliance/dpo.md) + [docs/compliance/data-deletion-playbook.md](docs/compliance/data-deletion-playbook.md) — SLA de direitos do titular (LGPD art. 18) clarificado de "15 dias" para **"15 dias úteis" (Resolução ANPD nº 2/2024)**
+- [docs/rules.md](docs/rules.md) regra 32 — "Gemini Flash" → "Gemini 2.5 Flash via Vertex AI SP" (alinha CLAUDE.md + arquitetura.md)
+- [docs/runbooks/_template.md](docs/runbooks/_template.md) — clarifica MFA recente <15min: **obrigatório** para alto-risco (regra 43); marcar **N/A** apenas se runbook é read-only
+- [docs/compliance/data-deletion-playbook.md](docs/compliance/data-deletion-playbook.md) — Nota pré-Sprint 26: titular contata DPO via `privacidade@logifit.com.br`; equipe registra manualmente em `data_subject_requests` (Sprint 01b cria schema; UI completa em Sprint 26). SLA 15d úteis vale desde dia 1
+- [docs/sprints/34-nutri-agent-ia.md](docs/sprints/34-nutri-agent-ia.md) — Pré-requisito `domain_events`: dono a definir quando 34 detalhar; spike de 2h no kickoff confirma se Sprint 00 ou Sprint 31 entrega
+- [docs/sprints/34-nutri-agent-ia.md](docs/sprints/34-nutri-agent-ia.md) — Notificação ANVISA Classe II referencia procedimento expandido em [`samd-classification.md`](docs/compliance/samd-classification.md)
+
+**Baixos (3):**
+
+- [CLAUDE.md](CLAUDE.md) item 12 — auto-referência redundante "regra 27 em `docs/rules.md`" simplificada para "regra 27" (rules.md já é canônico)
+- [docs/roadmap.md](docs/roadmap.md) — Nota explícita sobre alocação de ADRs pós-0079 (faixa fora-de-sprint)
+- [docs/compliance/dpo.md](docs/compliance/dpo.md) — Compromisso "lista canônica em ADR 0067" agora aponta para tabela canônica neste documento (espelhada em ADR 0067)
+
+**Falsos-positivos descartados** (validados antes de aplicar fix):
+
+- `docs/modulos.md:28` cita ADR 0069 para Solo: **correto** (ADR 0069 é `tenants.mode='solo'`, não pricing; pricing é ADR 0066 que já está no início da linha)
+- ADR 0066 tabela cota IA "incompleta": **falso** (tabela linha 142-144 já contempla Solo/Combo 200; só CLAUDE.md estava desalinhado)
+- "Sprint 23 (contrato)" em CLAUDE.md: **taquigrafia válida** para "contrato de comissão" (Sprint 23 é fisio comissões/repasse)
+- Sprint 36 não menciona ADR 0076: **falso** (linha 86 já documenta out-of-scope com clareza)
+- Sprint 04 schema fiscal: **falso** (linhas 87-115 já cobrem `plan_tier_rates` + `tenant_usage_snapshots.fiscal_emissions_count/_limit/_overage_rate_cents` + função `get_tier_rates_for_date` + exemplo numérico)
+- Sprint 32 retenção sem regra 34: **falso** (linha 65 explicitamente cita "Retenção (ADR 0072 + regra 34)")
+- Sprint 20 sem checklist `signature_policies`: **falso** (linhas 114, 116 já listam schema + seed)
+
+**Veredicto da 6ª passada:**
+
+Auditorias 1-5 endereçaram inconsistências de redação e gaps de coordenação entre docs/sprints. **Esta 6ª foca na materialização de artefatos formais** que vinham sendo prometidos como "a expandir no sprint X" mas não tinham nem skeleton — agora todos os 19 stubs existem com substância suficiente para parecer DPO, auditoria interna trimestral e onboarding de auditor externo. Próxima auditoria deve focar em **expandir os v0.1-skeleton** quando os sprints respectivos virarem `doing` (não rodar 7ª auditoria sem novo conteúdo prosa material).
+
 ### Regras — Regra 44 NOVA: ler design system antes de criar tela/componente UI
 
 - [docs/rules.md](docs/rules.md) — **Regra 44** em nova seção "Design system 'Equilíbrio Vital'" complementa regras 27 (i18n) e 31 (responsividade). Define fonte de verdade dual (pré/pós-Sprint 00), lista proibições (hardcode de hex/font/spacing/radius/font-size; construir primitivo do zero; `box-shadow` decorativa) e obrigações (nova variante entra primeiro no styleguide; mudança de token apenas em `tokens.css`). Lint `no-hardcoded-design-token` previsto pra Sprint 00

@@ -32,8 +32,9 @@ Para gerar:
 
 - Sprints 29, 30, 31, 32, 33 concluídos
 - Comitê IA tenant cadastrado (regra 13/28) — **gate funcional bloqueia ativação sem ata**
-- Classificação SaMD: provável **Classe II** (auxílio decisão clínica) — exige ANVISA notificação
+- Classificação SaMD: provável **Classe II** (auxílio decisão clínica) — exige ANVISA notificação (procedimento em [`docs/compliance/samd-classification.md`](../compliance/samd-classification.md))
 - RIPD `v1.0-nutri-agent.md` (Sprint 01b/Sprint 33 já estabeleceram template)
+- Tabela `domain_events` deve existir e estar populada por Sprints upstream — **dono a definir quando Sprint 34 detalhar**: candidatos prováveis são Sprint 00 (infra) ou Sprint 31 (nutri diário/plano publicam eventos). Spike de 2h no kickoff de 34 confirma; se nenhum sprint a entrega, Sprint 34 cria como entrega adicional
 
 ## Decisões esperadas
 
