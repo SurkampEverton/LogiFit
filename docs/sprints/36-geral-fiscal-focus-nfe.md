@@ -14,7 +14,9 @@ Entregar o **ciclo fiscal completo de emissão** via Focus NFe, cobrindo 8 tipos
 
 Sprint anteriores preparam recepção (ADR 0056), manifestação (ADR 0057), devolução interna (ADR 0058) e NFs relacionadas (ADR 0060). Schemas de `fiscal_emissions`, `fiscal_events`, `fiscal_numbering_sequences` nascem no Sprint 15. Este sprint conecta tudo via provider único **Focus NFe** + UI de emissão + webhooks de callback.
 
-Regra fundamental: **LogiFit não toca em motor tributário**. Focus NFe cuida de ICMS/IPI/PIS/COFINS/CST/CFOP/ISS por UF/município. Interface `FiscalProvider` abstrai para trocas futuras.
+Regra fundamental: **LogiFit não toca em motor tributário**. Focus NFe cuida de ICMS/IPI/PIS/COFINS/CST/CFOP/ISS por UF/município. Interface `FiscalProvider` abstrai para trocas futuras (ver [ADR 0076](../decisions/0076-nfse-nacional-provider-complementar.md) — NFS-e Nacional como provider complementar pós-MVP).
+
+**Modelo de cobrança fiscal (revisão ADR 0066 em 2026-04-25):** custo Focus NFe é repassado proporcionalmente ao tenant via overage (Pro 200/Business 1.000/Enterprise 5.000 notas inclusas; excedente cobrado a R$ 0,25-0,40/nota). Este sprint precisa garantir que a contagem de emissões alimenta `tenant_usage_snapshots.fiscal_emissions_count` corretamente.
 
 ## Critério de aceite
 
@@ -80,8 +82,19 @@ Regra fundamental: **LogiFit não toca em motor tributário**. Focus NFe cuida d
 ## Decisões tomadas / ADRs esperados
 
 - **ADR 0059** (accepted) — Ciclo fiscal de emissão completo via Focus NFe
+- **ADR 0076** (accepted 2026-04-25) — NFS-e Nacional como provider complementar; **não implementa neste sprint**, apenas mantém `FiscalProvider` apto a receber adapter futuro (`provider` column em `fiscal_emissions` já registra qual provider emitiu)
 - **Pergunta aberta:** certificado A1 — usar da company (Sprint 17) ou Focus NFe gerencia o próprio? Começar com Focus (eles têm infra); tenant pode escolher "cert próprio" se precisar isolar.
 - **Pergunta aberta:** NFC-e exige CSC (Código de Segurança do Contribuinte) por UF — configurado por company no wizard de onboarding.
+
+## Pré-Sprint — Negociação comercial Focus NFe
+
+**Antes de iniciar Sprint 36** (idealmente 30-60 dias antes), o fundador deve abrir conversa comercial com Focus NFe para tabela escalonada por volume. Detalhes:
+
+- **Target:** R$ 0,12/nota acima de 10.000 emissões/mês agregado LogiFit
+- **Argumento:** crescimento esperado pós-PMF; multi-tenant SaaS com volume previsível e crescente
+- **Pedidos secundários:** SLA escrito, rate limit dedicado, suporte priority, sandbox enterprise sem expirar
+- **Resultado documentado em** `docs/contratos/focus-nfe.md` (criar pasta) com versão assinada do contrato
+- **Gatilho de re-negociação:** a cada 50% de aumento de volume mensal LogiFit; revisão obrigatória anual
 
 ## Módulos entregues
 
@@ -210,12 +223,30 @@ Consumidores:
 - [ ] **Pesquisa global** (ADR 0062): indexar `fiscal_emissions` como kind=`fiscal_emission` (label=número+tipo+destinatário, subtitle=valor+data+status, `required_permission='fiscal.read'`); permite operador achar "NFS-e 1234" direto
 - [ ] ADR 0059 publicado (já accepted)
 
+**Integração com modelo de cobrança LogiFit (ADR 0066 revisado 2026-04-25):**
+
+- [ ] Coluna `provider text NOT NULL DEFAULT 'focus_nfe' CHECK (provider IN ('focus_nfe','nfse_nacional','enotas','mock'))` em `fiscal_emissions` — **prepara ADR 0076** sem implementar
+- [ ] Job mensal `/api/jobs/aggregate-fiscal-usage-snapshot` agrega `count(*) FROM fiscal_emissions WHERE tenant_id=? AND completed_at BETWEEN ? AND ? AND status='completed' AND kind IN ('nfse','nfe','nfce','nfe_return','nfe_transfer','nfe_conserto')` no fechamento do mês e popula `tenant_usage_snapshots.fiscal_emissions_count`
+- [ ] **Eventos (cancelamento, CC-e, inutilização) NÃO contam** no overage — só `fiscal_emissions` com `status='completed'` na primeira emissão
+- [ ] UI `/app/settings/tenant/plan` (Sprint 04) mostra preview "Notas emitidas: X / Y inclusas; overage estimado: R$ Z"
+- [ ] Teste E2E: emite 5 notas em tenant Pro com 200 inclusas → snapshot do mês registra 5; emite 250 → snapshot registra 250 e fatura calcula (50 × R$ 0,40) = R$ 20 overage
+
+**Negociação comercial Focus NFe (pré-Sprint, externo):**
+
+- [ ] Conversa comercial Focus NFe registrada em `docs/contratos/focus-nfe.md` com tabela negociada por volume (target: R$ 0,12/nota acima de 10k/mês)
+- [ ] SLA escrito + rate limit dedicado + sandbox enterprise documentados no contrato
+- [ ] Gatilho de re-negociação registrado (a cada 50% aumento de volume)
+
 ## Stretch
 
 - [ ] Validação local dos payloads antes de enviar ao Focus (reduz rejeições)
 - [ ] Dashboard de reconciliação fiscal: NFS-e emitidas vs `invoices` pagas (detecta gaps)
 - [ ] Provider alternativo `enotas.ts` como fallback ou escolha do tenant
 - [ ] Modo contingência MOC (SEFAZ offline) com re-envio automático
+- [ ] **Preparação para NFS-e Nacional (ADR 0076)** — sem implementar, apenas:
+  - Documentar pontos de plug-in do `FiscalProvider` para futuro adapter `nfse-nacional.ts`
+  - Anotar requisitos de roteamento (`pickNfseProvider(emission)`) em `packages/ai/fiscal/routing/README.md`
+  - Tabela `nfse_nacional_municipalities` deferida ao Sprint 36c quando gatilhos de ADR 0076 forem atingidos
 
 ## Log
 

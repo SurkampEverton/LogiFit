@@ -6,6 +6,246 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — ADR 0077: Passaporte do paciente cross-tenant + vínculo por empresa com módulos explícitos + invite-link + auto-cadastro proativo
+
+Visão de produto (2026-04-25) revelou contradição: usuário queria "todos os profissionais [da rede LogiFit] podem acessar os dados de um paciente em tenants diferentes" — mas o modelo vigente proibia cross-tenant individual (princípio implícito em `docs/acesso-e-autorizacao.md`, referenciado erroneamente como "regra 26" — regra 26 real é sobre `groups`).
+
+**Decisões fechadas (2026-04-25):**
+
+- **Modelo C (híbrido)** escolhido contra Modelo A (vínculo por módulo) e Modelo B (vínculo só por empresa): vínculo é com a **empresa**, módulos liberados são **explícitos** (`patient_company_links` + `patient_link_modules`), responsável técnico **por módulo** (atende exigência CFM/COFFITO/CFN/CONFEF)
+- **5 módulos canônicos no MVP** via lookup table extensível (`patient_module_types`): `academia`, `personal_training`, `fisioterapia`, `nutricao`, `pilates` — psicologia/medicina/fonoaudiologia entram em Fase 3+ sem migration
+- **Constraint global:** 1 paciente tem no máximo 1 módulo do mesmo tipo ativo em toda a rede — nova empresa do mesmo módulo dispara substituição com confirmação
+- **Aceite parcial** suportado: paciente pode aceitar só alguns módulos do pedido (não tudo-ou-nada)
+- **Invite-link** sem stub — dados pessoais só persistem após paciente aceitar; branch automático "CPF existe → login" vs "CPF novo → cadastro" + confirmação anti-fraude por nome mascarado
+- **Auto-cadastro proativo** (Path B paralelo): paciente pode criar conta sozinho em `app.logifit.com.br/cadastro` (SMS + email + Turnstile), receber invites, **convidar profissional/empresa** (path inverso). Não pode log de treino próprio sem vínculo (foge do foco — não competimos com Strava)
+- **5 níveis de dados** taxonomia oficial (Identidade → Antropometria → Treino → Clínico → Workspace interno); Nível 5 nunca cruza tenant nem é exibido pro paciente
+- **Cross-tenant entrega resumido**, não bruto — Tenant B recebe "lesão lombar ativa, restrição: sem deadlift", não SOAP completo
+- **Limites duros que nunca cruzam tenant** mesmo com vínculo: financeiro, Nível 5, prontuário CFM original, dado de outras pessoas mencionado no prontuário
+- **Cobrança LogiFit:** 1 active member por (paciente, tenant) — paciente em tenant multi-vertical com 2 módulos liberados conta como 1 member
+- **Audit obrigatório** em `patient_data_access_log` (síncrono não-bloqueante, particionado por mês — regra 34); paciente vê histórico em `/meu/privacidade/acessos`
+- **Diferencial-chave:** alerta cross-prescrição entre tenants — Sprint 11 detecta "dieta 1.400kcal de Tenant A + treino aumentado em Tenant B = risco hipoglicemia" (só existe porque dados cruzam)
+
+**Mudanças em regras:**
+
+- **Regra 42 NOVA** em `docs/rules.md` — cross-tenant SOMENTE via `patient_company_links` ativo + módulo + categoria coberta + audit obrigatório; lint custom `cross-tenant-read-must-log` enforça
+- Regra 26 NÃO muda — continua sobre `groups`. Confusão histórica em `docs/acesso-e-autorizacao.md` corrigida.
+
+**Docs atualizados:**
+
+- `docs/decisions/0077-passaporte-paciente-vinculo-cross-tenant.md` — ADR completo (9 partes: modelo, schema, fluxo invite, níveis, substituição, profissional sai, cobrança, auto-cadastro proativo, audit)
+- `docs/rules.md` — regra 42 nova
+- `docs/acesso-e-autorizacao.md` — Camada 4 expandida com 3 tipos de cruzamento (cross-module, cross-company, cross-tenant); Camada 1 documenta os 2 paths de criação de conta de paciente; matriz resumida atualizada; referências corrigidas
+- `CLAUDE.md` — regra 42 listada na seção "Regras que você (Claude) DEVE respeitar"; contagem atualizada 41 → 42 regras
+- `docs/sprints/02-geral-crm-pessoas.md` — fluxo de invite + tela de pedidos pendentes + cadastro proativo + UX de vínculo cross-tenant
+
+**Riscos abertos (documentados no ADR):**
+
+1. Regulatório CFM/COFFITO/CFN — exige parecer jurídico antes do GA (sem norma específica sobre troca clínica entre instituições mediada por consent do paciente)
+2. Co-controllership LGPD — paciente é controlador? Co-controlador com empresa? LogiFit é operador? DPO precisa modelar (addendum ADR 0067)
+3. Liability — Termo de Uso precisa explicitar: dado cross-tenant é informativo, profissional do Tenant B é responsável pela decisão clínica que tomar
+4. Performance — view materializada `mv_patient_cross_tenant_summary` + cache Redis 5min
+5. Adversarial spam — rate limit 50 invites/dia/tenant + 3 invites/CPF/30d
+6. Profissional desonesto migrando pacientes antigos — UX de aceite mostra "essa empresa é nova" + alerta visual
+7. Sharding futuro (regra 34 / ADR 0072) — tenants com vínculo cross ativo bloqueados de migrar pra shard separado no MVP
+
+**Status:** Proposed — aguarda confirmação do usuário sobre constraint global de 1 módulo ativo por paciente na rede + limite de invites/dia (default sugerido 50) + parecer jurídico antes do Sprint 02.
+
+### Changed — ADR 0066: Starter R$ 79 → R$ 99 com 1 vertical à escolha + 5 profissionais + 50 NFS-e inclusas (alinhado a ICP real)
+
+Conversa com fundador (2026-04-25) sobre 3 clientes-piloto reais (academia de personals com 5 profs e ~60 alunos, nutricionista solo, clínica fisio com 5 profs) expôs duas falhas no Starter R$ 79 original:
+
+1. **Limite de 2 profissionais com contrato** forçava academia de personals e clínica fisio a pagar Pro R$ 199 mesmo com equipe pequena
+2. **Starter só incluía Academia** — nutricionista solo e fisio solo eram forçados a pagar R$ 199 só pra acessar a vertical apropriada
+
+**Decisão (2026-04-25):**
+
+- **Starter sobe para R$ 99** (anuidade R$ 89) — alinhado a Tecnofit Lite/NutMed; +R$ 20 financia mais features
+- **Starter ganha "1 vertical à escolha"** — Academia OU Fisio OU Nutri (não simultâneas); cobre o ICP "negócio solo/pequeno especializado em uma área"
+- **Limite de profissionais com contrato sobe de 2 → 5** no Starter; users operadores 2 → 3
+- **Starter ganha 50 NFS-e inclusas** + R$ 0,50/nota extra (era sem fiscal antes)
+- **Cap de overage Starter** ajustado de +R$ 120 → +R$ 100 (reflete novo gap Starter→Pro)
+- **Pro mantém todas as verticais simultâneas** — degrau natural: "negócio solo/especializado" (Starter) vs "clínica multi-disciplinar integrada" (Pro)
+- Schema `tenant_subscriptions` ganha coluna `vertical_choice enum ('academia','fisio','nutri') nullable` — só Starter usa
+
+**Margem revisada:** Starter R$ 99 - R$ 25 (custo: ~R$ 16 infra + R$ 9 fiscal 50 notas) = **R$ 74 (75%)** — saudável, melhor que os 68% do tier original.
+
+**Cobertura dos 3 clientes-piloto:**
+
+| Cliente | Plano natural | Mensalidade |
+|---|---|---|
+| Academia de personals (5 profs + 60 alunos compartilhados) | Starter Academia | R$ 99/mês |
+| Nutricionista solo (~60-80 pacientes) | Starter Nutrição | R$ 99/mês |
+| Clínica fisio (5 profs + pacientes) | Starter Fisio | R$ 99/mês (até 100 pacientes) ou Pro R$ 199 se passar |
+
+**Comparativo competitivo (post-revisão):**
+
+- Tecnofit Lite R$ 99 → mesmo preço, LogiFit ganha multi-vertical à escolha + IA + NFS-e incluída
+- iClinic Pro R$ 119 → -R$ 20 + IA + WhatsApp régua
+- NutMed R$ 99 → mesmo preço + IA + Portal paciente
+- Dietpro R$ 89 → +R$ 10 com features superiores
+
+**Docs atualizados:**
+
+- `CLAUDE.md` — seção Modelo Comercial reflete Starter R$ 99 + vertical à escolha
+- `docs/comercial.md` — nova seção "Planos e preços" com tabela detalhada + "Por que Starter à escolha" + comparativo direto com 7 concorrentes
+- `docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md` — tabela de quotas IA atualizada com pricing vigente (Starter R$ 99/Pro R$ 199/Business R$ 449/Enterprise R$ 1.199+) — corrige defasagem com pricing antigo (R$ 149/R$ 399/R$ 1.500)
+- `docs/decisions/0075-assistente-ia-universal-tres-camadas-tool-registry.md` — tabela de cotas mensais
+- `docs/decisions/0076-nfse-nacional-provider-complementar.md` — análise de custo Starter atualizada (50 notas/mês ao invés de 100)
+- `docs/decisions/0069-perfil-paciente-hub-operacional.md` — observação sobre tier "Solo" R$ 49 futuro registrada como espaço pós-validação
+
+**Princípio orientador:** ICP de pequeno negócio de saúde solo/equipe pequena (≤5 funcionários) é a maioria dos clientes-piloto. Starter precisa atendê-los **sem fricção de upgrade artificial** — quem precisa de 2+ verticais tem motivo real pra ir pro Pro; quem está em 1 vertical não deve ser empurrado pro Pro só por limites mesquinhos.
+
+**Tier "Solo" R$ 49 confirmado como opção futura válida (2026-04-25):** spec preliminar registrada em ADR 0066 seção "Tiers futuros" — 1 vertical, 30 members, 1 prof, 20 NFS-e, IA Camada 1 apenas. Custo ~R$ 12, margem 76%. Não entra no MVP — gatilho de ativação: ≥10 leads inbound rejeitados por preço Starter R$ 99 nos 6 meses pós-MVP.
+
+### Changed — ADR 0066 revisado + ADR 0076: modelo de custo fiscal corrigido + NFS-e Nacional como caminho de redução
+
+Pergunta do usuário (2026-04-25): "600 reais em 2.000 [notas/mês] é muito" — exposta falha no modelo de custo do ADR 0066 que assumia LogiFit absorvendo 100% do custo Focus NFe (~R$ 0,30/nota). Em alto volume (Business com 2.000+ notas/mês) margem virava negativa.
+
+**Decisão (2026-04-25):** combinar 4 caminhos (A+B+C+D) — repasse fiscal via overage + NFS-e Nacional como provider complementar futuro + negociação enterprise Focus + UI de preview de fatura. Rejeitada explicitamente a alternativa de "construir motor fiscal próprio" (escopo 8-12 meses solo + manutenção fiscal eterna + risco regulatório alto; nenhum SaaS BR comparável faz).
+
+**Mudanças no [ADR 0066](docs/decisions/0066-plano-comercial-pricing-trial.md):**
+
+- Tabela de quotas ganha `Emissões fiscais incluídas` (Pro 200/Business 1.000/Enterprise 5.000) + `Overage por nota fiscal extra` (Pro R$ 0,40/Business R$ 0,35/Enterprise R$ 0,25)
+- Schema `logifit_plans` ganha colunas `fiscal_emissions_included` + `fiscal_overage_rate_cents`
+- Schema `tenant_usage_snapshots` ganha colunas `fiscal_emissions_count`, `fiscal_emissions_included`, `fiscal_overage_amount_cents`, `total_overage_cents`
+- Análise de margem reescrita com tabela de custo Focus NFe negociado por volume (R$ 0,29 → R$ 0,18 → R$ 0,12); margem real Business ~42% (base) ou ~45% (com overage); Enterprise piso público é apertado, contrato real cobra a partir de R$ 1.799-2.499 quando volume >5k notas/mês
+- Nova seção "Caminhos de melhoria contínua de margem" listando 4 alavancas (negociação Focus, NFS-e Nacional, cache IA, escala)
+- UI `/app/settings/tenant/plan` (Sprint 04) mostra preview de fatura com breakdown members + fiscal
+
+**Novo [ADR 0076 — NFS-e Nacional como provider complementar](docs/decisions/0076-nfse-nacional-provider-complementar.md):**
+
+- Não substitui Focus NFe — complementa para municípios aderidos ao padrão nacional (gratuito, infra federal)
+- Não entra no MVP — gatilhos: Sprint 36 estável há 3 meses + 10k notas/mês LogiFit + 30% emissões em municípios aderidos + feedback comercial
+- Reusa interface `FiscalProvider` ([ADR 0059:59-77](docs/decisions/0059-ciclo-fiscal-emissao-focus-nfe.md)) sem refactor
+- Sprint 36c condicional (~2-3 semanas) quando ativar
+- Eventos sempre no provider que emitiu (cancelamento/CC-e)
+
+**Sprint 36 atualizado:**
+
+- Pré-Sprint: negociação comercial Focus NFe documentada em `docs/contratos/focus-nfe.md` (target R$ 0,12/nota acima de 10k/mês)
+- Coluna `provider` em `fiscal_emissions` preparada para `nfse_nacional` futuro
+- Job mensal `aggregate-fiscal-usage-snapshot` alimenta `tenant_usage_snapshots.fiscal_emissions_count` (eventos não contam — só `status='completed'` na primeira emissão)
+- Stretch: documentar pontos de plug-in para adapter futuro NFS-e Nacional
+
+**Docs:**
+
+- `docs/comercial.md` — nova seção "Emissão fiscal — pacote incluso + custo proporcional" + comparativo com Tecnofit/iClinic/Feegow + Fase 3 reescrita ("emissão fiscal completa" + "otimização gradual via NFS-e Padrão Nacional pós-PMF")
+
+**Princípio orientador:** repasse proporcional em vez de absorção total + provider plugável em vez de motor próprio + negociação contínua com provider em vez de lock-in.
+
+### Added — ADR 0075: Assistente IA universal — 3 camadas + tool registry distribuído + cotas por plano
+
+Pergunta do usuário (2026-04-24): "vamos ter um chat com a IA para resolver qualquer questão relacionada ao sistema para auxiliar os usuários — qualquer usuário, tudo (perguntas + ações), com urgência". O Sprint 06 original ("Copilot base") cobria apenas profissional clínico ancorado em member com 5 tools hardcoded (`findMember`, `scheduleAppointment`, `findCidByDescription`, `summarizeEvolutions`, `report_issue`). Esse escopo é **3-4× menor** que o pedido: precisava cobrir aluno, recepção, admin, super-admin, contador externo, DPO, personal coach — cada um com persona própria, tools próprias, scope de RBAC próprio.
+
+**Decisão (2026-04-24):** universalizar o assistente em 3 camadas com gates progressivos, tool registry distribuído por módulo, cotas alinhadas aos planos comerciais (ADR 0066), framework de confirmação UI obrigatório para ações de write.
+
+**Princípio orientador:** O Assistente IA do LogiFit é **universal por papel** (qualquer usuário, qualquer tela), **estratificado por risco** (3 camadas com gates), e **extensível por módulo** (cada sprint adiciona suas tools no registry).
+
+**3 camadas de capacidade:**
+
+| Camada | Capacidade | Risco | Gate | Confirma UI? |
+|---|---|---|---|---|
+| **1. Help** (RAG read-only) | "Como faço X?", "O que significa Y?" | Baixo | Default todos os papéis e planos | Não |
+| **2. Insight** (read data) | "Qual minha mensalidade?", "Última avaliação João" | Médio (RBAC + RLS) | Server Actions read-only com `wrapAction()` | Não |
+| **3. Action** (write) | "Cancela aula amanhã", "Cria lead João Silva" | Alto | `<ActionConfirmDialog>` obrigatório + audit reforçado + proteção dupla | **Sim sempre** |
+
+**7 personas com `inferPersona(user, tenant)`:**
+
+`member`, `professional_clinical`, `professional_coach`, `admin`, `recepcao`, `super_admin`, `contador_externo`, `dpo` — cada uma com template em `packages/ai/personas/*.ts` (tom + permissões IA + tools típicas) em pt-BR/en-US/es-419 (regra 27). Chip "Falar como: X" sempre visível no header do sheet permite trocar runtime; última escolha persiste em cookie.
+
+**Tool registry distribuído (regra nova 41):**
+
+Cada módulo cria `apps/web/app/(modules)/<modulo>/ai-tools.ts` chamando `registerAITool({ key, layer, label/description i18n, whenAvailable, showInPersonas, argsSchema, resultSchema, requiresConfirmation, confirmationCopy, handler, audit, rateLimitKey })`. Build hook gera `tools_manifest.json` no deploy → seed `tools_registry`. Padrão idêntico a `registerMenuItem` (Sprint 00b) e `search_index_sync` (regra 30).
+
+Server Action que **não** deve ser exposta tem comentário literal `// ai-blocked: <motivo>` no topo. Lint custom `ai-block-respected` em CI bloqueia commit se `registerAITool` aponta para handler bloqueado.
+
+**Whitelist Camada 3 conservadora no MVP (~9 tools seguras):**
+
+- `member`: `cancelMyAppointment`, `requestSecondCopy`, `confirmAppointment`
+- `professional_*`: `createDraftEvolution`, `report_issue`
+- `recepcao`/`admin`: `scheduleAppointmentForMember`, `requestSecondCopyForMember`, `createLead`, `inviteUser`
+
+**Bloqueado:** qualquer `DELETE`, `signEvolution` (ICP-Brasil), `chargeBatch`, `anonymizeMember`, `transferMemberBetweenCompanies`, `runOpenFinancePayment`, mudanças em `tenant_settings`/RBAC/plano.
+
+**Fluxo Camada 3 (proteção dupla):**
+
+```
+1. LLM emite tool call proposeAction({tool, args, reason})
+2. Backend INSERT assistant_action_proposals (state=pending, expires=+5min)
+   retorna { proposalId, confirmationCopy: { title, description, impact, affectedEntities } }
+3. Frontend renderiza <ActionConfirmDialog> com [Confirmar/Editar/Cancelar]
+4. User confirma → POST /api/ai/proposals/{id}/confirm
+5. Handler real exige proposal_id confirmado válido (actionSource=ai_assistant + sem proposta = FORBIDDEN)
+6. Audit log grava action_source='ai_assistant' + proposal_id + decisão humana
+```
+
+**UI universal (mobile-first regra 31):**
+
+- `<AssistantFAB>` em `<AppLayout>` — 56×56px mobile / 64×64px desktop, sempre visível em `/app/*`
+- `<AssistantSheet>` — bottom sheet 92vh mobile (drag-down fecha) / side panel 420px desktop
+- Página dedicada `/app/assistente` + variantes `/meu/assistente` (Sprint 26) e `/app/coach/assistente` (ADR 0074)
+- Atalho `Ctrl+/` ou `Cmd+/`; cross-link em busca global Ctrl+K (ADR 0062)
+- Contexto auto-injetado por rota (`/app/members/[id]/*` → member ativo + tools com scope=member)
+
+**Cotas alinhadas aos planos comerciais (ADR 0066):**
+
+| Plano | Mensal | Soft diário | BYOK |
+|---|---|---|---|
+| Starter R$ 79 | 500 | ~50/dia | — |
+| Pro R$ 199 | 3.000 | ~150/dia | opcional add-on |
+| Business R$ 449 | 10.000 | ~500/dia | ✅ opcional |
+| Enterprise | 25.000 default | sem soft | ✅ ilimitado quando ativo |
+
+**Regras de contagem:**
+- Camada 1 cache hit ⇒ 0 chamadas; cache miss ⇒ 1
+- Camada 2 ⇒ 1 por turn
+- Camada 3 (proposta + reformulação pós-execução) ⇒ até 2
+- Tool execution (Server Action) **não conta** na quota IA — conta no rate limit Server Actions (regra 36)
+- STT minutos separado (Pro 60min, Business 300min, Enterprise 1500min)
+
+Soft diário excedido → toast informativo. Mensal excedido → circuit breaker + CTA "Configure BYOK".
+
+**Schemas novos:**
+
+```sql
+tools_registry              -- ~500 linhas, não particiona
+assistant_action_proposals  -- particionada por mês, @volume_estimate_yearly: 5M+
+tenant_assistant_personas   -- 1 linha por tenant
+
+ALTER TABLE ai_audit_log ADD COLUMN persona text;
+ALTER TABLE ai_audit_log ADD COLUMN layer text;
+ALTER TABLE ai_audit_log ADD COLUMN action_proposal_id uuid;
+ALTER TABLE ai_audit_log ADD COLUMN tool_keys text[];
+```
+
+**Telemetria PostHog (12 eventos novos):**
+
+`assistant.session_opened`, `assistant.message_sent`, `assistant.cache_hit`, `assistant.tool_called`, `assistant.action_proposed`, `assistant.action_confirmed`, `assistant.action_rejected`, `assistant.action_executed`, `assistant.quota_warning` (80%), `assistant.quota_blocked` (100%), `assistant.rate_limited`, `assistant.incident`.
+
+Dashboard `/app/super-admin/ai-usage` mostra top tenants por consumo, top tools usadas, cache hit rate global, latência média por persona, taxa de aceitação Camada 3 por tool.
+
+**Sprints ajustados:**
+
+- **Sprint 06 (renomeado "Assistente IA universal base")** — cresce de 3-4 → 5-6 semanas
+- **Sprints 02, 03, 04, 05, 08, 09, 10, 11, 12, 13, 15, 17, 19, 20, 21, 22, 24, 26, 30, 31, 32, 33, 36** — cada um adiciona arquivo `<modulo>/ai-tools.ts` registrando suas tools (~1-2 dias por sprint, parte do Definition of Done)
+- **Sprint 26 (portal paciente PWA)** — adiciona `/meu/assistente` no shell
+- **Sprint 11 (treinos coach PWA)** — adiciona `/app/coach/assistente` no shell
+
+**Regra nova:**
+
+- **Regra 41** — Toda Server Action de módulo que deve ser usável pelo Assistente IA registra-se em `tools_registry` via `registerAITool({...})`. Server Action que NÃO deve ser exposta tem `// ai-blocked: <motivo>` no topo. Tools Camada 3 (write) sempre passam por `<ActionConfirmDialog>`. LLM nunca chama Server Action diretamente — sempre via `proposeAction(toolKey, args)`. Handler real rejeita execução se `actionSource='ai_assistant'` sem `proposal_id` confirmado.
+
+**Compliance integrada:** regras 28 (CFM 2.454/2026 — Comitê IA aplicado em persona profissional clínica), 29 (LGPD art. 11 — RIPD novo), 32 (resolveModelForTask — featureKey por persona), 33 (wrapAction obrigatório em handlers), 35/ADR 0073 camada 5 (PII redaction antes do LLM, anti-prompt-injection), 36 (rate limit IA 20/min/user), 39 (audit hash chain).
+
+**Negativas/riscos endereçados:** Sprint 06 cresceu (aceitável pela urgência declarada), confirmação UI adiciona fricção (mitigada por copy curta + Enter como default), persona mal classificada (chip switcher sempre visível), quota soft diary potencialmente confuso (UI explicativa), abuso Camada 3 (rate limit `proposeAction` 10/min separado do chat).
+
+**Telas a prototipar:**
+
+- `prototipo/telas/assistente-fab-mobile.html` (375×812)
+- `prototipo/telas/assistente-confirm-action.html` — `<ActionConfirmDialog>`
+- `prototipo/telas/assistente-persona-switcher.html`
+- `prototipo/telas/assistente-quota-warning.html` — 80% e 100%
+
 ### Added — ADR 0074: Modo Coach mobile-first PWA + offline-first workout logging
 
 Pergunta do usuário (2026-04-24): "tenho o caso do instrutor olhar o treino do aluno durante o treino pelo celular, como poderiamos fazer?". Identificado **gap arquitetural real**: ADR 0063 decidiu `/app/*` responsivo mas não-PWA (gestor desktop em mente); ADR 0069 criou Modo Atendimento desktop-first (fisio em consultório). Personal trainer mobile-only no chão da academia ficou sem solução — wifi instável, mãos suadas/sujas, multi-aluno simultâneo, timer crítico entre sets.

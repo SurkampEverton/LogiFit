@@ -16,7 +16,7 @@ A plataforma ERP que gerencia **academia, clínica de fisioterapia e consultóri
 
 1. **Uma plataforma, todas as especialidades** — cadastro único do cliente. Fisio, nutri e instrutor compartilham o histórico quando o paciente autoriza.
 2. **Cresce com você** — de loja avulsa até rede franqueada sem trocar de sistema.
-3. **IA que trabalha a seu favor** — previsão de cancelamento, copiloto, adaptação automática de treino.
+3. **IA que trabalha a seu favor** — assistente universal que conversa e executa ações com confirmação, previsão de cancelamento, copiloto clínico, adaptação automática de treino.
 4. **Segurança hospitalar** — LGPD, criptografia, auditoria, assinatura digital ICP-Brasil.
 5. **Feito para o Brasil** — Asaas, TISS/TUSS, NFS-e em todos os municípios, WhatsApp, PIX.
 
@@ -42,6 +42,7 @@ A plataforma ERP que gerencia **academia, clínica de fisioterapia e consultóri
 - Planos e pacotes combinados (mensalidade + 8 aulas de pilates + 2 consultas nutri)
 - Cupons de desconto e promoções sazonais
 - Cashback para retenção
+- **Emissão automática de NFS-e** em todos os municípios brasileiros (cobertura nacional via Focus NFe) — pacote de notas incluso no plano + cobrança proporcional ao volume real de emissão
 
 ### Controlando a operação diária
 
@@ -104,13 +105,73 @@ A plataforma ERP que gerencia **academia, clínica de fisioterapia e consultóri
 
 ### IA como diferencial de mercado
 
-- **Copiloto contextual** — "quais exames esse paciente tinha alterados?" responde em segundos
-- **Previsão de cancelamento** — sistema identifica quem tem risco de cancelar nos próximos 30 dias, antes que aconteça
-- **Intervenção sugerida** para recuperar o cliente em risco
+- **Assistente IA universal** — chat acessível em qualquer tela do sistema, no celular ou no desktop, falando a linguagem de cada usuário (aluno, recepção, profissional, gestor, contador). Pergunta "quando é minha próxima aula?" ou "cancela minha aula amanhã" — o assistente responde **e executa** com confirmação
+  - **3 níveis de capacidade** com segurança progressiva:
+    1. **Tirar dúvida sobre o sistema** ("como faço X?") — respondida do manual integrado, instantâneo, sem custo
+    2. **Consultar dados** ("qual minha mensalidade?", "quantos alunos hoje?") — respeita permissão de cada usuário
+    3. **Executar ação** ("cancela essa aula", "gera 2ª via", "cadastra esse lead") — sempre com **tela de confirmação** antes de fazer; nada acontece sem você ver o que vai acontecer
+  - **Diferencial competitivo único no Brasil:** Tecnofit, Trainerize, iClinic, Feegow, ActiveWise — nenhum oferece IA que **executa ações** com camada de confirmação. Ainda estão na geração "sugere/copia-e-cola"
+- **Copiloto clínico contextual** — "quais exames esse paciente tinha alterados?" responde com fontes citadas em segundos
+- **Previsão de cancelamento** — sistema identifica quem tem risco de cancelar nos próximos 30 dias, antes que aconteça, e sugere intervenção
 - **Cross-alert lesão → treino** — fisio registra lesão, sistema adapta ficha da academia automaticamente (com consent)
 - **Nutri-Agent** cruzando treino + prontuário + diário alimentar para sugerir ajuste
 - **Cache semântico** de IA que reduz custo sem perder qualidade
 - **Prescrição adaptativa por RPE** (roadmap) — ajuste automático de carga conforme percepção de esforço
+
+#### Como funciona o Assistente IA universal
+
+| Para o **aluno/paciente** | Para a **recepção/admin** | Para o **profissional** |
+|---|---|---|
+| "Quando é minha próxima aula?" | "Cadastra um lead chamado João" | "Resume a evolução do paciente X" |
+| "Cancela aula de amanhã" | "Quantos cancelamentos hoje?" | "Sugere CID pra dor lombar crônica" |
+| "Gera 2ª via do boleto" | "Gera 2ª via para o João Silva" | "Cria rascunho da próxima sessão" |
+| "Como funciona o Pilates?" | "Inadimplentes do mês" | "Próximo paciente está aqui?" |
+
+**Cota incluída no plano** (sem cobrança extra surpresa):
+
+| Plano | Mensagens/mês | BYOK (sua chave própria) |
+|---|---|---|
+| Starter R$ 99 | 500 | — |
+| Pro R$ 199 | 3.000 | opcional |
+| Business R$ 449 | 10.000 | ✅ opcional |
+| Enterprise | 25.000 default | ✅ ilimitado |
+
+Cache inteligente reduz consumo em até 60% (perguntas comuns não consomem). Limite excedido = aviso amigável + opção de usar sua própria chave de IA (BYOK).
+
+### Emissão fiscal — pacote incluso + custo proporcional
+
+Todo plano com emissão fiscal traz um **pacote de notas inclusas no preço-base** + **cobrança proporcional** se você emitir mais. Modelo justo: tenant pequeno paga só o plano; tenant que emite muito paga proporcional ao volume.
+
+| Plano | Notas inclusas/mês | Custo por nota extra | Tipos cobertos |
+|---|---|---|---|
+| Starter R$ 99 | 50 | R$ 0,50 | NFS-e (serviço) |
+| Pro R$ 199 | 200 | R$ 0,40 | NFS-e + NF-e + NFC-e + eventos |
+| Business R$ 449 | 1.000 | R$ 0,35 | Todos os tipos + intercompany |
+| Enterprise | 5.000 default | R$ 0,25 (negociável) | Todos |
+
+**Exemplo prático:** academia Business com 2.000 alunos emitindo 2.000 mensalidades/mês:
+- Plano: R$ 449
+- 1.000 notas inclusas → 0 overage para essas
+- 1.000 notas extras × R$ 0,35 = R$ 350 overage
+- **Total fatura: R$ 799/mês** (vs R$ 449 plano + cobrança fiscal externa pelo contador, que sairia mais cara e dolorosa)
+
+**Por que esse modelo é melhor que concorrentes:**
+
+| Concorrente | Cobrança fiscal |
+|---|---|
+| **Tecnofit, ActiveWise** | Não emite NFS-e — você precisa contratar parte fiscal externa (mais caro, mais retrabalho) |
+| **iClinic, Feegow** | Emissão à parte cobrada por nota desde a 1ª (sem pacote incluso) |
+| **LogiFit** | Pacote incluso no plano + repasse direto sem markup escondido |
+
+**UI mostra preview da fatura** sempre — você vê em tempo real quantas notas emitiu, quantas faltam do pacote, e qual será o total da próxima fatura.
+
+**Segurança built-in:**
+
+- Aluno só vê e age sobre os **próprios dados** — IA respeita permissão automaticamente
+- Profissional clínico tem **classificador anti-prescrição** (CFM 2.454/2026): IA nunca diagnostica, sempre sugere com supervisão humana
+- **PII mascarada** antes de sair pro provider de IA (CPF/RG/email/telefone)
+- **Audit completo** de toda interação — quem perguntou, o que pediu, qual ação foi confirmada, por quem
+- **Ações destrutivas bloqueadas** no MVP (excluir, anonimizar, cobrar em massa) — exigem fluxo manual dedicado
 
 ### Segurança e conformidade regulatória
 
@@ -158,9 +219,50 @@ A plataforma ERP que gerencia **academia, clínica de fisioterapia e consultóri
 
 - Prontuário COFFITO + ICP-Brasil, evolução SOAP, convênios TISS/TUSS, comissões, estoque, ANVISA + CNES, portal do paciente, cross-alert lesão→treino, Generative UI clínica.
 
-**Fase 3 (+6–9 meses):** Nutrição completa + Mobile.
+**Fase 3 (+6–9 meses):** Nutrição completa + Mobile + Fiscal completo.
 
-- TACO + plano alimentar + suplementos + exames + diário alimentar + teleconsulta + nutri-agent IA, app nativo, fiscal NFS-e nacional.
+- TACO + plano alimentar + suplementos + exames + diário alimentar + teleconsulta + nutri-agent IA, app nativo, **emissão fiscal completa** (NFS-e + NF-e produto + NFC-e varejo + devolução + transferência + conserto + eventos) com cobertura nacional via Focus NFe; otimização gradual de custo via NFS-e Padrão Nacional pós-PMF.
+
+---
+
+## Planos e preços
+
+| Plano | Preço | Para quem é | O que inclui |
+|---|---|---|---|
+| **Starter** | **R$ 99/mês** | Negócio solo ou equipe ≤5 profs especializado **em uma área** (academia OU fisio OU nutri) | 1 vertical à escolha · 100 alunos/pacientes · 5 profissionais · 50 NFS-e/mês · IA assistente 500 mensagens · Portal do paciente · WhatsApp · Asaas |
+| **Pro** | **R$ 199/mês** | Clínica ou academia que atende **mais de uma especialidade** ao mesmo tempo | Todas as 3 verticais simultâneas · 500 alunos/pacientes · 10 profissionais · 200 notas (NFS-e + NF-e + NFC-e + eventos) · IA 3.000 mensagens · Convênios TISS/TUSS · Device Hub · Pipeline Exames · BYOK opcional |
+| **Business** | **R$ 449/mês** | Rede pequena (5-10 unidades) ou holding com múltiplos CNPJs | Tudo do Pro + multi-company · até 3 CNPJs · 2.000 alunos/pacientes · 30 profissionais · 1.000 notas/mês · IA 10.000 · Adquirência · Rateio · Generative UI clínica |
+| **Enterprise** | **sob consulta** | Rede grande, hospital, clínica com DPO próprio | Tudo do Business + ilimitado · BYOK ilimitado · SLA 99,9% · White-label · Gestor de conta · DPO-as-a-service opcional |
+
+**Trial:** 14 dias com features Pro · sem cartão de crédito · dados retidos 30 dias se não converter.
+
+**Desconto anual:** 2 meses grátis (~14%) — Starter R$ 89/mês · Pro R$ 179/mês · Business R$ 399/mês.
+
+### Por que Starter "à escolha"
+
+Negócio pequeno geralmente faz **uma coisa só** — academia de bairro, consultório fisio solo, nutricionista solo. Não faz sentido pagar por features das outras 2 verticais que ele nunca vai usar.
+
+**Você escolhe na hora do cadastro:**
+
+```
+[ ] Vou usar para Academia (alunos, treinos, ficha, catraca, mensalidade)
+[ ] Vou usar para Fisioterapia (prontuário, evolução SOAP, convênios)
+[ ] Vou usar para Nutrição (TACO, plano alimentar, diário do paciente)
+```
+
+Tudo pronto pra área escolhida, sem ruído das outras. Quando seu negócio crescer e quiser combinar verticais (clínica integrada de saúde), você passa pra Pro com 1 clique.
+
+### Comparativo direto com concorrentes
+
+| Concorrente | Preço entrada | LogiFit Starter R$ 99 oferece a mais |
+|---|---|---|
+| **Tecnofit Lite** | R$ 99 | Multi-vertical à escolha · IA assistente · NFS-e incluída · Portal do paciente PWA |
+| **Tecnofit Pro** | R$ 199 | -R$ 100 + IA + NFS-e (Tecnofit não emite nota) |
+| **iClinic Pro** | R$ 119 | -R$ 20 + IA assistente + WhatsApp régua + Portal aluno |
+| **NutMed** | R$ 99 | Mesmo preço + IA + Portal + integração WhatsApp |
+| **Dietpro** | R$ 89 | +R$ 10, mas com IA, WhatsApp, fiscal automatizado |
+| **ActiveWise** | R$ 149-299 | -R$ 50 a -R$ 200 + IA |
+| **Feegow** | R$ 199-599 | -R$ 100 a -R$ 500 + multi-vertical no plano de entrada |
 
 ---
 
@@ -176,7 +278,7 @@ A plataforma ERP que gerencia **academia, clínica de fisioterapia e consultóri
 | Nutrientes por alimento | 30+ |
 | Fórmulas antropométricas | 10+ |
 | Integrações nativas | Asaas, WhatsApp, Resend, Supabase, Vercel, Focus NFe, Datasus CNES, ANS/TISS |
-| Providers IA | Claude (padrão), OpenAI e Gemini (fallback) |
+| Providers IA | Gemini Flash (padrão LogiFit, datacenter SP), OpenAI e Anthropic (fallback automático), Groq Whisper (transcrição), Maritaca (BR opcional); BYOK em qualquer plano |
 | Roles pré-configurados | 9+ (super_admin, diretor, gerente, recepção, fisio, nutri, instrutor, aluno, group_owner) |
 | Cenários multi-empresa testados | 4 canônicos (rede própria, franquia clássica, franquia com passaporte, mix loja avulsa + rede) |
 

@@ -31,10 +31,11 @@ Decisões do usuário (2026-04-24):
 
 | Plano | Preço | Quota IA/mês | Custo real LogiFit |
 |---|---|---|---|
-| Starter | R$ 149 | 500 chamadas | ~R$ 1,50 |
-| Pro | R$ 399 | 3.000 chamadas | ~R$ 5 |
-| Enterprise | R$ 1.500+ | 10.000 chamadas | ~R$ 17 |
-| + BYOK (qualquer plano) | mesmo preço | ilimitado | R$ 0 |
+| Starter | R$ 99 | 500 chamadas | ~R$ 1,50 |
+| Pro | R$ 199 | 3.000 chamadas | ~R$ 5 |
+| Business | R$ 449 | 10.000 chamadas | ~R$ 17 |
+| Enterprise | R$ 1.199+ | 25.000 chamadas | ~R$ 40 |
+| + BYOK (Pro+) | mesmo preço | ilimitado | R$ 0 |
 
 Cache semântico pgvector reduz ~40-60% do consumo real.
 

@@ -169,6 +169,67 @@ Já coberto em ADR 0054. Este ADR formaliza:
 | **Suporte** | Resposta ao usuário operacional | Fundador (fase inicial) |
 | **Auditor** | Revisão periódica de conformidade | Firma externa (contratar quando escalar) |
 
+### Co-controllership LGPD cross-tenant (addendum 2026-04-25 — ADR 0077)
+
+[ADR 0077](0077-passaporte-paciente-vinculo-cross-tenant.md) introduz cenário inédito: dado clínico de um paciente cruza tenants comerciais distintos via vínculo + consent granular. Isso muda o modelo de papéis LGPD **nesse fluxo específico** — fora do passaporte, modelo Controlador (tenant) + Operador (LogiFit) continua valendo.
+
+**Papéis no fluxo cross-tenant:**
+
+| Papel | Quem | Responsabilidade |
+|---|---|---|
+| **Titular** | Paciente | Dono do dado; consente, revoga, acessa, audita |
+| **Controlador-origem** | Tenant que GEROU o dado (ex: Clínica Bem-Estar produziu evolução de fisio) | Decide sobre dado original; retém pelo prazo legal (CFM 2.299 / COFFITO 415: 20 anos) |
+| **Controlador-destino** | Tenant que RECEBE resumo via vínculo (ex: Academia Forma vê "lesão lombar ativa, restrição: sem deadlift") | Decide sobre uso operacional do dado recebido (planejamento de treino); não copia, apenas lê |
+| **Operador único** | LogiFit | Trafega + armazena + audita; nunca decide finalidade |
+
+Tenant-origem e Tenant-destino são **co-controladores funcionalmente** no fluxo: o paciente consentiu via `patient_company_links` + `patient_link_modules`. Cada um responde por suas decisões sobre o uso do dado em seu domínio (CFM/COFFITO/CFN/CONFEF do profissional de cada lado).
+
+**Cláusula nova no DPA padrão LogiFit↔tenant:**
+
+> **Cláusula 7-bis (Cross-tenant via Passaporte do Paciente):** Caso o tenant CONTRATANTE habilite o recurso "Passaporte do Paciente" (ADR 0077), o tenant aceita que: (a) dados clínicos resumidos por ele gerados podem ser disponibilizados a outros tenants LogiFit mediante consent explícito e granular do titular; (b) dados recebidos de outros tenants via vínculo são **informativos** — toda decisão clínica continua sendo responsabilidade exclusiva do profissional do tenant CONTRATANTE com habilitação regulatória correspondente (CRM/CREFITO/CRN/CREF); (c) LogiFit atua exclusivamente como operador no fluxo cross-tenant, mantendo audit síncrono em `patient_data_access_log`; (d) qualquer incidente envolvendo dado cross-tenant aciona protocolo conjunto entre LogiFit + tenant-origem + tenant-destino + paciente, com notificação tripla à ANPD em 72h (regra 39 hash chain garante rastreabilidade); (e) o tenant CONTRATANTE pode desabilitar o recurso a qualquer momento via `/app/settings/privacidade/passport` — vínculos ativos continuam até paciente revogar individualmente, mas novos pedidos ficam bloqueados.
+
+**Cláusula nova no Termo de Uso paciente↔LogiFit:**
+
+> **Seção 5 — Compartilhamento entre profissionais (Passaporte):** Você pode autorizar que profissionais de empresas distintas que usam o LogiFit visualizem categorias específicas dos seus dados de saúde. O LogiFit transmite apenas o que você liberou, em formato resumido (não bruto), e registra cada acesso para sua consulta em `/meu/privacidade/acessos`. Você pode revogar ou pausar acessos a qualquer momento — o efeito é imediato. Profissionais que receberem seus dados são juridicamente responsáveis pelas decisões clínicas que tomarem com base neles, conforme habilitação do conselho profissional. O LogiFit é operador (LGPD art. 5º VII): nunca decidimos finalidade nem usamos seus dados além do que você autorizou. Dados sensíveis de saúde (LGPD art. 11) trafegam com base legal art. 11 §2º II.f (procedimento realizado por profissionais de saúde) combinada com seu consent específico por categoria.
+
+**Plano de resposta a incidente cross-tenant** (extensão do plano P0/P1):
+
+| Hora | Ação adicional cross-tenant |
+|---|---|
+| 0h | Acionar canal conjunto: DPO LogiFit + DPO tenant-origem + DPO tenant-destino |
+| 0h-4h | Conter: pausar todos os vínculos do paciente afetado; suspender acesso cross-tenant temporariamente via feature flag global emergencial; revogar tokens de invite ativos |
+| 4h-24h | Investigar escopo: query em `patient_data_access_log` por person_id afetado + module_type + janela temporal; identificar tenants envolvidos |
+| 24h-72h | **Notificação tripla a ANPD:** LogiFit (operador) + cada tenant envolvido (controlador). Notificação ao paciente afetado direta pelo LogiFit (canal preferencial — `/meu/privacidade/incidentes`) + comunicação obrigatória aos tenants. |
+| 72h-7d | Post-mortem público inclui linha do tempo cross-tenant + número de pacientes afetados + número de tenants origem/destino envolvidos (anonimizado) |
+
+**Sub-processor vs co-controlador no passaporte:**
+
+Cada tenant-destino é, do ponto de vista do tenant-origem, um **sub-controlador autorizado pelo titular** — não sub-processor (sub-processor é quem trata dado em nome do controlador, e tenant-destino trata em nome próprio com base legal própria). Lista pública de sub-processors LogiFit (`logifit.com.br/sub-processors`) não muda; lista de **tenants vinculados ao paciente** vive em `/meu/privacidade/compartilhamento` (visível apenas pro paciente).
+
+**RIPD específico do passaporte (Sprint 02 entrega):**
+
+`docs/compliance/ripd/passport-cross-tenant.md` cobrindo:
+
+- **Finalidade:** continuidade do cuidado interdisciplinar autorizada pelo titular
+- **Base legal LGPD:** art. 11 §2º II.f (proteção da saúde, em procedimento realizado por profissionais de saúde) + consent específico granular por categoria
+- **Categorias de dado:** conforme 5 níveis ADR 0077 (Identidade, Antropometria, Treino, Clínico, Workspace — Workspace **nunca** cruza tenant)
+- **Volume estimado:** ~30% dos pacientes vão habilitar (hipótese a validar com dados reais 6 meses pós-lançamento)
+- **Risco residual:** vazamento por tenant-destino comprometido (mitigação: audit chain regra 39 + revogação imediata pelo paciente + tenant-origem pode bloquear unilateralmente em caso de incidente do tenant-destino)
+- **Retenção:** dado cross-tenant **não é copiado** — tenant-destino apenas LÊ via query em runtime; só fica em `patient_data_access_log` retido 5 anos
+- **Direitos do titular:** revogação imediata em `/meu/privacidade/compartilhamento`; export de log em `/meu/privacidade/acessos` (CSV + PDF assinado); pausa temporária com retomada agendada
+- **Transferência internacional:** dado nunca sai do BR (Vertex AI São Paulo, Supabase sa-east-1)
+
+Revisão semestral; primeira revisão em 2026-10-25.
+
+**Atualizações em "Governança interna — papéis":**
+
+Tabela acima ganha 2 linhas extras quando recurso passaporte estiver ativo:
+
+| Papel | Responsabilidade | Quem (MVP) |
+|---|---|---|
+| **Co-controlador (tenant-origem)** | Decide sobre dado original; retém prazo legal | Tenant que gerou o dado |
+| **Co-controlador (tenant-destino)** | Decide sobre uso operacional do dado recebido; responde pela decisão clínica do seu profissional | Tenant que recebe via vínculo |
+
 ### Custo operacional estimado (MVP → escala)
 
 | Fase | DPO | Jurídico | Audit | Total/mês |
@@ -224,7 +285,8 @@ Já coberto em ADR 0054. Este ADR formaliza:
 
 - **Sprint 00** — setup inicial: email `privacidade@logifit.com.br`, landing com links "Privacidade" + "Termos" + "Sub-processors" (placeholders); `retention_policies` schema preparado
 - **Sprint 01b** — `security_incidents` schema + UI admin `/app/admin/incidents` (apenas `super_admin_logifit` role — nasce no root tenant do LogiFit); RIPD schemas já previstos ADR 0054
-- **Sprint 26** — Portal `/meu/privacidade` + canal do titular (ADR 0054 + 0067) — responde a solicitações em 15d
+- **Sprint 02** — RIPD novo `passport-cross-tenant.md` em `docs/compliance/ripd/` cobrindo passaporte ADR 0077; cláusula 7-bis no DPA padrão; cláusula Seção 5 no Termo de Uso paciente; UI admin tenant `/app/settings/privacidade/passport` (toggle de habilitação do recurso); UI paciente `/meu/privacidade/incidentes` (notificação direta de incidentes cross-tenant)
+- **Sprint 26** — Portal `/meu/privacidade` + canal do titular (ADR 0054 + 0067) — responde a solicitações em 15d; **inclui telas cross-tenant de ADR 0077:** `/meu/privacidade/compartilhamento` (gestão de vínculos + módulos + níveis) + `/meu/privacidade/acessos` (audit log de leituras cross-tenant) + `/meu/privacidade/incidentes`
 
 **Docs:**
 
@@ -247,4 +309,5 @@ Já coberto em ADR 0054. Este ADR formaliza:
 - Depende de [ADR 0054 — LGPD art. 11](0054-lgpd-art11-dados-saude-ripd-versionado.md) — RIPD schema
 - Depende de [ADR 0053 — CFM 2.454](0053-conformidade-cfm-2454-2026-ia-saude.md) — Comitê IA do tenant
 - Integra com [ADR 0066 — Plano comercial](0066-plano-comercial-pricing-trial.md) — Enterprise inclui DPO-as-a-service add-on
-- Fontes: LGPD (Lei 13.709/2018) art. 18, 37, 41, 48; Regulamento RANPD; ANPD Guia de Segurança; CFM 2.454/2026; experiência de mercado SaaS BR (Totvs, Conta Azul, Omie divulgam sub-processors)
+- **Estendido por [ADR 0077 — Passaporte do paciente cross-tenant](0077-passaporte-paciente-vinculo-cross-tenant.md)** — addendum 2026-04-25 modela co-controllership LGPD entre tenants no fluxo cross-tenant via vínculo
+- Fontes: LGPD (Lei 13.709/2018) art. 5º VII (operador), 11 §2º II.f (saúde), 18, 37, 41, 48; Regulamento RANPD; ANPD Guia de Segurança; CFM 2.454/2026; experiência de mercado SaaS BR (Totvs, Conta Azul, Omie divulgam sub-processors)

@@ -3,15 +3,15 @@
 Modelo em 4 camadas. Cada camada é independente e reforça a anterior — se uma falha, a próxima ainda protege.
 
 ```
-┌─────────────────────────────────────────────────────┐
-│ 1. IDENTIDADE   Quem é você?         (Supabase Auth)│
-├─────────────────────────────────────────────────────┤
-│ 2. TENANT       De qual tenant?      (RLS raiz)     │
-├─────────────────────────────────────────────────────┤
-│ 3. RBAC         O que seu scope pode?               │
-├─────────────────────────────────────────────────────┤
-│ 4. CONSENT      Cross-module ou cross-company?      │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│ 1. IDENTIDADE   Quem é você?              (Supabase Auth)   │
+├─────────────────────────────────────────────────────────────┤
+│ 2. TENANT       De qual tenant?           (RLS raiz)        │
+├─────────────────────────────────────────────────────────────┤
+│ 3. RBAC         O que seu scope pode?                       │
+├─────────────────────────────────────────────────────────────┤
+│ 4. CONSENT      Cross-module, cross-company, cross-tenant?  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -23,6 +23,17 @@ Modelo em 4 camadas. Cada camada é independente e reforça a anterior — se um
 - **MFA obrigatório** para roles profissionais (fisio, nutri, instrutor, admin, gerente, recepção). TOTP via aplicativo autenticador.
 - Aluno/paciente: MFA opcional (recomendado).
 - JWT viaja em cookie `httpOnly` (Next.js) + header `Authorization` (Supabase client direto).
+
+### Dois caminhos para criar conta de paciente (ADR 0077)
+
+Paciente entra no LogiFit por **2 paths paralelos** — ambos válidos desde o MVP:
+
+| Path | Como começa | Quando acontece |
+|---|---|---|
+| **A — Reativo** | Profissional cadastra dados mínimos → invite por WhatsApp/email → paciente clica → cria conta + aceita pedido na sequência | Profissional onboarda paciente (caso comum B2B) |
+| **B — Proativo** | Paciente vai em `app.logifit.com.br/cadastro` → cria conta sozinho (SMS + email + Turnstile + senha + MFA opcional) → conta ativa sem vínculo | Paciente chega via marketing, indicação, ou quer convidar profissional dele |
+
+Path B permite paciente "solo" (sem vínculo) que pode: atualizar perfil, aceitar/recusar pedidos, **convidar profissional/empresa** (path inverso), subir documentos pessoais. Não pode: log de treino próprio sem vínculo, diário alimentar sem nutri vinculado, wearables (escopo MVP — Sprint 32 reavalia). Ver [ADR 0077 Parte 8](decisions/0077-passaporte-paciente-vinculo-cross-tenant.md).
 
 ### Claims customizados no JWT
 
@@ -149,11 +160,17 @@ Ver [multiempresa.md — RBAC e scopes](multiempresa.md#rbac-e-scopes).
 
 ---
 
-## Camada 4 — Consent (cross-module e cross-company)
+## Camada 4 — Consent (cross-module, cross-company, cross-tenant)
 
-Cross-module dentro do mesmo tenant (ex: instrutor ver lesão do aluno registrada pelo fisio) **não** é padrão — exige consentimento explícito do paciente.
+Camada 4 cobre **3 tipos de cruzamento de dados**, cada um com mecanismo próprio:
 
-### Tabela `consents`
+| Tipo | Cenário | Mecanismo | Regra |
+|---|---|---|---|
+| **Cross-module** (mesmo tenant) | Instrutor da academia vê lesão registrada pelo fisio do mesmo tenant | `consents` por `purpose` | Regra 6 |
+| **Cross-company** (mesmo tenant, topology rede própria) | Recepção da Filial B vê histórico de check-in do aluno na Filial A | RLS via `cross_company_access` flag do tenant | Regra 25 (franchise: bloqueado para clínico) |
+| **Cross-tenant** (donos comerciais distintos — ADR 0077) | Personal da Academia X vê plano alimentar prescrito pela Nutri Y (autônoma) | `patient_company_links` + `patient_link_modules` ativos + `data_level_max` cobre | Regra 42 (NOVA) |
+
+### Cross-module (intra-tenant) — tabela `consents`
 
 ```
 consents (
@@ -171,17 +188,40 @@ consents (
 )
 ```
 
-### Regras duras (ver [rules.md](rules.md))
+### Cross-tenant — tabelas `patient_company_links` + `patient_link_modules` (ADR 0077)
 
-- **Dado clínico nunca cruza `company_id`** quando `tenant.topology = 'franchise'` — nem com consent (regulatório CFM/CREFITO/CRN). Regra 25.
-- **Dado individual nunca cruza `tenant_id`** — mesmo com dono comum. Regra 26.
-- Toda leitura de dado sensível que passou por `consents` grava em `audit_log` com referência ao consent usado.
+Vínculo é entre **paciente e empresa** (Modelo C híbrido); cada vínculo libera **1+ módulos** (`academia`, `personal_training`, `fisioterapia`, `nutricao`, `pilates` — lookup table extensível).
 
-### UX de consentimento
+**Constraint global:** 1 paciente tem no máximo **1 módulo do mesmo tipo ativo em toda a rede** (nova empresa do mesmo módulo dispara substituição com confirmação do paciente).
 
-- Fluxo obrigatório de onboarding do aluno/paciente — consents granulares com opt-in explícito por categoria.
-- Paciente pode revogar a qualquer momento em `/perfil/privacidade`. Efeito imediato (RLS passa a bloquear).
+**Fluxo do vínculo:** profissional cadastra dados mínimos do paciente → invite por WhatsApp/email → paciente cria conta (ou loga se já existe) → vê pedido pendente → **aceita parcial ou total** (pode liberar só fisio e recusar nutri da mesma empresa) → vínculo ativo.
+
+**5 níveis de dados:**
+
+| Nível | Categorias | Default |
+|---|---|---|
+| 1 — Identidade | nome, foto, contato, convênio (sem detalhes financeiros) | Sempre quando vínculo ativo |
+| 2 — Antropometria + sinais | peso, altura, IMC, bioimpedância, dobras, wearables | Default todos os módulos |
+| 3 — Treino e hábitos | plano treino + RPE, modalidades, restrições, plano alimentar (macros) | Default academia/personal/pilates |
+| 4 — Clínico | CID/CIF, alergias, medicações, exames lab, diário alimentar | Default fisio/nutricao (opt-in granular) |
+| 5 — Workspace interno | notas privadas profissional, hipóteses, anotações comportamentais | **Nunca cruza** — nem é exibido pro paciente |
+
+### Regras duras
+
+- **Cross-module (intra-tenant)** exige consent explícito (Regra 6).
+- **Dado clínico nunca cruza `company_id` em `tenant.topology = 'franchise'`** — nem com consent (regulatório CFM/CREFITO/CRN). Regra 25.
+- **Cross-tenant SOMENTE via `patient_company_links` ativo + `patient_link_modules` autorizado + categoria coberta pelo `data_level_max`.** Regra 42 (NOVA — ADR 0077).
+- **Limites duros que nunca cruzam tenant mesmo com vínculo:** dado financeiro, Nível 5 (workspace interno), prontuário CFM original (só resumo gerado pelo paciente pode), dado de outras pessoas mencionado no prontuário.
+- **Cross-tenant entrega dado resumido**, não bruto — Tenant B recebe "lesão lombar ativa, restrição: sem deadlift", não SOAP completo do Tenant A.
+- Toda leitura de dado cross-tenant grava em `patient_data_access_log` (síncrono, particionado por mês — Regra 34).
+
+### UX de consentimento (intra e cross-tenant)
+
+- Onboarding do paciente fluxo obrigatório com consents granulares por categoria.
+- Paciente revoga ou pausa a qualquer momento em `/meu/privacidade/compartilhamento`. Efeito imediato (RLS bloqueia).
 - Renovação periódica configurável por tenant (ex: revalidar consents a cada 12 meses).
+- Paciente vê histórico completo de leituras cross-tenant em `/meu/privacidade/acessos` ("Dr. João leu seus exames em 23/04/2026 às 14:32").
+- **Anti-pressão social:** UI nunca mostra "campo bloqueado pelo paciente" — simplesmente não aparece pro profissional. Evita coerção sutil.
 
 ---
 
@@ -215,8 +255,9 @@ Fluxo:
 | "Pode ver dados deste tenant?" | 2. RLS raiz |
 | "Pode ler esta tabela/coluna?" | 3. RBAC (role + permission) |
 | "Pode ler este registro específico?" | 3. Scope do user_role |
-| "Pode cruzar módulos/companies?" | 4. Consent (+ regra 25 se franchise) |
-| "Quem operou o quê quando?" | Audit log (append-only) |
+| "Pode cruzar módulos do mesmo tenant?" | 4. Consent (regra 6, +25 se franchise) |
+| "Pode cruzar tenants distintos?" | 4. `patient_company_links` ativo + módulo + nível (regra 42 — ADR 0077) |
+| "Quem operou o quê quando?" | Audit log (append-only) + `patient_data_access_log` para cross-tenant |
 
 ---
 
@@ -224,5 +265,6 @@ Fluxo:
 
 - [ADR 0002 — RLS como isolamento primário](decisions/0002-rls-como-isolamento-primario.md)
 - [ADR 0005 — RBAC com consent cross-module](decisions/0005-rbac-com-consent-cross-module.md)
+- [ADR 0077 — Passaporte do paciente cross-tenant + vínculo por módulo](decisions/0077-passaporte-paciente-vinculo-cross-tenant.md)
 - [multiempresa.md](multiempresa.md) — hierarquia e scopes
-- [rules.md](rules.md) — regras 1, 2, 5, 6, 25, 26
+- [rules.md](rules.md) — regras 1, 2, 5, 6, 25, 42

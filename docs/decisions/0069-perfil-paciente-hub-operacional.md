@@ -16,7 +16,7 @@ Estado atual do plano:
 - **Sprint 02** entrega `/app/members/[id]` como **grid de widgets** via `registerMemberWidget` (15+ widgets planejados)
 - Sistema de widgets tem 4 gates (permission + vertical + presença + consent) — ADR 0005
 - **Gap:** sem tabs por especialidade, sem sticky action bar, sem modo "atendimento em curso", sem registry de ações, sem workflow para o autônomo
-- **Pricing** (ADR 0066) hoje tem 4 tiers (Starter/Pro/Business/Enterprise) + trial — não contempla o profissional autônomo (R$ 79 já é alto pra quem tem 30 clientes)
+- **Pricing** (ADR 0066) hoje tem 4 tiers (Starter/Pro/Business/Enterprise) + trial — não contempla o profissional autônomo (R$ 99 ainda é alto pra quem tem 30 clientes; ADR 0066 revisado 2026-04-25 deixou Starter "1 vertical à escolha" pra acomodar profissional autônomo melhor; tier "Solo" R$ 49 confirmado 2026-04-25 como **opção futura válida** — entra pós-MVP se ≥10 leads rejeitarem Starter R$ 99 por preço nos 6 meses iniciais; spec preliminar em [ADR 0066 — Tiers futuros](0066-plano-comercial-pricing-trial.md))
 
 Decisões do usuário (2026-04-24):
 

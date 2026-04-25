@@ -10,6 +10,8 @@
 
 Portal web self-service do paciente/aluno, entregue como PWA para funcionar como app. Cobre 90% dos casos de uso antes do app nativo da Fase 3 (Sprint 31). Inclui: login próprio, ver dados cadastrais, agenda pessoal, recibos, pagamentos pendentes, vídeos de "lição de casa" (exercícios prescritos), QR code de acesso Academia, cardápio (se Nutri).
 
+**Entrega também as telas completas do passaporte cross-tenant (ADR 0077):** Sprint 02 entregou versão MVP funcional (`/meu/privacidade/compartilhamento` + `/meu/privacidade/acessos`); Sprint 26 polui PWA-grade com gestão visual avançada de vínculos, drill-down por categoria de dado, gráficos de uso ("quem leu o quê e quando"), gestão de incidentes cross-tenant (`/meu/privacidade/incidentes`), visualização de alertas cross-prescrição gerados (Sprint 11) em `/meu/privacidade/alertas-cruzados`, e integração mobile-first total (touch targets ≥44px, swipe gestures pra revogar/pausar vínculo).
+
 ## Critério de aceite
 
 - Autenticação separada do operador: magic link por email/SMS para o `member`
@@ -28,17 +30,27 @@ Portal web self-service do paciente/aluno, entregue como PWA para funcionar como
 - Teste E2E: member recebe magic link por email → logga → vê agenda → cancela → paga cobrança pendente (rodado em iPhone 13 viewport)
 - Teste de instalação PWA: Playwright simula `beforeinstallprompt` → instala → ícone aparece na tela inicial (teste em Chrome/Edge)
 - Performance: Lighthouse >90 em mobile (Performance, Accessibility, Best Practices, SEO) + ≥95 em PWA
+- **Telas completas do passaporte (ADR 0077):**
+  - `/meu/privacidade/compartilhamento` (PWA-grade): lista visual de empresas vinculadas em cards com avatar, módulos liberados como chips, indicador de "última leitura" por módulo, swipe-to-pause/revoke, drill-down por categoria de dado (Nível 1-4) com toggle granular, banner de "renovar consentimento" quando próximo de expirar (12m default)
+  - `/meu/privacidade/acessos` (PWA-grade): timeline de leituras cross-tenant com filtros (data, empresa, módulo, categoria), gráfico de "quem leu mais", export CSV/PDF assinado, busca textual
+  - `/meu/privacidade/alertas-cruzados`: lista alertas `cross_prescription_alerts` (Sprint 11) que envolvem o paciente — paciente vê quem prescreveu o quê, qual conflito foi detectado, justificativa do profissional se prosseguiu mesmo assim
+  - `/meu/privacidade/incidentes`: notificações de incidentes cross-tenant (ADR 0067 addendum) — paciente é informado dentro de 72h se dado dele foi afetado em algum incidente envolvendo seus tenants vinculados
+  - `/meu/convidar` (PWA-grade): busca de profissional/empresa com autocomplete + cidade + filtro por módulo, criação de pedido inverso (path C ADR 0077)
+  - `/meu/dashboard`: pedidos pendentes em destaque, vínculos ativos resumidos, atalho pra "convidar profissional"
+- Teste E2E cross-tenant: paciente revoga acesso de Tenant X via swipe → próxima query do profissional do Tenant X retorna `FORBIDDEN` → audit registra evento de revogação
+- Teste E2E alertas: paciente vê alerta cross-prescription gerado por personal Maria → clica "ver detalhes" → entende justificativa registrada
 
 ## Dependências
 
-- Sprint 02 (members)
+- Sprint 02 (members + passaporte cross-tenant ADR 0077 — entrega versão MVP funcional das telas; Sprint 26 polui)
 - Sprint 03 (agenda)
 - Sprint 04 (financeiro + cobranças)
 - Sprint 05 (créditos)
 - Sprint 08 (QR code)
-- Sprint 11 (workouts + sessões RPE)
+- Sprint 11 (workouts + sessões RPE + `cross_prescription_alerts`)
 - Sprint 20 (consultas — leitura limitada)
 - Sprint 21 (evolução — leitura limitada)
+- ADR 0067 addendum cross-tenant (incidentes)
 
 ## Decisões tomadas / ADRs esperados
 
@@ -75,7 +87,15 @@ Portal em `/meu/*` (namespace separado do `/app/*`):
 - `/meu/teleconsulta/[appointmentId]` — sala de vídeo (habilitado no Sprint 31)
 - `/meu/exames` — exames laboratoriais e gráficos de evolução (habilitado no Sprint 30 Nutri)
 - `/meu/suplementos` — prescrições ativas de suplementação (habilitado no Sprint 30)
-- `/meu/privacidade` (ADR 0054) — portal completo dos 8 direitos LGPD art. 18:
+- `/meu/privacidade` (ADR 0054 + 0077) — portal completo dos 8 direitos LGPD art. 18 **+ telas cross-tenant ADR 0077:**
+
+**Telas cross-tenant (PWA-grade — Sprint 26 polui versão MVP entregue no Sprint 02):**
+- `/meu/privacidade/compartilhamento` — gestão de vínculos cross-tenant: cards de empresas vinculadas, módulos liberados, níveis de dados, swipe-to-pause/revoke, drill-down por categoria, "renovar consentimento" antes de expirar
+- `/meu/privacidade/acessos` — timeline de leituras cross-tenant: filtros, busca, gráfico de "quem leu mais", export CSV/PDF assinado
+- `/meu/privacidade/alertas-cruzados` — alertas cross-prescrição (Sprint 11) que envolvem o paciente
+- `/meu/privacidade/incidentes` — incidentes cross-tenant (ADR 0067 addendum)
+
+**Direitos LGPD art. 18:**
   - **Visão geral:** toggles de consents ativos por finalidade + histórico; revogação imediata é permitida mas **não apaga dados com obrigação de retenção** (prontuário 20 anos CFM 2.299/2021, fiscal 5 anos)
   - **Direito I — Confirmação** (`right='confirmation'`): botão 1-clique → resposta automática
   - **Direito II — Acesso** (`right='access'`): "Baixar meus dados" → admin gera export JSON + PDF em ≤15d → link TTL 7d via email
@@ -106,11 +126,20 @@ Server Actions em `apps/web/app/meu/actions.ts`:
 - `payMyInvoice(invoiceId)` — gera link checkout Asaas
 - `recordMyExerciseSession(...)` — reusa Sprint 11
 
+Server Actions cross-tenant (reusa Sprint 02 ADR 0077):
+
+- `pauseLink({ linkId, pausedUntil })` / `revokeLink({ linkId, reason })` — Sprint 02 já entregou; Sprint 26 enriquece UI
+- `setSharingLevel({ linkModuleId, dataLevelMax })` / `setCategoryGrant({ linkModuleId, category, granted })` — Sprint 02; UI granular Sprint 26
+- `acknowledgeCrossPrescriptionAlert({ alertId, viewed: true })` — paciente confirma leitura do alerta
+- `acknowledgeIncident({ incidentId, viewed: true })` — paciente confirma leitura da notificação de incidente
+- `exportCrossTenantAccessLog({ startDate, endDate, format: 'csv' | 'pdf' })` — gera export assinado dos acessos cross-tenant para download (TTL 7d)
+
 API Routes:
 
 - `POST /api/meu/magic-link` — público; rate-limited
 - `POST /api/meu/verify` — verifica token + cria sessão
 - `GET /api/meu/qr` — retorna QR atual com rotação
+- `GET /api/meu/privacidade/export/[exportId]` — entrega o arquivo gerado por `exportCrossTenantAccessLog` (URL assinada TTL 7d)
 
 ## Schemas Drizzle (esperado)
 
@@ -128,24 +157,49 @@ RLS: `member_id = auth.uid() AND auth.jwt() ->> 'role' = 'member'`. Tabelas de d
 - `member.self_booked_appointment`
 - `member.self_paid_invoice`
 - `member.self_recorded_session`
+- `member.cross_tenant_link_paused` / `member.cross_tenant_link_revoked` (Sprint 02 já emite; Sprint 26 conecta UI)
+- `member.cross_prescription_alert_acknowledged`
+- `member.incident_notification_acknowledged`
+- `member.access_log_exported` — `{ member_id, export_id, format, range, at }`
 
 ## Commit (checklist)
+
+**Portal core:**
 
 - [ ] Schema Drizzle: `member_auth_tokens`, `member_sessions`
 - [ ] Policies RLS adicionais para member em todas as tabelas acessadas (members, appointments, invoices, workouts, consultas, evolucoes, etc)
 - [ ] Endpoint magic link com rate-limit + anti-enumeration (resposta idêntica se email existe ou não)
-- [ ] Layout `/meu/*` distinto do `/app/*` (sem sidebar operador)
+- [ ] Layout `/meu/*` distinto do `/app/*` (sem sidebar operador) — usa `<PortalLayout>` do Sprint 00
 - [ ] Integração Asaas checkout embed
 - [ ] Player de vídeo com URL assinada do Sprint 11
 - [ ] QR dinâmico reusando HMAC Sprint 08
 - [ ] Manifest PWA + service worker + icons
-- [ ] Lighthouse CI >90 mobile
+- [ ] Lighthouse CI >90 mobile + ≥95 PWA
 - [ ] Cancelamento respeitando política (configurável por tenant)
-- [ ] Consent UI: paciente revoga/liga compartilhamento cross-module
+- [ ] Consent UI: paciente revoga/liga compartilhamento cross-module (intra-tenant; cross-tenant é separado abaixo)
 - [ ] Testes unit
 - [ ] Testes E2E: fluxo magic link → agenda → pagamento → logout
 - [ ] Feature flag `portal_member_v1`
 - [ ] ADR 0032 publicado
+
+**Cross-tenant PWA-grade (ADR 0077 + ADR 0067 addendum):**
+
+- [ ] `/meu/privacidade/compartilhamento` PWA-grade: cards de empresas vinculadas + swipe-to-pause/revoke (mobile gestures); drill-down por categoria (Nível 1-4) com toggle granular; banner "renovar consentimento" 30d antes do `expires_at`; "última leitura" por módulo; touch targets ≥44px (regra 31)
+- [ ] `/meu/privacidade/acessos` PWA-grade: timeline com filtros (data, empresa, módulo, categoria), busca textual, gráfico simples "leituras por empresa", `exportCrossTenantAccessLog` com download CSV/PDF assinado
+- [ ] `/meu/privacidade/alertas-cruzados`: lista alertas `cross_prescription_alerts` (Sprint 11) que envolvem o paciente; clique abre detalhe com justificativa registrada; botão "marcar como lido" → `acknowledgeCrossPrescriptionAlert`
+- [ ] `/meu/privacidade/incidentes`: lista incidentes cross-tenant que afetaram dados do paciente (ADR 0067 addendum); push notification PWA quando novo incidente; botão "marcar como lido"
+- [ ] `/meu/convidar` PWA-grade: autocomplete de busca com debounce, filtros por cidade + módulo, criação de pedido inverso (path C ADR 0077), tela de "convidar empresa não cadastrada" → vira `commercial_leads`
+- [ ] `/meu/dashboard`: pedidos pendentes em destaque, vínculos ativos resumidos, atalhos primários
+- [ ] Server Actions: `acknowledgeCrossPrescriptionAlert`, `acknowledgeIncident`, `exportCrossTenantAccessLog`
+- [ ] API Route `GET /api/meu/privacidade/export/[exportId]` com URL assinada TTL 7d
+- [ ] Push notification PWA pra incidente cross-tenant + alerta cross-prescription `critical`
+- [ ] i18n: catalog completo dos 3 locales para todas as strings cross-tenant (regra 27)
+- [ ] Testes E2E nos 3 viewports:
+  - Revogação por swipe: paciente revoga vínculo via gesture mobile → próxima query do tenant retorna `FORBIDDEN`
+  - Drill-down de categoria: paciente desliga "exames laboratoriais" sem desligar resto do Nível 4 → tenant ainda vê alergias mas não vê exames
+  - Export de acessos: paciente solicita export 90 dias → arquivo gerado em background → email com link → baixa CSV
+  - Notificação de incidente: trigger sintético cria incidente envolvendo paciente → push PWA + tela `/meu/privacidade/incidentes`
+  - Alerta cross-prescrição: alerta `critical` gerado em Sprint 11 → paciente vê em `/meu/privacidade/alertas-cruzados`
 
 ## Stretch
 

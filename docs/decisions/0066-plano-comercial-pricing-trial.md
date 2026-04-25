@@ -1,7 +1,7 @@
 # ADR 0066 — Plano comercial LogiFit — pricing, trial, cobrança, limites
 
 - **Status:** Accepted
-- **Date:** 2026-04-24 (revisado 2026-04-24 com pricing benchmarkado)
+- **Date:** 2026-04-24 (revisado 2026-04-24 com pricing benchmarkado; revisado 2026-04-25 com modelo de custo fiscal corrigido + overage por nota emitida; revisado 2026-04-25 com Starter R$ 79→R$ 99 + 1 vertical à escolha + 5 profissionais + 50 NFS-e inclusas — alinhado a ICP de pequeno negócio de saúde solo/equipe pequena)
 
 ## Context
 
@@ -31,14 +31,32 @@ LogiFit é SaaS B2B multi-tenant. Sprint 04 planeja cobrança tenant → member 
 3. **Adicionar Business R$ 449** — tier intermediário para redes pequenas (gap entre Pro e Enterprise)
 4. **Overage suave por member** — R$ 0,50/member acima do incluído, com cap = upgrade para próximo tier; evita forçar upgrade hostil quando tenant ultrapassa limite
 
+### Revisão 2026-04-25 — alinhamento ao ICP real (pequeno negócio de saúde solo/equipe)
+
+Discussão com fundador (2026-04-25) sobre 3 clientes-piloto reais expôs duas falhas no Starter original:
+
+| Cliente piloto | Realidade | Falha do Starter R$ 79 original |
+|---|---|---|
+| Academia de personals (5 profs compartilhando ~60 alunos) | Vertical Academia, equipe pequena com base modesta de alunos | Limite 2 profissionais força ir pra Pro mesmo com 5 funcionários e poucos alunos |
+| Nutricionista solo (~60-80 pacientes) | Vertical Nutrição apenas | Starter só inclui Academia → forçada a pagar R$ 199 só pra ter Nutri |
+| Clínica fisio (5 profs com pacientes próprios) | Vertical Fisio | Starter sem Fisio + limite 2 profs → forçada a pagar R$ 199 |
+
+**Decisão (2026-04-25):**
+
+1. **Starter sobe para R$ 99** — alinhado a Tecnofit Lite (R$ 99) e NutMed (R$ 99); +R$ 20 financia mais features no plano de entrada
+2. **Starter ganha "1 vertical à escolha"** — Academia OU Fisio OU Nutri (não simultâneas); cobre o ICP "negócio solo/pequeno especializado em uma área"
+3. **Limite de profissionais Starter sobe de 2 → 5** — acomoda academia de personals + clínica fisio pequena com equipe enxuta; mantém 100 members
+4. **NFS-e Starter ganha 50 emissões inclusas** + R$ 0,50 por nota extra — clínica solo / consultório autônomo precisa emitir nota; Starter sem fiscal era barreira artificial
+5. **Quem precisa de mais de 1 vertical (clínica integrada multi-disciplinar) vai para Pro** — degrau natural justifica os R$ 200 do Pro
+
 ## Decision
 
 ### 4 tiers + Enterprise + trial
 
 | Plano | Preço anual (por mês) | Preço mensal | Perfil |
 |---|---|---|---|
-| **Starter** | R$ 69/mês | **R$ 79/mês** | Academia pequena independente · consultório fisio/nutri solo |
-| **Pro** | R$ 179/mês | **R$ 199/mês** | Academia/clínica média · multi-profissional · todas verticais |
+| **Starter** | R$ 89/mês | **R$ 99/mês** | Negócio solo ou equipe ≤5 profs · **1 vertical à escolha** (Academia OU Fisio OU Nutri) · até 100 members |
+| **Pro** | R$ 179/mês | **R$ 199/mês** | Clínica multi-disciplinar · **todas as verticais** simultâneas · até 500 members |
 | **Business** | R$ 399/mês | **R$ 449/mês** | Rede pequena 5-10 unidades · multi-company · adquirência integrada |
 | **Enterprise** | **sob consulta** (a partir de R$ 1.199/mês) | — | Rede grande · hospital · clínica com DPO próprio · BYOK IA · SLA · white-label |
 
@@ -48,25 +66,26 @@ LogiFit é SaaS B2B multi-tenant. Sprint 04 planeja cobrança tenant → member 
 
 ### O que inclui cada plano
 
-| Item | Starter (R$ 79) | Pro (R$ 199) | Business (R$ 449) | Enterprise |
+| Item | Starter (R$ 99) | Pro (R$ 199) | Business (R$ 449) | Enterprise |
 |---|---|---|---|---|
 | **Companies (CNPJs)** | 1 | 1 | até 3 | ilimitado |
 | **Units (locais físicos)** | 1 | até 3 | até 10 | ilimitado |
 | **Members incluídos** | 100 | 500 | 2.000 | ilimitado |
 | **Overage por member extra** | R$ 0,50/member/mês | R$ 0,50/member/mês | R$ 0,40/member/mês | n/a |
-| **Cap de overage (força upgrade)** | +R$ 120 = upgrade para Pro | +R$ 250 = upgrade para Business | +R$ 750 = upgrade para Enterprise | n/a |
-| **Users operadores** (além admin) | 2 | 10 | 30 | ilimitado |
-| **Profissionais com contrato** | 2 | 10 | 30 | ilimitado |
-| **Vertical Academia** | ✅ | ✅ | ✅ | ✅ |
-| **Vertical Fisioterapia** | — | ✅ | ✅ | ✅ |
-| **Vertical Nutrição** | — | ✅ | ✅ | ✅ |
+| **Cap de overage (força upgrade)** | +R$ 100 = upgrade para Pro | +R$ 250 = upgrade para Business | +R$ 750 = upgrade para Enterprise | n/a |
+| **Users operadores** (além admin) | 3 | 10 | 30 | ilimitado |
+| **Profissionais com contrato** | **5** | 10 | 30 | ilimitado |
+| **Verticais** | **1 à escolha** (Academia, Fisio ou Nutri) | **Todas** simultâneas | Todas | Todas |
+| **Vertical Academia** | ✅ (se escolhida) | ✅ | ✅ | ✅ |
+| **Vertical Fisioterapia** | ✅ (se escolhida) | ✅ | ✅ | ✅ |
+| **Vertical Nutrição** | ✅ (se escolhida) | ✅ | ✅ | ✅ |
 | **Cobrança Asaas** (do tenant p/ members) | ✅ | ✅ | ✅ | ✅ |
 | **Portal do paciente PWA** | ✅ | ✅ | ✅ | ✅ |
 | **Controle de acesso QR (Academia)** | ✅ | ✅ | ✅ | ✅ |
 | **ERP Financeiro** (AP/AR/plano contas/OCR boleto) | ✅ | ✅ | ✅ | ✅ |
 | **Inbox NF-e + manifestação + devolução** | ✅ | ✅ | ✅ | ✅ |
 | **Convênios TISS/TUSS** (Fisio) | — | ✅ | ✅ | ✅ |
-| **Emissão fiscal Focus NFe** | — | ✅ (NFS-e) | ✅ (NFS-e + NF-e + NFC-e + eventos) | ✅ (todos) |
+| **Emissão fiscal Focus NFe** | ✅ (NFS-e — serviço) | ✅ (NFS-e + NF-e + NFC-e + eventos) | ✅ (NFS-e + NF-e + NFC-e + eventos) | ✅ (todos) |
 | **Bancos + Open Finance + conciliação** | — | ✅ | ✅ | ✅ |
 | **Device Hub** (Garmin/Oura/BLE) | — | ✅ | ✅ | ✅ |
 | **Pipeline Exames IA** | — | ✅ | ✅ | ✅ |
@@ -89,14 +108,15 @@ LogiFit é SaaS B2B multi-tenant. Sprint 04 planeja cobrança tenant → member 
 | **IA (chamadas/mês)** — Gemini Flash via LogiFit | 500 | 3.000 | 10.000 | 25k ou BYOK ilimitado |
 | **Storage** (fotos, exames, contratos, docs) | 5 GB | 50 GB | 200 GB | 500 GB+ (R$ 2/GB extra) |
 | **Transcrição STT** (Sprint 31, Groq Whisper) | — | 60 min | 300 min | 1.500 min ou BYOK |
-| **Emissões fiscais** (NFS-e + NF-e + NFC-e) | — | 500/mês | 3.000/mês | 10.000/mês + Focus fee variável |
+| **Emissões fiscais incluídas** (NFS-e + NF-e + NFC-e) | 50/mês (NFS-e apenas) | 200/mês | 1.000/mês | 5.000/mês default |
+| **Overage por nota fiscal extra** | R$ 0,50/nota | R$ 0,40/nota | R$ 0,35/nota | R$ 0,25/nota |
 | **Webhooks outgoing** | 10k/mês | 100k/mês | 500k/mês | 1M/mês |
 | **Retenção audit log** | 12 meses | 24 meses | 36 meses | 5 anos |
 | **Backup automático (Supabase point-in-time)** | 7 dias | 14 dias | 30 dias | 90 dias |
 
 ### Overage por member — regra suave
 
-**Motivação:** tenant que cresce de 95 para 130 members **não** deve ser forçado a upgrade imediato (Starter → Pro é +R$ 120 de salto). A regra:
+**Motivação:** tenant que cresce de 95 para 130 members **não** deve ser forçado a upgrade imediato (Starter → Pro é +R$ 100 de salto). A regra:
 
 ```
 tenant_subscriptions.members_included = 100 (do plano Starter)
@@ -113,7 +133,7 @@ IF overage > upgrade_threshold_for_plan:
 ```
 
 **Thresholds:**
-- Starter: +R$ 120 (240 members overage) → sugere Pro
+- Starter: +R$ 100 (200 members overage) → sugere Pro
 - Pro: +R$ 250 (500 members overage) → sugere Business
 - Business: +R$ 750 (1.875 members overage) → sugere Enterprise
 - Enterprise: sem overage — ilimitado
@@ -122,6 +142,37 @@ IF overage > upgrade_threshold_for_plan:
 - Members atuais / incluídos
 - Overage do mês corrente (preview da fatura)
 - "Faça upgrade para Pro e economize R$ X/mês" (comparativo visível)
+
+### Overage por nota fiscal — repasse direto
+
+**Motivação (revisão 2026-04-25):** O modelo original assumia LogiFit absorvendo 100% do custo Focus NFe (~R$ 0,15-0,50/nota), o que **inviabiliza margem em alto volume**:
+
+| Plano | Notas/mês típicas | Custo Focus a R$ 0,30 | % da mensalidade absorvido |
+|---|---|---|---|
+| Pro R$ 199 | ~500 | R$ 150 | 75% |
+| Business R$ 449 | ~2.000 | R$ 600 | 134% ⚠️ (margem negativa) |
+
+A correção é **incluir um pacote de notas no plano** + **cobrar overage proporcional** acima disso, igual à mecânica de members. Tenant que emite pouco paga o plano-base; tenant que emite muito paga proporcional ao volume real (justo + sustentável):
+
+```
+tenant_subscriptions.fiscal_emissions_included = 1000 (do plano Business)
+tenant_subscriptions.fiscal_overage_rate_cents = 35 (R$ 0,35/nota extra)
+
+fim do mês: count emissões NFS-e + NF-e + NFC-e do mês
+  if emissions > included:
+    fiscal_overage = (emissions - included) * 0.35
+    fatura_mensal = plano_preco + members_overage + fiscal_overage
+```
+
+**Importante:** o overage cobre o **custo do provider Focus NFe** (R$ 0,15-0,30 negociado por volume) **+ margem operacional**. Não é "lucro extra" — é repasse calibrado. Quando NFS-e Nacional ([ADR 0076](0076-nfse-nacional-provider-complementar.md)) reduzir custo unitário, a tabela de overage pode cair sem afetar margem.
+
+**UI em `/app/settings/tenant/plan`:**
+- "Notas emitidas neste mês: 1.247 / 1.000 incluídas"
+- "Overage fiscal estimado: R$ 86,45 (247 notas × R$ 0,35)"
+- "Total previsto desta fatura: R$ 449 (plano) + R$ 86,45 (notas) = R$ 535,45"
+- Comparativo: "Upgrade para Enterprise inclui 5.000 notas/mês — vale a pena se você emite >1.500 notas/mês"
+
+**Tipos cobertos pelo contador de overage:** NFS-e + NF-e + NFC-e + NF-e devolução + NF-e transferência + NF-e conserto. Eventos (cancelamento, CC-e, inutilização) **não contam** (são correções, não novas emissões).
 
 ### Cobrança
 
@@ -175,6 +226,8 @@ logifit_plans
   members_included int
   members_overage_rate_cents int    -- 50 = R$ 0,50/member
   members_overage_cap_cents int     -- R$ 120 → sugere upgrade
+  fiscal_emissions_included int     -- 1000 = mil notas/mês inclusas
+  fiscal_overage_rate_cents int     -- 35 = R$ 0,35/nota extra
   includes jsonb                    -- { units, users, storage_gb, ai_calls_month, verticals, ... }
   active bool
   archived_at timestamp nullable
@@ -186,6 +239,7 @@ tenant_subscriptions
   plan_id fk
   cycle enum ('monthly'|'annual')
   status enum ('trial'|'active'|'grace'|'read_only'|'suspended'|'cancelled')
+  vertical_choice enum ('academia','fisio','nutri') nullable  -- só Starter usa; Pro+ tem todas
   trial_ends_at timestamp nullable
   current_period_start timestamp
   current_period_end timestamp
@@ -196,14 +250,18 @@ tenant_subscriptions
   cancelled_at timestamp nullable
   cancel_reason text nullable
 
--- Histórico de overage mensal
+-- Histórico de overage mensal (members + fiscal)
 tenant_usage_snapshots
   id uuid pk
   tenant_id uuid fk
   period_ym text                    -- '2026-04'
   members_active int                -- count(*) de members ativos no fechamento
   members_included int              -- snapshot do plano no fechamento
-  overage_amount_cents int          -- calculado
+  members_overage_amount_cents int  -- calculado
+  fiscal_emissions_count int        -- count(*) de fiscal_emissions completed no mês
+  fiscal_emissions_included int     -- snapshot do plano no fechamento
+  fiscal_overage_amount_cents int   -- calculado
+  total_overage_cents int           -- soma de members_overage + fiscal_overage
   overage_invoiced_at timestamp nullable
   created_at
   unique (tenant_id, period_ym)
@@ -211,22 +269,45 @@ tenant_usage_snapshots
 
 Seeded via migration global (tenant_id NULL).
 
-### Análise de margem
+### Análise de margem (revisada 2026-04-25)
 
-| Plano | Preço | Custo estimado | Margem | % |
-|---|---|---|---|---|
-| Starter R$ 79 | 79 | ~25 (infra + IA 500 + Asaas fee) | **R$ 54** | 68% |
-| Pro R$ 199 | 199 | ~40 (infra + IA 3k + storage 50GB + Focus NFe) | **R$ 159** | 80% |
-| Business R$ 449 | 449 | ~80 (infra + IA 10k + storage 200GB + fiscal + intercompany) | **R$ 369** | 82% |
-| Enterprise R$ 1.199+ | 1.199+ | ~200 (inclui DPO parceiro + gestor conta + SLA) | **R$ 999+** | 83%+ |
+**Tabela de custo Focus NFe assumida** — com volume agregado LogiFit projetado (objetivo de negociação enterprise no Sprint 36):
 
-**Custo inclui:** Supabase rows/storage/bandwidth, Vercel invocations, Sentry/PostHog/Logtail quota, IA (Gemini Flash via Vertex AI), Asaas fee 2-3% sobre pagamento, Focus NFe (R$ 0,15-0,50 por emissão), Upstash Redis, suporte alocado.
+| Volume LogiFit total/mês | Tabela negociada Focus | Premissa para análise |
+|---|---|---|
+| 0-2.000 notas (early stage) | R$ 0,29/nota | conservador |
+| 2.000-10.000 | R$ 0,18/nota | volume médio |
+| 10.000+ (post-PMF) | R$ 0,12/nota | enterprise |
+
+**Margem por plano com fiscal_emissions_included + overage** (premissa Focus a R$ 0,18/nota fase média):
+
+| Plano | Preço base | Notas inclusas | Custo Focus inclusas | + outros custos | Total custo | **Margem base** | **Margem %** |
+|---|---|---|---|---|---|---|---|
+| Starter R$ 99 | 99 | 50 NFS-e | R$ 9 | ~16 (infra + IA 500 + Asaas + suporte) | 25 | **R$ 74** | **75%** |
+| Pro R$ 199 | 199 | 200 | R$ 36 | ~40 | 76 | **R$ 123** | **62%** |
+| Business R$ 449 | 449 | 1.000 | R$ 180 | ~80 | 260 | **R$ 189** | **42%** |
+| Enterprise R$ 1.199+ | 1.199+ | 5.000 | R$ 900 | ~200 (DPO + SLA + conta) | 1.100 | **R$ 99+** | **8%+** ⚠️ |
+
+**Margem em alto volume (com overage):** tenant Business que emite 2.000 notas/mês paga R$ 449 + (1.000 × R$ 0,35) = **R$ 799**. Custo: R$ 360 Focus + R$ 80 outros = R$ 440. Margem: **R$ 359 (45%)**. Sustentável.
+
+**Enterprise alto volume:** preço base é piso, customizado por contrato. Contrato real cobra a partir de R$ 1.799-2.499 quando volume >5k notas/mês — não há prejuízo, apenas o piso público é apertado por simplicidade.
+
+### Caminhos de melhoria contínua de margem
+
+| Caminho | Quando ativa | Ganho esperado |
+|---|---|---|
+| **Negociar tabela enterprise com Focus NFe** | Sprint 36 (pré-lançamento fiscal) | R$ 0,18 → R$ 0,12 = -33% custo unitário |
+| **NFS-e Nacional como complemento** ([ADR 0076](0076-nfse-nacional-provider-complementar.md)) | Pós Sprint 36 + 10k notas/mês LogiFit | Custo médio cai mais ~30-50% para municípios aderidos |
+| **Cache + reuso semântico de IA** ([ADR 0064](0064-ia-arquitetura-gemini-default-byok-rag.md)) | Sprint 06 já entrega | Custo IA cai ~60% |
+| **Volume LogiFit cresce** (escala em Supabase/Vercel) | Pós 50 tenants | Custo infra unitário cai ~20% |
+
+**Custo inclui:** Supabase rows/storage/bandwidth, Vercel invocations, Sentry/PostHog/Logtail quota, IA (Gemini Flash via Vertex AI), Asaas fee 2-3% sobre pagamento, Focus NFe (tabela negociada por volume), Upstash Redis, suporte alocado.
 
 ## Consequences
 
 ### Positivas
 
-- **Pricing competitivo** — Starter R$ 79 abaixo de Tecnofit Lite (R$ 99); Pro R$ 199 equivalente a Tecnofit Pro
+- **Pricing competitivo** — Starter R$ 99 alinha com Tecnofit Lite (R$ 99) e NutMed (R$ 99) mas oferece **multi-vertical à escolha + IA + emissão fiscal incluída** (concorrentes não têm); Pro R$ 199 equivalente a Tecnofit Pro com vantagem multi-disciplinar
 - **Trial 14 dias sem cartão** — reduz fricção; padrão de mercado
 - **Overage suave** — tenant que cresce paga proporcional, sem susto de upgrade forçado
 - **Cap de overage = upgrade** — evita tenant ficar pagando 3x o plano sem migrar
@@ -238,11 +319,13 @@ Seeded via migration global (tenant_id NULL).
 
 ### Negativas (mitigáveis)
 
-- **Starter R$ 79 com margem 68%** — apertado; se cache semântico de IA falhar, margem cai. Monitorar trimestralmente e ajustar quota ou preço.
+- **Starter R$ 99 com margem 75%** — saudável; +R$ 20 vs versão anterior financia 50 NFS-e inclusas + verticais Fisio/Nutri opcionais
 - **Sem Free plan** — LogiFit perde aquisição "sem fricção" que concorrentes SaaS têm (Notion, Canva). Trial 14d mitiga; reavaliar se conversão ficar baixa.
-- **Overage pode confundir no início** — UI precisa mostrar **preview** do impacto antes do fim do mês. Sprint 04 entrega isso.
+- **Overage pode confundir no início** — UI precisa mostrar **preview** do impacto antes do fim do mês (members + fiscal). Sprint 04 entrega isso.
+- **Tenant pode ter 2 sources de overage** (members e fiscal) — UI deve apresentar agregado claro com breakdown opcional
 - **Grandfather clause** — tenant ativo precisa manter preço por ≥12 meses se LogiFit aumentar; reajuste IPCA automático anual documentado
 - **Tenant com 98 members pode ficar próximo do limit** e evitar cadastrar um novo — aceitar; conversão para Pro natural quando passa de 120
+- **Repasse fiscal pode parecer "taxa extra"** na UX comercial — mitigado: copy clara "notas fiscais emitidas pelo sistema" + comparação com concorrentes que cobram nota fiscal à parte (Tecnofit Pro, iClinic Pro)
 
 ### Riscos não endereçados
 
@@ -250,6 +333,41 @@ Seeded via migration global (tenant_id NULL).
 - **Enterprise que cancela** — churn pesado. Mitigar com onboarding excelente + gestor de conta + NPS trimestral
 - **Inadimplência maior que modelado** — empresa nova; revisar régua após 6 meses de produção
 - **Reajuste IPCA pode parecer brusco** em ano de alta inflação — comunicar com 60d de antecedência
+
+## Tiers futuros (validação pendente)
+
+### Solo — R$ 49/mês (não-MVP, registrado 2026-04-25)
+
+Confirmado em 2026-04-25 como **opção futura válida** após implementação do MVP. Atende profissional autônomo muito pequeno (personal trainer com 30 alunos, nutricionista começando, fisioterapeuta home care iniciante) — segmento abaixo do que o Starter R$ 99 captura.
+
+**Esboço (a refinar pós-validação):**
+
+| Item | Valor proposto |
+|---|---|
+| Preço | R$ 49/mês (anuidade R$ 39) |
+| Vertical | 1 à escolha (Academia, Fisio ou Nutri) |
+| Members incluídos | 30 |
+| Profissionais com contrato | 1 (solo) |
+| Companies / Units | 1 / 1 |
+| NFS-e inclusas | 20/mês |
+| Overage NFS-e | R$ 0,50/nota |
+| IA assistente | Camada 1 (Help/RAG) apenas — sem Camada 2/3 |
+| Storage | 2 GB |
+| Portal do paciente | Versão limitada (só calendário + boletos) |
+| Convênios TISS/TUSS | — |
+| Multi-empresa | — |
+| Audit log retenção | 6 meses |
+
+**Custo estimado LogiFit:** ~R$ 12 (infra mínima + Asaas fee + 20 notas Focus). **Margem: R$ 37 (76%)** — sustentável.
+
+**Por que não entra no MVP:**
+- Distrai do caminho crítico (4 tiers já cobrem ICP principal)
+- Risco de canibalizar Starter (tenant que caberia em R$ 99 escolhe R$ 49 e fica espremido)
+- Precisa validar demanda real com clientes-piloto antes de investir em tier diferenciado
+
+**Gatilho de ativação:** ≥10 leads inbound rejeitados por preço Starter R$ 99 nos primeiros 6 meses pós-MVP. Decisão re-aberta nesse ponto.
+
+**Bloqueado em Camada 2/3 IA:** decisão deliberada — IA executável em "Solo" reduz margem demais. Solo tem só RAG help (cache hit barato) + tools manuais via UI.
 
 ## Alternativas rejeitadas
 
@@ -262,6 +380,9 @@ Seeded via migration global (tenant_id NULL).
 | Pagamento só anual upfront | Reduz cash flow; exclui tenant pequeno |
 | Hard limit sem overage | Força upgrade hostil; tenant frustrado quando passa de 101 members |
 | Sem Business intermediário | Gap de R$ 199 → R$ 1.199+ é grande demais; rede 5-10 un não se encaixa |
+| **LogiFit absorver 100% do custo Focus NFe** (modelo original) | Recusada em revisão 2026-04-25 — margem em Business cai para zero ou negativa em alto volume (2.000+ notas/mês); insustentável |
+| **Construir motor fiscal próprio** (substituir Focus NFe por implementação interna) | Recusada em conversa 2026-04-25 — escopo de 8-12 meses solo + manutenção fiscal eterna + risco regulatório alto; nenhum SaaS BR comparável faz; ganho marginal não compensa atraso de MVP |
+| **Plano único com fiscal incluso ilimitado** | Convida abuso (tenant emite 10k notas/mês num plano R$ 199); insustentável |
 
 ## Escopo de impacto
 
@@ -269,10 +390,10 @@ Seeded via migration global (tenant_id NULL).
 
 **Sprints ajustados:**
 
-- **Sprint 00** — landing com pricing 4 tiers (Starter/Pro/Business/Enterprise) + "fale com comercial" Enterprise + página de comparação
-- **Sprint 01a** — `/signup` escolhe plano + trial 14 dias (sem cartão); `logifit_plans` + `tenant_subscriptions` + `tenant_usage_snapshots` seed com 4 planos
-- **Sprint 04** — Asaas próprio LogiFit; cobrança recorrente tenant; régua inadimplência (21d/45d/135d); upgrade/downgrade UI em `/app/settings/tenant/plan`; **cálculo de overage + preview da fatura do mês**
-- **Sprint 36** — emissão automática de NFS-e LogiFit→tenant todo mês (cron job)
+- **Sprint 00** — landing com pricing 4 tiers (Starter/Pro/Business/Enterprise) + "fale com comercial" Enterprise + página de comparação; **comparativo deve incluir notas fiscais inclusas + custo overage**
+- **Sprint 01a** — `/signup` escolhe plano + trial 14 dias (sem cartão); `logifit_plans` + `tenant_subscriptions` + `tenant_usage_snapshots` seed com 4 planos (com `fiscal_emissions_included` + `fiscal_overage_rate_cents`)
+- **Sprint 04** — Asaas próprio LogiFit; cobrança recorrente tenant; régua inadimplência (21d/45d/135d); upgrade/downgrade UI em `/app/settings/tenant/plan`; **cálculo de overage members + fiscal + preview da fatura do mês com breakdown**
+- **Sprint 36** — emissão automática de NFS-e LogiFit→tenant todo mês (cron job); **count de fiscal_emissions agrega no `tenant_usage_snapshots.fiscal_emissions_count`**; **negociar tabela enterprise Focus NFe pré-lançamento (target R$ 0,12/nota acima de 10k/mês agregado)**
 - **Sprint 08** — `access_blocks` tipo `logifit_overdue` quando tenant em read-only (Academia — block parcial)
 
 **Docs:**
@@ -285,7 +406,8 @@ Seeded via migration global (tenant_id NULL).
 ## Related
 
 - Depende de [ADR 0004 — Pagamentos Asaas](0004-pagamentos-asaas.md) — LogiFit reusa infra
-- Depende de [ADR 0059 — Emissão fiscal Focus NFe](0059-ciclo-fiscal-emissao-focus-nfe.md) — emite NFS-e própria
+- Depende de [ADR 0059 — Emissão fiscal Focus NFe](0059-ciclo-fiscal-emissao-focus-nfe.md) — emite NFS-e própria + provider único no MVP
 - Depende de [ADR 0064 — Arquitetura IA](0064-ia-arquitetura-gemini-default-byok-rag.md) — quotas por plano
 - Integra com [ADR 0067 — DPO + governança](0067-dpo-governanca-compliance-lgpd.md) — Enterprise inclui DPO-as-a-service add-on
-- Fontes: benchmarks Tecnofit, ActiveWise, W12, Feegow, iClinic, Amplimed, Ninsaúde, NutMed, Dietpro (abril/2026)
+- Complementado por [ADR 0076 — NFS-e Nacional como provider complementar](0076-nfse-nacional-provider-complementar.md) — caminho de redução de custo unitário fiscal pós-Sprint 36
+- Fontes: benchmarks Tecnofit, ActiveWise, W12, Feegow, iClinic, Amplimed, Ninsaúde, NutMed, Dietpro (abril/2026); revisão de modelo de custo fiscal 2026-04-25
