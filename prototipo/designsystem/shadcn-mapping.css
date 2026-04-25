@@ -1,0 +1,91 @@
+/*
+ * shadcn-mapping.css — Preview pronto pra Sprint 00
+ *
+ * Quando `apps/web/` for inicializado e shadcn/ui instalado, COLAR este bloco
+ * em `apps/web/app/globals.css` (depois de `@import url('./tokens.css')`).
+ *
+ * Estratégia: aliases shadcn (--primary, --background, etc.) apontam pras
+ * variáveis --ev-* da fonte de verdade (tokens.css). Componentes shadcn
+ * funcionam out-of-the-box; identidade Equilíbrio Vital é preservada.
+ *
+ * 3 desvios deliberados do default shadcn (documentados na seção "Migração"
+ * do styleguide):
+ *   1. Radius default = pill (botões/inputs); cards override pra xl (24px)
+ *   2. Zero shadows decorativas (Tailwind shadow-* override pra none)
+ *   3. Background ≠ card (cards "sobem" sem precisar de elevation)
+ */
+
+:root {
+  /* ===== Aliases shadcn → tokens Equilíbrio Vital ===== */
+
+  /* Base */
+  --background: var(--ev-bg);
+  --foreground: var(--ev-text);
+
+  /* Card */
+  --card: var(--ev-surface);
+  --card-foreground: var(--ev-text);
+
+  /* Popover / dropdown / tooltip (mesmo tratamento de card) */
+  --popover: var(--ev-surface);
+  --popover-foreground: var(--ev-text);
+
+  /* Primary (azul calmo Equilíbrio Vital) */
+  --primary: var(--ev-primary);
+  --primary-foreground: var(--ev-text-inverse);
+
+  /* Secondary (superfície muted) */
+  --secondary: var(--ev-surface-muted);
+  --secondary-foreground: var(--ev-text);
+
+  /* Muted (background de áreas secundárias) */
+  --muted: var(--ev-surface-muted);
+  --muted-foreground: var(--ev-text-muted);
+
+  /* Accent (tint sutil do primary pra hover/highlight) */
+  --accent: var(--ev-primary-soft);
+  --accent-foreground: var(--ev-primary);
+
+  /* Destructive */
+  --destructive: var(--ev-danger);
+  --destructive-foreground: var(--ev-text-inverse);
+
+  /* Borders & inputs */
+  --border: var(--ev-border);
+  --input: var(--ev-border-strong);
+  --ring: var(--ev-primary);
+
+  /* Border radius — pill por default (WebDiet-inspired) */
+  --radius: var(--ev-radius-pill);
+
+  /* Charts: 5 ações semânticas EV */
+  --chart-1: var(--ev-primary);
+  --chart-2: var(--ev-success);
+  --chart-3: var(--ev-warning);
+  --chart-4: var(--ev-energy);
+  --chart-5: var(--ev-danger);
+
+  /* Sidebar (herda surface) */
+  --sidebar: var(--ev-surface);
+  --sidebar-foreground: var(--ev-text);
+  --sidebar-primary: var(--ev-primary);
+  --sidebar-primary-foreground: var(--ev-text-inverse);
+  --sidebar-accent: var(--ev-surface-muted);
+  --sidebar-accent-foreground: var(--ev-text);
+  --sidebar-border: var(--ev-border);
+  --sidebar-ring: var(--ev-primary);
+
+  /* Extensões semânticas que shadcn default não tem */
+  --success: var(--ev-success);
+  --success-foreground: var(--ev-text-inverse);
+  --warning: var(--ev-warning);
+  --warning-foreground: var(--ev-text-inverse);
+  --info: var(--ev-primary);
+  --info-foreground: var(--ev-text-inverse);
+}
+
+/*
+ * Dark mode: aliases continuam apontando pras mesmas vars EV; tokens.css
+ * já redefine --ev-* dentro de :root[data-theme="dark"], então shadcn
+ * herda dark mode automaticamente. Nenhum override necessário aqui.
+ */

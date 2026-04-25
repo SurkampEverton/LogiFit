@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LogiFit · Design System</title>
+  <link rel="icon" type="image/png" href="../img/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="../base.css" />
+  <link rel="stylesheet" href="./styleguide.css" />
+</head>
+<body>
+
+<div class="ds-layout">
+
+  <!-- ============================================================ -->
+  <!-- SIDEBAR ==================================================== -->
+  <!-- ============================================================ -->
+  <aside class="ds-sidebar">
+    <div class="ds-sidebar__brand">
+      <img src="../img/logo.png" alt="LogiFit" />
+      <div>
+        <div class="ds-sidebar__brand-name">LogiFit</div>
+        <div class="ds-sidebar__brand-tag">Design System</div>
+      </div>
+    </div>
+
+    <div class="ds-sidebar__group">
+      <div class="ds-sidebar__title">Foundation</div>
+      <ul class="ds-sidebar__nav">
+        <li><a href="#cores">Cores</a></li>
+        <li><a href="#tipografia">Tipografia</a></li>
+        <li><a href="#espacamento">Espaçamento</a></li>
+        <li><a href="#raios">Raios</a></li>
+        <li><a href="#layout">Layout</a></li>
+        <li><a href="#zindex">Z-index</a></li>
+      </ul>
+    </div>
+
+    <div class="ds-sidebar__group">
+      <div class="ds-sidebar__title">Componentes</div>
+      <ul class="ds-sidebar__nav">
+        <li><a href="#botoes">Botões</a></li>
+        <li><a href="#cards">Cards</a></li>
+        <li><a href="#badges">Badges</a></li>
+        <li><a href="#inputs">Inputs</a></li>
+        <li><a href="#tabelas">Tabelas</a></li>
+        <li><a href="#dots">Dots & Divider</a></li>
+        <li><a href="#utilities">Utilities</a></li>
+      </ul>
+    </div>
+
+    <div class="ds-sidebar__group">
+      <div class="ds-sidebar__title">Migração</div>
+      <ul class="ds-sidebar__nav">
+        <li><a href="#shadcn">Mapeamento shadcn</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- ============================================================ -->
+  <!-- MAIN ======================================================= -->
+  <!-- ============================================================ -->
+  <main class="ds-main">
+
+    <header class="ds-topbar">
+      <div>
+        <h1>Equilíbrio Vital</h1>
+        <p>Design system do LogiFit. Flat extremo, sem sombras, bordas 1px substituem elevação. Tokens definidos em <code>prototipo/tokens.css</code>; primitivos em <code>prototipo/base.css</code>.</p>
+      </div>
+      <button class="ds-theme-toggle" data-theme-toggle aria-label="Alternar tema">
+        <span data-theme-icon>◐</span>
+        <span data-theme-label>Tema</span>
+      </button>
+    </header>
+
+    <!-- ===================== CORES ===================== -->
+    <section class="ds-section" id="cores">
+      <div class="ds-section__head">
+        <div class="ds-section__eyebrow">Foundation · 01</div>
+        <h2>Cores</h2>
+        <p class="ds-section__lead">Paleta dual light/dark. Texto inverso é a única var que muda de função entre temas (#FFFFFF no light, #1A252F no dark). Hex valores conferem com <code>tokens.css</code>.</p>
+      </div>
+
+      <!-- Superfícies -->
+      <div class="ds-subsection">
+        <div class="ds-subsection__title">Superfícies (Light)</div>
+        <div class="ds-swatch-grid">
+
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #D8DDDB;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-bg</span>
+              <span class="ds-swatch__hex">#D8DDDB</span>
+              <span class="ds-swatch__alias">→ --background</span>
+              <span class="ds-swatch__use">Fundo geral da página</span>
+            </div>
+          </div>
+
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #F3F5F4;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-surface</span>
+              <span class="ds-swatch__hex">#F3F5F4</span>
+              <span class="ds-swatch__alias">→ --card / --popover</span>
+              <span class="ds-swatch__use">Cards, drawers, modais</span>
+            </div>
+          </div>
+
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #CFD4D2;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-surface-muted</span>
+              <span class="ds-swatch__hex">#CFD4D2</span>
+              <span class="ds-swatch__alias">→ --secondary / --muted</span>
+              <span class="ds-swatch__use">Hover de row, áreas secundárias</span>
+            </div>
+          </div>
+
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: rgba(44, 62, 80, 0.20); border-bottom-color: rgba(44, 62, 80, 0.20);"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-border / --ev-border-strong</span>
+              <span class="ds-swatch__hex">grafite 10% / 20%</span>
+              <span class="ds-swatch__alias">→ --border / --input</span>
+              <span class="ds-swatch__use">Bordas (substituem sombra)</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Texto -->
+      <div class="ds-subsection">
+        <div class="ds-subsection__title">Texto (Light)</div>
+        <div class="ds-swatch-grid">
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #2C3E50;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-text</span>
+              <span class="ds-swatch__hex">#2C3E50</span>
+              <span class="ds-swatch__alias">→ --foreground</span>
+              <span class="ds-swatch__use">Texto principal</span>
+            </div>
+          </div>
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #5D6D7E;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-text-muted</span>
+              <span class="ds-swatch__hex">#5D6D7E</span>
+              <span class="ds-swatch__alias">→ --muted-foreground</span>
+              <span class="ds-swatch__use">Labels, captions</span>
+            </div>
+          </div>
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #85929E;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-text-subtle</span>
+              <span class="ds-swatch__hex">#85929E</span>
+              <span class="ds-swatch__alias">— (sem alias direto)</span>
+              <span class="ds-swatch__use">Placeholders, disabled</span>
+            </div>
+          </div>
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #FFFFFF; border-bottom-color: var(--ev-border-strong);"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-text-inverse</span>
+              <span class="ds-swatch__hex">#FFFFFF</span>
+              <span class="ds-swatch__alias">→ --primary-foreground</span>
+              <span class="ds-swatch__use">Texto sobre superfície sólida</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ação semântica -->
+      <div class="ds-subsection">
+        <div class="ds-subsection__title">Ação semântica</div>
+        <div class="ds-swatch-grid">
+
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #3498DB;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-primary</span>
+              <span class="ds-swatch__hex">#3498DB</span>
+              <span class="ds-swatch__alias">→ --primary / --info / --ring</span>
+              <span class="ds-swatch__use">Azul calmo · ação primária</span>
+            </div>
+          </div>
+
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #2ECC71;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-success</span>
+              <span class="ds-swatch__hex">#2ECC71</span>
+              <span class="ds-swatch__alias">→ --success / --chart-2</span>
+              <span class="ds-swatch__use">Verde saúde · sucesso</span>
+            </div>
+          </div>
+
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #F39C12;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-warning</span>
+              <span class="ds-swatch__hex">#F39C12</span>
+              <span class="ds-swatch__alias">→ --warning / --chart-3</span>
+              <span class="ds-swatch__use">Amarelo atenção</span>
+            </div>
+          </div>
+
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #E67E22;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-energy</span>
+              <span class="ds-swatch__hex">#E67E22</span>
+              <span class="ds-swatch__alias">→ --chart-4</span>
+              <span class="ds-swatch__use">Laranja alerta/ação</span>
+            </div>
+          </div>
+
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #E74C3C;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-danger</span>
+              <span class="ds-swatch__hex">#E74C3C</span>
+              <span class="ds-swatch__alias">→ --destructive / --chart-5</span>
+              <span class="ds-swatch__use">Vermelho destrutivo</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Soft variants -->
+      <div class="ds-subsection">
+        <div class="ds-subsection__title">Soft variants (backgrounds de badge/alert)</div>
+        <div class="ds-swatch-grid">
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #EBF5FB;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-primary-soft</span>
+              <span class="ds-swatch__hex">#EBF5FB</span>
+              <span class="ds-swatch__alias">→ --accent</span>
+              <span class="ds-swatch__use">Fundo de badge/alert primary</span>
+            </div>
+          </div>
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #E8F8F0;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-success-soft</span>
+              <span class="ds-swatch__hex">#E8F8F0</span>
+              <span class="ds-swatch__alias">— (uso direto)</span>
+              <span class="ds-swatch__use">Fundo de badge success</span>
+            </div>
+          </div>
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #FEF5E7;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-warning-soft</span>
+              <span class="ds-swatch__hex">#FEF5E7</span>
+              <span class="ds-swatch__alias">— (uso direto)</span>
+              <span class="ds-swatch__use">Fundo de badge warning</span>
+            </div>
+          </div>
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #FDEDE1;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-energy-soft</span>
+              <span class="ds-swatch__hex">#FDEDE1</span>
+              <span class="ds-swatch__alias">— (uso direto)</span>
+              <span class="ds-swatch__use">Fundo de badge energy</span>
+            </div>
+          </div>
+          <div class="ds-swatch">
+            <div class="ds-swatch__color" style="background-color: #FBEAE8;"></div>
+            <div class="ds-swatch__meta">
+              <span class="ds-swatch__var">--ev-danger-soft</span>
+              <span class="ds-swatch__hex">#FBEAE8</span>
+              <span class="ds-swatch__alias">— (uso direto)</span>
+              <span class="ds-swatch__use">Fundo de badge danger</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Light vs Dark side-by-side -->
+      <div class="ds-subsection">
+        <div class="ds-subsection__title">Light vs Dark — comparação direta</div>
+        <div class="ds-theme-compare">
+          <div class="ds-theme-compare__panel">
+            <div class="ds-theme-compare__label">Light</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+              <span class="ev-badge ev-badge--primary">Primary</span>
+              <span class="ev-badge ev-badge--success">Success</span>
+              <span class="ev-badge ev-badge--warning">Warning</span>
+              <span class="ev-badge ev-badge--energy">Energy</span>
+              <span class="ev-badge ev-badge--danger">Danger</span>
+            </div>
+            <p style="margin-top: 16px;">Texto principal sobre <code>--ev-bg</code>.</p>
+            <p class="text-muted">Texto muted (#5D6D7E).</p>
+          </div>
+          <div class="ds-theme-compare__panel ds-theme-compare__panel--dark">
+            <div class="ds-theme-compare__label">Dark</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+              <span class="ev-badge ev-badge--primary">Primary</span>
+              <span class="ev-badge ev-badge--success">Success</span>
+              <span class="ev-badge ev-badge--warning">Warning</span>
+              <span class="ev-badge ev-badge--energy">Energy</span>
+              <span class="ev-badge ev-badge--danger">Danger</span>
+            </div>
+            <p style="margin-top: 16px;">Texto principal sobre <code>--ev-bg</code> dark.</p>
+            <p class="text-muted">Texto muted (#BDC3C7).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ds-callout">
+        <strong>A11y observação:</strong> texto branco sobre <code>--ev-primary</code> (#3498DB) tem contraste ≈3.4:1, abaixo do WCAG AA (4.5:1) pra texto pequeno. Botões usam font-weight 600 que ajuda visualmente, mas no Sprint 00 considerar escurecer pra <code>#2980B9</code> ou aumentar peso pra 700 em texto &lt;14px.
+      </div>
+    </section>
+
+    <!-- ===================== TIPOGRAFIA ===================== -->
+    <section class="ds-section" id="tipografia">
+      <div class="ds-section__head">
+        <div class="ds-section__eyebrow">Foundation · 02</div>
+        <h2>Tipografia</h2>
+        <p class="ds-section__lead">Inter (geométrica neutra) pra UI; Ibrand local pra marca; mono ui-system pra código. Escala base 16px com 8 steps.</p>
+      </div>
+
+      <div class="ds-subsection">
+        <div class="ds-subsection__title">Escala (--ev-text-*)</div>
+        <div class="ds-type-row"><span class="ds-type-row__size">12px / xs</span><span class="ds-type-row__sample" style="font-size: var(--ev-text-xs);">Equilíbrio Vital — caption, metadata</span></div>
+        <div class="ds-type-row"><span class="ds-type-row__size">14px / sm</span><span class="ds-type-row__sample" style="font-size: var(--ev-text-sm);">Equilíbrio Vital — body secundário, labels</span></div>
+        <div class="ds-type-row"><span class="ds-type-row__size">16px / base</span><span class="ds-type-row__sample" style="font-size: var(--ev-text-base);">Equilíbrio Vital — body padrão</span></div>
+        <div class="ds-type-row"><span class="ds-type-row__size">18px / lg</span><span class="ds-type-row__sample" style="font-size: var(--ev-text-lg);">Equilíbrio Vital — destaque</span></div>
+        <div class="ds-type-row"><span class="ds-type-row__size">20px / xl</span><span class="ds-type-row__sample" style="font-size: var(--ev-text-xl);">Equilíbrio Vital — h3</span></div>
+        <div class="ds-type-row"><span class="ds-type-row__size">24px / 2xl</span><span class="ds-type-row__sample" style="font-size: var(--ev-text-2xl);">Equilíbrio Vital — h2</span></div>
+        <div class="ds-type-row"><span class="ds-type-row__size">30px / 3xl</span><span class="ds-type-row__sample" style="font-size: var(--ev-text-3xl); font-weight: 600;">Equilíbrio Vital — h1</span></div>
+        <div class="ds-type-row"><span class="ds-type-row__size">36px / 4xl</span><span class="ds-type-row__sample" style="font-size: var(--ev-text-4xl); font-weight: 700;">12.345 — KPI grande</span></div>
+      </div>
+
+      <div class="ds-subsection">
+        <div class="ds-subsection__title">Pesos (--ev-weight-*)</div>
+        <div class="ds-weight-grid">
+          <div class="ds-weight-cell">
+            <div class="ds-weight-cell__sample" style="font-weight: 400;">Equilíbrio</div>
+            <div class="ds-weight-cell__meta">400 · regular</div>
+          </div>
+          <div class="ds-weight-cell">
+            <div class="ds-weight-cell__sample" style="font-weight: 500;">Equilíbrio</div>
+            <div class="ds-weight-cell__meta">500 · medium</div>
+          </div>
+          <div class="ds-weight-cell">
+            <div class="ds-weight-cell__sample" style="font-weight: 600;">Equilíbrio</div>
+            <div class="ds-weight-cell__meta">600 · semibold</div>
+          </div>
+          <div class="ds-weight-cell">
+            <div class="ds-weight-cell__sample" style="font-weight: 700;">Equilíbrio</div>
+            <div class="ds-weight-cell__meta">700 · bold</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ds-subsection">
+        <div class="ds-subsection__title">Famílias</div>
+        <div class="ds-weight-grid">
+          <div class="ds-weight-cell">
+            <div class="ds-weight-cell__sample" style="font-family: var(--ev-font-sans);">Aa Bb Cc 123</div>
+            <div class="ds-weight-cell__meta">--ev-font-sans · Inter</div>
+          </div>
+          <div class="ds-weight-cell">
+            <div class="ds-weight-cell__sample" style="font-family: 'Ibrand', var(--ev-font-sans);">LogiFit</div>
+            <div class="ds-weight-cell__meta">Ibrand · marca/logo</div>
+          </div>
+          <div class="ds-weight-cell">
+            <div class="ds-weight-cell__sample" style="font-family: var(--ev-font-mono);">--ev-text-base</div>
+            <div class="ds-weight-cell__meta">--ev-font-mono · código</div>
+          </div>
+          <div class="ds-weight-cell">
+            <div class="ds-weight-cell__sample num" style="font-feature-settings: 'tnum' 1, 'lnum' 1;">1.234,56</div>
+            <div class="ds-weight-cell__meta">.num · tabular (KPIs)</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ESPAÇAMENTO ===================== -->
+    <section class="ds-section" id="espacamento">
+      <div class="ds-section__head">
+        <div class="ds-section__eyebrow">Foundation · 03</div>
+        <h2>Espaçamento</h2>
+        <p class="ds-section__lead">Escala 4px (--ev-space-*). Use sempre tokens; nunca hardcode pixel.</p>
+      </div>
+      <div class="ds-spacing-row"><span class="ds-spacing-row__label">space-1 · 4px</span><div class="ds-spacing-row__bar" style="width: 4px;"></div></div>
+      <div class="ds-spacing-row"><span class="ds-spacing-row__label">space-2 · 8px</span><div class="ds-spacing-row__bar" style="width: 8px;"></div></div>
+      <div class="ds-spacing-row"><span class="ds-spacing-row__label">space-3 · 12px</span><div class="ds-spacing-row__bar" style="width: 12px;"></div></div>
+      <div class="ds-spacing-row"><span class="ds-spacing-row__label">space-4 · 16px</span><div class="ds-spacing-row__bar" style="width: 16px;"></div></div>
+      <div class="ds-spacing-row"><span class="ds-spacing-row__label">space-5 · 20px</span><div class="ds-spacing-row__bar" style="width: 20px;"></div></div>
+      <div class="ds-spacing-row"><span class="ds-spacing-row__label">space-6 · 24px</span><div class="ds-spacing-row__bar" style="width: 24px;"></div></div>
+      <div class="ds-spacing-row"><span class="ds-spacing-row__label">space-8 · 32px</span><div class="ds-spacing-row__bar" style="width: 32px;"></div></div>
+      <div class="ds-spacing-row"><span class="ds-spacing-row__label">space-10 · 40px</span><div class="ds-spacing-row__bar" style="width: 40px;"></div></div>
+      <div class="ds-spacing-row"><span class="ds-spacing-row__label">space-12 · 48px</span><div class="ds-spacing-row__bar" style="width: 48px;"></div></div>
+      <div class="ds-spacing-row"><span class="ds-spacing-row__label">space-16 · 64px</span><div class="ds-spacing-row__bar" style="width: 64px;"></div></div>
+    </section>
+
+    <!-- ===================== RAIOS ===================== -->
+    <section class="ds-section" id="raios">
+      <div class="ds-section__head">
+        <div class="ds-section__eyebrow">Foundation · 04</div>
+        <h2>Raios</h2>
+        <p class="ds-section__lead">Flat + orgânico suave (WebDiet-inspired). Pill default em botões/inputs; xl (24px) em cards.</p>
+      </div>
+      <div class="ds-radius-grid">
+        <div class="ds-radius-cell"><div class="ds-radius-cell__shape" style="border-radius: 0;"></div><div class="ds-radius-cell__label">none · 0</div></div>
+        <div class="ds-radius-cell"><div class="ds-radius-cell__shape" style="border-radius: 4px;"></div><div class="ds-radius-cell__label">sm · 4px</div></div>
+        <div class="ds-radius-cell"><div class="ds-radius-cell__shape" style="border-radius: 8px;"></div><div class="ds-radius-cell__label">md · 8px</div></div>
+        <div class="ds-radius-cell"><div class="ds-radius-cell__shape" style="border-radius: 16px;"></div><div class="ds-radius-cell__label">lg · 16px</div></div>
+        <div class="ds-radius-cell"><div class="ds-radius-cell__shape" style="border-radius: 24px;"></div><div class="ds-radius-cell__label">xl · 24px</div></div>
+        <div class="ds-radius-cell"><div class="ds-radius-cell__shape" style="border-radius: 9999px;"></div><div class="ds-radius-cell__label">pill · ∞</div></div>
+      </div>
+    </section>
+
+    <!-- ===================== LAYOUT ===================== -->
+    <section class="ds-section" id="layout">
+      <div class="ds-section__head">
+        <div class="ds-section__eyebrow">Foundation · 05</div>
+        <h2>Layout</h2>
+        <p class="ds-section__lead">Topbar 88px, sidebar 240px (collapsed 64px), container max 1440px.</p>
+      </div>
+      <div class="ds-layout-demo">
+        <div class="ds-layout-demo__box" style="width: 240px; height: 80px;">sidebar 240px</div>
+        <div class="ds-layout-demo__box" style="width: 64px; height: 80px;">64px</div>
+        <div class="ds-layout-demo__box" style="width: 320px; height: 88px;">topbar 88px</div>
+      </div>
+    </section>
+
+    <!-- ===================== Z-INDEX ===================== -->
+    <section class="ds-section" id="zindex">
+      <div class="ds-section__head">
+        <div class="ds-section__eyebrow">Foundation · 06</div>
+        <h2>Z-index</h2>
+        <p class="ds-section__lead">Pilha canônica de empilhamento. Não use valores fora desta escala.</p>
+      </div>
+      <div class="ds-zindex-stack">
+        <div class="ds-zindex-layer" style="top: 0px;   left: 0px;">dropdown · 100</div>
+        <div class="ds-zindex-layer" style="top: 25px;  left: 30px;">sticky · 200</div>
+        <div class="ds-zindex-layer" style="top: 50px;  left: 60px;">drawer · 300</div>
+        <div class="ds-zindex-layer" style="top: 75px;  left: 90px;">modal · 400</div>
+        <div class="ds-zindex-layer" style="top: 100px; left: 120px;">toast · 500</div>
+      </div>
+    </section>
+
+    <!-- ===================== BOTÕES ===================== -->
+    <section class="ds-section" id="botoes">
+      <div class="ds-section__head">
+        <div class="ds-section__eyebrow">Componentes · 01</div>
+        <h2>Botões — .ev-btn</h2>
+        <p class="ds-section__lead">Pill por default (WebDiet). Variantes: primary, danger, ghost. Tamanho extra: sm.</p>
+      </div>
+      <div class="ds-demo">
+        <button class="ev-btn">Default</button>
+        <button class="ev-btn ev-btn--primary">Primary</button>
+        <button class="ev-btn ev-btn--danger">Danger</button>
+        <button class="ev-btn ev-btn--ghost">Ghost</button>
+        <button class="ev-btn ev-btn--sm">Small</button>
+        <button class="ev-btn ev-btn--primary ev-btn--sm">Primary sm</button>
+      </div>
+      <pre class="ds-code">&lt;button class="ev-btn"&gt;Default&lt;/button&gt;
+&lt;button class="ev-btn ev-btn--primary"&gt;Primary&lt;/button&gt;
+&lt;button class="ev-btn ev-btn--danger"&gt;Danger&lt;/button&gt;
+&lt;button class="ev-btn ev-btn--ghost"&gt;Ghost&lt;/button&gt;
+&lt;button class="ev-btn ev-btn--sm"&gt;Small&lt;/button&gt;</pre>
+      <div class="ds-tokens-list">tokens: <strong>--ev-radius-pill</strong> · <strong>--ev-primary</strong> · <strong>--ev-danger</strong> · <strong>--ev-text-inverse</strong> · <strong>--ev-border</strong> · <strong>--ev-space-3/5</strong> · <strong>--ev-text-sm</strong> · <strong>--ev-weight-semibold</strong></div>
+    </section>
+
+    <!-- ===================== CARDS ===================== -->
+    <section class="ds-section" id="cards">
+      <div class="ds-section__head">
+        <div class="ds-section__eyebrow">Componentes · 02</div>
+        <h2>Cards — .ev-card</h2>
+        <p class="ds-section__lead">Radius xl (24px), padding 24px, header com título uppercase em muted.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="ev-card">
+          <div class="ev-card__header">
+            <div class="ev-card__title">Resumo</div>
+            <button class="ev-btn ev-btn--sm ev-btn--ghost">Ver tudo</button>
+          </div>
+          <p>Conteúdo do card. Sem sombra, borda 1px substitui elevação. Repare como o card "sobe" sobre o <code>--ev-bg</code> mais escuro.</p>
+        </div>
+        <div class="ev-card">
+          <div class="ev-card__header">
+            <div class="ev-card__title">KPI</div>
+          </div>
+          <div class="num" style="font-size: var(--ev-text-4xl); font-weight: 700;">R$ 12.345</div>
+          <span class="ev-badge ev-badge--success">+12% vs mês anterior</span>
+        </div>
+      </div>
+      <pre class="ds-code">&lt;div class="ev-card"&gt;
+  &lt;div class="ev-card__header"&gt;
+    &lt;div class="ev-card__title"&gt;Resumo&lt;/div&gt;
+    &lt;button class="ev-btn ev-btn--sm ev-btn--ghost"&gt;Ver tudo&lt;/button&gt;
+  &lt;/div&gt;
+  &lt;p&gt;Conteúdo do card.&lt;/p&gt;
+&lt;/div&gt;</pre>
+      <div class="ds-tokens-list">tokens: <strong>--ev-surface</strong> · <strong>--ev-border</strong> · <strong>--ev-radius-xl</strong> · <strong>--ev-space-6</strong> · <strong>--ev-text-muted</strong></div>
+    </section>
+
+    <!-- ===================== BADGES ===================== -->
+    <section class="ds-section" id="badges">
+      <div class="ds-section__head">
+        <div class="ds-section__eyebrow">Componentes · 03</div>
+        <h2>Badges — .ev-badge</h2>
+        <p class="ds-section__lead">Pills coloridos. Default usa surface-muted; variantes usam soft+text da cor semântica.</p>
+      </div>
+      <div class="ds-demo">
+        <span class="ev-badge">Default</span>
+        <span class="ev-badge ev-badge--primary">Primary</span>
+        <span class="ev-badge ev-badge--success">Success</span>
+        <span class="ev-badge ev-badge--warning">Warning</span>
+        <span class="ev-badge ev-badge--energy">Energy</span>
+        <span class="ev-badge ev-badge--danger">Danger</span>
+      </div>
+      <pre class="ds-code">&lt;span class="ev-badge ev-badge--success"&gt;Ativo&lt;/span&gt;
+&lt;span class="ev-badge ev-badge--warning"&gt;Pendente&lt;/span&gt;
+&lt;span class="ev-badge ev-badge--danger"&gt;Inadimplente&lt;/span&gt;</pre>
+      <div class="ds-tokens-list">tokens: <strong>--ev-radius-pill</strong> · <strong>--ev-*-soft</strong> · <strong>--ev-text-xs</strong> · <strong>--ev-weight-medium</strong></div>
+    </section>
+
+    <!-- ===================== INPUTS ===================== -->
+    <section class="ds-section" id="inputs">
+      <div class="ds-section__head">
+        <div class="ds-section__eyebrow">Componentes · 04</div>
+        <h2>Inputs — .ev-input</h2>
+        <p class="ds-section__lead">Pill default. Border vira primary no foco. Placeholder em text-subtle.</p>
+      </div>
+      <div class="ds-demo" style="flex-direction: column; align-items: stretch; gap: 12px;">
+        <input type="text" class="ev-input" placeholder="Digite seu email" />
+        <input type="text" class="ev-input" value="Conteúdo preenchido" />
+        <input type="text" class="ev-input" placeholder="Disabled" disabled />
+      </div>
+      <pre class="ds-code">&lt;input type="text" class="ev-input" placeholder="Digite seu email" /&gt;</pre>
+      <div class="ds-tokens-list">tokens: <strong>--ev-radius-pill</strong> · <strong>--ev-surface</strong> · <strong>--ev-border</strong> · <strong>--ev-primary</strong> (focus) · <strong>--ev-text-subtle</strong> (placeholder)</div>
+    </section>
+
+    <!-- ===================== TABELAS ===================== -->
+    <section class="ds-section" id="tabelas">
+      <div class="ds-section__head">
+        <div class="ds-section__eyebrow">Componentes · 05</div>
+        <h2>Tabelas — .ev-table</h2>
+        <p class="ds-section__lead">Headers uppercase em text-muted. Hover de row em surface-muted. Use <code>.num</code> em colunas numéricas.</p>
+      </div>
+      <div class="ds-demo" style="display: block; padding: 0;">
+        <table class="ev-table">
+          <thead>
+            <tr>
+              <th>Aluno</th>
+              <th>Plano</th>
+              <th>Status</th>
+              <th class="num">Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Maria Silva</td><td>Pro mensal</td><td><span class="ev-badge ev-badge--success">Ativo</span></td><td class="num">R$ 199,00</td></tr>
+            <tr><td>João Santos</td><td>Starter</td><td><span class="ev-badge ev-badge--warning">Pendente</span></td><td class="num">R$ 99,00</td></tr>
+            <tr><td>Ana Costa</td><td>Pro anual</td><td><span class="ev-badge ev-badge--danger">Inadimplente</span></td><td class="num">R$ 1.990,00</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ds-tokens-list">tokens: <strong>--ev-text-sm</strong> · <strong>--ev-text-xs</strong> (headers) · <strong>--ev-text-muted</strong> · <strong>--ev-border</strong> · <strong>--ev-surface-muted</strong> (hover)</div>
+    </section>
+
+    <!-- ===================== DOTS & DIVIDER ===================== -->
+    <section class="ds-section" id="dots">
+      <div class="ds-section__head">
+        <div class="ds-section__eyebrow">Componentes · 06</div>
+        <h2>Dots & Divider</h2>
+        <p class="ds-section__lead">Indicadores de status (8px) e separador horizontal de 1px.</p>
+      </div>
+      <div class="ds-demo">
+        <span class="ev-row"><span class="ev-dot ev-dot--success"></span> Online</span>
+        <span class="ev-row"><span class="ev-dot ev-dot--warning"></span> Atenção</span>
+        <span class="ev-row"><span class="ev-dot ev-dot--danger"></span> Erro</span>
+        <span class="ev-row"><span class="ev-dot ev-dot--energy"></span> Ação</span>
+        <span class="ev-row"><span class="ev-dot ev-dot--muted"></span> Inativo</span>
+      </div>
+      <div class="ds-demo" style="display: block;">
+        <p style="margin: 0;">Conteúdo acima</p>
+        <hr class="ev-divider" />
+        <p style="margin: 0;">Conteúdo abaixo</p>
+      </div>
+    </section>
+
+    <!-- ===================== UTILITIES ===================== -->
+    <section class="ds-section" id="utilities">
+      <div class="ds-section__head">
+        <div class="ds-section__eyebrow">Componentes · 07</div>
+        <h2>Utilities</h2>
+        <p class="ds-section__lead">Layout helpers mínimos: stack vertical, row horizontal, grid auto, row-between.</p>
+      </div>
+      <div class="ds-demo" style="display: block;">
+        <div class="ev-stack" style="margin-bottom: 24px;">
+          <div class="ev-card" style="padding: 12px;">.ev-stack — item 1</div>
+          <div class="ev-card" style="padding: 12px;">.ev-stack — item 2</div>
+        </div>
+        <div class="ev-row" style="margin-bottom: 24px;">
+          <span class="ev-badge">.ev-row</span>
+          <span class="ev-badge ev-badge--primary">item</span>
+          <span class="ev-badge ev-badge--success">item</span>
+        </div>
+        <div class="ev-row-between" style="margin-bottom: 24px; padding: 12px; background-color: var(--ev-surface); border-radius: var(--ev-radius-md);">
+          <span>.ev-row-between (esquerda)</span>
+          <button class="ev-btn ev-btn--sm">direita</button>
+        </div>
+      </div>
+      <div class="ds-tokens-list">classes: <strong>.ev-stack</strong> · <strong>.ev-stack-2</strong> · <strong>.ev-row</strong> · <strong>.ev-row-between</strong> · <strong>.ev-grid</strong></div>
+    </section>
+
+    <!-- ===================== MIGRAÇÃO SHADCN ===================== -->
+    <section class="ds-section" id="shadcn">
+      <div class="ds-section__head">
+        <div class="ds-section__eyebrow">Migração</div>
+        <h2>Mapeamento → shadcn/ui</h2>
+        <p class="ds-section__lead">Quando Sprint 00 inicializar <code>apps/web/</code>, copiar <code>shadcn-mapping.css</code> pra <code>app/globals.css</code>. Aliases shadcn apontam pras vars EV (fonte de verdade). Dark mode é automático.</p>
+      </div>
+
+      <table class="ds-map-table">
+        <thead>
+          <tr><th>Token EV (fonte)</th><th>Alias shadcn</th><th>Uso típico</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>--ev-bg</td><td>--background</td><td>Fundo da página</td></tr>
+          <tr><td>--ev-text</td><td>--foreground</td><td>Texto principal</td></tr>
+          <tr><td>--ev-surface</td><td>--card · --popover</td><td>Cards e overlays</td></tr>
+          <tr><td>--ev-text</td><td>--card-foreground · --popover-foreground</td><td>Texto sobre surface</td></tr>
+          <tr><td>--ev-primary</td><td>--primary · --info · --ring · --chart-1</td><td>Ação primária + foco</td></tr>
+          <tr><td>--ev-text-inverse</td><td>--primary-foreground</td><td>Texto sobre primary sólido</td></tr>
+          <tr><td>--ev-surface-muted</td><td>--secondary · --muted</td><td>Fundo de áreas neutras</td></tr>
+          <tr><td>--ev-text-muted</td><td>--muted-foreground</td><td>Labels, captions</td></tr>
+          <tr><td>--ev-primary-soft</td><td>--accent</td><td>Tint sutil pra hover</td></tr>
+          <tr><td>--ev-primary</td><td>--accent-foreground</td><td>Texto sobre accent</td></tr>
+          <tr><td>--ev-danger</td><td>--destructive · --chart-5</td><td>Ação destrutiva</td></tr>
+          <tr><td>--ev-success</td><td>--success · --chart-2</td><td>Confirmação positiva</td></tr>
+          <tr><td>--ev-warning</td><td>--warning · --chart-3</td><td>Atenção</td></tr>
+          <tr><td>--ev-energy</td><td>--chart-4</td><td>Alerta laranja</td></tr>
+          <tr><td>--ev-border</td><td>--border</td><td>Borda padrão</td></tr>
+          <tr><td>--ev-border-strong</td><td>--input</td><td>Borda de input ativa</td></tr>
+          <tr><td>--ev-radius-pill</td><td>--radius</td><td>Default pill (override em card)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="ds-subsection">
+        <div class="ds-subsection__title">3 desvios deliberados do default shadcn</div>
+        <ol style="padding-left: 24px; line-height: var(--ev-leading-relaxed);">
+          <li><strong>Radius default = pill</strong> (não <code>0.5rem</code>) — botões/inputs Equilíbrio Vital são pill por design (WebDiet-inspired). Cards usam override <code>rounded-[var(--ev-radius-xl)]</code> (24px).</li>
+          <li><strong>Sem shadows</strong> — pacote de classes <code>shadow-*</code> do Tailwind será sobrescrito no <code>tailwind.config</code> (Sprint 00) pra retornar <code>none</code>. Focus rings usam <code>outline</code> + <code>--ev-focus-ring</code> (única exceção, funcional).</li>
+          <li><strong>Background ≠ card</strong> — <code>--ev-bg</code> (#D8DDDB) é mais escuro que <code>--ev-surface</code> (#F3F5F4); cards "sobem" visualmente sem precisar de elevação.</li>
+        </ol>
+      </div>
+
+      <div class="ds-subsection">
+        <div class="ds-subsection__title">Arquivo pronto pra colar</div>
+        <p>O arquivo <code>prototipo/designsystem/shadcn-mapping.css</code> já tem o bloco completo. No Sprint 00:</p>
+        <pre class="ds-code">// apps/web/app/globals.css
+@import "tailwindcss";
+@import url('@repo/ui/tokens.css');         // ev-* (fonte de verdade)
+@import url('@repo/ui/shadcn-mapping.css'); // aliases shadcn → ev-*
+
+// + bloco @theme inline mapeando --color-* pras vars CSS</pre>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  // Scroll-spy: marca link da sidebar como ativo conforme seção entra no viewport
+  (function () {
+    const links = document.querySelectorAll('.ds-sidebar__nav a[href^="#"]');
+    const sections = Array.from(links)
+      .map(a => document.getElementById(a.getAttribute('href').slice(1)))
+      .filter(Boolean);
+
+    const setActive = (id) => {
+      links.forEach(a => {
+        a.classList.toggle('is-active', a.getAttribute('href') === '#' + id);
+      });
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter(e => e.isIntersecting);
+        if (visible.length === 0) return;
+        // Pega a seção visível mais ao topo
+        visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        setActive(visible[0].target.id);
+      },
+      { rootMargin: '-20% 0px -60% 0px', threshold: 0 }
+    );
+    sections.forEach(s => observer.observe(s));
+
+    // Smooth scroll
+    links.forEach(a => {
+      a.addEventListener('click', (e) => {
+        const id = a.getAttribute('href').slice(1);
+        const target = document.getElementById(id);
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          history.replaceState(null, '', '#' + id);
+        }
+      });
+    });
+  })();
+
+  // Theme toggle (substitui ../theme.js pra evitar conflito de handlers)
+  (function () {
+    const KEY = 'logifit-proto-theme';
+    const root = document.documentElement;
+
+    // 1. Aplica tema salvo no load
+    try {
+      const saved = localStorage.getItem(KEY);
+      if (saved === 'light' || saved === 'dark') {
+        root.dataset.theme = saved;
+      }
+    } catch (_) {}
+
+    const btn = document.querySelector('[data-theme-toggle]');
+    const label = document.querySelector('[data-theme-label]');
+    const icon = document.querySelector('[data-theme-icon]');
+    if (!btn) return;
+
+    const currentTheme = () =>
+      root.dataset.theme ||
+      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+    const sync = () => {
+      const t = currentTheme();
+      label.textContent = t === 'dark' ? 'Tema claro' : 'Tema escuro';
+      icon.textContent = t === 'dark' ? '☀' : '☾';
+    };
+
+    btn.addEventListener('click', () => {
+      const next = currentTheme() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      try { localStorage.setItem(KEY, next); } catch (_) {}
+      sync();
+    });
+
+    sync();
+  })();
+</script>
+
+</body>
+</html>

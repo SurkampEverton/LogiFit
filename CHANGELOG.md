@@ -6,6 +6,18 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Prototipo — Design system styleguide "Equilíbrio Vital"
+
+Página única de documentação viva do design system, autossuficiente, dentro do protótipo HTML estático.
+
+**Adicionado:**
+
+- [prototipo/designsystem/index.html](prototipo/designsystem/index.html) — styleguide com 14 seções: Foundation (Cores · Tipografia · Espaçamento · Raios · Layout · Z-index) + Componentes (Botões · Cards · Badges · Inputs · Tabelas · Dots & Divider · Utilities) + Migração shadcn. Sidebar fixa com scroll-spy, toggle light/dark com persistência em localStorage, comparação direta light vs dark sem trocar tema global
+- [prototipo/designsystem/styleguide.css](prototipo/designsystem/styleguide.css) — estilos exclusivos da página (sidebar, swatches, code blocks); reusa 100% os tokens `--ev-*`, zero hex hardcoded
+- [prototipo/designsystem/shadcn-mapping.css](prototipo/designsystem/shadcn-mapping.css) — bloco "ready to copy" pra Sprint 00: aliases shadcn (`--primary`, `--background`, `--card`, `--ring`, `--chart-1..5`, `--sidebar-*` etc.) apontando pras vars `--ev-*` da fonte de verdade. Dark mode é automático (herda dos overrides em `tokens.css`). Documenta 3 desvios deliberados do default shadcn: radius pill, zero shadows, background ≠ card
+
+**Não altera:** `prototipo/tokens.css`, `prototipo/base.css` nem qualquer arquivo em `docs/` ou ADRs — design system já é coberto por ADR 0001 + ADR 0063 + arquitetura.md §1.
+
 ### Docs — Auditoria 2026-04-25 (2ª passada — 14 issues remanescentes/introduzidas pela 1ª rodada)
 
 Após primeira rodada de correções (abaixo), nova auditoria paralela em 4 frentes (pricing, ADRs, sprints, compliance) achou novos gaps + alguns introduzidos pela própria 1ª rodada. **9 críticos + 5 maiores corrigidos.**
