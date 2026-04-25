@@ -81,8 +81,10 @@ Regra fundamental: **LogiFit não toca em motor tributário**. Focus NFe cuida d
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0059** (accepted) — Ciclo fiscal de emissão completo via Focus NFe
-- **ADR 0076** (accepted 2026-04-25) — NFS-e Nacional como provider complementar; **não implementa neste sprint**, apenas mantém `FiscalProvider` apto a receber adapter futuro (`provider` column em `fiscal_emissions` já registra qual provider emitiu)
+- **[ADR 0059](../decisions/0059-ciclo-fiscal-emissao-focus-nfe.md)** (accepted) — Ciclo fiscal de emissão completo via Focus NFe
+- **[ADR 0066](../decisions/0066-plano-comercial-pricing-trial.md)** (accepted, revisado 2026-04-25) — modelo de cobrança fiscal repassado ao tenant via overage (50/200/1.000/5.000 inclusas + R$ 0,50/0,40/0,35/0,25 por nota extra; **eventos não contam**); Sprint 36 popula `tenant_usage_snapshots.fiscal_emissions_count` (Sprint 04 cria schema)
+- **[ADR 0076](../decisions/0076-nfse-nacional-provider-complementar.md)** (accepted 2026-04-25) — NFS-e Nacional como provider complementar; **não implementa neste sprint**, apenas mantém `FiscalProvider` apto a receber adapter futuro (`provider` column em `fiscal_emissions` já registra qual provider emitiu)
+- **[ADR 0079](../decisions/0079-tiss-401-ans-padrao-vigente.md)** (accepted 2026-04-25) — TISS 4.01 ANS é tema relacionado mas **fora do escopo deste sprint**: faturamento de convênio é Sprint 22 (TISS gera guia XML para operadora; Sprint 36 trata apenas de notas fiscais SEFAZ via Focus NFe). Coexistência operacional: serviços faturados via TISS podem **também** gerar NFS-e (co-participação do paciente, repasse de operadora) — tratamento dual coberto em Sprint 22 + 36
 - **Pergunta aberta:** certificado A1 — usar da company (Sprint 17) ou Focus NFe gerencia o próprio? Começar com Focus (eles têm infra); tenant pode escolher "cert próprio" se precisar isolar.
 - **Pergunta aberta:** NFC-e exige CSC (Código de Segurança do Contribuinte) por UF — configurado por company no wizard de onboarding.
 

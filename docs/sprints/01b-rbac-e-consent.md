@@ -69,7 +69,8 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 - [ ] **Página `/app/compliance/ia`** (ADR 0053) — dashboard de conformidade IA: tabela de features IA ativas (nome, classe SaMD I/II/III/IV, ADR de referência, última revisão do comitê, status gate) + link para `docs/compliance/samd-classification.md` (doc do repo) + log de decisões humanas em `ai_audit_log` do tenant (paginado por data/feature/usuário/decisão aceitou/editou/rejeitou); visível para roles `super_admin_rede` + `diretor_matriz`.
 - [ ] Schema `ai_committee_members` (ADR 0053) — `id`, `tenant_id`, `user_id fk`, `role_in_committee` enum, `started_at`, `ended_at nullable`, `ata_storage_path text nullable`, `notes text`. Unique parcial `(tenant_id, user_id) WHERE ended_at IS NULL` (um user ativo no comitê por vez).
 - [ ] Schema `ai_committee_reviews` (ADR 0053) — `id`, `tenant_id`, `period_start date`, `period_end date`, `conducted_at timestamptz`, `minutes_storage_path text`, `signed_by_committee_members uuid[]`, `notes text`. Trigger alerta 30d antes de nova revisão semestral.
-- [ ] Schema `ai_feature_classifications` (ADR 0053) — `id`, `tenant_id`, `feature_key text` (ex: `copilot`, `previsao_churn`, `pipeline_exames`), `samd_class` enum (`I`/`II`/`III`/`IV`), `requires_anvisa_notification bool`, `requires_committee bool` (true se class >= II), `sprint_ref text`, `active bool`. Tenant_id NULL = global curado LogiFit (tabela viva `docs/compliance/samd-classification.md`).
+- [ ] Schema `ai_feature_classifications` (ADR 0053) — `id`, `tenant_id uuid nullable`, `feature_key text not null`, `samd_class enum('I','II','III','IV') not null`, `requires_anvisa_notification bool not null`, `requires_committee bool not null` (true se class >= II), `is_global bool not null default false`, `sprint_ref text`, `active bool default true`. **Constraint:** `(is_global = true AND tenant_id IS NULL) OR (is_global = false AND tenant_id IS NOT NULL)` — elimina ambiguidade do `tenant_id` nullable. Linha global = curada LogiFit (tabela viva `docs/compliance/samd-classification.md`); linha tenant-específica = override/extension. **Resolução de gate (`withAiClassGate`):** primeiro busca `(tenant_id, feature_key)` específico; senão busca `(is_global=true, feature_key)` global. Se classe ≥ II e `requires_committee=true`, gate exige `ai_committee_members` ativo do tenant solicitante (mesmo se feature for global).
+- [ ] Unique constraints: `(feature_key) WHERE is_global=true` (1 global por feature) + `(tenant_id, feature_key) WHERE is_global=false` (1 override por tenant+feature)
 - [ ] **Gate de feature flag para IA classe II+:** wrapper `withAiClassGate(featureKey, fn)` em `packages/ai/gate.ts` — consulta `ai_feature_classifications` + `ai_committee_members`; se classe II+ e comitê sem membro ativo → bloqueia execução + grava audit.
 - [ ] Teste E2E: admin cadastra membro do comitê + anexa ata → feature IA classe II (ex: Copilot) fica ativa; admin remove todos os membros → feature bloqueada automaticamente
 - [ ] Teste E2E: aluno solicita "acesso aos meus dados" em `/meu/privacidade` → cria `data_subject_requests` com deadline 15d → admin recebe alerta → admin cumpre → status `fulfilled`
@@ -83,7 +84,28 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 - [ ] Testes E2E contra os 4 cenários canônicos
 - [ ] Testes E2E específicos de grants: criar, usar, revogar, expirar
 - [ ] Teste E2E de registro profissional: cadastro + atestação + mudança de situação + unicidade global
-- [ ] **`roles.requires_mfa bool`** (ADR 0073 camada 2) — Sprint 01b explicita gate: profissionais (médico/fisio/nutri/personal), admins (super_admin_rede, diretor_matriz, gerente_filial) e `contador_externo` têm `requires_mfa=true`; aluno e recepção (configurável por tenant); login bloqueia se requires_mfa e user.mfa_enabled=false
+- [ ] **`roles.requires_mfa bool`** (regra 43 + ADR 0073 camada 2). Login bloqueia se `requires_mfa=true` e `user.mfa_enabled=false`. **Seed completo de roles base com flag explícita:**
+
+| Role | `requires_mfa` | Justificativa |
+|---|---|---|
+| `medico` | **true** | Profissional clínico (CRM) — regra 43 |
+| `fisio` | **true** | Profissional clínico (CREFITO) — regra 43 |
+| `nutri` | **true** | Profissional clínico (CRN) — regra 43 |
+| `personal` | **true** | Profissional registrado (CREF) — regra 43 |
+| `enfermeiro` | **true** | Profissional clínico (COREN) — regra 43 |
+| `tenant_owner` | **true** | Dever de cuidado — regra 43 |
+| `dpo` | **true** | Dever de cuidado LGPD — regra 43 |
+| `super_admin` (LogiFit) | **true** | PAM + dever de cuidado — ADR 0073 camada 7 |
+| `super_admin_rede` | true | Acesso cross-company — dever de cuidado |
+| `diretor_matriz` | true | Acesso financeiro multi-company |
+| `gerente_filial` | true | Acesso financeiro company |
+| `contador_externo` | **true** | Acesso fiscal/financeiro — dever de cuidado |
+| `recepcao` | false (opcional, tenant escala via `tenant_settings.mfa_extra_roles[]`) | Operacional baixo-risco; ações alto-risco usam `requireRecentMfa()` |
+| `member` | false (opcional, badge incentiva) | Aluno/paciente comum |
+
+- [ ] Teste E2E: tentar login como `medico` sem MFA habilitado → bloqueado com `MFA_REQUIRED`; habilita MFA + setup wizard → login passa
+- [ ] Teste E2E: `recepcao` loga sem MFA → OK; tenta `cancelTissGuide` (alto-risco) → 403 `MFA_RECENT_REQUIRED` mesmo sem `requires_mfa` no role
+- [ ] Schema `tenant_settings.mfa_extra_roles text[]` — admin tenant pode forçar MFA em roles operacionais (ex: adicionar `recepcao` para clínica grande)
 - [ ] **PAM (Privileged Access Management) para super_admin LogiFit** (ADR 0073 camada 7):
   - Schema `privileged_sessions (id, admin_user_id, started_at, ended_at nullable, justification text, target_scope text, ip text, user_agent text)` — particionado por mês, retenção 5 anos
   - Schema `privileged_audit_log (id, privileged_session_id, action text, table_name text, row_id text, before_snapshot jsonb, after_snapshot jsonb, at)` — append-only, hash chain (regra 39), retenção 5 anos

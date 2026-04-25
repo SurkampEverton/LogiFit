@@ -111,6 +111,7 @@ Em `packages/db/schema/nutri.ts`:
 - [ ] PDF do plano (Sprint 29) inclui seção de suplementação
 - [ ] Feature flag `nutri_suplementos_exames_v1`
 - [ ] ADR 0037 publicado
+- [ ] **RIPD `docs/compliance/ripd/v1.0-nutri-exames.md`** publicado e assinado pelo DPO antes do feature flag ir a produção (regra 29 + ADR 0054); cobre `lab_results` + `supplement_prescriptions` + interações; retenção 20a (Lei 13.787 — exames laboratoriais); template em [`_template.md`](../compliance/ripd/_template.md)
 
 ## Stretch
 

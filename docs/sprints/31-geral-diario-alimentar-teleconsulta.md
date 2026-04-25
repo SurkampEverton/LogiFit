@@ -129,6 +129,8 @@ Em `packages/db/schema/teleconsulta.ts`:
 - [ ] Widget "diário recente" em `/app/members/[id]` (slot `diario`): `{ slot: 'diario', requiredPermissions: ['nutri.read'], requiredVertical: 'nutri', consentPurpose: null, showWhen: (m) => m.has_active_meal_plan }`
 - [ ] Feature flags `diario_v1` e `teleconsulta_v1`
 - [ ] ADR 0038 publicado
+- [ ] **RIPD `docs/compliance/ripd/v1.0-diario-alimentar.md`** publicado e assinado pelo DPO antes do feature flag `diario_v1` ir a produção (regra 29 + ADR 0054); cobre `food_log` (consent específico do titular) + retenção 6 meses raw + agregado 5 anos
+- [ ] **RIPD `docs/compliance/ripd/v1.0-teleconsulta.md`** publicado e assinado pelo DPO antes do feature flag `teleconsulta_v1` ir a produção (regra 29 + ADR 0054); cobre gravação de áudio/vídeo + transcrição STT (Groq Whisper) + consent explícito de gravação no início da sessão; retenção 20a (Lei 13.787 — vincula a prontuário); template em [`_template.md`](../compliance/ripd/_template.md)
 
 ## Stretch
 

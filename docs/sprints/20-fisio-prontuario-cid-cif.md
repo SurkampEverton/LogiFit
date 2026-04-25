@@ -130,6 +130,7 @@ Em `packages/db/schema/fisio.ts`:
 - [ ] **Registrar handler `receipt`** no hub inbound WhatsApp do Sprint 13 (ADR 0051): paciente manda receita médica pelo WhatsApp → classificador identifica → cria rascunho linkado ao member → profissional anexa ao prontuário na próxima consulta
 - [ ] Feature flag `fisio_prontuario_v1`
 - [ ] ADRs 0028 e 0032 publicados
+- [ ] **RIPD `docs/compliance/ripd/v1.0-prontuario-fisio.md`** publicado e assinado pelo DPO antes do feature flag ir a produção (regra 29 + ADR 0054); cobre `consultas` + `evolucoes_sessao` + assinatura digital + retenção 20a (Lei 13.787/2018) + 5a (COFFITO 415); template em [`_template.md`](../compliance/ripd/_template.md)
 
 ## Stretch
 

@@ -23,6 +23,44 @@ Página única de documentação viva do design system, autossuficiente, dentro 
 
 **Não altera:** `prototipo/tokens.css`, `prototipo/base.css` nem qualquer arquivo em `docs/` ou ADRs — design system já é coberto por ADR 0001 + ADR 0063 + arquitetura.md §1.
 
+### Docs — Auditoria 2026-04-25 (4ª passada — 14 issues remanescentes + materialização de assets)
+
+Após 3ª rodada, quarta auditoria paralela (validação 3ª rodada + cadeia regra→ADR→sprint→lint→arquivo) achou 14 issues — principalmente **lints prometidos sem sprint criador** + **arquivos compliance citados mas não materializados**. **5 críticos + 5 maiores + 4 menores, todos endereçados.**
+
+**Críticos (5):**
+
+- [Sprint 00](docs/sprints/00-setup-infra.md) — checklist completo de **lints custom faltantes**:
+  - `no-hardcoded-design-token` (regra 44) com regex bloqueando hex/font/spacing/radius/size literal em `apps/web/**` exceto `tokens.css`
+  - `high-risk-action-must-require-recent-mfa` (regra 43) bloqueando Server Actions listadas em `packages/security/high-risk-actions.ts` sem chamar `requireRecentMfa()`
+  - **Arquivo `packages/security/high-risk-actions.ts`** com lista canônica MVP de 16 ações alto-risco (cancelTissGuide, cancelNfe, voidPaidInvoice, anonymizeMember, openPamSession, restoreBackup, etc) com `requireMfaMaxAgeMins=15` default
+- [Sprint 02](docs/sprints/02-geral-crm-pessoas.md) — checklist explícito da função SQL `has_cross_tenant_access()` + lint custom `cross-tenant-read-must-log` (regra 42) + RIPD obrigatório `docs/compliance/ripd/v1.0-passaporte-paciente.md` antes de feature ir a produção
+- **NOVO** [docs/compliance/ripd/v1.0-passaporte-paciente.md](docs/compliance/ripd/v1.0-passaporte-paciente.md) — primeiro RIPD real materializado (era apenas template); 10 seções ANPD compliant; **DPO aceita com restrições** (4 condições obrigatórias antes de ativação em produção: revisão jurídica externa, primeiro tenant clínico só após 30d MVP estável, auditoria interna trimestral 1% das leituras, rate limit ajustável)
+- **NOVO** [docs/compliance/data-deletion-playbook.md](docs/compliance/data-deletion-playbook.md) — citado por ADR 0054 + Sprint 01a, agora materializado; cascata canônica `anonymize_tenant_data()` por tabela respeitando retenção legal (prontuário 20a Lei 13.787 / fiscal 5a / audit 5a); preserva agregados estatísticos, remove PII, cifra-com-chave-perdida em conteúdo clínico; idempotente; 3 momentos de comunicação ao titular
+- [Sprint 01b](docs/sprints/01b-rbac-e-consent.md) — schema `ai_feature_classifications` resolvido com **`is_global bool` + check constraint** eliminando ambiguidade do `tenant_id` nullable (regra 28 gate funcional para features globais e tenant-específicas) + unique constraints separadas
+
+**Maiores (5):**
+
+- [Sprint 04](docs/sprints/04-geral-financeiro-asaas.md) — schema `tenant_usage_snapshots` **completo** com responsabilidade clara (Sprint 04 cria; Sprint 06/36 populam): member_overage_count + value generated, AI/fiscal counts com limits e overage_value generated, storage tracking; PARTITION BY RANGE (ano)
+- [Sprint 01b](docs/sprints/01b-rbac-e-consent.md) — **seed completo de roles** com `requires_mfa` por role (medico/fisio/nutri/personal/enfermeiro/tenant_owner/dpo/super_admin = true; super_admin_rede/diretor_matriz/gerente_filial/contador_externo = true; recepcao/member = false escalável via `tenant_settings.mfa_extra_roles[]`) + 2 testes E2E (login bloqueado sem MFA + recepcao + cancelTissGuide com `requireRecentMfa()`)
+- **NOVO** [docs/runbooks/rotate-secrets.md](docs/runbooks/rotate-secrets.md) — citado por ADR 0073 camada 7, agora materializado; inventário de 16 tipos de secrets (JWT_SECRET, KEK master/tenant, Asaas/Focus/Gemini/Groq, Cert A1, etc) com frequência e impacto; passos específicos para JWT_SECRET (transição 24h dual-key) e KEK master (re-cifragem background)
+- **NOVO** [docs/compliance/anvisa-notifications/_template.md](docs/compliance/anvisa-notifications/_template.md) — template para notificação SaMD Classe II RDC 657/2022 (ISO 14971 risk management + validação clínica + responsabilidades + pós-mercado)
+- [Sprint 36](docs/sprints/36-geral-fiscal-focus-nfe.md) — citação explícita de [ADR 0079](docs/decisions/0079-tiss-401-ans-padrao-vigente.md) com nota sobre coexistência operacional TISS (Sprint 22) + NFS-e (Sprint 36) para co-participação de paciente/repasse de operadora
+
+**Menores (4):**
+
+- Sprints clínicos [20](docs/sprints/20-fisio-prontuario-cid-cif.md), [22](docs/sprints/22-fisio-tiss-tuss-convenios.md), [30](docs/sprints/30-nutri-suplementos-exames.md), [31](docs/sprints/31-geral-diario-alimentar-teleconsulta.md), [33](docs/sprints/33-geral-pipeline-exames.md) — **commit checklist agora exige RIPD próprio** publicado antes do feature flag ir a produção: `v1.0-prontuario-fisio.md`, `v1.0-tiss-convenios.md`, `v1.0-nutri-exames.md`, `v1.0-diario-alimentar.md` + `v1.0-teleconsulta.md`, `v1.0-pipeline-exames-ia.md`
+- Sprint 33 — checklist adicional de **notificação ANVISA RDC 657/2022** (Pipeline Exames IA é Classe II) usando o novo template `_template.md`
+- ADR 0043 (Nutri-Agent) — já corretamente mapeado em roadmap.md para Sprint 34 (sem ação adicional)
+- Cluster ADRs 24/25 — aceitável (já documentado em rodadas anteriores)
+
+**Lições da 4ª passada:**
+
+- Lints custom prometidos por regras precisam ter sprint criador explícito no commit checklist; senão são "regulação fantasma"
+- Schemas com flags ambíguas (ex: `tenant_id nullable = global`) viram bombas-relógio; usar `is_global bool` + check constraint elimina interpretação ad-hoc
+- Templates de compliance (RIPD, ANVISA, STRIDE) são úteis mas não substituem **arquivos reais por feature** — sprints devem listar criação no commit checklist
+- DPO pode aceitar tratamento "com restrições" (LGPD permite) — útil para features de risco médio (passaporte cross-tenant) onde implementação técnica está pronta mas operação requer salvaguardas adicionais
+- Cadeia "regra → ADR → sprint → lint → arquivo" precisa ser rastreável de ponta a ponta; gap em qualquer elo torna a regra inexequível
+
 ### Docs — Auditoria 2026-04-25 (3ª passada — 18 issues + propagação da regra 44)
 
 Após 2ª rodada, terceira auditoria paralela (validação 2ª rodada + gaps estruturais sistêmicos) achou 18 issues remanescentes — alguns introduzidos pelas correções anteriores, outros estruturais. Em paralelo, **regra 44 (Design System) foi adicionada externamente em rules.md** — propagada para CLAUDE.md e arquivos dependentes. **Total: 18 issues + 1 mudança externa, todos endereçados.**

@@ -36,7 +36,12 @@ Perfil único cross-module do aluno/paciente (`members`), timeline append-only (
 - Sprint 01b (RBAC com scope + consent)
 - Sprint 01a (`persons` central via [ADR 0047](../decisions/0047-cadastro-central-persons.md) — `members.person_id` FK)
 - Sprint 00 (Cloudflare Turnstile já provisionado para anti-bot no cadastro proativo)
-- **`patient_data_access_log` schema (criado em Sprint 01b — regra 42 + ADR 0072 retenção 5a particionado mensal)**: Sprint 02 é o **primeiro consumidor** efetivo da tabela (escreve no log a cada leitura cross-tenant). Commit checklist obrigatório: `[ ] Validar via migration smoke que tabela patient_data_access_log existe + partição vigente do mês está criada; falha = bloqueia merge.` Função `has_cross_tenant_access()` invocada em wrappers de leitura cross-tenant grava no log síncrono não-bloqueante.
+- **`patient_data_access_log` schema (criado em Sprint 01b — regra 42 + ADR 0072 retenção 5a particionado mensal)**: Sprint 02 é o **primeiro consumidor** efetivo da tabela (escreve no log a cada leitura cross-tenant). Commit checklist obrigatório:
+  - [ ] Validar via migration smoke que tabela `patient_data_access_log` existe + partição vigente do mês está criada; falha = bloqueia merge
+  - [ ] Função SQL `has_cross_tenant_access(reader_user_id, person_id, module_type, category)` implementada em `packages/db/functions/has-cross-tenant-access.sql`, combina os 3 fatores (vínculo ativo + módulo autorizado + nível de dado coberto) — invocada por wrappers de leitura cross-tenant + grava no log síncrono não-bloqueante
+  - [ ] **Lint custom `cross-tenant-read-must-log`** (regra 42) em Biome — bloqueia commit se Server Action lê tabela clínica/antropométrica/prescritiva/plano de tenant diferente do reader sem chamar `has_cross_tenant_access()` + grava em `patient_data_access_log`; exceção via `// cross-tenant-exempt: <motivo + ADR>` (raro)
+  - [ ] **RIPD `docs/compliance/ripd/v1.0-passaporte-paciente.md`** publicado e assinado pelo DPO antes do feature flag passaporte ir a produção (regra 29 + ADR 0054); CI bloqueia se módulo passaporte ativo sem RIPD vigente
+  - [ ] Entrada em `docs/compliance/lgpd-data-inventory.md` para `patient_data_access_log` confirmada (já presente)
 
 ## Decisões tomadas / ADRs esperados
 

@@ -134,6 +134,7 @@ Em `packages/db/schema/convenios.ts`:
 - [ ] Feature flag `convenios_v1`
 - [ ] **Pesquisa global** (ADR 0062): indexar `billing_guides` (kind=`billing_guide`, label=número + operadora + paciente, `required_permission='faturamento.read'`), `authorizations` (kind=`authorization`), `insurance_plans` (kind=`insurance_plan`)
 - [ ] ADRs 0029, 0030, 0031 publicados
+- [ ] **RIPD `docs/compliance/ripd/v1.0-tiss-convenios.md`** publicado e assinado pelo DPO antes do feature flag ir a produção (regra 29 + ADR 0054); cobre transmissão de dado clínico estruturado para operadoras de saúde (sub-controlador autorizado pelo titular via contrato de plano), retenção fiscal 5a, assinatura ICP-Brasil quando exigida; template em [`_template.md`](../compliance/ripd/_template.md)
 
 ## Stretch
 
