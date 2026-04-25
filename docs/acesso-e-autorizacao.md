@@ -162,13 +162,32 @@ Ver [multiempresa.md — RBAC e scopes](multiempresa.md#rbac-e-scopes).
 
 ## Camada 4 — Consent (cross-module, cross-company, cross-tenant)
 
-Camada 4 cobre **3 tipos de cruzamento de dados**, cada um com mecanismo próprio:
+> **Hierarquia de fontes de verdade por tipo de cruzamento de dados** — leitor que precisa decidir "este dado pode ser lido aqui?" deve identificar **primeiro o tipo de cruzamento** abaixo, depois consultar a regra/ADR correspondente. Tipos são **mutuamente exclusivos** (mesmo tenant + mesma company = sem cruzamento; cross-company implica mesmo tenant; cross-tenant implica tenants distintos).
 
-| Tipo | Cenário | Mecanismo | Regra |
-|---|---|---|---|
-| **Cross-module** (mesmo tenant) | Instrutor da academia vê lesão registrada pelo fisio do mesmo tenant | `consents` por `purpose` | Regra 6 |
-| **Cross-company** (mesmo tenant, topology rede própria) | Recepção da Filial B vê histórico de check-in do aluno na Filial A | RLS via `cross_company_access` flag do tenant | Regra 25 (franchise: bloqueado para clínico) |
-| **Cross-tenant** (donos comerciais distintos — ADR 0077) | Personal da Academia X vê plano alimentar prescrito pela Nutri Y (autônoma) | `patient_company_links` + `patient_link_modules` ativos + `data_level_max` cobre | Regra 42 (NOVA) |
+Camada 4 cobre **3 tipos de cruzamento de dados**, cada um com mecanismo próprio + regra dura própria:
+
+| Tipo | Cenário canônico | Mecanismo técnico | Regra(s) | ADR | Sprint que ativa |
+|---|---|---|---|---|---|
+| **(1) Cross-module** (intra-tenant + intra-company) | Instrutor da academia vê lesão registrada pelo fisio do **mesmo tenant + mesma company** | `consents` por `purpose` (`alert_injury_to_training`, `share_diet_to_training`, etc) | **Regra 6** (consent cross-module) | [ADR 0005](decisions/0005-rbac-com-consent-cross-module.md) | Sprint 01b (schema + UI) |
+| **(2) Cross-company** (intra-tenant, **inter**-company) | Recepção da Filial B vê histórico de check-in do aluno na Filial A do **mesmo tenant** | RLS via `tenant.cross_company_access` flag + `franchise_agreements` quando `topology=franchise` | **Regras 21-26** (companies + groups + franchise) — em particular **regra 25 bloqueia clínico cross-company quando topology=franchise** | [ADR 0006](decisions/0006-hierarquia-group-tenant-company-unit.md) + [ADR 0007](decisions/0007-topology-owned-vs-franchise.md) | Sprint 01a (schema + flag) + Sprint 02 (uso) |
+| **(3) Cross-tenant** (donos comerciais **distintos**) | Personal da Academia X (tenant A) vê plano alimentar prescrito pela Nutri Y (tenant B autônoma) | `patient_company_links` + `patient_link_modules` ativos + `data_level_max` cobre + `has_cross_tenant_access()` SQL + `patient_data_access_log` síncrono | **Regra 42** (passaporte cross-tenant) | [ADR 0077](decisions/0077-passaporte-paciente-vinculo-cross-tenant.md) | Sprint 01b (schema + log) + Sprint 02 (fluxo + função SQL + lint) |
+
+**Sintaxe rápida para identificar tipo:**
+
+```
+mesmo tenant_id + mesmo company_id ?
+  → SIM: tipo (1) cross-module — checa Regra 6
+  → NÃO: mesmo tenant_id ?
+      → SIM: tipo (2) cross-company — checa Regras 21-26 (atenção: clínico em franchise é proibido pela Regra 25)
+      → NÃO: tipo (3) cross-tenant — checa Regra 42 + função SQL has_cross_tenant_access() + log obrigatório
+```
+
+**Limites duros que valem em todos os tipos:**
+
+- Dado financeiro **nunca** cruza tenant (limite duro Regra 42 — mesmo com vínculo passaporte)
+- Dado clínico **nunca** cruza company quando `topology=franchise` (limite duro Regra 25 — mesmo com consent)
+- Nível 5 (notas privadas profissional, hipóteses diagnósticas) **nunca** cruza tenant (limite duro Regra 42)
+- Prontuário CFM original **nunca** cruza tenant (CFM 2.299 + Lei 13.787 — só resumo gerado pelo paciente pode cruzar via passaporte)
 
 ### Cross-module (intra-tenant) — tabela `consents`
 

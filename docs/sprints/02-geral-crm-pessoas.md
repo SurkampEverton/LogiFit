@@ -38,7 +38,22 @@ Perfil único cross-module do aluno/paciente (`members`), timeline append-only (
 - Sprint 00 (Cloudflare Turnstile já provisionado para anti-bot no cadastro proativo)
 - **`patient_data_access_log` schema (criado em Sprint 01b — regra 42 + ADR 0072 retenção 5a particionado mensal)**: Sprint 02 é o **primeiro consumidor** efetivo da tabela (escreve no log a cada leitura cross-tenant). Commit checklist obrigatório:
   - [ ] Validar via migration smoke que tabela `patient_data_access_log` existe + partição vigente do mês está criada; falha = bloqueia merge
-  - [ ] Função SQL `has_cross_tenant_access(reader_user_id, person_id, module_type, category)` implementada em `packages/db/functions/has-cross-tenant-access.sql`, combina os 3 fatores (vínculo ativo + módulo autorizado + nível de dado coberto) — invocada por wrappers de leitura cross-tenant + grava no log síncrono não-bloqueante
+  - [ ] **Função SQL `has_cross_tenant_access(p_reader_user_id uuid, p_patient_person_id uuid, p_module_type text, p_category text)`** implementada em `packages/db/functions/has-cross-tenant-access.sql`. Lógica:
+    1. Resolver `reader_tenant_id` via JWT claim do reader
+    2. Resolver `source_tenant_id` via `patient_person_id` (tenant onde o paciente é cadastrado primariamente)
+    3. Se `reader_tenant_id = source_tenant_id` → return TRUE (intra-tenant, sem regra 42)
+    4. SELECT em `patient_company_links` WHERE `patient_person_id = p_patient_person_id AND tenant_id = p_reader_tenant_id AND status = 'active' AND revoked_at IS NULL` — se vazio return FALSE
+    5. JOIN com `patient_link_modules` WHERE `module_type = p_module_type AND active=true AND revoked_at IS NULL` — se vazio return FALSE
+    6. Verificar que `data_level_max` (1-5) cobre `p_category` (Identidade=1, Antropometria=2, Treino=3, Clínico=4, Workspace=5; Workspace nunca cruza independente do max) — se `p_category=5` ou `data_level_max < requiredLevel(p_category)` return FALSE
+    7. Verificar limites duros (financeiro/Nível 5/prontuário CFM original/dado de outras pessoas) — se `p_category` pertence à lista, return FALSE
+    8. Return TRUE
+  - [ ] Testes SQL em `packages/db/tests/has-cross-tenant-access.test.ts` cobrindo 6 cenários:
+    1. Intra-tenant (mesmo tenant) → TRUE
+    2. Cross-tenant com vínculo ativo + módulo + nível coberto → TRUE
+    3. Vínculo revogado → FALSE
+    4. Módulo não autorizado → FALSE
+    5. Categoria fora do `data_level_max` → FALSE
+    6. Categoria em limite duro (financeiro) → FALSE
   - [ ] **Lint custom `cross-tenant-read-must-log`** (regra 42) em Biome — bloqueia commit se Server Action lê tabela clínica/antropométrica/prescritiva/plano de tenant diferente do reader sem chamar `has_cross_tenant_access()` + grava em `patient_data_access_log`; exceção via `// cross-tenant-exempt: <motivo + ADR>` (raro)
   - [ ] **RIPD `docs/compliance/ripd/v1.0-passaporte-paciente.md`** publicado e assinado pelo DPO antes do feature flag passaporte ir a produção (regra 29 + ADR 0054); CI bloqueia se módulo passaporte ativo sem RIPD vigente
   - [ ] Entrada em `docs/compliance/lgpd-data-inventory.md` para `patient_data_access_log` confirmada (já presente)

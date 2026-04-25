@@ -1,13 +1,23 @@
 # Sprint 00 — Setup de Infra
 
 - **Início:** planejado
-- **Fim planejado:** +3 semanas
+- **Fim planejado:** **+4 semanas** (revisado 2026-04-25 — escopo foi expandido pelas 4 auditorias com 8 lints custom + estruturas compliance/runbooks/threat-models + arquivos `dev/portability.md`/`realtime.md` + `high-risk-actions.ts`; absorve melhor em 4 semanas que em 3)
 - **Status:** planejado
 - **Item do roadmap:** #1
 
 ## Goal
 
 Monorepo funcional, Supabase local rodando, CI verde, observabilidade ligada, **i18n configurado em 3 idiomas (pt-BR/en-US/es-419)** e **teste CI de RLS ativo**. Zero feature de negócio.
+
+## Estratégia de timebox (4 semanas)
+
+Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiza-se em **3 faixas executáveis em sequência curta**, cada uma com DoD próprio:
+
+- **Faixa 1 (semana 1):** infra core — monorepo, Supabase local, Drizzle, Biome, Vitest, Playwright, CI verde básica, i18n config, Sentry/PostHog, design tokens
+- **Faixa 2 (semanas 2-3):** segurança em profundidade — Cloudflare proxy + Turnstile, headers + CSP nonce, `safeFetch`, `scanUpload`, backup R2, OWASP ZAP, secret scanning, Dependabot, OSV-scanner, SBOM, `/.well-known/security.txt`, `packages/security/high-risk-actions.ts`
+- **Faixa 3 (semana 4):** lints custom + docs operacionais — `no-unwrapped-action`, `no-raw-fetch`, `no-unscanned-upload`, `no-hardcoded-design-token`, `no-direct-supabase-query`, `no-supabase-functions`, `high-risk-action-must-require-recent-mfa`, `cross-tenant-read-must-log` (este vira ativo só no Sprint 02), templates RIPD vazios para sprints clínicos, `docs/dev/portability.md`, `docs/dev/realtime.md`
+
+**Se Faixa 3 estourar:** mover lints `cross-tenant-read-must-log` para Sprint 02 (onde primeiro consumidor real existe) e `no-hardcoded-design-token` para Sprint 00b (menu lateral, primeiro consumidor real de design system). Sprint 00 mantém DoD se entregar Faixas 1+2 + esqueleto da Faixa 3.
 
 ## Critério de aceite
 
@@ -128,7 +138,9 @@ Monorepo funcional, Supabase local rodando, CI verde, observabilidade ligada, **
 - [ ] **Lint custom `no-raw-fetch`** em Biome — bloqueia commit se `fetch(url)` aparece fora de `safeFetch()` ou de testes (`*.test.ts`); exceção via `// safe-fetch-exempt: <motivo>`
 - [ ] **Lint custom `no-hardcoded-design-token`** (regra 44) em Biome — bloqueia commit em `apps/web/**/*.{ts,tsx,css}` (exceto `tokens.css` próprio) com hex literal (`#[0-9A-Fa-f]{3,6,8}`), `font-family:` literal (exceto `Inter, sans-serif`), `padding:`/`margin:`/`gap:` numérico literal (exceto `0`), `border-radius:` literal, `font-size:` literal, `line-height:` literal, `font-weight:` numérico (exceto via `var(--ev-*)` ou alias shadcn `var(--primary)`/`var(--background)`/`var(--radius)`); exceção via `// design-token-exempt: <motivo>`
 - [ ] **Lint custom `high-risk-action-must-require-recent-mfa`** (regra 43) em Biome — bloqueia commit se Server Action listada em `packages/security/high-risk-actions.ts` (ver abaixo) não chama `requireRecentMfa()` antes da lógica
-- [ ] **`packages/security/high-risk-actions.ts`** (regra 43) — array tipado `[{action: string, requireMfaMaxAgeMins: number, category: 'fiscal'|'rbac'|'financeiro'|'compliance'|'super-admin'}]` com lista canônica MVP: `cancelTissGuide`, `cancelNfe`, `voidPaidInvoice`, `updateInvoiceAmount`, `updateUserRole`, `createCustomRole`, `grantUserPermission`, `updateAsaasKey`, `configureBillingByok`, `runOpenFinancePayment`, `anonymizeMember`, `deleteClinicalData`, `exportFullProntuario`, `terminateTenant`, `openPamSession`, `restoreBackup`. Default `requireMfaMaxAgeMins=15`. Cada feature dependente de TISS/RBAC/financeiro/super-admin importa lista pra encontrar suas próprias ações
+- [ ] **`packages/security/high-risk-actions.ts`** (regra 43) — array tipado `[{action: string, requireMfaMaxAgeMins: number, category: 'fiscal'|'rbac'|'financeiro'|'compliance'|'super-admin', alsoBlockedFromAi?: boolean}]` com lista canônica MVP: `cancelTissGuide`, `cancelNfe`, `voidPaidInvoice`, `updateInvoiceAmount`, `updateUserRole`, `createCustomRole`, `grantUserPermission`, `updateAsaasKey`, `configureBillingByok`, `runOpenFinancePayment` *(alsoBlockedFromAi)*, `anonymizeMember` *(alsoBlockedFromAi)*, `deleteClinicalData` *(alsoBlockedFromAi)*, `exportFullProntuario` *(alsoBlockedFromAi)*, `terminateTenant`, `openPamSession`, `restoreBackup`. Default `requireMfaMaxAgeMins=15`. Cada feature dependente de TISS/RBAC/financeiro/super-admin importa lista pra encontrar suas próprias ações.
+
+  **Nota sobre colisão regra 41 ↔ 43:** ações marcadas `alsoBlockedFromAi=true` têm dupla proteção — (a) se invocadas por humano via UI: exigem MFA recente <15min (gate `requireRecentMfa()` regra 43); (b) se tentadas via Assistente IA: bloqueadas pelo lint `ai-block-respected` (regra 41 — handler tem comentário `// ai-blocked: <motivo>`). **As duas proteções são independentes e cumulativas** — IA nunca chega ao handler (regra 41); se chegasse via bypass, o gate MFA pegaria (regra 43). Sem gap.
 - [ ] Teste E2E: tentar executar `cancelTissGuide` sem `mfa_at` recente → 403 + `MFA_RECENT_REQUIRED` no envelope; após `requireRecentMfa()` (re-TOTP), executa OK
 - [ ] **`packages/security/scan-upload.ts` (regra 38) — implementação MVP zero-custo:** provider abstrato (`ScanProvider` interface) com adapter `OwnScanProvider` ativo por padrão; valida MIME real (`file-type` npm, free), magic bytes, extension allowlist por bucket, size cap, embed detection (PDF: regex em raw bloqueia `/JavaScript`/`/JS`/`/OpenAction`/`/Launch`/`/EmbeddedFile`; Office: regex bloqueia `vbaProject.bin`/`macros/` em zipped; imagens: bloqueia EXIF anômalo + polyglot via magic bytes mismatch), hash SHA256 com lookup opcional em seed `known_malicious_hashes`. Resultado em `upload_scans (id, tenant_id, storage_path, status enum 'pending'|'clean'|'suspicious'|'rejected'|'error', detection_reason text nullable, scanned_at, scan_provider text default 'own')`. **Fase 2:** plugar `ClamAvAdapter` ou `CloudmersiveAdapter` via env var `SCAN_PROVIDER` sem refactor. Lint custom `no-unscanned-upload` em rotas de upload.
 - [ ] **Cloudflare proxy free tier** na frente de `logifit.com.br`: DNS aponta para Cloudflare, Cloudflare proxy → Vercel; SSL Full (strict) + Always HTTPS + bot fight mode + rate limiting (10k requests free/mês); 5 regras WAF customizadas (free)
@@ -157,7 +169,24 @@ Monorepo funcional, Supabase local rodando, CI verde, observabilidade ligada, **
 - [ ] **PgBouncer-friendly** — Drizzle config sem prepared statements long-lived; `transaction` mode pooler assumido (preparar pra Oracle)
 - [ ] Auth via JWT custom + cookie httpOnly próprio (Sprint 01a entrega — não usar `@supabase/auth-helpers-nextjs`)
 - [ ] Realtime: padrão `LISTEN/NOTIFY` documentado em `docs/dev/realtime.md`; Supabase Realtime usado APENAS quando justificável (broadcast pra ≥5 clients simultâneos)
-- [ ] Documentar em `docs/dev/portability.md` as 8 regras + checklist de "antes de adotar feature Supabase, isso quebra Sprint 19b?"
+- [ ] Criar `docs/dev/portability.md` com as 8 regras de portabilidade (ADR 0078) + checklist "antes de adotar feature Supabase, isso quebra Sprint 19b?" + tabela de equivalências (Supabase Auth → BetterAuth, Storage → R2, Realtime → LISTEN/NOTIFY, etc)
+- [ ] Criar `docs/dev/realtime.md` documentando padrão `LISTEN/NOTIFY` LogiFit (channels, payload JSON, idempotência) + quando usar Supabase Realtime (broadcast ≥5 clients) vs LISTEN/NOTIFY (server-side eventos pontuais)
+
+**Compliance — esqueletos pra sprints clínicos consumirem:**
+
+- [ ] Criar **arquivos vazios de RIPD** (apenas frontmatter + TODO) em `docs/compliance/ripd/`, com proprietário e deadline declarados:
+  - `v1.0-prontuario-fisio.md` — proprietário: dev Sprint 20 + DPO; deadline: feature flag `fisio_prontuario_v1` ON
+  - `v1.0-tiss-convenios.md` — proprietário: dev Sprint 22 + DPO; deadline: `convenios_v1` ON
+  - `v1.0-nutri-exames.md` — proprietário: dev Sprint 30 + DPO; deadline: `nutri_suplementos_exames_v1` ON
+  - `v1.0-diario-alimentar.md` — proprietário: dev Sprint 31 + DPO; deadline: `diario_v1` ON
+  - `v1.0-teleconsulta.md` — proprietário: dev Sprint 31 + DPO; deadline: `teleconsulta_v1` ON
+  - `v1.0-pipeline-exames-ia.md` — proprietário: dev Sprint 33 + DPO; deadline: `exames_ia_v1` ON
+  - `v1.0-device-hub.md` — proprietário: dev Sprint 32 + DPO; deadline: `device_hub_v1` ON
+  - `v1.0-reconhecimento-facial.md` — proprietário: dev Sprint 08 + DPO; deadline: `acesso_facial_v1` ON
+
+  Cada arquivo já contém `Status: TODO`, link para `_template.md`, sprint dependente e deadline em prosa. CI bloqueia merge da sprint correspondente se RIPD ainda está em `Status: TODO`.
+
+- [ ] Criar `scripts/hash-ripd.ts` que computa SHA-256 do conteúdo de cada RIPD em `docs/compliance/ripd/v*.md` e atualiza o campo `Hash SHA-256` no frontmatter; rodado em CI antes de merge (regra 29). Arquivo só vira `Status: Vigente` se hash bate com último commit que tocou o conteúdo.
 
 **README e docs:**
 

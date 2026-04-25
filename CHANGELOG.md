@@ -23,6 +23,36 @@ Página única de documentação viva do design system, autossuficiente, dentro 
 
 **Não altera:** `prototipo/tokens.css`, `prototipo/base.css` nem qualquer arquivo em `docs/` ou ADRs — design system já é coberto por ADR 0001 + ADR 0063 + arquitetura.md §1.
 
+### Docs — Auditoria 2026-04-25 (5ª passada — 10 issues + estabilização final)
+
+Após 4 rodadas, quinta auditoria focada em **validar 4ª rodada + procurar issues sutis que escaparam**. Padrão de retornos decrescentes confirmado (1ª=30 → 2ª=14 → 3ª=18 → 4ª=14 → 5ª=10). **4 críticos + 4 maiores + 2 menores, todos endereçados.** Documentação atinge **estado estável e auditável**.
+
+**Críticos (4):**
+
+- [Sprint 00](docs/sprints/00-setup-infra.md) — **timebox revisado de 3 para 4 semanas** com seção "Estratégia de timebox" organizando trabalho em **3 faixas executáveis** (Faixa 1 infra core; Faixa 2 segurança em profundidade; Faixa 3 lints custom + docs operacionais); Faixa 3 tem **opção de pivot** (mover lints `cross-tenant-read-must-log` para Sprint 02 e `no-hardcoded-design-token` para Sprint 00b se cronograma estourar)
+- [Sprint 00](docs/sprints/00-setup-infra.md) — `packages/security/high-risk-actions.ts` ganhou flag `alsoBlockedFromAi?: boolean` em ações que coexistem entre regra 41 (IA bloqueada) e regra 43 (MFA recente humano) — `runOpenFinancePayment`, `anonymizeMember`, `deleteClinicalData`, `exportFullProntuario`. Nota explícita: **as duas proteções são independentes e cumulativas** (IA nunca chega ao handler via lint `ai-block-respected`; se chegasse via bypass, gate `requireRecentMfa()` pegaria)
+- [Sprint 01b](docs/sprints/01b-rbac-e-consent.md) — função SQL `resolve_ai_class(p_tenant_id, p_feature_key)` em `packages/db/functions/resolve-ai-class.sql` agora detalhada no commit checklist com assinatura, lógica completa (busca tenant-específico → fallback global → exception se não classificada), retorno tuple (samd_class, requires_committee, requires_anvisa_notification, source) + 5 cenários de teste E2E (feature global classe I, classe II sem comitê, classe II com comitê, override tenant-específico, exception feature_not_classified, comitê removido)
+- [Sprint 04](docs/sprints/04-geral-financeiro-asaas.md) — schema `tenant_usage_snapshots` agora alimentado por **`plan_tier_rates` (seed global versionado por `effective_from`/`effective_to`)** + função SQL **`get_tier_rates_for_date(tenant_id, snapshot_date)`** que resolve tier vigente do tenant na data + retorna rates congelados — elimina ambiguidade de "quem popula `member_overage_rate_cents`"; mudança futura de pricing **não retro-afeta** snapshots antigos. Inclui **exemplo numérico completo** (tenant Pro abril 2026: R$ 199 + R$ 75 member overage + R$ 8 fiscal overage = R$ 282 total)
+
+**Maiores (4):**
+
+- [Sprint 04](docs/sprints/04-geral-financeiro-asaas.md) — `tenant_usage_snapshots` PARTITION BY RANGE corrigido de **ano → trimestre** (~27k rows/partição vs ~365 — Postgres aproveita pruning); job `create-next-partitions` (regra 34) inclui agora trimestralmente
+- **NOVO** [docs/dev/portability.md](docs/dev/portability.md) — cookbook Sprint 19b com 8 regras de portabilidade tabuladas + tabela de equivalências Fase 1↔2 + checklist "antes de adotar feature Supabase" + lista do que muda vs o que não muda no cutover
+- **NOVO** [docs/dev/realtime.md](docs/dev/realtime.md) — padrão LISTEN/NOTIFY canônico (channels, payload format, implementação Sprint 00) + quando usar Supabase Realtime (broadcast ≥5 clients) + nota PgBouncer (LISTEN/NOTIFY exige session mode em conexão dedicada via `DATABASE_URL_DIRECT`) + estratégia de migração no Sprint 19b
+- [Sprint 02](docs/sprints/02-geral-crm-pessoas.md) — função SQL `has_cross_tenant_access(p_reader_user_id, p_patient_person_id, p_module_type, p_category)` agora detalhada com lógica completa (8 passos) + 6 cenários de teste cobrindo intra-tenant, cross-tenant ativo, vínculo revogado, módulo não autorizado, categoria fora do `data_level_max`, limite duro financeiro
+- [Sprint 00](docs/sprints/00-setup-infra.md) — checklist de **arquivos vazios de RIPD com proprietário + deadline** declarados em `docs/compliance/ripd/`: 8 RIPDs (prontuario-fisio, tiss-convenios, nutri-exames, diario-alimentar, teleconsulta, pipeline-exames-ia, device-hub, reconhecimento-facial) com proprietário declarado (dev Sprint X + DPO) + deadline (feature flag respectivo ON) + CI bloqueia merge se ainda em `Status: TODO` + script `scripts/hash-ripd.ts` calcula SHA-256 automaticamente
+
+**Menores (2):**
+
+- [docs/acesso-e-autorizacao.md](docs/acesso-e-autorizacao.md) — seção Camada 4 reorganizada com **hierarquia de fontes de verdade** explícita: tabela com 6 colunas (Tipo, Cenário canônico, Mecanismo técnico, Regra(s), ADR, Sprint que ativa) + **decision tree em prosa** (mesmo tenant_id+company_id? → cross-module; mesmo tenant_id? → cross-company; nenhum? → cross-tenant) + bloco "limites duros que valem em todos os tipos"
+- [docs/compliance/ripd/v1.0-passaporte-paciente.md](docs/compliance/ripd/v1.0-passaporte-paciente.md) — campo "Hash SHA-256 do conteúdo" agora referencia `scripts/hash-ripd.ts` (Sprint 00) com workflow de commit hook automatizado em vez de prosa ambígua
+
+**Veredicto da 5ª passada:**
+
+> Documentação atingiu **threshold de estabilidade auditável** com cadeia "regra → ADR → sprint → lint → arquivo" rastreável de ponta a ponta. Próxima auditoria genuína deve aguardar **pós-Sprint 01b implementação** — achados serão sobre execução real, não sobre estado documental.
+
+**Padrão de auditoria** (1ª=30 → 5ª=10 issues): retornos decrescentes confirmados; auditorias subsequentes em estado documental seriam over-engineering.
+
 ### Docs — Auditoria 2026-04-25 (4ª passada — 14 issues remanescentes + materialização de assets)
 
 Após 3ª rodada, quarta auditoria paralela (validação 3ª rodada + cadeia regra→ADR→sprint→lint→arquivo) achou 14 issues — principalmente **lints prometidos sem sprint criador** + **arquivos compliance citados mas não materializados**. **5 críticos + 5 maiores + 4 menores, todos endereçados.**

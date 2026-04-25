@@ -84,14 +84,35 @@ Em `packages/db/schema/financeiro.ts`:
 - `payments` — `id`, `tenant_id`, `invoice_id`, `amount_cents`, `method` enum (`boleto`, `pix`, `credit_card`), `paid_at`, `asaas_id unique`, `raw_payload jsonb`
 - `asaas_keys` — `id`, `tenant_id`, `company_id nullable`, `api_key` (criptografado), `sandbox bool`, `active`. Regra: quando `tenant.financial_mode=centralized`, `company_id` é NULL; quando `distributed`, é obrigatório. Enforced por check constraint.
 - `webhook_events` (já criada em Sprint 01a? — se não, cria aqui) — `id`, `source`, `external_id unique`, `received_at`, `processed_at`, `payload jsonb`, `error text nullable`
+- `plan_tier_rates` (seed global LogiFit, fonte única de verdade para limits/rates por tier — alimenta `tenant_usage_snapshots`):
+  - `plan_tier enum('solo','solo_combo','starter','pro','business','enterprise') primary key`
+  - `member_limit int not null` (30/60/100/500/2000/null=ilimitado)
+  - `member_overage_rate_cents int not null` (50/50/50/50/40/0)
+  - `ai_calls_limit int not null` (200/200/500/3000/10000/25000)
+  - `fiscal_emissions_limit int not null` (20/30/50/200/1000/5000)
+  - `fiscal_overage_rate_cents int not null` (50/50/50/40/35/25)
+  - `storage_bytes_limit bigint not null` (1GB/2GB/5GB/50GB/200GB/500GB+ em bytes)
+  - `effective_from date not null`, `effective_to date null` — versionamento histórico de pricing (mudanças retroativas não afetam snapshots antigos)
+  - Seed inicial = ADR 0066 vigente 2026-04-25; mudanças futuras criam linha nova com `effective_from = today`
+- Função SQL `get_tier_rates_for_date(p_tenant_id uuid, p_snapshot_date date)` em `packages/db/functions/get-tier-rates-for-date.sql`:
+  - Resolve tier vigente do tenant em `p_snapshot_date` via `tenant_subscriptions` histórico
+  - Retorna linha de `plan_tier_rates` com `effective_from <= p_snapshot_date AND (effective_to IS NULL OR effective_to > p_snapshot_date)` para o tier resolvido
+  - Cobre mudança de plano mid-month (snapshot_date <D> usa tier vigente <D>)
 - `tenant_usage_snapshots` (responsabilidade de schema = Sprint 04; popula = sprints downstream):
-  - **Colunas básicas:** `tenant_id uuid not null`, `snapshot_date date not null`, `plan_tier enum('solo','solo_combo','starter','pro','business','enterprise') not null`
-  - **Member counting (popula = Sprint 04 mesmo):** `active_member_count int not null default 0`, `plan_member_limit int not null` (do plano vigente), `member_overage_count int generated always as (greatest(active_member_count - plan_member_limit, 0)) stored`, `member_overage_value_cents int generated always as (greatest(active_member_count - plan_member_limit, 0) * member_overage_rate_cents) stored`, `member_overage_rate_cents int not null` (50 default; varia por tier conforme ADR 0066)
-  - **AI counting (popula = Sprint 06 via job `aggregate-tenant-ai-usage`):** `ai_calls_count int not null default 0`, `ai_calls_limit int not null` (200/500/3k/10k/25k conforme tier — ADR 0066)
-  - **Fiscal counting (popula = Sprint 36 via job `aggregate-fiscal-usage-snapshot`):** `fiscal_emissions_count int not null default 0` (NFS-e + NF-e + NFC-e + devolução + transferência + conserto; **eventos não contam** conforme ADR 0066), `fiscal_emissions_limit int not null` (20/30/50/200/1000/5000), `fiscal_overage_count int generated always as (greatest(fiscal_emissions_count - fiscal_emissions_limit, 0)) stored`, `fiscal_overage_value_cents int generated always as (greatest(fiscal_emissions_count - fiscal_emissions_limit, 0) * fiscal_overage_rate_cents) stored`, `fiscal_overage_rate_cents int not null` (50/50/50/40/35/25)
+  - **Colunas básicas:** `tenant_id uuid not null`, `snapshot_date date not null`, `plan_tier enum('solo','solo_combo','starter','pro','business','enterprise') not null` (snapshot do tier vigente naquele dia)
+  - **Member counting (popula = Sprint 04 via job):** `active_member_count int not null default 0`, `plan_member_limit int not null`, `member_overage_rate_cents int not null` — `plan_member_limit` e `member_overage_rate_cents` **populados pelo job `compute-tenant-usage-snapshot` via `get_tier_rates_for_date(tenant_id, snapshot_date)`** (snapshot dos rates congelados — auditável; mudança futura de pricing não retro-afeta), `member_overage_count int generated always as (greatest(active_member_count - plan_member_limit, 0)) stored`, `member_overage_value_cents int generated always as (greatest(active_member_count - plan_member_limit, 0) * member_overage_rate_cents) stored`
+  - **AI counting (popula = Sprint 06 via job `aggregate-tenant-ai-usage`):** `ai_calls_count int not null default 0`, `ai_calls_limit int not null` (mesma lógica via `get_tier_rates_for_date`)
+  - **Fiscal counting (popula = Sprint 36 via job `aggregate-fiscal-usage-snapshot`):** `fiscal_emissions_count int not null default 0` (NFS-e + NF-e + NFC-e + devolução + transferência + conserto; **eventos não contam** conforme ADR 0066), `fiscal_emissions_limit int not null`, `fiscal_overage_rate_cents int not null` (mesma lógica), `fiscal_overage_count int generated always as (greatest(fiscal_emissions_count - fiscal_emissions_limit, 0)) stored`, `fiscal_overage_value_cents int generated always as (greatest(fiscal_emissions_count - fiscal_emissions_limit, 0) * fiscal_overage_rate_cents) stored`
   - **Storage counting (popula = Sprint 06 ou job dedicado pós-32):** `storage_bytes_used bigint not null default 0`, `storage_bytes_limit bigint not null`
-  - PK `(tenant_id, snapshot_date)`. **PARTITION BY RANGE (snapshot_date)** por ano (regra 34 — fiscal). Job diário `compute-tenant-usage-snapshot` (Sprint 04) recalcula `active_member_count` + injeta `plan_member_limit/member_overage_rate_cents/ai_calls_limit/fiscal_emissions_limit/fiscal_overage_rate_cents/storage_bytes_limit` do plano vigente
+  - PK `(tenant_id, snapshot_date)`. **PARTITION BY RANGE (snapshot_date)** **por trimestre** (regra 34 — snapshots diários × 3 meses ≈ 90 rows/tenant/partição × N tenants ≈ 27k rows/partição saudável; partição anual seria ~365 rows × N = baixo demais para Postgres aproveitar pruning). Job `create-next-partitions` (regra 34) inclui essa tabela trimestralmente.
+  - Job diário `compute-tenant-usage-snapshot` (Sprint 04) recalcula `active_member_count` + chama `get_tier_rates_for_date()` + popula todas as colunas de limit/rate (não-generated) + colunas generated calculam automaticamente via Postgres
   - Widget `/app/settings/tenant/plan` (Sprint 04) lê todas as colunas + mostra preview de overage member + AI quota; widget recebe upgrade visual em Sprint 06 (AI) e Sprint 36 (fiscal preview)
+  - **Exemplo numérico (tenant Pro, 2026-04, 650 members ativos, 250 chamadas IA, 220 NFS-e):**
+    - `plan_tier='pro'`, `plan_member_limit=500`, `member_overage_rate_cents=50`, `ai_calls_limit=3000`, `fiscal_emissions_limit=200`, `fiscal_overage_rate_cents=40`
+    - `active_member_count=650`, `ai_calls_count=250`, `fiscal_emissions_count=220`
+    - `member_overage_count=150` (generated), `member_overage_value_cents=7500` (R$ 75,00)
+    - `fiscal_overage_count=20` (generated), `fiscal_overage_value_cents=800` (R$ 8,00)
+    - **Total fatura abril:** R$ 199,00 (Pro) + R$ 75,00 (member) + R$ 8,00 (fiscal) = **R$ 282,00**
 
 **RLS:** tenant_id + scope por company; `audit_log` obrigatório em mudança de `invoices.status` e `contracts.status`.
 
