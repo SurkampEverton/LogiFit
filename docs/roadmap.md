@@ -107,7 +107,50 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 
 ## Convenção sobre sprints em alto nível
 
-Sprints **34, 35, 36** (Nutri-Agent IA, App Nativo Expo, Fiscal Focus NFe) e **37 pós-MVP** (Prescrição Adaptativa IA por RPE) aparecem na tabela da Fase 3 **apenas como entrada de roadmap** — não têm arquivo detalhado em `docs/sprints/NN-*.md` ainda. Isso é **deliberado**: arquivo de sprint profundo nasce quando o sprint vira candidato a `doing` (próximos 1-2 na fila). Evita doc especulativa que fica obsoleta antes de executar. Quando chegar a hora, o arquivo é criado via mesmo template + extensão (formato profundo: Goal, Aceite, Dependências, Schemas, Rotas, Server Actions, Eventos, Commit checklist, DoD).
+Sprints **34** (Nutri-Agent IA), **35** (App Nativo Expo) e **37 pós-MVP** (Prescrição Adaptativa IA por RPE) aparecem na tabela da Fase 3 **apenas como entrada de roadmap** — não têm arquivo detalhado em `docs/sprints/NN-*.md` ainda. Isso é **deliberado**: arquivo de sprint profundo nasce quando o sprint vira candidato a `doing` (próximos 1-2 na fila). Evita doc especulativa que fica obsoleta antes de executar. Quando chegar a hora, o arquivo é criado via mesmo template + extensão (formato profundo: Goal, Aceite, Dependências, Schemas, Rotas, Server Actions, Eventos, Commit checklist, DoD).
+
+Sprints **36** (Fiscal Focus NFe) **possui** arquivo detalhado já — foi escrito com profundidade pra orientar planejamento da decisão fiscal (ADR 0059). O fato dele existir antes dos 34/35 não viola a convenção — apenas reflete a sequência cronológica de quando precisaram ser planejados.
+
+## Convenção de numeração de ADRs
+
+ADRs no LogiFit seguem **numeração sequencial densa** com uma exceção legítima: **a faixa 0011-0046 está reservada para ADRs que serão produzidos durante a execução de sprints específicos**. Cada sprint planejado lista os ADRs que vai produzir (campo "ADRs esperados" no header do sprint), e o número é alocado naquele momento.
+
+**Por quê?** Sprints capturam decisões arquiteturais que só fazem sentido **depois** que se entende o domínio do sprint (ex: "qual provider WhatsApp escolher" só decide quando Sprint 13 começa). Pré-criar ADRs vazios polui `docs/decisions/` e força decisões prematuras.
+
+**Mapeamento atual** (faixa reservada):
+| ADR | Sprint que produz | Tema | Status |
+|---|---|---|---|
+| 0011-0012 | reservados | (não-alocados; gap legítimo histórico) | livre |
+| 0013 | Sprint 04 | Plano/Contrato/Cobrança como entidades separadas | a produzir |
+| 0014 | Sprint 04 | Chave Asaas + conta bancária por company vs tenant | a produzir |
+| 0015 | Sprint 06 | Copilot safety: vocabulário proibido + classificador de output | a produzir |
+| 0016-0017 | reservados | (futuros, allotment livre) | livre |
+| 0018 | Sprint 08 | Hardware da catraca + modalidade de auth | a produzir |
+| 0019 | Sprint 01b | RBAC: union user_roles + user_permissions com expires_at | a produzir |
+| 0020-0024 | reservados | (futuros, allotment livre) | livre |
+| 0025 | Sprint 13 | Provider WhatsApp (Twilio / Z-API / Meta direto) | a produzir |
+| 0026 | Sprint 13 | Motor declarativo de régua DSL JSON | a produzir |
+| 0027 | reservado | (livre — provavelmente Sprint 13/14) | livre |
+| 0028 | Sprint 20 | CID-11 + CIF como catálogos globais versionados | a produzir |
+| 0029 | Sprint 22 | Estrutura TISS/TUSS: schema + gerador XML | a produzir (detalha ADR 0079) |
+| 0030 | Sprint 22 | Pipeline atualização semestral terminologia ANS | a produzir (detalha ADR 0079) |
+| 0031 | Sprint 22 | Validador TISS proativo XSD + regras de negócio | a produzir (detalha ADR 0079) |
+| 0032 | Sprint 20 / 26 | Política de fechamento de prontuário + magic link member auth | a produzir |
+| 0033-0034 | reservados | (futuros) | livre |
+| 0035 | Sprint 15 | OCR de boleto: provider abstrato | **referência histórica — decisão tomada conversacionalmente, ADR formal será lavrado quando Sprint 15 começar** |
+| 0036 | Sprint 16 | Motor de rateio + intercompany | a produzir |
+| 0037 | Sprint 17 | Provider Open Finance | a produzir |
+| 0038 | Sprint 17 | Provider NF-e recepção | a produzir |
+| 0039 | Sprint 18 | Adquirência: ordem de integração | a produzir |
+| 0040 | Sprint 19 | Modelo de churn | a produzir |
+| 0041 | Sprint 20 | Provider assinatura digital ICP-Brasil | a produzir |
+| 0042 | Sprint 22 (ou posterior) | Submissão de guia TISS automática SOAP | a produzir (Fase 2 do ADR 0079) |
+| 0043 | Sprint 34 | Arquitetura Nutri-Agent (especializado vs generalizado) | a produzir |
+| 0044 | Sprint 34 | Política mudança automática plano alimentar (sempre proposta) | a produzir |
+| 0045 | Sprint 35 | Stack mobile: Expo bare vs managed; React Native vs Flutter | a produzir |
+| 0046 | Sprint 35 | Estratégia de release (app stores vs OTA Expo Updates) | a produzir |
+
+**Referências a esses ADRs em outros documentos** (ex: regra que cita "ADR 0015") são **válidas como compromisso de produção** — quando o Sprint 06 rodar, ADR 0015 nasce e o link passa a resolver. Até lá, links como `(ADR 0015)` em corpo de texto são aceitos sem `.md` resolvendo.
 
 ## Operação
 

@@ -15,7 +15,7 @@ Stack fixada:
 - **Backend:** Next.js server-side (Server Components + Server Actions + API Routes). Nenhum serviço backend separado no MVP.
 - **Banco/Auth/Realtime/Storage:** Supabase (Postgres gerenciado + Auth + Realtime + Storage + Supavisor + pgvector).
 - **ORM:** Drizzle como fonte única do schema; tipos do Supabase CLI desabilitados.
-- **IA:** Vercel AI SDK com provider plugável (Claude default; fallback OpenAI/Gemini); cache semântico em `ai_cache` via pgvector; rate limit por tenant via Upstash Redis.
+- **IA:** Vercel AI SDK com provider plugável + cache semântico em `ai_cache` via pgvector + rate limit por tenant via Upstash Redis. **Decisão de provider/modelo default e routing por task vive no [ADR 0064](0064-ia-arquitetura-gemini-default-byok-rag.md)** (Gemini 2.5 Flash default LogiFit + Groq Whisper STT + BYOK opcional).
 - **Pagamentos:** Asaas (boleto, Pix, cartão recorrente) com webhooks idempotentes.
 - **Email:** Resend.
 - **Observabilidade:** Sentry + PostHog + Logtail/Axiom desde o dia 1.
@@ -30,6 +30,17 @@ Stack fixada:
 - Dependência operacional de Supabase + Vercel **durante MVP**. Downtime deles = downtime do produto. Mitigado por observabilidade + plano de migração já formalizado (ADR 0078) com 8 regras de portabilidade ativas desde o Sprint 00 (storage adapter, RLS SQL puro, JWT cookie próprio, sem Edge Functions, etc).
 - Custos de IA precisam ser controlados desde o início (cache semântico + rate limit + fallback de modelo).
 - **Lock-in Supabase mitigado por design**: regras de portabilidade da [ADR 0078](0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md) garantem que a migração de Fase 2 é finita (~60h, sem refactor de código de feature).
+
+## Addendum 2026-04-25 (b) — IA superseded por ADR 0064
+
+A linha original "IA: Vercel AI SDK com provider plugável (Claude default; fallback OpenAI/Gemini)" foi **substituída** pelo [ADR 0064](0064-ia-arquitetura-gemini-default-byok-rag.md), que define:
+
+- **Default LogiFit:** Gemini 2.5 Flash (Vertex AI SP) — não Claude
+- **STT default:** Groq Whisper
+- **BYOK opcional:** Claude/GPT/Maritaca/Anthropic
+- **Routing por task** via `resolveModelForTask(task, featureKey?, tenantCtx)` (regra 32 + ADR 0064)
+
+A linha foi atualizada nesse ADR para apontar para 0064 como fonte de verdade.
 
 ## Addendum 2026-04-25 — Estratégia em duas fases (ADR 0078)
 

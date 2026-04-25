@@ -2,9 +2,19 @@
 
 - **Área:** infra
 - **Início:** planejado (depois do Sprint 19 + MVP estável por 30d)
-- **Fim planejado:** 1.5-2 semanas
+- **Fim planejado:** 1.5-2 semanas (ver nota de escopo abaixo)
 - **Status:** planejado (futuro pós-MVP)
 - **Item do roadmap:** #22
+
+## Nota de escopo realista
+
+Este sprint **agrega 3 migrações independentes** (DB+Auth+Storage+Realtime) em janela única. Volume total ~116 itens de checklist é grande pro timebox de 1.5-2 semanas. **Estratégia de execução em 3 fases internas, mas único sprint** (DoD = todas concluídas):
+
+1. **Fase 19b.1 — DB + PgBouncer + backup R2** (~3-4 dias): cutover do Postgres com pg_dump/restore + pgBackRest configurado; Auth ainda no Supabase (apenas DATABASE_URL muda)
+2. **Fase 19b.2 — Auth (BetterAuth)** (~3-4 dias): migration de tabelas auth + cookie próprio (regras de portabilidade Sprint 00 já têm o cookie houseado); cutover em janela noturna
+3. **Fase 19b.3 — Storage (R2) + Realtime (LISTEN/NOTIFY)** (~3-4 dias): Storage adapter já abstraído (Sprint 00); plugar R2 + bucket migration + invalidação de URLs assinadas. Realtime para LISTEN/NOTIFY server-side
+
+**Se cronograma estourar:** pivotar pra "pilot tenant homolog only" para 19b.3, e produção real Storage/Realtime entra em 19c (sub-sprint). DoD do 19b reduz pra "DB + Auth migrados em produção; Storage/Realtime ainda no Supabase com plano de migração detalhado".
 
 ## Goal
 

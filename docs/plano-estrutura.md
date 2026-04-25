@@ -1,8 +1,13 @@
 # Plano: Estrutura de Planejamento e Desenvolvimento — LogiFit
 
-> **Documento histórico — congelado em 2026-04-22.**
-> Este é o plano original que gerou a estrutura inicial do projeto. As contagens e listas abaixo refletem o estado daquele momento (ex: "8 ADRs") e não são atualizadas conforme novos artefatos aparecem.
-> Estado atual do projeto vive em [`docs/roadmap.md`](roadmap.md) + [`CHANGELOG.md`](../CHANGELOG.md) + [`docs/decisions/`](decisions/).
+> **Documento histórico — referente ao plano original de 2026-04-22 (não é atualizado).**
+> Este é o plano que gerou a estrutura inicial do projeto. As contagens e listas abaixo refletem o estado daquele momento (ex: "8 ADRs", "8 regras") e **não são atualizadas conforme o projeto evolui** — para o estado atual consulte:
+> - **Roadmap vivo:** [`docs/roadmap.md`](roadmap.md)
+> - **Histórico de mudanças:** [`CHANGELOG.md`](../CHANGELOG.md)
+> - **Decisões arquiteturais:** [`docs/decisions/`](decisions/) (atualmente 41 ADRs publicados)
+> - **Regras vivas:** [`docs/rules.md`](rules.md) (atualmente 43 regras duras)
+>
+> A intenção deste arquivo é arqueológica — entender de onde o projeto partiu. Não é fonte de verdade operacional. Última leitura confirmada: 2026-04-25.
 
 ## Context
 

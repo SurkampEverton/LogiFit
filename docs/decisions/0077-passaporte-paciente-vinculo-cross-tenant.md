@@ -1,6 +1,6 @@
 # ADR 0077 — Passaporte do paciente cross-tenant: vínculo por empresa + módulos liberados explicitamente + invite-link
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-04-25 — decisão formalizada na conversa; implementação técnica vive em Sprint 02 + posteriores conforme "Escopo de impacto")
 - **Date:** 2026-04-25
 
 ## Context

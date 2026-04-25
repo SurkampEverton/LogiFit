@@ -132,6 +132,10 @@ LogiFit mantém lista pública de sub-processores em `logifit.com.br/sub-process
 | **Logtail (Better Stack)** | Logs | US | DPA + Cláusulas Padrão |
 | **Focus NFe** | Emissão fiscal | BR | DPA — dentro do BR |
 | **Upstash Redis** | Rate limit + cache | US | DPA + Cláusulas Padrão |
+| **Cloudflare R2** | Backup off-site MVP (`pg_dump` GPG) + cold storage Parquet (Fase 2 pós-19b) | US/EU edge | DPA + Cláusulas Padrão |
+| **Oracle Cloud OCI** (pós-Sprint 19b) | Postgres self-hosted Fase 2 | BR (São Paulo SP) | DPA — dentro do BR |
+| **Cloudflare Turnstile** | Bot protection (signup/login/forgot) | US | DPA + Cláusulas Padrão |
+| **DPO-as-a-service** (a contratar quando vendido como add-on Enterprise) | Operação de DPO terceirizada | BR | Sub-controlador delegado pelo tenant; LogiFit revende; lista atualizada quando contrato assinado |
 
 Mudança de sub-processor (adicionar/remover) gera aviso 30d antes a todos tenants pagantes.
 

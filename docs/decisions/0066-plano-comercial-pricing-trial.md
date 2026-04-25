@@ -51,14 +51,18 @@ Discussão com fundador (2026-04-25) sobre 3 clientes-piloto reais expôs duas f
 
 ## Decision
 
-### 4 tiers + Enterprise + trial
+### 6 tiers (4 principais + 2 Solo) + trial
+
+**Adicional 2026-04-25:** Planos **Solo** e **Solo Combo** foram formalizados como tiers MVP aceitos (originalmente "futuro" no rascunho desta ADR). Cobrem profissional autônomo (CREF/CREFITO/CRN/CRP/CRO/Pilates/esteticista) que não cabe no Starter. Tecnicamente são variações do schema base com `tenants.mode='solo'` (ADR 0069) — UX simplificada, templates pré-carregados, fiscal MEI/RPA.
 
 | Plano | Preço anual (por mês) | Preço mensal | Perfil |
 |---|---|---|---|
-| **Starter** | R$ 89/mês | **R$ 99/mês** | Negócio solo ou equipe ≤5 profs · **1 vertical à escolha** (Academia OU Fisio OU Nutri) · até 100 members |
+| **Solo** | R$ 44/mês | **R$ 49/mês** | **Profissional autônomo** (1 conselho profissional) atendendo 1-1 · até 30 pacientes ativos · 1 vertical · UX simplificada |
+| **Solo Combo** | R$ 62/mês | **R$ 69/mês** | **Profissional autônomo combinando 2-3 áreas** (ex: nutricionista + personal trainer + pilates) · até 60 pacientes ativos |
+| **Starter** | R$ 89/mês | **R$ 99/mês** | Negócio solo ou equipe ≤5 profs · **1 vertical à escolha** (Academia no MVP — Fisio/Nutri quando módulos saem nas Fases 2/3) · até 100 members |
 | **Pro** | R$ 179/mês | **R$ 199/mês** | Clínica multi-disciplinar · **todas as verticais** simultâneas · até 500 members |
 | **Business** | R$ 399/mês | **R$ 449/mês** | Rede pequena 5-10 unidades · multi-company · adquirência integrada |
-| **Enterprise** | **sob consulta** (a partir de R$ 1.199/mês) | — | Rede grande · hospital · clínica com DPO próprio · BYOK IA · SLA · white-label |
+| **Enterprise** | **sob consulta** (a partir de R$ 1.199/mês) | — | Rede grande · hospital · clínica com DPO próprio · BYOK IA · SLA · white-label · DPO-as-a-service add-on opcional |
 
 **Desconto anual:** 2 meses grátis (~14%) — padrão SaaS BR. Pagamento upfront.
 
@@ -103,16 +107,19 @@ Discussão com fundador (2026-04-25) sobre 3 clientes-piloto reais expôs duas f
 
 ### Quotas
 
-| Recurso | Starter | Pro | Business | Enterprise |
-|---|---|---|---|---|
-| **IA (chamadas/mês)** — Gemini Flash via LogiFit | 500 | 3.000 | 10.000 | 25k ou BYOK ilimitado |
-| **Storage** (fotos, exames, contratos, docs) | 5 GB | 50 GB | 200 GB | 500 GB+ (R$ 2/GB extra) |
-| **Transcrição STT** (Sprint 31, Groq Whisper) | — | 60 min | 300 min | 1.500 min ou BYOK |
-| **Emissões fiscais incluídas** (NFS-e + NF-e + NFC-e) | 50/mês (NFS-e apenas) | 200/mês | 1.000/mês | 5.000/mês default |
-| **Overage por nota fiscal extra** | R$ 0,50/nota | R$ 0,40/nota | R$ 0,35/nota | R$ 0,25/nota |
-| **Webhooks outgoing** | 10k/mês | 100k/mês | 500k/mês | 1M/mês |
-| **Retenção audit log** | 12 meses | 24 meses | 36 meses | 5 anos |
-| **Backup automático (Supabase point-in-time)** | 7 dias | 14 dias | 30 dias | 90 dias |
+> **Cota IA segue [ADR 0064](0064-ia-arquitetura-gemini-default-byok-rag.md)** — provider/modelo (Gemini default) e routing por task lá; aqui apenas o limite mensal por plano. **Excedido = hard-stop com convite a configurar BYOK** (não há overage IA pago — preserva previsibilidade de custo do tenant). Cache semântico (ADR 0064) reduz consumo em ~50%.
+
+| Recurso | Solo | Solo Combo | Starter | Pro | Business | Enterprise |
+|---|---|---|---|---|---|---|
+| **IA (chamadas/mês)** — Gemini Flash via LogiFit | 200 | 200 | 500 | 3.000 | 10.000 | 25k ou BYOK ilimitado |
+| **Storage** (fotos, exames, contratos, docs) | 1 GB | 2 GB | 5 GB | 50 GB | 200 GB | 500 GB+ (R$ 2/GB extra) |
+| **Transcrição STT** (Sprint 31, Groq Whisper) | — | — | — | 60 min | 300 min | 1.500 min ou BYOK |
+| **Emissões fiscais incluídas** (NFS-e + NF-e + NFC-e + devolução + transferência + conserto) | 20 NFS-e MEI | 30 NFS-e | 50 NFS-e | 200 | 1.000 | 5.000 default |
+| **Overage por nota fiscal extra** | R$ 0,50/nota | R$ 0,50/nota | R$ 0,50/nota | R$ 0,40/nota | R$ 0,35/nota | R$ 0,25/nota |
+| **Eventos fiscais** (cancelamento, CC-e, inutilização) | **não contam** no overage | idem | idem | idem | idem | idem |
+| **Webhooks outgoing** | 1k/mês | 5k/mês | 10k/mês | 100k/mês | 500k/mês | 1M/mês |
+| **Retenção audit log** | 60 meses (LGPD mínimo) | 60 meses | 60 meses | 60 meses | 60 meses | 60 meses (alinhado a [ADR 0072](0072-escalabilidade-banco-particionamento-retencao-cold-storage.md) — 5 anos uniforme) |
+| **Backup automático (Supabase point-in-time MVP / pgBackRest pós-19b)** | 7 dias | 7 dias | 7 dias | 14 dias | 30 dias | 90 dias |
 
 ### Overage por member — regra suave
 

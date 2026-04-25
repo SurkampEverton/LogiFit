@@ -127,27 +127,30 @@ A plataforma ERP que gerencia **academia, clínica de fisioterapia e consultóri
 | "Gera 2ª via do boleto" | "Gera 2ª via para o João Silva" | "Cria rascunho da próxima sessão" |
 | "Como funciona o Pilates?" | "Inadimplentes do mês" | "Próximo paciente está aqui?" |
 
-**Cota incluída no plano** (sem cobrança extra surpresa):
+**Cota incluída no plano** (hard-stop sem cobrança surpresa):
 
-| Plano | Mensagens/mês | BYOK (sua chave própria) |
+| Plano | Chamadas IA/mês | BYOK (sua chave própria) |
 |---|---|---|
+| Solo R$ 49 / Solo Combo R$ 69 | 200 | — |
 | Starter R$ 99 | 500 | — |
 | Pro R$ 199 | 3.000 | opcional |
 | Business R$ 449 | 10.000 | ✅ opcional |
-| Enterprise | 25.000 default | ✅ ilimitado |
+| Enterprise | 25.000 default | ✅ ilimitado quando ativo |
 
-Cache inteligente reduz consumo em até 60% (perguntas comuns não consomem). Limite excedido = aviso amigável + opção de usar sua própria chave de IA (BYOK).
+Cache semântico reduz consumo em até 60% (perguntas comuns reaproveitam resposta). Limite mensal excedido = **bloqueio até o próximo ciclo** + convite a configurar sua própria chave de IA (BYOK). **Não cobramos overage de IA** — sem surpresa em fatura. Termo "chamada" = 1 invocação ao modelo que **não** seja cache hit.
 
 ### Emissão fiscal — pacote incluso + custo proporcional
 
 Todo plano com emissão fiscal traz um **pacote de notas inclusas no preço-base** + **cobrança proporcional** se você emitir mais. Modelo justo: tenant pequeno paga só o plano; tenant que emite muito paga proporcional ao volume.
 
-| Plano | Notas inclusas/mês | Custo por nota extra | Tipos cobertos |
+| Plano | Notas inclusas/mês | Custo por nota extra | Tipos cobertos no contador* |
 |---|---|---|---|
 | Starter R$ 99 | 50 | R$ 0,50 | NFS-e (serviço) |
-| Pro R$ 199 | 200 | R$ 0,40 | NFS-e + NF-e + NFC-e + eventos |
+| Pro R$ 199 | 200 | R$ 0,40 | NFS-e + NF-e + NFC-e + devolução + transferência + conserto |
 | Business R$ 449 | 1.000 | R$ 0,35 | Todos os tipos + intercompany |
 | Enterprise | 5.000 default | R$ 0,25 (negociável) | Todos |
+
+*\* **Eventos não contam** no contador de overage (cancelamento de nota, CC-e/Carta de Correção, inutilização) — ficam livres para você corrigir e operar sem peso na fatura. Repasse calibrado sobre custo do provider de emissão fiscal (Focus NFe) + margem operacional para sustentar a plataforma.*
 
 **Exemplo prático:** academia Business com 2.000 alunos emitindo 2.000 mensalidades/mês:
 - Plano: R$ 449
@@ -229,28 +232,41 @@ Todo plano com emissão fiscal traz um **pacote de notas inclusas no preço-base
 
 | Plano | Preço | Para quem é | O que inclui |
 |---|---|---|---|
-| **Starter** | **R$ 99/mês** | Negócio solo ou equipe ≤5 profs especializado **em uma área** (academia OU fisio OU nutri) | 1 vertical à escolha · 100 alunos/pacientes · 5 profissionais · 50 NFS-e/mês · IA assistente 500 mensagens · Portal do paciente · WhatsApp · Asaas |
-| **Pro** | **R$ 199/mês** | Clínica ou academia que atende **mais de uma especialidade** ao mesmo tempo | Todas as 3 verticais simultâneas · 500 alunos/pacientes · 10 profissionais · 200 notas (NFS-e + NF-e + NFC-e + eventos) · IA 3.000 mensagens · Convênios TISS/TUSS · Device Hub · Pipeline Exames · BYOK opcional |
+| **Solo** | **R$ 49/mês** | Profissional autônomo (CREF/CREFITO/CRN/CRP/CRO/Pilates/esteticista) atendendo 1-1 | UX simplificada · 30 pacientes ativos · agenda · prontuário · receita/recibo · cobrança PIX · IA 200 chamadas · WhatsApp · MEI/RPA fiscal simplificado |
+| **Solo Combo** | **R$ 69/mês** | Profissional Solo que combina 2-3 áreas (ex: nutricionista + personal trainer) | Tudo do Solo + 60 pacientes · até 3 verticais simultâneas · IA 200 chamadas · templates por profissão |
+| **Starter** | **R$ 99/mês** | Pequeno negócio com equipe ≤5 profs especializado **em uma área** | **Academia no MVP** (Fisio/Nutri liberam quando módulos saem nas Fases 2/3) · 100 alunos/pacientes · 5 profissionais · 50 NFS-e/mês · IA 500 chamadas · Portal do paciente · WhatsApp · Asaas |
+| **Pro** | **R$ 199/mês** | Clínica ou academia que atende **mais de uma especialidade** ao mesmo tempo | Todas as 3 verticais simultâneas · 500 alunos/pacientes · 10 profissionais · 200 notas/mês · IA 3.000 chamadas · Convênios TISS/TUSS 4.01 · Device Hub · Pipeline Exames · BYOK opcional |
 | **Business** | **R$ 449/mês** | Rede pequena (5-10 unidades) ou holding com múltiplos CNPJs | Tudo do Pro + multi-company · até 3 CNPJs · 2.000 alunos/pacientes · 30 profissionais · 1.000 notas/mês · IA 10.000 · Adquirência · Rateio · Generative UI clínica |
-| **Enterprise** | **sob consulta** | Rede grande, hospital, clínica com DPO próprio | Tudo do Business + ilimitado · BYOK ilimitado · SLA 99,9% · White-label · Gestor de conta · DPO-as-a-service opcional |
+| **Enterprise** | **sob consulta** | Rede grande, hospital, clínica com DPO próprio | Tudo do Business + ilimitado · BYOK ilimitado · SLA 99,9% · White-label · Gestor de conta · **DPO-as-a-service add-on opcional via firma especializada** |
 
-**Trial:** 14 dias com features Pro · sem cartão de crédito · dados retidos 30 dias se não converter.
+**Trial:** 14 dias com features Pro · sem cartão de crédito · dados **retidos 30 dias** após expiração e então **anonimizados** (preserva agregados, remove identificação pessoal — LGPD-friendly).
 
 **Desconto anual:** 2 meses grátis (~14%) — Starter R$ 89/mês · Pro R$ 179/mês · Business R$ 399/mês.
 
-### Por que Starter "à escolha"
+**Cobrança por paciente único por contrato:** se você opera vários contratos LogiFit (ex: 2 clínicas = 2 tenants), cada paciente conta como 1 active member em cada contrato em que está vinculado. **O passaporte cross-tenant entre clínicas não duplica** o paciente dentro do mesmo contrato — ele é 1 active member por (paciente, tenant).
+
+### DPO interno × DPO-as-a-service
+
+- **Todo plano vem com DPO interno LogiFit** (canal `privacidade@logifit.com.br`, plano de resposta 72h, sub-processors públicos, RIPD por módulo) — cumpre integralmente as obrigações da LGPD para tenants pequenos e médios.
+- **DPO-as-a-service** é **add-on opcional do plano Enterprise** — LogiFit revende o serviço de uma **firma especializada externa** (não somos nós que assumimos a responsabilidade legal de DPO terceirizado para sua organização). Indicado para tenants enterprise com >500 titulares ou exigência regulatória própria.
+
+### Por que Starter "à escolha de vertical"
 
 Negócio pequeno geralmente faz **uma coisa só** — academia de bairro, consultório fisio solo, nutricionista solo. Não faz sentido pagar por features das outras 2 verticais que ele nunca vai usar.
 
 **Você escolhe na hora do cadastro:**
 
 ```
-[ ] Vou usar para Academia (alunos, treinos, ficha, catraca, mensalidade)
-[ ] Vou usar para Fisioterapia (prontuário, evolução SOAP, convênios)
-[ ] Vou usar para Nutrição (TACO, plano alimentar, diário do paciente)
+[x] Vou usar para Academia (alunos, treinos, ficha, catraca, mensalidade)  ← disponível MVP
+[ ] Vou usar para Fisioterapia (prontuário, evolução SOAP, convênios)      ← Fase 2
+[ ] Vou usar para Nutrição (TACO, plano alimentar, diário do paciente)    ← Fase 3
 ```
 
-Tudo pronto pra área escolhida, sem ruído das outras. Quando seu negócio crescer e quiser combinar verticais (clínica integrada de saúde), você passa pra Pro com 1 clique.
+Tudo pronto pra área escolhida, sem ruído das outras. Quando seu negócio crescer e quiser combinar verticais (clínica integrada de saúde), você passa pra Pro com 1 clique. **No MVP a única vertical disponível no Starter é Academia**; clientes que escolheriam Fisio/Nutri entram em lista de espera com desconto de fundador para quando o módulo lançar.
+
+### Hospedagem: Supabase no MVP, infra própria pós-validação
+
+Durante o MVP, infra é Vercel + Supabase Pro. **Pós-Sprint 19b** (após MVP estável por 30d), migramos para Postgres self-hosted no Oracle Cloud OCI free tier + Cloudflare R2 — reduz custo recorrente em ~70% e reduz lock-in. Migração foi planejada desde o dia 1 com 8 regras de portabilidade que valeram durante todo MVP. Cliente final não percebe (zero downtime no cutover; janela noturna).
 
 ### Comparativo direto com concorrentes
 

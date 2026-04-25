@@ -7,6 +7,8 @@
 
 A **Lei Geral de Proteção de Dados** (LGPD, Lei 13.709/2018) classifica dados de saúde, biométricos e genéticos como **dados pessoais sensíveis** (art. 5º, II + art. 11). O tratamento desses dados exige **base legal específica** mais restrita que dados comuns.
 
+A **Lei 13.787/2018** é a **lei federal primária** sobre digitalização e uso de prontuário eletrônico em estabelecimentos de saúde. Estabelece (art. 6º) **20 anos de retenção mínima** para prontuário eletrônico, regula assinatura digital ICP-Brasil para garantia de autenticidade, e exige sistema de informação certificado pela SBIS ou conforme padrões equivalentes. **Esta lei é hierarquicamente superior** às resoluções de conselho profissional (CFM 2.299/2021, COFFITO 415/2012, CFN 599/2018) — quando há conflito, Lei 13.787 prevalece. ADRs 0054, 0072, 0073 e Sprint 20 implementam controles que satisfazem ambas (lei federal + resoluções).
+
 A **Resolução ANPD nº 23/2024** (09/12/2024) definiu a Agenda Regulatória 2025-2026 com foco em dados sensíveis de saúde e **mais de 10 ações fiscalizatórias previstas até 2026**. Acordo técnico ANS + ANPD publicado para fiscalização coordenada em saúde suplementar.
 
 **Problema atual no mercado:** 100% dos ERPs de academia no Brasil tratam dados de peso, medidas, frequência de treino, composição corporal como **dados comuns**, sem consentimento explícito e sem RIPD (Relatório de Impacto à Proteção de Dados). LogiFit tem oportunidade de ser o primeiro ERP de wellness+saúde genuinamente compliant.
@@ -132,10 +134,10 @@ Cada tipo de dado tem prazo configurado em `tenant_data_retention_policies`:
 
 - **Prontuário fisio**: **mínimo 5 anos** (COFFITO 415/2012)
 - **Prontuário nutri**: conforme CFN (guarda indeterminada recomendada)
-- **Prontuário médico**: **mínimo 20 anos** (CFM 1.821/2007) — relevante se tenant tiver médico
+- **Prontuário médico**: **mínimo 20 anos** (CFM 1.821/2007 + Lei 13.787/2018 prontuário eletrônico) — relevante se tenant tiver médico
 - **Dados fiscais**: 5 anos após encerramento do contrato (legislação tributária)
 - **Dados wearable cru**: 90 dias (ADR 0049)
-- **Audit log**: mínimo 6 meses; ideal 5 anos
+- **Audit log**: **5 anos** (alinhado a [ADR 0072](0072-escalabilidade-banco-particionamento-retencao-cold-storage.md) que prevalece sobre versão anterior — particionamento mensal + cold storage após 2 anos + drop após 5)
 
 Job mensal `/api/jobs/compliance/retention-cleanup` executa políticas automaticamente.
 

@@ -159,10 +159,13 @@ Assistente **consulta e sugere**, nunca prescreve (regra 28). Camada 3 nunca exe
 
 | Plano | Limite mensal | Soft diário | BYOK |
 |---|---|---|---|
-| Starter R$ 79 | 500 mensagens | ~50/dia | — |
-| Pro R$ 199 | 3.000 mensagens | ~150/dia | opcional add-on |
-| Business R$ 449 | 10.000 mensagens | ~500/dia | ✅ opcional |
+| Solo R$ 49 / Solo Combo R$ 69 | 200 chamadas | ~20/dia | — |
+| Starter R$ 99 | 500 chamadas | ~50/dia | — |
+| Pro R$ 199 | 3.000 chamadas | ~150/dia | opcional add-on |
+| Business R$ 449 | 10.000 chamadas | ~500/dia | ✅ opcional |
 | Enterprise | 25.000 (default) | sem soft | ✅ ilimitado quando ativo |
+
+**Termo "chamadas" (não "mensagens"):** 1 chamada = 1 invocação `resolveModelForTask()` que **não** seja cache hit. Cache hit Camada 1 = 0 chamadas. Quota mensal excedida = **hard-stop com convite a configurar BYOK** — **não há overage IA pago**, conforme ADR 0066.
 
 **Regras de contagem:**
 - Camada 1 cache hit ⇒ **0** chamadas; cache miss ⇒ **1**
@@ -372,6 +375,8 @@ Rate-limit é **fonte primária em Redis** (Upstash), sem tabela persistente. Co
 - [ ] Variantes: `/meu/assistente` (Sprint 26 prepara mas o shell PWA carrega aqui), `/app/coach/assistente` (Sprint 11 ADR 0074 prepara)
 - [ ] Dashboard `/app/super-admin/ai-usage` — top tools, cache hit rate, taxa de aceitação Camada 3
 - [ ] Cotas mensais alinhadas ADR 0066 — circuit breaker em 100% + soft toast em 80% + soft daily cap configurável
+- [ ] **Job diário `aggregate-tenant-ai-usage`** — agrega `ai_tenant_usage` (granular por chamada) em `tenant_usage_snapshots.ai_calls_count` (Sprint 04) — mantém widget `/app/settings/tenant/plan` atualizado para preview de cota
+- [ ] **Runbook BYOK emergencial** em `runbooks/ia-byok-emergencial.md` — quando tenant excede cota mid-month e operação clínica não pode parar (CFM 2.454/2026 supervisão humana): UI com 4 passos (gerar key Gemini Vertex, colar em `/app/settings/ia`, validar com chamada teste, ativar BYOK em 5min); alerta automático em 80%/95%/100% da cota com link direto para o runbook
 - [ ] Telemetria PostHog: 12 eventos `assistant.*` (ver seção "Eventos de domínio emitidos")
 - [ ] Disclaimer rendered em toda bolha assistant clínica (regra 28)
 - [ ] Audit log por conversa, com `consent_id` quando contexto cruza módulos + `persona/layer/tool_keys/action_proposal_id`

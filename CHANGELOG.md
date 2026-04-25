@@ -6,6 +6,83 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — Auditoria 2026-04-25 (2ª passada — 14 issues remanescentes/introduzidas pela 1ª rodada)
+
+Após primeira rodada de correções (abaixo), nova auditoria paralela em 4 frentes (pricing, ADRs, sprints, compliance) achou novos gaps + alguns introduzidos pela própria 1ª rodada. **9 críticos + 5 maiores corrigidos.**
+
+**Críticos:**
+
+- [CLAUDE.md](CLAUDE.md) regra MFA — adicionei como "regra 28" criando colisão visual (já existia regra 27 antes); reordenado: passaporte cross-tenant continua como 27, MFA agora é regra 28 (referencia regra 43 de rules.md). Adicionado gate `requireRecentMfa()` para ações alto-risco mesmo em roles com MFA opcional.
+- [ADR 0054](docs/decisions/0054-lgpd-art11-dados-saude-ripd-versionado.md) — Lei 13.787/2018 adicionada explicitamente em **Context** como "lei federal primária" sobre prontuário eletrônico (hierarquicamente superior a CFM 2.299/COFFITO 415/CFN 599); estava antes só em ADR 0072 e CLAUDE.md, faltava no documento de retenção
+- [Sprint 01b](docs/sprints/01b-rbac-e-consent.md) — `patient_data_access_log` schema completo + particionamento mensal + RLS (era órfão; nenhum sprint criava a tabela apesar de regra 42 + ADR 0077 dependerem dela)
+- [Sprint 01b](docs/sprints/01b-rbac-e-consent.md) — coluna `tenants.mode enum('multi','solo')` + check constraint `NOT (mode='solo' AND cross_company_access=true)` (Plano Solo do ADR 0069 não tinha schema suporte)
+- [Sprint 01a](docs/sprints/01a-identidade-e-topology.md) — schema `tenants` ganhou `subscription_status` + `trial_ends_at` + nota sobre `mode` virá em 01b
+- [ADR 0066](docs/decisions/0066-plano-comercial-pricing-trial.md) — Planos Solo R$ 49 e Solo Combo R$ 69 **formalizados como tiers MVP aceitos** (estavam como "futuro" no rascunho, divergindo de CLAUDE.md/comercial.md que já vendiam como MVP); tabela de quotas estendida com colunas Solo + nota de cota IA hard-stop sem overage referenciando [ADR 0064](docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md); retenção audit_log uniformizada em 5 anos cross-tier (alinhado a ADR 0072)
+- [Sprint 22](docs/sprints/22-fisio-tiss-tuss-convenios.md) — citação explícita de [ADR 0079](docs/decisions/0079-tiss-401-ans-padrao-vigente.md) (TISS 4.01) como ADR já publicado; relação com ADRs 0029/0030/0031 esperados clarificada (detalham 0079, não substituem); gate MFA `requireRecentMfa()` para cancelamento de guia
+- [docs/roadmap.md](docs/roadmap.md) — tabela de mapeamento de ADRs reservados expandida com **Status** + ADRs 0028 (CID/CIF Sprint 20) + 0029-0031 (TISS Sprint 22 — antes "reservados") + 0043-0046 (Sprint 34/35) com quem produz; ADR 0035 marcado explicitamente como "decisão tomada conversacionalmente, ADR formal será lavrado quando Sprint 15 começar"
+- **NOVO** [docs/compliance/dpo.md](docs/compliance/dpo.md) — documento formal de nomeação do Encarregado (LGPD art. 41 + Resolução ANPD nº 18/2024) com nome, email, vigência, próxima revisão, atribuições, limites do papel interino, histórico
+
+**Maiores:**
+
+- [ADR 0073](docs/decisions/0073-postura-seguranca-defesa-em-profundidade.md) regra 40 — escolha de backup off-site **fechada em Cloudflare R2** (era "R2 OU Backblaze OU GitHub — escolher um"); Backblaze e GitHub Releases ficam como fallback DR, não storage paralelo
+- [Sprint 06](docs/sprints/06-geral-copilot-base.md) — job `aggregate-tenant-ai-usage` que popula `tenant_usage_snapshots.ai_calls_count` (era referenciado em Sprint 04 sem reciprocidade); runbook "BYOK emergencial" para tenant clínico que excede cota mid-month e não pode parar (CFM 2.454/2026 supervisão humana)
+- [ADR 0077](docs/decisions/0077-passaporte-paciente-vinculo-cross-tenant.md) — status mudado de `Proposed` → `Accepted` (decisão já estava sendo tratada como vigente por outros docs)
+- [Sprint 35](docs/sprints/35-mobile-app-nativo-expo.md) stub — ADRs esperados 0047/0048 reformulados (faixa reservada acaba em 0046); novos ADRs vão para >=0080
+
+**Menores:**
+
+- CHANGELOG.md — limpeza de menção órfã a "19c" (Sprint 19b nota de escopo descreveu sub-fases sem prometer sprint 19c)
+
+**Lições da 2ª passada:**
+
+- Adicionar regra/coluna em CLAUDE.md sem reordenar quebrou numeração visual; processo: sempre revisar lista numerada após inserção
+- Stubs Sprint 34/35 com ADRs esperados fora da faixa reservada criou inconsistência — corrigido alinhando à convenção
+- ADR ghost (0035) gerou alarme do agente — agora explícito no roadmap como "decisão conversacional, ADR formal pendente"
+- Tabelas de retenção em múltiplos ADRs (0054 vs 0066 vs 0072) divergiam — uniformizado em 5 anos audit_log
+
+### Docs — Auditoria de documentação 2026-04-25 (consolidação de 30 falhas)
+
+Auditoria abrangente paralela em 5 frentes (docs raiz, ADRs, roadmap×sprints, pricing/comercial, compliance) achou contradições, gaps e inconsistências acumuladas. **Todas as falhas críticas e maiores corrigidas em lote**, sem mudança de comportamento de código (apenas documentação).
+
+**Correções de ADRs:**
+
+- [ADR 0001](docs/decisions/0001-stack-base.md) — addendum "IA superseded por 0064" reconhecendo que Gemini é default LogiFit (não Claude como dizia o original)
+- [ADR 0054](docs/decisions/0054-lgpd-art11-dados-saude-ripd-versionado.md) — retenção `audit_log` corrigida de "6 meses ideal / 5 anos mínimo" para **5 anos** alinhado a [ADR 0072](docs/decisions/0072-escalabilidade-banco-particionamento-retencao-cold-storage.md); referência a Lei 13.787/2018 para prontuário médico 20a
+- [ADR 0072](docs/decisions/0072-escalabilidade-banco-particionamento-retencao-cold-storage.md) — adicionado `patient_data_access_log` (ADR 0077) na tabela de retenção com partição mensal obrigatória + estimativa volume 10-15M linhas/ano (regra 34); Lei 13.787/2018 citada como norma primária
+- [ADR 0064](docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md) — link quebrado `0015-sem-implementar-copilot-safety.md` corrigido para texto inline citando convenção
+- [ADR 0067](docs/decisions/0067-dpo-governanca-compliance-lgpd.md) — sub-processors expandido com Cloudflare R2 (backup), Oracle Cloud OCI (Fase 2), Cloudflare Turnstile, DPO-as-a-service explícito como add-on terceirizado
+- [ADR 0079 NOVO](docs/decisions/0079-tiss-401-ans-padrao-vigente.md) — TISS 4.01 ANS (Ofício-Circular 1/2026) como padrão vigente; pipeline atualização semestral + validador proativo + versionamento por guia + RAG global indexa terminologia
+
+**Correções de regras (`docs/rules.md`):**
+
+- **Regra 43 NOVA** — MFA obrigatório para profissionais de saúde (médico/fisio/nutri/personal/enfermeiro) + roles administrativas críticas (tenant_owner/dpo/super_admin); CI tem E2E
+- Headers de seção adicionados (Multi-empresa / i18n / IA + LGPD / Pesquisa global / Arquitetura IA / Escalabilidade / Segurança / Assistente IA / Passaporte cross-tenant / MFA / Processo / Código)
+- Regra 34 atualizada: retenção 20a prontuário cita Lei 13.787/2018 (não só CFM 2.299) + `patient_data_access_log` 5a (ADR 0077)
+- Total: **43 regras** (era 42; CLAUDE.md atualizado)
+
+**Correções de docs raiz:**
+
+- [CLAUDE.md](CLAUDE.md) — Modelo comercial reescrito: Starter "Academia no MVP" (Fisio/Nutri liberam Fase 2/3); Plano Solo R$ 49 / Solo Combo R$ 69 explicitado; "1 active member por (paciente, tenant)" deixa cobrança cross-tenant clara; trial 30d cita anonimização técnica; cota IA explicada com hard-stop; **DPO interno LogiFit (fundador) vs DPO-as-a-service Enterprise (firma externa) distinguidos**; backup off-site MVP é Cloudflare R2; Upstash Redis adicionado em Stack; Lei 13.787/2018 como lei federal primária; gate ICP-Brasil por kind profissional; seção "cross-company vs cross-tenant" para clarificar terminologia
+- [docs/roadmap.md](docs/roadmap.md) — seção nova "Convenção de numeração de ADRs" explicando que 0011-0046 estão **reservados a sprints que vão produzi-los** (não são ADRs perdidos); mapeamento de cada número à sprint que produz
+- [docs/comercial.md](docs/comercial.md) — pricing alinhado a CLAUDE.md (Plano Solo + Solo Combo adicionados; Starter "Academia no MVP" explicado); cota IA termo "chamadas" (não "mensagens"); DPO-as-a-service esclarecido como add-on terceirizado; eventos NFS-e "não contam" no overage explícito; Supabase como MVP-only formalmente comunicado; member counting cross-tenant esclarecido
+- [docs/modulos.md](docs/modulos.md) — link quebrado `0015-sem-implementar-copilot-safety.md` corrigido; Starter R$ 79 → R$ 99; descrição de planos completa com Lei 13.787 / passaporte cross-tenant / Plano Solo
+- [docs/arquitetura.md](docs/arquitetura.md) — seção IA atualizada (Gemini default LogiFit, Groq Whisper, BYOK, Upstash sub-processor, cota mensal hard-stop); referências a ADRs 0064 e 0067
+- [docs/plano-estrutura.md](docs/plano-estrutura.md) — marca temporal corrigida ("histórico de 2026-04-22; última leitura confirmada 2026-04-25"); contadores atualizados (41 ADRs, 43 regras)
+
+**Correções de sprints:**
+
+- [Sprint 04](docs/sprints/04-geral-financeiro-asaas.md) — UI overage member adicionada (`tenant_usage_snapshots` schema + widget `/app/settings/tenant/plan` + banner topo dashboard)
+- [Sprint 01a](docs/sprints/01a-identidade-e-topology.md) — trial 14d + ciclo de retenção 30d especificado tecnicamente (job `process-trial-lifecycle` + anonimização preservando agregados, removendo PII)
+- [Sprint 06](docs/sprints/06-geral-copilot-base.md) — cota IA atualizada com Plano Solo + termo "chamadas" + hard-stop (ADR 0066)
+- [Sprint 20](docs/sprints/20-fisio-prontuario-cid-cif.md) — Lei 13.787/2018 citada como lei federal primária; gate ICP-Brasil por kind profissional já estava bem detalhado, agora reforçado
+- [Sprint 19b](docs/sprints/19b-migracao-hospedagem-oracle.md) — nota de escopo realista adicionada (3 sub-fases internas DB+Auth+Storage; se cronograma estourar, escopo reduz pra DB+Auth em 19b e Storage/Realtime em sprint posterior)
+- **NOVO** [Sprint 34](docs/sprints/34-nutri-agent-ia.md) — stub criado (Nutri-Agent IA cruzando módulos)
+- **NOVO** [Sprint 35](docs/sprints/35-mobile-app-nativo-expo.md) — stub criado (App Nativo Expo iOS+Android)
+
+**Falhas não acionadas (apenas notadas):**
+
+- ADRs 0011-0046 não estão "perdidos" — são números **reservados a sprints futuros** que vão produzi-los; nada a fazer agora; convenção formalizada em roadmap.md
+
 ### Decided — ADR 0078: Hospedagem em duas fases (MVP em Vercel + Supabase Pro · pós-Sprint 19 migra pra Vercel + Postgres Oracle Cloud free tier)
 
 Conversa de produto (2026-04-25) levantou questão fundamental nunca formalizada: onde LogiFit roda? Stack base (ADR 0001) listava "Vercel + Supabase" sem documentar quando esse modelo deixaria de servir. ADR 0077 (passaporte cross-tenant) acabou de aumentar carga no Postgres (cross-tenant queries em runtime, view materializada, audit log particionado mensal, função `has_cross_tenant_access` hot, trigger cruzando 2 tabelas). Custo Supabase escala mal (Pro $25 = shared CPU 1GB; upgrade pra Small $185-410). Oracle Cloud OCI free tier vitalício oferece 24GB ARM Ampere + 4 OCPU + 200GB grátis para sempre.

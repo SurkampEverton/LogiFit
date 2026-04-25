@@ -8,25 +8,32 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 
 ## Modelo comercial
 
-- **4 planos** (ADR 0066 revisado 2026-04-25): **Starter R$ 99** (100 members, **1 vertical à escolha** — Academia OU Fisio OU Nutri, 5 profissionais, 50 NFS-e inclusas) · **Pro R$ 199** (500 members, **todas verticais simultâneas**, Focus NFe completo, Device Hub, Pipeline Exames) · **Business R$ 449** (2.000 members, multi-company, intercompany, adquirência) · **Enterprise sob consulta** (BYOK IA + SLA + white-label + DPO-as-a-service)
-- **Overage suave R$ 0,50/member** acima do incluído; cap por tier força upgrade sugerido
-- **Notas fiscais inclusas + overage proporcional** (ADR 0066 revisado 2026-04-25): Starter 50 NFS-e/Pro 200/Business 1.000/Enterprise 5.000 inclusas; excedente cobrado a R$ 0,50/0,40/0,35/0,25 por nota emitida (NFS-e + NF-e + NFC-e + devolução + transferência + conserto; eventos não contam). Repasse calibrado sobre custo Focus NFe + margem operacional
-- **Trial 14 dias** sem cartão com features Pro; dados retidos 30 dias se não converter
+- **4 planos principais** (ADR 0066 revisado 2026-04-25):
+  - **Starter R$ 99** (100 members; **MVP entrega Academia** — Fisio liberado em Fase 2 / Nutri em Fase 3 conforme módulos saem; 5 profissionais; 50 NFS-e inclusas)
+  - **Pro R$ 199** (500 members; **todas verticais simultâneas**; Focus NFe completo; Device Hub; Pipeline Exames; 200 NFS-e)
+  - **Business R$ 449** (2.000 members; multi-company; intercompany; adquirência; 1.000 NFS-e)
+  - **Enterprise sob consulta** (BYOK IA + SLA + white-label + **DPO-as-a-service add-on opcional via firma externa revendida**; 5.000 NFS-e)
+- **Plano Solo R$ 49 / Solo Combo R$ 69** (ADR 0069 — `tenants.mode='solo'`) para profissional autônomo (CREF/CREFITO/CRN/CRP/CRO/Pilates/esteticista) com UX simplificada e templates por profissão
+- **Overage suave R$ 0,50/member** acima do incluído; cap por tier força upgrade sugerido. **1 active member por (paciente, tenant)** — passaporte cross-tenant (ADR 0077) **não duplica cobrança** (paciente em N tenants = 1 member por tenant cada)
+- **Notas fiscais inclusas + overage proporcional** (ADR 0066 revisado 2026-04-25): Starter 50 / Pro 200 / Business 1.000 / Enterprise 5.000 inclusas. Excedente cobrado a R$ 0,50 / 0,40 / 0,35 / 0,25 por **nota emitida** (NFS-e + NF-e + NFC-e + devolução + transferência + conserto). **Eventos não contam** (cancelamento, CC-e, inutilização — não contam no overage). Repasse calibrado sobre custo Focus NFe + margem operacional
+- **Trial 14 dias** sem cartão com features Pro; dados retidos 30 dias após expiração e então **anonimizados** (preserva agregados estatísticos, remove PII; ver ADR 0054 + Sprint 01a). Conversão antes do dia 30 reativa dados originais
 - **Multi-tenant por subdomínio** (ADR 0065): `{slug}.logifit.com.br`
 - **Cobrança**: Asaas próprio LogiFit + NFS-e automática via Focus NFe (Sprint 36)
-- **IA embutida** no plano (Gemini Flash default LogiFit) + BYOK opcional — ADR 0064
-- **DPO + governança LGPD** (ADR 0067): `privacidade@logifit.com.br` + plano resposta incidente 72h + sub-processors públicos + auditoria interna trimestral
+- **IA embutida** no plano (Gemini Flash default LogiFit) + BYOK opcional — ADR 0064. **Cota mensal por plano** (Starter 500 / Pro 3.000 / Business 10.000 / Enterprise 25.000 chamadas/mês). Excedido = **hard-stop com convite a configurar BYOK** (não há overage IA pago)
+- **DPO interno LogiFit** ([ADR 0067](docs/decisions/0067-dpo-governanca-compliance-lgpd.md)): canal `privacidade@logifit.com.br` + plano resposta incidente 72h + sub-processors públicos + auditoria interna trimestral. **DPO MVP é o fundador** (papel formal interino); **DPO-as-a-service** (firma externa revendida pela LogiFit) é **add-on opcional do Enterprise** — não confundir os dois
 
 ## Marcos regulatórios que norteiam o produto
 
 - **LGPD (Lei 13.709/2018) — art. 11** — dado de saúde é **sensível**; exige base legal explícita + RIPD versionado + consent granular + direitos do titular em 15 dias. Ver [ADR 0054](docs/decisions/0054-lgpd-art11-dados-saude-ripd-versionado.md) + regra 29.
 - **CFM 2.454/2026** — IA em medicina: classificação SaMD por feature, supervisão humana documentada, **Comitê de IA interno obrigatório** por instituição-cliente; vigência **agosto/2026**. Ver [ADR 0053](docs/decisions/0053-conformidade-cfm-2454-2026-ia-saude.md) + regra 28.
-- **CFM 2.299/2021** — prontuário eletrônico com assinatura ICP-Brasil obrigatória para médicos.
-- **COFFITO 414/2012 + 415/2012** — prontuário eletrônico de fisioterapeuta; ICP-Brasil **opcional** se houver sistema autenticado + trilha de auditoria. Ver Sprint 20.
-- **CFN 599/2018** — registro eletrônico de nutricionista com autenticação + trilha; ICP-Brasil não obrigatório.
+- **Lei 13.787/2018** — **lei federal** de digitalização e uso do prontuário eletrônico em estabelecimentos de saúde; estabelece **20 anos de retenção mínima**. Norma **primária** (lei federal) sobre o tema; CFM 2.299 e COFFITO 415 são **resoluções de conselho** que reforçam.
+- **CFM 2.299/2021** — prontuário eletrônico com assinatura ICP-Brasil **obrigatória para médicos** (CRM); reforça Lei 13.787/2018 retenção 20a.
+- **COFFITO 414/2012 + 415/2012** — prontuário eletrônico de fisioterapeuta (CREFITO); ICP-Brasil **opcional** se houver sistema autenticado + trilha de auditoria + hash chain (regra 39). Ver Sprint 20.
+- **CFN 599/2018** — registro eletrônico de nutricionista (CRN) com autenticação + trilha; ICP-Brasil **não obrigatório**.
+- **Gate de assinatura por profissional** (Sprint 20): `if profissional.kind === 'medico' → require_icp_brasil_signature; else if kind in ['fisio','nutri','personal'] → require_authenticated_lock_with_audit_chain`. Política em tabela `signature_policies` (ADR 0032 — esperado, Sprint 20).
 - **Leis dos conselhos profissionais** — **Lei 3.268/1957** (CFM/CRM, médicos), **Lei 6.316/1975** (COFFITO/CREFITO, fisioterapeutas), **Lei 6.583/1978** (CFN/CRN, nutricionistas), **Lei 9.696/1998** (CONFEF/CREF, educadores físicos/personal trainers). Cadastro de número de conselho + situação por profissional vive em `professional_registrations` (Sprint 01b, ADR 0055); gates de assinatura (Sprint 20), TISS (Sprint 22), contrato (Sprint 23) e onboarding PT (Sprint 08) consomem.
 - **ANVISA RDC 657/2022 + RDC 751/2022** — Software as Medical Device (SaMD): classes I/II (baixo risco) → notificação; III/IV (alto risco) → registro pleno. LogiFit evita Classe III por design.
-- **ANS TISS 4.01 (Ofício-Circular ANS nº 1/2026)** — padrão vigente para faturamento de convênios; LogiFit mantém pipeline de atualização semestral da terminologia TUSS. Ver Sprint 22.
+- **ANS TISS 4.01 (Ofício-Circular ANS nº 1/2026)** — padrão vigente para faturamento de convênios; LogiFit mantém pipeline de atualização semestral da terminologia TUSS + validador proativo XSD/regra de negócio + versionamento por guia. Ver [ADR 0079](docs/decisions/0079-tiss-401-ans-padrao-vigente.md) + Sprint 22.
 - **NT 2012/002 SEFAZ / ENCAT** — Manifestação do Destinatário de NF-e: 4 eventos fiscais (Ciência, Confirmação, Desconhecimento, Não Realizada) obrigatórios para destinatário com CNPJ no prazo de 180 dias. Ciência automática ativa por padrão no LogiFit; demais eventos manuais. Ver [ADR 0057](docs/decisions/0057-manifestacao-destinatario-nfe.md) + Sprint 17.
 - **Emissão fiscal unificada via Focus NFe** — LogiFit não toca em motor tributário. Todas as emissões (NFS-e, NF-e produto, NFC-e varejo, NF-e devolução, NF-e transferência, NF-e conserto, NF-e entrada própria, CC-e, cancelamento, inutilização) passam pelo provider Focus NFe. Ver [ADR 0059](docs/decisions/0059-ciclo-fiscal-emissao-focus-nfe.md) + Sprint 36. NT 2013/005 SEFAZ (NFC-e), NT 2011/004 SEFAZ (CC-e), RTC 1.400/2016 ABRASF (NFS-e) cobertas pelo provider. **Custo fiscal repassado ao tenant via overage** (ADR 0066 revisado 2026-04-25); rejeitado explicitamente o caminho de motor fiscal próprio (8-12 meses solo + manutenção eterna).
 - **NFS-e Padrão Nacional como provider complementar futuro** ([ADR 0076](docs/decisions/0076-nfse-nacional-provider-complementar.md)) — não substitui Focus NFe; complementa para municípios aderidos (gratuito, infra federal). Não entra no MVP — gatilhos: Sprint 36 estável há 3 meses + 10k notas/mês LogiFit + 30% emissões em municípios aderidos. Reusa interface `FiscalProvider`.
@@ -35,7 +42,7 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 ## Documentação de referência (leia antes de planejar)
 
 - [`docs/arquitetura.md`](docs/arquitetura.md) — visão geral da arquitetura e stack
-- [`docs/rules.md`](docs/rules.md) — **42 regras duras** (arquiteturais, processo, código, i18n, IA, LGPD, pesquisa global, responsividade, arquitetura IA, tratamento de erros, escalabilidade do banco, segurança em profundidade, assistente IA universal, passaporte cross-tenant)
+- [`docs/rules.md`](docs/rules.md) — **43 regras duras** (arquiteturais, multi-empresa, i18n, IA + LGPD, pesquisa global, responsividade, arquitetura IA + erros, escalabilidade banco, segurança em profundidade, assistente IA universal, passaporte cross-tenant, MFA obrigatório, processo, código)
 - [`docs/modulos.md`](docs/modulos.md) — catálogo de módulos por área (fundação, geral, academia, fisio, nutri) + quais verticais usam
 - [`docs/multiempresa.md`](docs/multiempresa.md) — hierarquia group → tenant → company → unit + flags de topology
 - [`docs/acesso-e-autorizacao.md`](docs/acesso-e-autorizacao.md) — 4 camadas (identidade, tenant, RBAC, consent)
@@ -75,7 +82,9 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 
 27. **Dado de paciente cruza `tenant_id` SOMENTE via vínculo cross-tenant ativo.** Modelo C híbrido: vínculo paciente↔empresa (`patient_company_links`) com **módulos liberados explícitos** (`patient_link_modules`) e **responsável técnico por módulo** (atende CFM/COFFITO/CFN/CONFEF). 5 módulos canônicos no MVP via lookup table extensível: `academia`, `personal_training`, `fisioterapia`, `nutricao`, `pilates`. **Constraint global:** 1 módulo ativo por paciente em toda a rede — nova empresa do mesmo módulo dispara substituição com confirmação do paciente. **2 paths de criação de conta:** reativo (profissional manda invite, paciente cria conta junto com aceite) e proativo (paciente vai em `app.logifit.com.br/cadastro`, cria conta sozinho com SMS+email+Turnstile, recebe invites ou convida profissional/empresa). Aceite parcial suportado. **5 níveis de dados** (Identidade → Antropometria → Treino → Clínico → Workspace) — Nível 5 nunca cruza tenant nem é exibido ao paciente. **Limites duros:** financeiro nunca cruza, prontuário CFM original nunca cruza (só resumo gerado pelo paciente), dado de outras pessoas mencionado nunca cruza. **Cross-tenant entrega resumido**, não bruto. Toda leitura cross-tenant grava `patient_data_access_log` (síncrono não-bloqueante, particionado mensal — regra 34). Lint `cross-tenant-read-must-log` enforça. Cobrança LogiFit: 1 active member por (paciente, tenant), independente de quantos módulos. Ver [ADR 0077](docs/decisions/0077-passaporte-paciente-vinculo-cross-tenant.md) e regra 42.
 
-Lista completa em [`docs/rules.md`](docs/rules.md) (42 regras duras).
+28. **MFA obrigatório para profissionais de saúde + roles administrativas críticas (regra 43).** Roles `medico`, `fisio`, `nutri`, `personal`, `enfermeiro`, `tenant_owner`, `dpo`, `super_admin` têm `roles.requires_mfa=true` enforced — login sem TOTP/WebAuthn bloqueado em todos fluxos (magic link inclusive). Roles operacionais (`recepcao`, `member`) MFA opcional **mas** ações de alto-risco (cancelar guia TISS, anular invoice, alterar role de outro user) sempre exigem **MFA recente <15min** independente do `requires_mfa` — gate `requireRecentMfa()` no wrapper. Tenant pode escalar via `tenant_settings.mfa_extra_roles[]`. Setup wizard obrigatório no primeiro login profissional. Recovery codes one-time. CI tem E2E. Ver [ADR 0073](docs/decisions/0073-postura-seguranca-defesa-em-profundidade.md) camada 2 e [regra 43 em rules.md](docs/rules.md).
+
+Lista completa em [`docs/rules.md`](docs/rules.md) (43 regras duras numeradas 1-8 + 21-43; regras 9-15 de processo + 16-20 de código completam o índice).
 
 ## Stack (fixa — mudanças exigem ADR)
 
@@ -84,11 +93,13 @@ Lista completa em [`docs/rules.md`](docs/rules.md) (42 regras duras).
 - **Banco/Auth/Realtime/Storage:** Supabase **(MVP)** → migra pra **Postgres no Oracle Cloud OCI free tier + BetterAuth/Lucia + Cloudflare R2 + LISTEN/NOTIFY** no Sprint 19b. Ver [ADR 0078](docs/decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md).
 - **ORM:** Drizzle (fonte única de schema)
 - **IA:** Vercel AI SDK com **Gemini 2.5 Flash (Vertex AI SP) como default LogiFit** + **Groq Whisper para STT** + BYOK opcional (Claude/GPT/Maritaca/Anthropic) + fallback cascade; tasks tipadas (chat/embedding/classification/extraction/vision/transcription/reasoning); `resolveModelForTask()` nunca hardcode; cache semântico pgvector + quota mensal + rate limit Upstash Redis. Ver [ADR 0064](docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md).
+- **Rate limit:** **Upstash Redis** (sliding window por `(tenant_id, user_id, ip, endpoint)`) — regras 36 + 33; sub-processor declarado em [ADR 0067](docs/decisions/0067-dpo-governanca-compliance-lgpd.md)
 - **Pagamentos:** Asaas
 - **Email:** Resend
 - **Observabilidade:** Sentry + PostHog + Logtail/Axiom
 - **Qualidade:** Vitest + Playwright + GitHub Actions + Biome
-- **Infra:** **Fase 1 (MVP):** Vercel + Supabase Pro · **Fase 2 (pós-Sprint 19b):** Vercel + Oracle Cloud OCI (PG self-hosted) + Cloudflare R2. Estratégia em 2 fases — [ADR 0078](docs/decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md).
+- **Infra:** **Fase 1 (MVP):** Vercel + Supabase Pro · **Fase 2 (pós-Sprint 19b):** Vercel + Oracle Cloud OCI (PG self-hosted) + Cloudflare R2. Estratégia em 2 fases — [ADR 0078](docs/decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md)
+- **Backup off-site MVP:** **Cloudflare R2 free tier 10GB** (`pg_dump` weekly cifrado GPG via Vercel Cron + retenção 12 meses; chaves de criptografia em backup separado). **Fase 2:** AWS S3 us-east-1 com Object Lock WORM (R$ 100-300/mês). Ver [ADR 0073 regra 40](docs/decisions/0073-postura-seguranca-defesa-em-profundidade.md)
 
 ### Regras de portabilidade durante MVP (ADR 0078)
 
@@ -161,6 +172,13 @@ group (opcional, sem CNPJ, só agregados)
 **Flags do tenant:** `topology` (`owned`/`franchise`), `financial_mode` (`centralized`/`distributed`), `cross_company_access` (bool).
 
 **4 cenários canônicos obrigatórios no seed:** rede própria, franquia clássica, franquia com passaporte, mix loja avulsa + rede no mesmo group.
+
+### Terminologia — cross-company vs cross-tenant
+
+- **Cross-company (mesmo tenant):** Filial A ↔ Filial B sob o mesmo contrato SaaS. Governado por `tenant.cross_company_access` + `franchise_agreements` (quando `topology='franchise'`) + regra 25 (clínico nunca cruza company em franquia).
+- **Cross-tenant (contratos distintos):** Academia X ↔ Clínica Y como tenants diferentes do LogiFit. Governado por `patient_company_links` + `patient_link_modules` (passaporte do paciente, ADR 0077) + regra 42 + `patient_data_access_log`. Nunca cruza dado financeiro nem prontuário CFM bruto.
+
+Os dois nunca são sinônimos. Documentação que usa um pelo outro está errada.
 
 ## Modelo de autorização (essencial — leia `docs/acesso-e-autorizacao.md`)
 

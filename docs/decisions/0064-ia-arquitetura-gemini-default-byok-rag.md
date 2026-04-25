@@ -414,6 +414,6 @@ UI bloqueia seleção abaixo do tier mínimo com mensagem explicativa.
 - Inspiração direta: arquitetura de IA do projeto **Deep Control** (multi-provider, task routing, RAG completo, multimodal, white-label) — adaptada ao contexto de saúde LogiFit
 - Reforça [ADR 0053 — CFM 2.454](0053-conformidade-cfm-2454-2026-ia-saude.md): SaMD + Comitê + audit — agora com tier mínimo regra 32
 - Reforça [ADR 0054 — LGPD art. 11](0054-lgpd-art11-dados-saude-ripd-versionado.md): RIPD precisa listar Google Cloud (Vertex AI) e Groq como operadores; DPA assinada pela LogiFit
-- Reforça [ADR 0015 — Copilot safety](0015-sem-implementar-copilot-safety.md): guardrails de vocabulário proibido aplicados em todo `task='chat'` clínico
+- Reforça **ADR 0015 — Copilot safety** (será produzido no Sprint 06 conforme convenção de ADRs reservados a sprints — ver `roadmap.md`): guardrails de vocabulário proibido aplicados em todo `task='chat'` clínico
 - Substitui versões rascunho anteriores do ADR 0064 (BYOK-only e híbrido sem detalhamento)
 - Fontes: documentação Vertex AI Gemini, Groq API, benchmarks openrouter.ai/rankings, Deep Control internal architecture memo

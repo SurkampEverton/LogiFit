@@ -28,6 +28,12 @@ Autenticação + **cadastro central `persons`** + hierarquia completa (group/ten
 - Teste E2E: cadastrar pessoa PJ → criar company-filial linkando → não duplica CNPJ/endereço
 - Seed dos 4 cenários canônicos populado em dev (com persons + users + companies linkadas)
 - Troca de contexto de tenant (para usuário multi-tenant) reassina JWT
+- **Trial 14d + ciclo de retenção 30d (ADR 0066)**: tenant criado em `/signup` ganha `trial_ends_at = now() + 14 days` + `subscription_status='trialing'`. Job diário `process-trial-lifecycle` aplica:
+  - **D+14 (trial expirou sem conversão)**: `status='trial_expired'` + UI bloqueada exceto export/conversão; banner "trial expirado, dados retidos por 30d"
+  - **D+44 (30d após expirar)**: `anonymize-tenant` job dispara — preserva agregados estatísticos (contagem de members/sessões/receita simulada), remove **PII**: `persons.name='Anonimizado'` + `persons.document=NULL` + `persons.email=NULL` + `persons.phone=NULL` + cifra-com-chave-perdida em `prontuarios.content`, `assessments.notes`. Membership real permanece pra estatística de conversão.
+  - **Conversão antes de D+44**: paciente vira `subscription_status='active'`, dados originais permanecem
+  - Auditado em `audit_log action='trial.anonymized'` com `legal_basis='lgpd_art16_eliminacao'`
+  - Implementação técnica: schemas têm `pii_eligible_for_anonymization bool` em colunas sensíveis para job filtrar
 
 ## Dependências
 
@@ -58,7 +64,7 @@ Em `packages/db/schema/cnpj-cache.ts`:
 Em `packages/db/schema/identity.ts`:
 
 - `groups` — `id`, `name`, `metadata jsonb`, timestamps (sem CNPJ/person — é camada organizacional, ver ADR 0008)
-- `tenants` — `id`, `group_id nullable`, `name`, `topology` enum, `financial_mode` enum, `cross_company_access bool`, timestamps
+- `tenants` — `id`, `group_id nullable`, `name`, `topology` enum, `financial_mode` enum, `cross_company_access bool`, `subscription_status enum('trialing','active','trial_expired','suspended','anonymized') default 'trialing'`, `trial_ends_at timestamptz nullable`, timestamps. **Coluna `mode enum('multi','solo') default 'multi'` é adicionada em Sprint 01b** (junto com Plano Solo / ADR 0069 — wizard de onboarding decide o valor).
 - `companies` — `id`, `tenant_id`, `person_id uuid not null` (FK persons kind=pj), `type` enum (`matriz`, `filial`), `parent_company_id nullable`, `ie text nullable`, `im text nullable`, `regime_tributario text nullable`, `cnes_code text nullable`, timestamps. Check constraint: `person.kind = 'pj'`. Unique `(tenant_id, type='matriz')` via index parcial.
 - `units` — `id`, `tenant_id`, `company_id`, `name`, `address jsonb`, `capacity int nullable`, `area_m2 numeric nullable`, timestamps (sem person — é local físico)
 - `users` — `id`, `tenant_id`, `person_id uuid not null` (FK persons kind=pf), `auth_user_id uuid` (FK Supabase Auth), `username text`, `mfa_enabled bool`, `last_login_at`. Check: `person.kind = 'pf'`.

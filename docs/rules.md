@@ -1,12 +1,27 @@
 # Regras do Projeto LogiFit
 
-Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (multi-empresa, i18n, IA, LGPD, pesquisa global, responsividade, arquitetura IA, tratamento de erros, escalabilidade do banco, segurança em profundidade, **assistente IA universal**). Violação = CI vermelho, revert, ou sprint não fecha.
+**43 regras duras e inquebráveis.** Organizadas em 4 blocos + regras transversais. Violação = CI vermelho, revert, ou sprint não fecha.
 
 > **Como usar:** toda discussão técnica começa perguntando "isso fere alguma regra?". Se sim, ou mudamos a regra (ADR) ou mudamos a solução. Regras não são sugestões.
 
+**Índice:**
+- **Arquiteturais base (1–8)**
+- **Multi-empresa (21–26)**
+- **i18n (27)**
+- **IA + LGPD (28–30)**
+- **Responsividade (31)**
+- **Arquitetura IA + erros (32–33)**
+- **Escalabilidade banco (34)**
+- **Segurança em profundidade (35–40)**
+- **Assistente IA universal (41)**
+- **Passaporte cross-tenant (42)**
+- **MFA obrigatório (43)**
+- **Processo (9–15)**
+- **Código (16–20)**
+
 ---
 
-## Arquiteturais (quebrou = revert + ADR justificando)
+## Arquiteturais base (quebrou = revert + ADR justificando)
 
 **1.** Toda tabela de negócio tem `tenant_id uuid not null` + RLS policy usando `(auth.jwt() ->> 'tenant_id')::uuid`.
 **2.** CI tem teste que *falha* se encontrar tabela nova sem RLS habilitada.
@@ -17,6 +32,10 @@ Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (multi
 **7.** Todo boundary (Server Action, API Route, webhook) valida entrada com **Zod**.
 **8.** Webhooks externos são idempotentes via coluna `external_id` unique em `webhook_events`.
 
+---
+
+## Multi-empresa
+
 **21.** `companies` tem `type ∈ {matriz, filial}`; exatamente **1 matriz por tenant** (enforced por trigger/constraint).
 **22.** `companies.cnpj` é unique **global** (no sistema inteiro), não por tenant — evita cadastro duplicado entre redes.
 **23.** Dado fiscal (NF-e, recibo, contrato) **nunca** perde `company_id` — é o CNPJ emissor.
@@ -24,29 +43,53 @@ Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (multi
 **25.** Dados clínicos sensíveis (prontuário, mídia, avaliação) **nunca cruzam `company_id` quando `tenant.topology = 'franchise'`**. Nem com consent. Enforced por RLS + audit.
 **26.** `groups` é camada apenas visual/agregada. Queries cross-tenant do mesmo group retornam **somente dados agregados** via views dedicadas. Nenhum `SELECT` direto em tabela operacional pode usar `group_id` como filtro cross-tenant. Teste de CI bloqueia.
 
+---
+
+## i18n
+
 **27.** **Proibido hardcode de string de UI.** Toda string visível ao usuário (botão, título, mensagem, placeholder, tooltip) vai via `t('namespace.key')` do next-intl. Message catalog obrigatório nos 3 locales (`pt-BR`, `en-US`, `es-419`). CI roda `pnpm i18n:check` e falha se faltar chave em qualquer locale. Exceção: nomes de entidades de domínio (ex: "Pollock 7 dobras"), códigos técnicos (CID, TUSS), nomes de features flags, strings de debug/log não-visíveis. Ver [ADR 0052](decisions/0052-i18n-tres-idiomas-pt-en-es.md).
+
+---
+
+## IA + LGPD
 
 **28.** **Feature IA classe SaMD II+ não ativa sem Comitê de IA cadastrado no tenant.** Feature flag é bloqueada por gate que consulta `ai_committee_members` — sem ao menos 1 membro ativo + ata de criação anexada, a feature não liga em produção, mesmo com flag ON. Toda chamada a feature IA clínica grava em `ai_audit_log` (input, output, modelo, versão do prompt, decisão humana: aceitou/editou/rejeitou). Classificador de output proibido ("diagnóstico", "tem [doença]", "prescrever") ativo em toda chamada. Violação = feature desligada automaticamente + alerta ao admin do tenant. Ver [ADR 0053](decisions/0053-conformidade-cfm-2454-2026-ia-saude.md) (CFM 2.454/2026 + classificação SaMD RDC 657/2022).
 
 **29.** **Dado de saúde sensível (LGPD art. 11) só trafega com base legal explícita + RIPD vigente.** Todo módulo que processa `health_data` (prontuário, avaliação, exame, mídia clínica, device reading, plano alimentar, prescrição) tem entrada em `ripd_documents` com versão vigente (`ripd_versions`) assinada pelo DPO, revisada no máximo a cada 6 meses. Consent por finalidade (`consent_purposes.lawful_basis`) não pode ser genérico — cada finalidade lista `data_categories[]` e `retention_period` explícitos. CI tem teste que falha se um módulo clínico novo for criado sem registro em `ripd_documents`. Direitos do titular (art. 18) atendidos em até **15 dias** via portal `/meu/privacidade`. Ver [ADR 0054](decisions/0054-lgpd-art11-dados-saude-ripd-versionado.md).
 
+---
+
+## Pesquisa global + responsividade
+
 **30.** **Módulo novo com dado pesquisável deve registrar-se em `search_index`** via trigger `search_index_sync()` declarando explicitamente: `kind` (identificador do tipo), `label`/`subtitle`/`url` (o que mostrar), `searchable_text` (campos buscáveis), **`required_permission`** (permission mínima para aparecer no resultado), `required_vertical` (quando aplicável), `required_consent_purpose` (quando cross-module), `is_sensitive` (true → clique grava audit). Omissão de `required_permission` é proibido — operador sem permission nunca pode ver o resultado, nem "provocar" clique para descobrir existência. Ver [ADR 0062](decisions/0062-pesquisa-global-command-palette.md).
 
 **31.** **Toda UI de `/app/*` e `/meu/*` é responsiva mobile-first** nos 3 viewports canônicos (mobile 390px, tablet 768px, desktop 1280px). Componente **deve** usar os componentes base de `packages/ui/layout/*` (`<ResponsiveTable>`, `<ResponsiveModal>`, `<ResponsiveForm>`, `<AppLayout>`, `<BottomNav>`); proibido construir layout próprio duplicado. Touch targets ≥44px (botões) e ≥48px (inputs). Teste Playwright visual em 3 viewports obrigatório em sprints com UI nova — falha CI. Exceção (ex: tela admin técnica desktop-only) exige ADR de sprint justificando. Ver [ADR 0063](decisions/0063-responsividade-total-mobile-first.md).
+
+---
+
+## Arquitetura IA + tratamento de erros
 
 **32.** **Chamada de IA nunca hardcode provider/modelo.** Toda invocação passa por `resolveModelForTask(task, featureKey?, tenantCtx)` que consulta `ai_task_routing`. Tasks canônicas: `chat`, `embedding`, `classification`, `extraction`, `vision`, `transcription`, `reasoning`. Feature clínica tem **tier mínimo imposto** por LogiFit (ex: Pipeline Exames interpretação não roda em modelo abaixo de Gemini Flash; CI bloqueia seed de `ai_task_routing` com modelo abaixo do mínimo). Tool calling sempre via Server Actions tipadas — **proibido LLM emitir SQL arbitrário**. System prompt composto por `buildSystemPrompt({ agent, tenant, user, permissions, ragChunks, globalRules })`, nunca string ad-hoc. Ver [ADR 0064](decisions/0064-ia-arquitetura-gemini-default-byok-rag.md).
 
 **33.** **Toda Server Action, API Route e job assíncrono usa `wrapAction()` / `wrapApiHandler()` / `wrapJob()` de `packages/errors/`.** O wrapper: (a) gera/propaga `request_id` (UUID no header `x-request-id`); (b) valida context (auth, permissions, rate limit Upstash, gate IA classe II+ — regra 28, consent cross-module — regra 6); (c) captura erro e traduz via translator do domínio (Asaas/Focus NFe/Gemini/TISS/...); (d) cria `system_alerts` async com fingerprint SHA256(type|module|path|status|tenant_id)[:16] — deduplicação automática; (e) grava `audit_log` quando `auditAction` informado; (f) `Sentry.captureException()` em `INTERNAL_ERROR`; (g) retorna envelope `{ ok: true, data } | { ok: false, error: ApiError }` tipado com 16 códigos fechados. CI tem lint custom `no-unwrapped-action` que bloqueia commit quando Server Action/API Route não usa wrapper. Exceção em jobs de migration/seed exige comentário `// wrap-exempt: <motivo>`. Ver [ADR 0071](decisions/0071-sistema-tratamento-erros-alertas-tempo-real.md).
 
+---
+
+## Escalabilidade banco
+
 **34.** **Toda tabela com volume estimado >5M linhas/ano OU >50k linhas/dia deve nascer particionada.** Estratégia padrão:
 - **`PARTITION BY RANGE` em coluna temporal** (`at`, `created_at`, `recorded_at`) por mês/trimestre/ano conforme volume — tabelas pesadas preferem mês; tabelas medianas, trimestre; fiscais, ano
 - **`PARTITION BY HASH (tenant_id)`** quando volume é tenant-driven independente de tempo
 - Migration que cria tabela **deve declarar** `@volume_estimate_yearly: <N>` em comentário SQL; CI lint bloqueia se >5M sem partição
-- **Toda tabela com retenção definida** tem job de partition lifecycle cadastrado: `create-next-partitions` (cria futuras), `drop-old-partitions` (descarta após retenção legal), `archive-cold-partitions` (move para Storage). Conformidade: 5 anos audit (LGPD), 20 anos prontuário (CFM 2.299), 5 anos fiscal, 5 anos COFFITO 415, 1 ano IA audit (CFM 2.454), 30/90/365/1825 dias por severity em `system_alerts` (ADR 0071)
+- **Toda tabela com retenção definida** tem job de partition lifecycle cadastrado: `create-next-partitions` (cria futuras), `drop-old-partitions` (descarta após retenção legal), `archive-cold-partitions` (move para Storage). Conformidade: **5 anos audit (LGPD + ADR 0072)**, **20 anos prontuário (Lei 13.787/2018 + CFM 2.299)**, 5 anos fiscal, 5 anos COFFITO 415, 1 ano IA audit (CFM 2.454), **5 anos `patient_data_access_log` (ADR 0077)**, 30/90/365/1825 dias por severity em `system_alerts` (ADR 0071)
 - **Indexes vivem na partição**, não na parent table
 - **Drop de partição é metadata-only** (milissegundos) vs DELETE row-by-row (horas)
 - **Cold storage**: dados >2-5 anos exportados para Supabase Storage como Parquet zstd compactado; retenção legal preservada com custo ~80% menor que disco quente
 - **Sharding multi-cluster** preparado via `tenants.shard_url` (NULL = compartilhado; preenchido = dedicated cluster); evolução futura quando 1 tenant >100k members ou banco >500GB. Ver [ADR 0072](decisions/0072-escalabilidade-banco-particionamento-retencao-cold-storage.md).
+
+---
+
+## Segurança em profundidade
 
 **35.** **Security headers obrigatórios em todo response HTTP do app.** `next.config.ts` define em `headers()`: `Content-Security-Policy` (com nonce dinâmico via middleware), `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` restritiva, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-site`. CSP **proíbe `unsafe-inline` em script-src** (tailwind exige em style-src — aceito); JS dinâmico usa nonce. Domínio submetido ao [HSTS Preload List](https://hstspreload.org). CI tem teste E2E que faz request e valida cada header presente; falha = vermelho. Ver [ADR 0073](decisions/0073-postura-seguranca-defesa-em-profundidade.md) camada 1.
 
@@ -60,9 +103,25 @@ Regras duras e inquebráveis. Divididas em 3 blocos + regras transversais (multi
 
 **40.** **Backup automático + teste de restauração trimestral + DR plan documentado com RPO 24h e RTO 4h.** **MVP zero-custo:** Supabase backup nativo (incluído no plano Supabase) **mais** off-site `pg_dump` semanal cifrado com GPG para **Cloudflare R2** (free tier 10GB) ou **Backblaze B2** (10GB free) ou **GitHub Releases privado** (até 2GB/file, ilimitado total) — escolher um. Vercel Cron weekly. Retenção 12 meses (rotação automática). **Fase 2** (volume > 5GB ou tenant Enterprise): AWS S3 us-east-1 com Object Lock 90d WORM substitui (R$ 100-300/mês). Storage de mídia (`lab-documents`, `fisio-evolucoes`, `exam-attachments`) confia em Supabase replicação multi-region no MVP; off-site só Fase 2. Teste de restauração trimestral em Supabase free instance temporária — runbook em `runbooks/restore-test.md`; falha = `system_alerts critical` + ADR retroativo. Disaster Recovery Plan público para tenants Enterprise. **Chaves de criptografia (master + KEK por tenant + cert A1) nunca no mesmo backup do dado — separação obrigatória.** Ver [ADR 0073](decisions/0073-postura-seguranca-defesa-em-profundidade.md) camada 4.
 
+---
+
+## Assistente IA universal
+
 **41.** **Toda Server Action de módulo que deve ser usável pelo Assistente IA registra-se em `tools_registry` via `registerAITool({...})`** em arquivo `apps/web/app/(modules)/<modulo>/ai-tools.ts`. A definição declara: `key` único (`<modulo>.<acao>`), `layer` (`help`/`insight`/`action`), `label/description` em pt-BR/en-US/es-419, `whenAvailable({user, tenant})`, `showInPersonas[]`, `argsSchema/resultSchema` Zod, `requiresConfirmation` (true para `action`), `confirmationCopy({args, ctx})`, `handler` (Server Action `wrapAction()` regra 33), `audit` e `rateLimitKey`. **Server Action que NÃO deve ser exposta** ao LLM tem comentário literal `// ai-blocked: <motivo>` no topo do handler — lint custom `ai-block-respected` em CI bloqueia commit se `registerAITool` aponta para handler com esse comentário. **Tools Camada 3 (write) sempre passam por `<ActionConfirmDialog>`**: LLM nunca chama Server Action diretamente — sempre via `proposeAction(toolKey, args)` que cria registro em `assistant_action_proposals` (state=`pending`, expira 5min); handler real exige `proposal_id` confirmado válido (proteção dupla — `actionSource='ai_assistant'` sem proposta = `FORBIDDEN`). Bloqueado no MVP: qualquer `DELETE`, `signEvolution` (ICP-Brasil), `chargeBatch`, `anonymizeMember`, `transferMemberBetweenCompanies`, `runOpenFinancePayment`, mudanças em `tenant_settings`/RBAC/plano. Ver [ADR 0075](decisions/0075-assistente-ia-universal-tres-camadas-tool-registry.md).
 
+---
+
+## Passaporte cross-tenant
+
 **42.** **Dado individual de paciente cruza `tenant_id` SOMENTE via vínculo `patient_company_links` ativo + módulo `patient_link_modules` autorizado + categoria coberta pelo `data_level_max` do paciente.** Toda Server Action / API Route / job que lê dado clínico, antropométrico, prescritivo ou de plano de outro tenant **deve** (a) verificar via função SQL `has_cross_tenant_access(reader_user_id, person_id, module_type, category)` que combina os 3 fatores acima; (b) gravar `patient_data_access_log` no mesmo turno (síncrono não-bloqueante via trigger ou chamada explícita no wrapper) com `reader_user_id`, `reader_tenant_id`, `source_tenant_id`, `module_type`, `category`, `resource_type`, `resource_id`, `request_id`; (c) entregar dado **resumido**, não bruto — ex: "lesão lombar ativa, restrição: sem deadlift", não SOAP completo. **Limites duros que nunca cruzam tenant mesmo com vínculo:** dado financeiro (cobranças, valores, inadimplência), Nível 5 (notas privadas do profissional, hipóteses diagnósticas, anotações comportamentais), prontuário CFM original (CFM 2.299 — só resumo gerado pelo paciente pode), dado de outras pessoas mencionado no prontuário. **Substituição:** novo vínculo do mesmo módulo desativa o anterior automaticamente (`patient_link_modules.revoked_at`) — paciente confirma na UX. Lint custom `cross-tenant-read-must-log` em CI bloqueia commit se Server Action lê tabela cross-tenant sem chamar `has_cross_tenant_access` + log. Ver [ADR 0077](decisions/0077-passaporte-paciente-vinculo-cross-tenant.md).
+
+---
+
+---
+
+## MFA obrigatório
+
+**43.** **Profissionais de saúde têm MFA obrigatório.** Roles `medico`, `fisio`, `nutri`, `personal`, `enfermeiro` (e qualquer role que herde de `professional_clinical`) têm `roles.requires_mfa=true` enforced no Supabase Auth — login sem TOTP/WebAuthn é bloqueado em todos os fluxos (magic link inclusive). Roles administrativas (`tenant_owner`, `dpo`, `super_admin`) também têm MFA obrigatório por dever de cuidado. Roles operacionais (`recepcao`, `member`) têm MFA **opcional** mas com badge incentivando ativação. CI tem teste E2E que tenta login sem MFA com role profissional e verifica falha. Tenant pode escalar exigência (ex: forçar MFA também na recepção) em `tenant_settings.mfa_extra_roles[]`. Setup obrigatório no primeiro login do profissional (wizard `/setup-mfa`) — pula = bloqueia acesso a `/app/clinico/*`. Recovery codes one-time gerados na ativação. Ver [ADR 0073](decisions/0073-postura-seguranca-defesa-em-profundidade.md) camada 2 + Sprint 01a.
 
 ---
 

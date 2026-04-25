@@ -37,10 +37,20 @@ Faturamento para planos de saúde no padrão TISS (Troca de Informações em Sa�
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0029 (esperado)** — Estrutura TISS/TUSS: `insurance_plans`, `member_insurances`, `authorizations`, `billing_guides`, `billing_guide_items`, `billing_glosas`. Gerador de XML **TISS 4.01** via biblioteca (pré-built ou custom); versão vigente configurável por plano. Scripts de migration carregam tabela TUSS atualizada como seed.
-- **ADR 0030 (esperado)** — Pipeline de atualização semestral da terminologia ANS: job agendado puxa deltas de OPME (~26k termos), medicamentos (+334 novos no Ofício-Circular 1/2026), glosas, tabelas de procedimentos. Versionamento da terminologia por `tuss_catalog_version` para rastrear qual versão estava vigente quando a guia foi gerada.
-- **ADR 0031 (esperado)** — Validador TISS proativo: antes de envio, roda bateria de validações (XSD da ANS + regras de negócio comuns que causam glosa: procedimento × especialidade, autorização vigente, carteirinha válida, limite de sessões, co-participação correta). Bloqueia envio com erro conhecido antes da glosa acontecer.
-- **Pergunta aberta:** submissão de guia — manual (operador copia XML) ou automática (integração via SOAP com operadoras)? Manual no MVP da Fisio; automática pode virar Sprint separado depois.
+### ADR já publicado
+
+- **[ADR 0079 — TISS 4.01 ANS como padrão vigente](../decisions/0079-tiss-401-ans-padrao-vigente.md)** (publicado 2026-04-25) — define **estratégia geral**: TISS 4.01 é versão padrão; pipeline de atualização semestral; validador proativo XSD + regras de negócio; submissão manual no MVP / automática SOAP em sprint posterior; RAG global indexa terminologia. Os ADRs esperados abaixo (0029/0030/0031) **detalham implementação técnica** dentro do framework definido por 0079; não substituem.
+
+### ADRs a produzir nesta sprint
+
+- **ADR 0029 (esperado)** — Estrutura TISS/TUSS: `insurance_plans`, `member_insurances`, `authorizations`, `billing_guides`, `billing_guide_items`, `billing_glosas`. Gerador de XML **TISS 4.01** via biblioteca (pré-built ou custom); versão vigente configurável por plano. Scripts de migration carregam tabela TUSS atualizada como seed. **Conforme [ADR 0079](../decisions/0079-tiss-401-ans-padrao-vigente.md).**
+- **ADR 0030 (esperado)** — Pipeline de atualização semestral da terminologia ANS: job agendado puxa deltas de OPME (~26k termos), medicamentos (+334 novos no Ofício-Circular 1/2026), glosas, tabelas de procedimentos. Versionamento da terminologia por `tuss_catalog_version` para rastrear qual versão estava vigente quando a guia foi gerada. **Implementa fase 2 do [ADR 0079](../decisions/0079-tiss-401-ans-padrao-vigente.md).**
+- **ADR 0031 (esperado)** — Validador TISS proativo: antes de envio, roda bateria de validações (XSD da ANS + regras de negócio comuns que causam glosa: procedimento × especialidade, autorização vigente, carteirinha válida, limite de sessões, co-participação correta). Bloqueia envio com erro conhecido antes da glosa acontecer. **Implementa fase 3 do [ADR 0079](../decisions/0079-tiss-401-ans-padrao-vigente.md).**
+- **ADR 0042 (esperado, sprint posterior)** — Submissão automática SOAP por provider (Fase 2 do TISS); ADR 0079 antecipou pergunta aberta. Manual no MVP da Fisio.
+
+### Gate MFA específico de TISS
+
+- **Cancelamento de guia + ajuste de valor após envio = ações de alto risco fiscal/clínico** — exigem **MFA recente (<15min)** mesmo para role `recepcao` que normalmente tem MFA opcional. Wrapper `requireRecentMfa()` no handler valida claim `mfa_at` do JWT; expirado → forçar reauth com TOTP/WebAuthn antes de prosseguir. Audit log marca `mfa_required=true` + `mfa_at_action`. Coerente com **regra 43** (rules.md) e **regra 28** (CLAUDE.md).
 
 ## Módulos entregues
 

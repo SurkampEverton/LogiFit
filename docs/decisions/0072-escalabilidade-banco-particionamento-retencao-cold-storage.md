@@ -45,10 +45,11 @@ Postgres aguenta volume, mas:
 ### Compliance complica
 
 - **`audit_log`**: 5 anos retenção mínima (LGPD + auditoria)
-- **`consultas` (Fisio)**: 20 anos (CFM 2.299/2021)
+- **`consultas` (Fisio)** / `lab_results` médicos: 20 anos (**Lei 13.787/2018** — prontuário eletrônico, lei federal primária; reforçada por CFM 2.299/2021)
 - **`evolucoes_sessao`**: 5 anos (COFFITO 415/2012)
 - **`nfe_received` + `invoices`**: 5 anos (obrigação fiscal)
-- **`lab_results`**: 20 anos (CFM)
+- **`lab_results`**: 20 anos (Lei 13.787/2018 + CFM)
+- **`patient_data_access_log`** (ADR 0077 — passaporte cross-tenant): 5 anos (auditoria LGPD obrigatória)
 
 Não pode simplesmente apagar. **Precisa cold storage.**
 
@@ -144,6 +145,7 @@ CREATE TABLE device_readings_2026_04_24 PARTITION OF device_readings
 | `lab_results` | ano | 20 anos (CFM) | cold storage após 5 anos |
 | `ai_semantic_cache` | (sem partição) | TTL 30 dias | cache; LRU eviction |
 | `member_insights` | (sem partição) | TTL 6h-24h por insight_key | cache de cálculos cross-module (ADR 0070) |
+| **`patient_data_access_log`** (ADR 0077) | **mês** (RANGE recorded_at) | **5 anos** | **CRÍTICO LGPD**: estimativa 10-15M linhas/ano com 30% adoção do passaporte; partição mensal obrigatória desde Sprint 02 (regra 34) |
 
 ### 3. Agregações automáticas (rollup) — preserva info, economiza espaço
 
@@ -259,6 +261,7 @@ DELETED
 | `device_readings` raw | >90 dias | >1 ano após cold |
 | `nfe_received` | >2 anos | >5 anos |
 | `invoices` (paid) | >2 anos | >5 anos |
+| `patient_data_access_log` | >2 anos | >5 anos |
 
 #### Schema de gerenciamento
 
@@ -455,7 +458,7 @@ Receita escala mais rápido que custo (margem 95%+).
 
 - **Sprint 01a (Identidade + Topology)** — `audit_log` particionado por mês desde dia 1 + tabela `tenants.shard_url` (preparação sharding) + jobs `create-next-partitions` + `monitor-database-size` + tabela `archive_jobs` + `compliance_retention_log`
 - **Sprint 01b (RBAC + Consent)** — `system_alerts` + `system_alert_occurrences` particionados por mês (ADR 0071) + jobs de retention conforme severity + cold storage schema preparado (não implementado)
-- **Sprint 02 (CRM Members)** — `member_events` particionado por trimestre + materialized view `member_timeline` (já planejado ADR 0070) com refresh hourly
+- **Sprint 02 (CRM Members)** — `member_events` particionado por trimestre + materialized view `member_timeline` (já planejado ADR 0070) com refresh hourly + **`patient_data_access_log` particionado por mês** (ADR 0077, retenção 5 anos)
 - **Sprint 06 (Copilot + IA)** — `ai_audit_log` particionado por mês + `ai_semantic_cache` com TTL 30 dias + `member_insights` com TTL 6-24h
 - **Sprint 07 (Dashboard)** — UI `/app/super-admin/database` com KPIs + maiores tabelas + crescimento + alertas + ações; jobs `aggregate-daily-summaries` + `refresh-materialized-views`
 - **Sprint 11 (Prescrições)** — `workout_sessions` particionado por trimestre

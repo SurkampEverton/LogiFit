@@ -52,9 +52,10 @@ Este é um sistema que manipula **dados sensíveis de saúde** (LGPD art. 11), c
 - **Fiscal (Fase 3):** Focus NFe para NFS-e (cobertura nacional — cada company emite no município do seu CNPJ; provider abstrai os web services municipais).
 
 ### Inteligência Artificial
-- **Vercel AI SDK** com provider plugável (Claude default, OpenAI/Gemini fallback)
+- **Vercel AI SDK** com **Gemini 2.5 Flash (Vertex AI SP) como default LogiFit** + **Groq Whisper STT** + BYOK opcional (Claude/GPT/Maritaca/Anthropic) + fallback cascade — ver [ADR 0064](decisions/0064-ia-arquitetura-gemini-default-byok-rag.md). Tasks tipadas (chat/embedding/classification/extraction/vision/transcription/reasoning); `resolveModelForTask()` nunca hardcode (regra 32)
 - **Cache semântico** em `ai_cache` (pgvector) para reduzir custo em perguntas repetidas
-- **Rate limit por tenant** (Upstash Redis) — evita runaway bill
+- **Rate limit por tenant** (Upstash Redis — sub-processor declarado em [ADR 0067](decisions/0067-dpo-governanca-compliance-lgpd.md)) — evita runaway bill (regras 36 + 33)
+- **Cota mensal por plano** + circuit breaker hard-stop (sem overage IA pago) — Solo 200 / Starter 500 / Pro 3.000 / Business 10.000 / Enterprise 25.000 chamadas/mês
 - **Generative UI fica fora do MVP** — entra na Fase 2 após validar adoção do copilot simples
 
 ### Observabilidade e Qualidade

@@ -12,9 +12,11 @@ Prontuário eletrônico polimórfico atendendo regulamentações profissionais c
 
 | Profissão | Regulação | Assinatura ICP-Brasil |
 |---|---|---|
-| Médico (CRM) | CFM 1.821/2007 + 2.299/2021 | **Obrigatória** (nível mínimo A3) |
-| Fisioterapeuta (CREFITO) | COFFITO 414/2012 + 415/2012 | **Não obrigatória** — prontuário eletrônico permitido sem ICP-Brasil desde que haja sistema de autenticação + trilha de auditoria equivalente (SBIS ou similar) |
-| Nutricionista (CRN) | CFN 599/2018 (revoga 594/2017) | **Não obrigatória** — registro eletrônico permitido com autenticação + trilha |
+| Médico (CRM) | **Lei 13.787/2018** + CFM 1.821/2007 + 2.299/2021 | **Obrigatória** (nível mínimo A3) |
+| Fisioterapeuta (CREFITO) | **Lei 13.787/2018** + COFFITO 414/2012 + 415/2012 | **Não obrigatória** — prontuário eletrônico permitido sem ICP-Brasil desde que haja sistema de autenticação + trilha de auditoria equivalente (SBIS ou similar). LogiFit usa hash chain `audit_log` (regra 39) + lacre autenticado |
+| Nutricionista (CRN) | **Lei 13.787/2018** + CFN 599/2018 (revoga 594/2017) | **Não obrigatória** — registro eletrônico permitido com autenticação + trilha |
+
+**Lei 13.787/2018** é a **lei federal primária** sobre prontuário eletrônico (estabelece 20 anos retenção mínima); resoluções de conselho refinam por categoria profissional.
 
 Catálogos CID-11 + CIF vinculados ao atendimento, templates por especialidade (ortopedia, neuro, respiratória, pediatria, uroginecologia; nutri via Sprint 29). Entidade `consultas` compartilhada com coluna `kind` — Sprint 29 (Nutri) **reusa a infra**.
 
