@@ -149,6 +149,8 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 | Workouts (treinos) | Conjunto ordenado de exercícios com séries/reps/carga/descanso; versionado | Academia, Fisio | 11 | todo |
 | Prescrições polimórficas | `prescriptions` com `kind` (workout / meal_plan / fisio_protocol); genérico | Academia, Fisio, Nutri | 11 | todo |
 | Execução de sessão + RPE | Registro de performance real + percepção de esforço 1–10 | Academia, Fisio | 11 | todo |
+| **Modo Coach mobile-first PWA (ADR 0074)** | `/app/coach/*` PWA dedicado com manifest scope próprio + Service Worker offline-first; tela `/sessao/[id]` mobile-only (steppers gigantes, RPE picker, timer entre sets, foto/áudio/vídeo inline); modo multi-aluno (cards lado a lado); sync queue IndexedDB com idempotência via `client_id`; push "next_student_arrived"; reusa `attendance_sessions kind='treino'` (ADR 0069) | Academia, Fisio | 11 | todo |
+| **Web Bluetooth (Android Chrome) — sensores BLE** | Pareamento direto de bioimpedância, cardiofrequencímetro, encoder de velocidade VBT durante sessão coach; iOS Safari não suporta → fallback manual; cobertura completa só com app nativo Sprint 31 | Academia, Fisio | 11 (basics) + 32 (full) | futuro |
 | Avaliações físicas (catálogo) | Tipos configuráveis (bioimpedância, dobras, anamnese, ROM) com campos declarativos | Academia, Fisio, Nutri | 12 | todo |
 | Registro seriado de medições | `measurements` séries temporais + gráficos de evolução | Academia, Fisio, Nutri | 12 | todo |
 | Anamnese estruturada | Template de formulário com perguntas abertas/múltipla escolha | Academia, Fisio, Nutri | 12 | todo |

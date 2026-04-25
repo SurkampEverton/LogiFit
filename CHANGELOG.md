@@ -6,6 +6,83 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — ADR 0074: Modo Coach mobile-first PWA + offline-first workout logging
+
+Pergunta do usuário (2026-04-24): "tenho o caso do instrutor olhar o treino do aluno durante o treino pelo celular, como poderiamos fazer?". Identificado **gap arquitetural real**: ADR 0063 decidiu `/app/*` responsivo mas não-PWA (gestor desktop em mente); ADR 0069 criou Modo Atendimento desktop-first (fisio em consultório). Personal trainer mobile-only no chão da academia ficou sem solução — wifi instável, mãos suadas/sujas, multi-aluno simultâneo, timer crítico entre sets.
+
+**Decisão — escopo PWA dedicado `/app/coach/*`:**
+
+1. **PWA separado** com `manifest scope: /app/coach/`, ícone roxo Treina (`#C77DFF`), Service Worker próprio. Não conflita com `/meu/*` (paciente PWA Sprint 26) nem com `/app/*` (responsivo sem SW). Coach instala via `beforeinstallprompt` após 2ª visita.
+
+2. **Reusa `attendance_sessions`** (ADR 0069) com enum estendido: `kind ∈ ('consulta','treino','avaliacao_fisica','sessao_pilates')`. `draft_content jsonb` armazena sets executados em estrutura tipada `{ exercises: [{ prescribed, executed: [{ set, weight_kg, reps, rpe, ts, client_id }], media }] }`. Ao finalizar, migra pra tabelas oficiais `workout_sessions` + `workout_logs` (Sprint 11).
+
+3. **Tela `/app/coach/sessao/[id]`** mobile-only by design (375-414px):
+   - Header compacto 56px com nome + timer + progresso (4/6 exercícios)
+   - **Foco em 1 exercício/1 set ativo** (não os 12 de uma vez)
+   - Steppers ▼▲ gigantes (44px+ touch) para kg/reps — não keyboard
+   - RPE picker 1-10 com cores (verde/amarelo/vermelho)
+   - Botão "Confirmar set" full-width 64px (ação mais frequente)
+   - Timer regressivo entre sets (vibrate ao zerar)
+   - Bottom nav fixo `[📷] [🎤] [💬] [→ Próximo]`
+
+4. **Modo "supervisão multi-aluno"** `/app/coach/multi`: cards 1/3 por aluno em sessão simultânea (até 4 num estúdio); tap entra na sessão daquele aluno; state persiste em IndexedDB; coach troca sem perder progresso.
+
+5. **Service Worker offline-first com sync queue:**
+   - Pré-cacheia plano + member info + assets antes da sessão
+   - Marca set offline → enqueue em IndexedDB com `client_id = uuid()`
+   - Toast "X sets offline" no canto; UI otimista
+   - Voltou online → sync background em ordem; idempotência via `client_id` (server upsert); conflito raro vai pra `needs_review`
+   - Permite **finalizar sessão offline**; sincroniza tudo na próxima conexão
+
+6. **Voz, foto, vídeo inline** reutilizando schema `clinical_media` (Sprint 21) com `kind='workout_form_check'`. STT background (Groq Whisper · ADR 0064) transcreve notas de voz. Vídeo curto comprimido client-side (Web Codecs/ffmpeg.wasm).
+
+7. **Push web** via Service Worker para "next_student_arrived" (detector via QR/catraca/check-in), "set_overdue" (>2× tempo esperado), "session_complete". Subscription registrada em `coach_push_subscriptions`. Notificação tem ações `[Iniciar agora]` + `[Em 5 min]`.
+
+8. **Web Bluetooth** (Android Chrome only): parear bioimpedância BLE (Tanita BC-401, Renpho), cardiofrequencímetro (Polar H10, Garmin HRM-Pro), encoder de velocidade VBT (Vitruve, GymAware). iOS Safari não suporta — fallback manual entry; cobertura completa só com app nativo Expo Sprint 31.
+
+9. **Onboarding contextual:** mobile detecta UA + viewport → tour; desktop mostra QR "abra no celular"; após 2ª visita → install prompt; após instalar → push permission prompt.
+
+**Schemas novos (Sprint 11):**
+
+```sql
+ALTER TYPE attendance_kind ADD VALUE 'treino';
+ALTER TYPE attendance_kind ADD VALUE 'avaliacao_fisica';
+ALTER TYPE attendance_kind ADD VALUE 'sessao_pilates';
+
+workout_sessions (id, tenant_id, member_id, workout_id, coach_user_id,
+                  attendance_session_id, started_at, ended_at, duration_min,
+                  total_volume_kg, avg_rpe, notes, status)
+
+workout_logs (id, tenant_id, session_id, exercise_id, set_index,
+              weight_kg, reps, rpe, rest_actual_s, is_pr, client_id, logged_at)
+              -- client_id unique pra idempotência offline
+
+coach_push_subscriptions (user_id, endpoint, keys_p256dh, keys_auth,
+                          device_name, installed_at)
+```
+
+**Sprints ajustados:**
+
+- **Sprint 00** — `<CoachLayout>` + manifest base + SW template (derivado de `<PortalLayout>`)
+- **Sprint 11 (treinos)** — sprint principal: `/app/coach/sessao/[id]` + execução de set + sync queue + tabelas
+- **Sprint 12 (avaliações físicas)** — adapta tela coach pra perimetria/1RM/saltos no celular
+- **Sprint 13 (engajamento)** — push channels coach
+- **Sprint 21 (mídias clínicas)** — extensão de `clinical_media` pra `workout_form_check`; ffmpeg.wasm client-side
+- **Sprint 26 (portal paciente PWA)** — refatora pra `<SharedPWAShell>` reusável
+- **Sprint 31 (futuro · app nativo Expo)** — cobre BLE iOS, HealthKit, push iOS reliable
+
+**Telas a prototipar:**
+
+- `prototipo/telas/coach-treino-mobile.html` (viewport 375×812)
+- `prototipo/telas/coach-multi-mobile.html` (supervisão multi-aluno)
+- `prototipo/telas/coach-install-prompt.html` (onboarding + instalação)
+
+**Negativas/riscos endereçados:** 2 PWAs no mesmo subdomínio (scope explicit), Service Worker complexity (entrega incremental), background sync iOS Safari instável (toast + manual sync), coach esquece finalizar (job nightly auto-close 12h), bundle size (<200KB JS gzipped via code-split).
+
+**Diferencial vs concorrência:** Trainerize (US$ 8) + TrueCoach (US$ 12) + Tecnofit Personal (R$ 79) — todos têm app nativo, mas nenhum tem **coach mode robusto offline-first** com sync queue, multi-aluno simultâneo, e mídia inline integrada.
+
+Inspiração UX: Hevy (execução de set), MyFitnessPal (steppers grandes), Strong (timer entre sets).
+
 ### Added — ADR 0073: Postura de segurança (defesa em profundidade) + Regras 35-40
 
 Pergunta do usuário: "agora vamos ver a segurança do código e do sistema". Análise identificou 7 gaps críticos (security headers ausentes, rate limit só em IA, sem brute force protection, sem backup/DR documentado, CSRF não documentado, sem virus scan em uploads, sem SSRF protection nos fetchers externos), 8 altos e 8 médios. Aplicada **Opção B** (ADR consolidado + 6 regras novas + ajustes pontuais nos sprints).
