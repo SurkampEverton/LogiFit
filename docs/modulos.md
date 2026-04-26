@@ -288,18 +288,18 @@ Módulos que servem todas as verticais. Extensões específicas (ex: "modalidade
 
 | Módulo | Descrição | Verticais | Sprint | Status |
 |---|---|---|---|---|
-| Banco de alimentos nacional (TACO) | ~3000 alimentos com 30+ nutrientes + medidas caseiras + equivalências calóricas | Nutri | 25 | futuro |
-| Alimentos customizados por tenant | Preparações/receitas locais com nutrientes calculados | Nutri | 25 | futuro |
-| Plano alimentar interativo | Editor drag-drop com cálculo tempo real (kcal/macros/micros) + lista de substituição automática | Nutri | 25 | futuro |
-| Export PDF com branding do tenant | Logo, cores, assinatura do profissional no plano | Nutri (aproveita todas) | 25 | futuro |
-| Catálogo de suplementos | Vitaminas/minerais/fitoterápicos com posologia e interações | Nutri | 26 | futuro |
-| Prescrição de suplementação | Dose + frequência + duração + interações medicamentosas | Nutri | 26 | futuro |
-| Catálogo de analitos laboratoriais | Valores de referência por sexo/idade/condição | Nutri | 26 | futuro |
-| Registro e análise de exames | Laudo PDF + cálculo de fora-da-faixa + gráficos de evolução | Nutri | 26 | futuro |
-| Diário alimentar do paciente | Registro por refeição com foto + cálculo de desvio vs plano | Nutri | 27 | futuro |
-| Validação do diário pela nutri | Aprovar/comentar/sinalizar + relatório semanal | Nutri | 27 | futuro |
-| Teleconsulta | Vídeo integrado com provider abstrato (ADR 0038) + gravação opt-in + transcrição stretch | Academia, Fisio, Nutri | 27 | futuro |
-| Nutri-Agent (IA) | Agente IA cruzando log de Academia + prontuário Fisio + diário alimentar + antropometria (sempre com consent ativo) | Nutri | 28 | futuro |
+| Banco de alimentos nacional (TACO) | ~3000 alimentos com 30+ nutrientes + medidas caseiras + equivalências calóricas | Nutri | 29 | futuro |
+| Alimentos customizados por tenant | Preparações/receitas locais com nutrientes calculados | Nutri | 29 | futuro |
+| Plano alimentar interativo | Editor drag-drop com cálculo tempo real (kcal/macros/micros) + lista de substituição automática | Nutri | 29 | futuro |
+| Export PDF com branding do tenant | Logo, cores, assinatura do profissional no plano | Nutri (aproveita todas) | 29 | futuro |
+| Catálogo de suplementos | Vitaminas/minerais/fitoterápicos com posologia e interações | Nutri | 30 | futuro |
+| Prescrição de suplementação | Dose + frequência + duração + interações medicamentosas | Nutri | 30 | futuro |
+| Catálogo de analitos laboratoriais | Valores de referência por sexo/idade/condição | Nutri | 30 | futuro |
+| Registro e análise de exames | Laudo PDF + cálculo de fora-da-faixa + gráficos de evolução | Nutri | 30 | futuro |
+| Diário alimentar do paciente | Registro por refeição com foto + cálculo de desvio vs plano | Nutri | 31 | futuro |
+| Validação do diário pela nutri | Aprovar/comentar/sinalizar + relatório semanal | Nutri | 31 | futuro |
+| Teleconsulta | Vídeo integrado com provider abstrato (ADR 0083 — esperado) + gravação opt-in + transcrição stretch | Academia, Fisio, Nutri | 31 | futuro |
+| Nutri-Agent (IA) | Agente IA cruzando log de Academia + prontuário Fisio + diário alimentar + antropometria (sempre com consent ativo) | Nutri | 34 | futuro |
 
 ---
 
@@ -344,13 +344,13 @@ Canal de aquisição de alunos via benefícios corporativos. Gympass foi rebrand
 
 | Módulo | Descrição | Verticais | Sprint | Status |
 |---|---|---|---|---|
-| App nativo Expo | Aluno/paciente mobile; PWA (Sprint 26) cobre 90% antes | todas | 29 | futuro |
+| App nativo Expo | Aluno/paciente mobile; PWA (Sprint 26) cobre 90% antes | todas | 35 | futuro |
 | Módulo fiscal (Focus NFe) | **Ciclo fiscal completo de emissão** via Focus NFe: NFS-e + NF-e produto + NFC-e varejo + NF-e devolução + NF-e transferência + NF-e remessa/retorno conserto + NF-e entrada própria + eventos (cancelamento, CC-e, inutilização). Ver [ADR 0059](decisions/0059-ciclo-fiscal-emissao-focus-nfe.md) | todas | 36 | futuro |
-| **Apuração mensal de receita (Grupo C — ADR 0061/0062)** | Consolida receita por regime Simples/Presumido/Real + gera memorial "pré-DAS"/"pré-DARF" | todas | 37 | **futuro (pós-produção)** |
-| **Guias oficiais DAS/DARF/DAM (Grupo D — ADR 0063)** | Integração PGDAS-D + geração DARF com código de receita + opcional integração Contabilizei/Conube/Omie/Alterdata | todas | 38 | **futuro (pós-produção)** |
-| **Obrigações acessórias SPED/ECD/ECF (Grupo E — ADR 0064)** | SPED Fiscal + Contribuições + ECD + ECF + DCTF-Web + PGDAS-D + DEFIS + DIRF; avaliar make vs buy | todas | 39 | **futuro (avaliar)** |
-| **Folha CLT + eSocial (Grupo F — ADR 0065)** | Folha completa (salário, horas, DSR, férias, 13º, rescisão) + INSS patronal + FGTS + IRRF folha + eventos eSocial S-1000 a S-5013; avaliar integração TOTVS/Senior/ADP vs motor próprio | todas | 40 | **futuro (avaliar)** |
-| Prescrição adaptativa IA por RPE | Consome `workout_sessions.rpe` do Sprint 11 + ajusta carga automaticamente | Academia | pós-29 | futuro (depende de app nativo) |
+| **Apuração mensal de receita (Grupo C — ADR 0061 + ADR a alocar ≥0084)** | Consolida receita por regime Simples/Presumido/Real + gera memorial "pré-DAS"/"pré-DARF" | todas | 37 | **futuro (pós-produção)** |
+| **Guias oficiais DAS/DARF/DAM (Grupo D — ADR a alocar ≥0084)** | Integração PGDAS-D + geração DARF com código de receita + opcional integração Contabilizei/Conube/Omie/Alterdata | todas | 38 | **futuro (pós-produção)** |
+| **Obrigações acessórias SPED/ECD/ECF (Grupo E — ADR a alocar ≥0084)** | SPED Fiscal + Contribuições + ECD + ECF + DCTF-Web + PGDAS-D + DEFIS + DIRF; avaliar make vs buy | todas | 39 | **futuro (avaliar)** |
+| **Folha CLT + eSocial (Grupo F — ADR a alocar ≥0084)** | Folha completa (salário, horas, DSR, férias, 13º, rescisão) + INSS patronal + FGTS + IRRF folha + eventos eSocial S-1000 a S-5013; avaliar integração TOTVS/Senior/ADP vs motor próprio | todas | 40 | **futuro (avaliar)** |
+| Prescrição adaptativa IA por RPE | Consome `workout_sessions.rpe` do Sprint 11 + ajusta carga automaticamente | Academia | pós-35 | futuro (depende de app nativo) |
 
 ---
 

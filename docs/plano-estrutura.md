@@ -4,8 +4,8 @@
 > Este é o plano que gerou a estrutura inicial do projeto. As contagens e listas abaixo refletem o estado daquele momento (ex: "8 ADRs", "8 regras") e **não são atualizadas conforme o projeto evolui** — para o estado atual consulte:
 > - **Roadmap vivo:** [`docs/roadmap.md`](roadmap.md)
 > - **Histórico de mudanças:** [`CHANGELOG.md`](../CHANGELOG.md)
-> - **Decisões arquiteturais:** [`docs/decisions/`](decisions/) (atualmente 41 ADRs publicados)
-> - **Regras vivas:** [`docs/rules.md`](rules.md) (atualmente 43 regras duras)
+> - **Decisões arquiteturais:** [`docs/decisions/`](decisions/) (atualmente 44 ADRs publicados — 0001-0010, 0035, 0047-0079)
+> - **Regras vivas:** [`docs/rules.md`](rules.md) (atualmente 44 regras duras)
 >
 > A intenção deste arquivo é arqueológica — entender de onde o projeto partiu. Não é fonte de verdade operacional. Última leitura confirmada: 2026-04-25.
 

@@ -6,6 +6,70 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — 13ª auditoria 2026-04-25 (cascade pós-12ª: slugs ADR 0035 quebrados + Sprint numbers stale em modulos.md/roadmap.md)
+
+3 agentes Explore em paralelo. Validações diretas eliminaram falsos positivos (threat models faltando para Sprints 24/25/27/31 — design intencional ADR 0073 lista 5 críticos; ADR 0059:292 referência a "ADR 0038 NF-e recepção" — está correto). **18 ocorrências reais corrigidas em 6 arquivos:**
+
+**P1 — Slug ADR 0035 quebrado (4 ocorrências):**
+ADR 0035 foi criado com slug `0035-ocr-boleto-provider-abstrato.md` mas 3 ADRs de provider abstrato (0048, 0049, 0050) referenciavam o slug planejado original `0035-sem-implementar-ocr-ainda-mas-definido.md` (que nunca existiu).
+- [docs/decisions/0048-busca-cnpj-provider-abstrato.md:19,111](docs/decisions/0048-busca-cnpj-provider-abstrato.md) (2×)
+- [docs/decisions/0049-device-hub-wearables-clinicos.md:22](docs/decisions/0049-device-hub-wearables-clinicos.md)
+- [docs/decisions/0050-pipeline-exames-laboratoriais.md:136](docs/decisions/0050-pipeline-exames-laboratoriais.md)
+
+**P2 — Cascade pós-12ª auditoria não propagada para `modulos.md` + `roadmap.md` (14 ocorrências):**
+
+A 12ª auditoria realocou ADRs 0035-0038 → 0080-0083 (resolvendo colisões em Sprints 29/30/31), mas `docs/modulos.md` e `docs/roadmap.md` ainda referenciavam:
+- 12 linhas em [docs/modulos.md §Nutri (Fase 3)](docs/modulos.md): tabela com Sprint numbers offset por 4 (TACO em "Sprint 25" → era na verdade 29; suplementos "26" → 30; diário+teleconsulta "27" → 31; Nutri-Agent "28" → 34); + cita "ADR 0038" para Teleconsulta (era 0083 pós-12ª).
+- 1 linha em [docs/modulos.md:347](docs/modulos.md): "App nativo Expo Sprint 29" (era 35); "Prescrição adaptativa pós-29" (era pós-35).
+- 4 linhas em [docs/modulos.md:349-352](docs/modulos.md): Grupos C/D/E/F fiscais citando ADR 0062/0063/0064/0065 (que já são Pesquisa Global/Responsividade/IA/Subdomínio respectivamente — bug herdado da 11ª auditoria).
+- 4 linhas em [docs/roadmap.md:70-73](docs/roadmap.md): mesma cascata fiscal acima — Grupos C-F com ADR 0062/0063/0064/0065 errados.
+
+Substituições: ADRs fiscais agora apontam para "ADR a alocar ≥0084" conforme [§Numeração pós-0046](docs/roadmap.md).
+
+### Docs — 12ª auditoria 2026-04-25 (resolve colisão ADRs 0035-0038 + backref RIPDs em 6 sprints)
+
+3 agentes Explore em paralelo. Achado mais sério: **4 sprints citavam ADRs que já existiam com outro propósito ou estavam alocados a outras sprints** (escapou das 11 auditorias anteriores).
+
+**Colisões de numeração ADR (4 realocações para faixa ≥0080):**
+- [Sprint 29:39](docs/sprints/29-nutri-alimentos-e-plano.md): ADR 0035 (TACO) → **0080** porque 0035 já existe Accepted (OCR boleto, formalizado 2026-04-25)
+- [Sprint 29:40](docs/sprints/29-nutri-alimentos-e-plano.md): ADR 0036 (Plano alimentar) → **0081** porque 0036 alocado a Sprint 16 (rateio intercompany)
+- [Sprint 30](docs/sprints/30-nutri-suplementos-exames.md) (3 ocorrências): ADR 0037 (Suplementação) → **0082** porque 0037 alocado a Sprint 17 (Open Finance)
+- [Sprint 31](docs/sprints/31-geral-diario-alimentar-teleconsulta.md) (5 ocorrências): ADR 0038 (Teleconsulta provider) → **0083** porque 0038 alocado a Sprint 17 (NF-e recepção)
+- [Sprint 35:36](docs/sprints/35-mobile-app-nativo-expo.md) bumped de "≥0080" para "≥0084" (consequência)
+- [docs/roadmap.md](docs/roadmap.md) ganha tabela "Realocações da faixa 0011-0046 → 0080+" documentando os 4 casos
+- [RIPD v1.0-teleconsulta.md:13](docs/compliance/ripd/v1.0-teleconsulta.md): atualizado para referenciar ADR 0083 específico
+
+**Backrefs RIPD (rastreabilidade bidirecional, 6 sprints):**
+Auditoria 11 criou 6 stubs RIPD apontando pra suas sprints, mas sprints não referenciavam de volta. Adicionado item DoD em cada:
+- [Sprint 11](docs/sprints/11-geral-prescricoes-e-biblioteca.md) → `v1.0-prescricoes.md`
+- [Sprint 12](docs/sprints/12-geral-avaliacoes-fisicas.md) → `v1.0-avaliacoes-fisicas.md`
+- [Sprint 21](docs/sprints/21-fisio-evolucao-midias.md) → `v1.0-evolucao-midias.md`
+- [Sprint 26](docs/sprints/26-geral-portal-paciente-web.md) → `v1.0-portal-paciente.md`
+- [Sprint 34](docs/sprints/34-nutri-agent-ia.md) → `v1.0-nutri-agent-ia.md` (corrige nome estava `v1.0-nutri-agent.md`)
+- [Sprint 31](docs/sprints/31-geral-diario-alimentar-teleconsulta.md): corrige ref quebrada `v1.0-diario-alimentar.md` → `v1.0-nutri-diario.md` (arquivo real existente)
+
+### Docs — 11ª auditoria 2026-04-25 (4 inconsistências críticas + materializa stubs compliance/ops)
+
+3 agentes Explore em paralelo. Foco em coerência de cross-references e cobertura compliance/security/ops.
+
+**Críticos (4):**
+- [ADR 0061](docs/decisions/0061-motor-retencoes-e-cobertura-fiscal-faseada.md): atribuía ADRs 0062-0065 a sprints 37-40, mas esses números já existem com outras decisões (Pesquisa Global, Responsividade, IA, Subdomínio). Trocado por placeholder "ADR a alocar quando Sprint 37+ entrar (≥0080)".
+- [ADR 0061:107](docs/decisions/0061-motor-retencoes-e-cobertura-fiscal-faseada.md): citava "regra 1b" (não existe — rules.md tem só numeração inteira 1-44). Trocado por "regra 43" (MFA obrigatório).
+- [Sprint 02:64](docs/sprints/02-geral-crm-pessoas.md): status ADR 0077 conflitava — ADR diz "Accepted", sprint dizia "Proposed". Alinhado: design Accepted + gate operacional separado para ativação em tenant clínico.
+- [docs/comercial.md:301](docs/comercial.md): "4 cenários canônicos" (omitia modo solo) → "5".
+
+**Estruturais (5):**
+- [docs/rules.md](docs/rules.md): conteúdo reorganizado na ordem do índice (Arquiteturais 1-8 → Processo 9-15 → Código 16-20 → Multi-empresa 21-26 → ... → Design system 44 no fim).
+- [CLAUDE.md:65-67](CLAUDE.md): explicita regras omitidas do digest (9-10, 12, 17-20, 21-26).
+- [docs/roadmap.md](docs/roadmap.md): adiciona convenção "sprint que cita ADR XXXX (esperado) não entra em doing sem ADR publicado".
+- [ADR 0006:33](docs/decisions/0006-hierarquia-group-tenant-company-unit.md): qualifica "passaporte de franquia" (vs cross-tenant ADR 0077).
+- [docs/compliance/samd-classification.md:36](docs/compliance/samd-classification.md): adiciona Generative UI (Sprint 28) e Modo Coach (ADR 0074) à tabela.
+
+**Stubs novos (regra 29 + ADR 0054 / regra 35-40 + ADR 0073 / regra 40):**
+- 6 RIPDs: `v1.0-prescricoes.md`, `v1.0-avaliacoes-fisicas.md`, `v1.0-evolucao-midias.md`, `v1.0-portal-paciente.md`, `v1.0-teleconsulta.md`, `v1.0-nutri-agent-ia.md`
+- 3 threat models STRIDE: `passaporte-cross-tenant.md`, `assistente-ia-tools.md`, `device-hub-oauth.md`
+- 4 runbooks: `asaas-outage.md`, `upstash-down.md`, `focus-nfe-outage.md`, `oracle-cutover-rollback.md`
+
 ### Docs — reforço de extensibilidade i18n 2026-04-25
 
 Pergunta do usuário: "futuramente vamos ter outras [linguagens] diferentes de pt-br, o sistema já vai estar preparado e facilitado para a implementação?". Diagnóstico: a base já estava bem desenhada (ADR 0052 + Regra 27 + Sprint 00), mas tinha 6 pontos onde pequenos ajustes/explicitações tornam a futura adição de locale (`de-DE`, `fr-FR`, etc) um runbook mecânico em vez de refactor. Nenhum locale novo aplicado agora — apenas garantir que o caminho fique aberto.

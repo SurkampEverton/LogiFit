@@ -133,7 +133,7 @@ Ambos podem coexistir em uma consulta — raio-X no Sprint 17, laudo de bioquím
 
 ## Related
 
-- Reusa [ADR 0035 — OCR provider abstrato](0035-sem-implementar-ocr-ainda-mas-definido.md)
+- Reusa [ADR 0035 — OCR provider abstrato](0035-ocr-boleto-provider-abstrato.md)
 - Reforça [ADR 0015 — Copilot consulta/sugestão, nunca prescrição]
 - Espelha padrão de curadoria do [ADR 0049 — Device Hub](0049-device-hub-wearables-clinicos.md)
 - Preserva regras 4 (criptografia), 5 (audit), 6 (consent cross-module), 25 (dado clínico cross-company franchise)

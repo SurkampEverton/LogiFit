@@ -16,7 +16,7 @@ A Receita Federal disponibiliza consulta pública de CNPJ; há 3 providers madur
 
 ## Decision
 
-Adotar **provider abstrato** (mesmo padrão do [ADR 0035 — OCR](0035-sem-implementar-ocr-ainda-mas-definido.md)) permitindo o admin do tenant escolher o provider:
+Adotar **provider abstrato** (mesmo padrão do [ADR 0035 — OCR](0035-ocr-boleto-provider-abstrato.md)) permitindo o admin do tenant escolher o provider:
 
 - **BrasilAPI** (default) — gratuito, open source, estável, sem autenticação, cobre razão social, endereço, CNAE, porte, **regime tributário**, situação cadastral. Uso principal.
 - **ReceitaWS** — gratuito 3 req/min (ou plano pago), dados similares, mais antigo no mercado. Usado como fallback se BrasilAPI estiver indisponível.
@@ -108,5 +108,5 @@ Cache é **global** (não por tenant) — mesmo CNPJ consultado por tenant A ser
 ## Related
 
 - Complementa [ADR 0047 — Cadastro central persons](0047-cadastro-central-persons.md)
-- Mesmo padrão arquitetural de [ADR 0035 — OCR provider abstrato](0035-sem-implementar-ocr-ainda-mas-definido.md) (quando existir formalmente no Sprint 15)
+- Mesmo padrão arquitetural de [ADR 0035 — OCR provider abstrato](0035-ocr-boleto-provider-abstrato.md) (quando existir formalmente no Sprint 15)
 - Informa Sprint 18 TISS/TUSS (regime tributário preenchido automaticamente)

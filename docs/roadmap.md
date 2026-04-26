@@ -67,10 +67,10 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 | 37 | 35 | App nativo Expo (aluno/paciente) — Bluetooth + push + **Apple Health + Google Health Connect (expande Device Hub)** | mobile | futuro | MVP estável + #28 + #34 |
 | 38 | [36](sprints/36-geral-fiscal-focus-nfe.md) | **Módulo fiscal — emissão completa via Focus NFe** (NFS-e + NF-e produto + NFC-e + devolução + transferência + remessa conserto + entrada própria + eventos) — ADR 0059 | fiscal | futuro | #6, #18 (15 schemas), #20 (17 inbox), #24 (POS), #25 (equipamento) |
 | 39 | pós-35 | **Prescrição adaptativa IA por RPE** (ajuste de carga automático) | academia/ia | futuro | #13, #37 (app nativo com input RPE em tempo real) |
-| 40 | 37 | **Apuração mensal de receita (Grupo C — ADR 0061/0062)** — consolida receita por regime Simples/Presumido/Real + gera memorial "pré-DAS"/"pré-DARF"; sem emissão oficial | fiscal | **futuro (pós-produção)** | #38, piloto com tenant real |
-| 41 | 38 | **Guias oficiais DAS/DARF/DAM (Grupo D — ADR 0063)** — integração PGDAS-D + geração DARF com código de receita; opcional integração Contabilizei/Conube/Omie | fiscal | **futuro (pós-produção)** | #40 |
-| 42 | 39 | **Obrigações acessórias SPED/ECD/ECF/DCTF-Web/DEFIS/DIRF (Grupo E — ADR 0064)** — motor ou delegação a provider tributário (SCI/Alterdata/Domínio); **alta complexidade** | fiscal | **futuro (avaliar make vs buy)** | #40, #41 |
-| 43 | 40 | **Folha CLT + eSocial (Grupo F — ADR 0065)** — folha completa (salário, horas, DSR, férias, 13º, rescisão) + INSS patronal + FGTS + IRRF + eventos eSocial S-1000 a S-5013; **muito complexa** — provável integração TOTVS/Senior/ADP vs motor próprio | rh | **futuro (avaliar make vs buy)** | — |
+| 40 | 37 | **Apuração mensal de receita (Grupo C — ADR 0061 + ADR a alocar ≥0084)** — consolida receita por regime Simples/Presumido/Real + gera memorial "pré-DAS"/"pré-DARF"; sem emissão oficial | fiscal | **futuro (pós-produção)** | #38, piloto com tenant real |
+| 41 | 38 | **Guias oficiais DAS/DARF/DAM (Grupo D — ADR a alocar ≥0084)** — integração PGDAS-D + geração DARF com código de receita; opcional integração Contabilizei/Conube/Omie | fiscal | **futuro (pós-produção)** | #40 |
+| 42 | 39 | **Obrigações acessórias SPED/ECD/ECF/DCTF-Web/DEFIS/DIRF (Grupo E — ADR a alocar ≥0084)** — motor ou delegação a provider tributário (SCI/Alterdata/Domínio); **alta complexidade** | fiscal | **futuro (avaliar make vs buy)** | #40, #41 |
+| 43 | 40 | **Folha CLT + eSocial (Grupo F — ADR a alocar ≥0084)** — folha completa (salário, horas, DSR, férias, 13º, rescisão) + INSS patronal + FGTS + IRRF + eventos eSocial S-1000 a S-5013; **muito complexa** — provável integração TOTVS/Senior/ADP vs motor próprio | rh | **futuro (avaliar make vs buy)** | — |
 
 ---
 

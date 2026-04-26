@@ -19,7 +19,7 @@ Cada um tem caminho de integração próprio (cloud API, Bluetooth LE, USB propr
 
 ## Decision
 
-Adotar **`Device Hub`** como módulo transversal com **interface `DeviceProvider` abstrata**, mesmo padrão arquitetural do OCR ([ADR 0035](0035-sem-implementar-ocr-ainda-mas-definido.md)) e CNPJ ([ADR 0048](0048-busca-cnpj-provider-abstrato.md)).
+Adotar **`Device Hub`** como módulo transversal com **interface `DeviceProvider` abstrata**, mesmo padrão arquitetural do OCR ([ADR 0035](0035-ocr-boleto-provider-abstrato.md)) e CNPJ ([ADR 0048](0048-busca-cnpj-provider-abstrato.md)).
 
 ### Arquitetura
 
