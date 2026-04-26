@@ -15,7 +15,7 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 
 - **Faixa 1 (semana 1):** infra core — monorepo, Supabase local, Drizzle, Biome, Vitest, Playwright, CI verde básica, i18n config, Sentry/PostHog, design tokens
 - **Faixa 2 (semanas 2-3):** segurança em profundidade — Cloudflare proxy + Turnstile, headers + CSP nonce, `safeFetch`, `scanUpload`, backup R2, OWASP ZAP, secret scanning, Dependabot, OSV-scanner, SBOM, `/.well-known/security.txt`, `packages/security/high-risk-actions.ts`
-- **Faixa 3 (semana 4):** lints custom + docs operacionais — `no-unwrapped-action`, `no-raw-fetch`, `no-unscanned-upload`, `no-hardcoded-design-token`, `no-direct-supabase-query`, `no-supabase-functions`, `high-risk-action-must-require-recent-mfa`, `cross-tenant-read-must-log` (este vira ativo só no Sprint 02), templates RIPD vazios para sprints clínicos, `docs/dev/portability.md`, `docs/dev/realtime.md`
+- **Faixa 3 (semana 4):** lints custom + docs operacionais — `no-unwrapped-action`, `no-raw-fetch`, `no-unscanned-upload`, `no-hardcoded-design-token`, `no-direct-supabase-query`, `no-supabase-functions`, `high-risk-action-must-require-recent-mfa`, `cross-tenant-read-must-log` (este vira ativo só no Sprint 02), `no-window-alert` + `no-hardcoded-toast-message` (regra 45 / ADR 0089), templates RIPD vazios para sprints clínicos, `docs/dev/portability.md`, `docs/dev/realtime.md`
 
 **Se Faixa 3 estourar:** mover lints `cross-tenant-read-must-log` para Sprint 02 (onde primeiro consumidor real existe) e `no-hardcoded-design-token` para Sprint 00b (menu lateral, primeiro consumidor real de design system). Sprint 00 mantém DoD se entregar Faixas 1+2 + esqueleto da Faixa 3.
 
@@ -44,6 +44,7 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 - [ADR 0071 — Sistema de tratamento de erros + alertas em tempo real](../decisions/0071-sistema-tratamento-erros-alertas-tempo-real.md) — **entrega infra base aqui** (envelope + wrappers + middleware + translators stubs + sanitização LGPD + regra 33 + lint)
 - [ADR 0073 — Postura de segurança (defesa em profundidade)](../decisions/0073-postura-seguranca-defesa-em-profundidade.md) — **entrega camadas 1, 3 e 6 aqui** (security headers + CSP nonce + rate limit global + safeFetch + scanUpload + secret scanning + Dependabot/OSV-scanner + SBOM + `/.well-known/security.txt` + página `/seguranca` + regras 35-38 ativas em CI)
 - [ADR 0078 — Hospedagem em duas fases](../decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md) — **8 regras de portabilidade ativas desde aqui** (storage adapter pattern, RLS em SQL puro, JWT cookie próprio, sem Edge Functions, lint `no-supabase-functions` + `no-direct-supabase-query`)
+- [ADR 0089 — Sistema de mensagens padronizadas](../decisions/0089-sistema-mensagens-padronizadas.md) — **entrega catálogo de 6 tipos aqui** (Toast/Banner/AlertDialog/ConfirmDialog/PromptDialog/FormError + Sonner + helpers `toast`/`confirm`/`prompt` + `<Toaster nonce>` + lints `no-window-alert` + `no-hardcoded-toast-message` + regra 45 ativa em CI)
 
 ## Commit
 
@@ -93,6 +94,36 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 - [ ] **Biome lint rule custom `no-unwrapped-action`** — bloqueia Server Action/API Route sem `wrapAction`/`wrapApiHandler` (exceção via comentário `// wrap-exempt: <motivo>`)
 - [ ] i18n catalog: mensagens dos 16 códigos + mensagens dos translators nos 3 locales (regra 27)
 - [ ] Teste E2E: Server Action com panic → retorna envelope `{ok:false, error:{code:'INTERNAL_ERROR', request_id}}` + `system_alerts` criado (mock) + Sentry capturou + toast aparece no frontend
+
+**Sistema de mensagens padronizadas (ADR 0089 + regra 45):**
+
+- [ ] Instalar `sonner` em `apps/web` (engine de toast — ratificado pelo ADR 0089)
+- [ ] `packages/ui/components/messages/` — catálogo fechado de 6 tipos:
+  - `toaster.tsx` — provider único (Sonner) com `nonce` CSP recebido via prop (regra 35)
+  - `toast.tsx` — render custom com tokens `--ev-*` + variantes success/info/warning/error/critical
+  - `banner.tsx` — sticky top da `<AppLayout>`, variantes info/warning/danger, `dismissible` + `storageKey` para persistir dismiss em sessão
+  - `alert-dialog.tsx` — Radix Dialog base com tokens EV; bottom-sheet em mobile / centered em desktop (reusa `<ResponsiveModal>`)
+  - `confirm-dialog.tsx` — wrapper de `<AlertDialog>` com prop `danger` + `confirmLabel`/`cancelLabel`
+  - `prompt-dialog.tsx` — wrapper de Dialog + `<input>` + `validator?: (v) => string | null` + `<FormError>` linkado via `aria-describedby`
+  - `form-error.tsx` — texto inline `aria-describedby` + ícone leading; **nunca** isolado
+- [ ] `packages/ui/messages/api.ts` exporta API imperativa:
+  - `toast` com `success/info/warning/error/critical/fromApiError` + variantes com `action`/`description`
+  - `confirm({ title, body, danger? }) => Promise<boolean>`
+  - `prompt({ title, label, validator? }) => Promise<string | null>`
+  - `useActionResult(result, opts)` — hook que delega para `toast.fromApiError` por padrão
+- [ ] `packages/ui/messages/api-error-translator.ts` — `toast.fromApiError(error: ApiError)` mapeia envelope ADR 0071: `code` → severidade, `message` → texto, `request_id` → description com copy, `runbook` → action button "Ver runbook", `retry_after_ms` → action "Tentar novamente"
+- [ ] `<Toaster nonce={cspNonce}>` plugado em `apps/web/app/layout.tsx` (Server Component lê nonce do header CSP)
+- [ ] i18n catalog `messages.json` em pt-BR/en-US/es-419 com chaves comuns reusáveis: `messages.action.{succeeded,failed,retry,dismiss,ok,cancel,confirm,view_runbook,view_details,copy_request_id}`
+- [ ] **Biome lint rule custom `no-window-alert`** — bloqueia `window.alert/confirm/prompt` + `alert(...)` no escopo global (exceção via `// alert-exempt: <motivo>`)
+- [ ] **Biome lint rule custom `no-hardcoded-toast-message`** — bloqueia string literal e template literal sem `t()` em `toast.*()`, `confirm({ title|body })`, `prompt({ title|label })`, `<Banner>{...}</Banner>`
+- [ ] Storybook/styleguide page `apps/web/app/styleguide/messages/` espelhando 1:1 a seção `#mensagens` do protótipo (`prototipo/designsystem/index.html`) com tokens shadcn-mapping aplicados
+- [ ] E2E Playwright `apps/web/e2e/messages.spec.ts` em 3 viewports (390/768/1280):
+  - dispara cada tipo via Server Action mock
+  - valida ARIA (`role="status|alert|alertdialog|dialog"`, `aria-live`, `aria-modal`, `aria-describedby` resolvendo)
+  - valida i18n key resolved no locale ativo (sem `messages.foo.bar` cru no DOM)
+  - valida `toast.critical` exige acknowledge para sumir
+  - valida `<AlertDialog>` vira bottom-sheet em mobile
+- [ ] Composição com IA Camada 3: `<ActionConfirmDialog>` (ADR 0075) será wrapper sobre `<ConfirmDialog>` deste catálogo no Sprint 17 — escopo MVP só formaliza contrato
 
 **i18n (ADR 0052):**
 

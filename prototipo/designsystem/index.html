@@ -49,6 +49,7 @@
         <li><a href="#tabelas">Tabelas</a></li>
         <li><a href="#dots">Dots & Divider</a></li>
         <li><a href="#utilities">Utilities</a></li>
+        <li><a href="#mensagens">Mensagens</a></li>
       </ul>
     </div>
 
@@ -616,6 +617,212 @@
         </div>
       </div>
       <div class="ds-tokens-list">classes: <strong>.ev-stack</strong> · <strong>.ev-stack-2</strong> · <strong>.ev-row</strong> · <strong>.ev-row-between</strong> · <strong>.ev-grid</strong></div>
+    </section>
+
+    <!-- ===================== MENSAGENS ===================== -->
+    <section class="ds-section" id="mensagens">
+      <div class="ds-section__head">
+        <div class="ds-section__eyebrow">Componentes · 08</div>
+        <h2>Mensagens</h2>
+        <p class="ds-section__lead">Catálogo de 6 tipos para feedback ao usuário (<a href="../../docs/decisions/0089-sistema-mensagens-padronizadas.md">ADR 0089</a> + regra 45). <strong>Proibido</strong> <code>window.alert / confirm / prompt</code>; helpers <code>toast.*()</code> / <code>confirm()</code> / <code>prompt()</code> os substituem.</p>
+      </div>
+
+      <!-- Toast -->
+      <div class="ds-subsection">
+        <div class="ds-subsection__title">Toast — .ev-toast</div>
+        <p class="text-muted" style="margin-bottom: 16px;">Feedback efêmero pós-ação (5s). Severidades: success / info / warning / error / critical (∞ + requer ack). Posição: bottom-center mobile, bottom-right desktop. Engine: Sonner.</p>
+        <div class="ds-demo" style="flex-direction: column; align-items: stretch; gap: 12px; max-width: 420px;">
+          <div class="ev-toast ev-toast--success" role="status" aria-live="polite">
+            <span class="ev-toast__icon" aria-hidden="true">✓</span>
+            <div class="ev-toast__body">
+              <p class="ev-toast__title">Membro criado com sucesso</p>
+              <p class="ev-toast__description">Maria Silva adicionada ao plano Pro mensal.</p>
+            </div>
+            <button class="ev-toast__dismiss" aria-label="Dispensar">✕</button>
+          </div>
+          <div class="ev-toast ev-toast--info" role="status" aria-live="polite">
+            <span class="ev-toast__icon" aria-hidden="true">ℹ</span>
+            <div class="ev-toast__body">
+              <p class="ev-toast__title">Aulas de hoje</p>
+              <p class="ev-toast__description">3 confirmadas, 1 pendente de reposição.</p>
+            </div>
+            <button class="ev-toast__dismiss" aria-label="Dispensar">✕</button>
+          </div>
+          <div class="ev-toast ev-toast--warning" role="alert" aria-live="assertive">
+            <span class="ev-toast__icon" aria-hidden="true">⚠</span>
+            <div class="ev-toast__body">
+              <p class="ev-toast__title">Asaas respondendo lento</p>
+              <p class="ev-toast__description">Tentativa 2/3 em 5s.</p>
+              <div class="ev-toast__actions">
+                <button class="ev-toast__action">Tentar agora</button>
+              </div>
+            </div>
+            <button class="ev-toast__dismiss" aria-label="Dispensar">✕</button>
+          </div>
+          <div class="ev-toast ev-toast--error" role="alert" aria-live="assertive">
+            <span class="ev-toast__icon" aria-hidden="true">✕</span>
+            <div class="ev-toast__body">
+              <p class="ev-toast__title">Falha ao salvar avaliação</p>
+              <p class="ev-toast__description">Código: VALIDATION_ERROR · ID: a3f8-2b61</p>
+              <div class="ev-toast__actions">
+                <button class="ev-toast__action">Tentar de novo</button>
+                <button class="ev-toast__action">Ver detalhes</button>
+              </div>
+            </div>
+            <button class="ev-toast__dismiss" aria-label="Dispensar">✕</button>
+          </div>
+          <div class="ev-toast ev-toast--critical" role="alert" aria-live="assertive">
+            <span class="ev-toast__icon" aria-hidden="true">⛔</span>
+            <div class="ev-toast__body">
+              <p class="ev-toast__title">Asaas indisponível</p>
+              <p class="ev-toast__description">Cobranças automáticas pausadas. Código: SERVICE_UNAVAILABLE · ID: 8c1a-9e44</p>
+              <div class="ev-toast__actions">
+                <button class="ev-toast__action">Ver runbook</button>
+                <button class="ev-toast__action">Reconhecer</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <pre class="ds-code">// Imperativo (Sonner via @repo/ui/messages)
+toast.success(t('members.created'))
+toast.error(t('members.create_failed'), { description: '...' })
+toast.critical(t('integrations.asaas_down'), {
+  action: { label: t('common.view_runbook'), onClick: () =&gt; open(runbook) }
+})
+toast.fromApiError(error)  // converte ApiError do ADR 0071 em toast direto</pre>
+        <div class="ds-tokens-list">tokens: <strong>--ev-surface</strong> · <strong>--ev-success / primary / warning / danger</strong> · <strong>--ev-radius-lg</strong> · <strong>--ev-z-toast (500)</strong> · <strong>--ev-text-sm</strong></div>
+      </div>
+
+      <!-- Banner -->
+      <div class="ds-subsection">
+        <div class="ds-subsection__title">Banner — .ev-banner</div>
+        <p class="text-muted" style="margin-bottom: 16px;">Estado persistente da página/tenant. Sticky no topo do <code>&lt;AppLayout&gt;</code>. Severidades: info / warning / danger.</p>
+        <div class="ds-demo" style="flex-direction: column; align-items: stretch; gap: 12px;">
+          <div class="ev-banner ev-banner--info" role="status" aria-live="polite">
+            <span class="ev-banner__icon" aria-hidden="true">ℹ</span>
+            <div class="ev-banner__body">
+              <p class="ev-banner__title">Trial expira em 3 dias</p>
+              <p class="ev-banner__description">Cadastre cartão antes de 29/abr para manter dados originais; após, anonimização em 30 dias.</p>
+            </div>
+            <div class="ev-banner__actions">
+              <button class="ev-btn ev-btn--sm ev-btn--primary">Adicionar cartão</button>
+            </div>
+          </div>
+          <div class="ev-banner ev-banner--warning" role="status" aria-live="polite">
+            <span class="ev-banner__icon" aria-hidden="true">⚠</span>
+            <div class="ev-banner__body">
+              <p class="ev-banner__title">Comitê de IA pendente</p>
+              <p class="ev-banner__description">Feature "Sugerir prescrição" bloqueada (CFM 2.454/2026 + regra 28).</p>
+            </div>
+            <div class="ev-banner__actions">
+              <button class="ev-btn ev-btn--sm">Cadastrar comitê</button>
+            </div>
+          </div>
+          <div class="ev-banner ev-banner--danger" role="status" aria-live="polite">
+            <span class="ev-banner__icon" aria-hidden="true">⛔</span>
+            <div class="ev-banner__body">
+              <p class="ev-banner__title">Conta suspensa por inadimplência</p>
+              <p class="ev-banner__description">Sistema em modo read-only. Pagamento da fatura libera operação.</p>
+            </div>
+            <div class="ev-banner__actions">
+              <button class="ev-btn ev-btn--sm ev-btn--danger">Pagar fatura</button>
+            </div>
+          </div>
+        </div>
+        <pre class="ds-code">&lt;Banner severity="warning" dismissible storageKey="trial-expira"&gt;
+  {t('billing.trial.expires_soon', { days: 3 })}
+&lt;/Banner&gt;</pre>
+        <div class="ds-tokens-list">tokens: <strong>--ev-primary / warning / danger-soft</strong> · <strong>--ev-radius-md</strong> · <strong>--ev-z-sticky (200)</strong></div>
+      </div>
+
+      <!-- AlertDialog -->
+      <div class="ds-subsection">
+        <div class="ds-subsection__title">AlertDialog — .ev-alert-dialog (substitui <code>window.confirm</code>)</div>
+        <p class="text-muted" style="margin-bottom: 16px;">Confirmação destrutiva. Cancelar autofocus + ação destacada. Bottom-sheet em mobile, centered em desktop.</p>
+        <div class="ds-demo" style="background-color: rgba(26, 37, 47, 0.55); border-radius: var(--ev-radius-lg); padding: 24px; min-height: 280px; align-items: center; justify-content: center;">
+          <div class="ev-modal ev-alert-dialog ev-alert-dialog--danger" role="alertdialog" aria-modal="true" aria-labelledby="ad-title" style="max-width: 420px; border-radius: var(--ev-radius-lg);">
+            <div class="ev-modal__header">
+              <h3 class="ev-modal__title" id="ad-title">
+                <span class="ev-alert-dialog__icon" aria-hidden="true">⚠</span>
+                Apagar membro?
+              </h3>
+            </div>
+            <div class="ev-modal__body">
+              Maria Silva e todo o histórico de aulas (12 meses) serão removidos. Esta ação não pode ser desfeita.
+            </div>
+            <div class="ev-modal__footer">
+              <button class="ev-btn">Cancelar</button>
+              <button class="ev-btn ev-btn--danger">Apagar definitivamente</button>
+            </div>
+          </div>
+        </div>
+        <pre class="ds-code">// Imperativo (substitui window.confirm)
+const confirmed = await confirm({
+  title: t('members.delete.title'),
+  body: t('members.delete.body', { name: member.name }),
+  danger: true,
+})
+if (confirmed) await deleteMember(member.id)</pre>
+        <div class="ds-tokens-list">tokens: <strong>--ev-surface</strong> · <strong>--ev-danger</strong> · <strong>--ev-radius-lg</strong> · <strong>--ev-z-modal (400)</strong></div>
+      </div>
+
+      <!-- PromptDialog -->
+      <div class="ds-subsection">
+        <div class="ds-subsection__title">PromptDialog — .ev-prompt-dialog (substitui <code>window.prompt</code>)</div>
+        <p class="text-muted" style="margin-bottom: 16px;">Coleta input curto antes de ação. Validação inline com <code>FormError</code> linkado via <code>aria-describedby</code>.</p>
+        <div class="ds-demo" style="background-color: rgba(26, 37, 47, 0.55); border-radius: var(--ev-radius-lg); padding: 24px; min-height: 360px; align-items: center; justify-content: center;">
+          <div class="ev-modal ev-prompt-dialog" role="dialog" aria-modal="true" aria-labelledby="pd-title" style="max-width: 420px; border-radius: var(--ev-radius-lg);">
+            <div class="ev-modal__header">
+              <h3 class="ev-modal__title" id="pd-title">Motivo da exclusão</h3>
+              <button class="ev-modal__close" aria-label="Fechar">✕</button>
+            </div>
+            <div class="ev-modal__body">
+              <p style="margin-bottom: var(--ev-space-3);">Para auditoria LGPD, registre o motivo de excluir Maria Silva.</p>
+              <div class="ev-prompt-dialog__field">
+                <label class="ev-prompt-dialog__label" for="pd-input">Motivo (mínimo 10 caracteres)</label>
+                <input id="pd-input" type="text" class="ev-input" placeholder="Solicitação do titular via canal..." aria-describedby="pd-error" aria-invalid="true" />
+                <span class="ev-form-error" id="pd-error">
+                  <span class="ev-form-error__icon" aria-hidden="true">⚠</span>
+                  Mínimo 10 caracteres
+                </span>
+              </div>
+            </div>
+            <div class="ev-modal__footer">
+              <button class="ev-btn">Cancelar</button>
+              <button class="ev-btn ev-btn--primary">Confirmar</button>
+            </div>
+          </div>
+        </div>
+        <pre class="ds-code">// Imperativo (substitui window.prompt)
+const reason = await prompt({
+  title: t('members.delete.reason.title'),
+  label: t('members.delete.reason.label'),
+  validator: (v) =&gt; v.length &lt; 10 ? t('errors.min_length', { n: 10 }) : null,
+})
+if (reason !== null) await deleteMember(member.id, reason)</pre>
+        <div class="ds-tokens-list">tokens: <strong>--ev-surface</strong> · <strong>--ev-primary</strong> · <strong>--ev-radius-pill</strong> (input) · <strong>--ev-z-modal (400)</strong></div>
+      </div>
+
+      <!-- FormError -->
+      <div class="ds-subsection">
+        <div class="ds-subsection__title">FormError — .ev-form-error</div>
+        <p class="text-muted" style="margin-bottom: 16px;">Erro inline sob input. Linkado via <code>aria-describedby</code>; nunca isolado. Cor não é único sinal (ícone + texto).</p>
+        <div class="ds-demo" style="flex-direction: column; align-items: stretch; gap: 4px; max-width: 380px;">
+          <label for="fe-input" class="ev-prompt-dialog__label">CPF</label>
+          <input id="fe-input" type="text" class="ev-input" value="123.456.789" aria-describedby="fe-err" aria-invalid="true" />
+          <span class="ev-form-error" id="fe-err">
+            <span class="ev-form-error__icon" aria-hidden="true">⚠</span>
+            CPF inválido — verifique o último dígito
+          </span>
+        </div>
+        <pre class="ds-code">&lt;input id="cpf" aria-describedby="cpf-err" aria-invalid={!!err} /&gt;
+{err &amp;&amp; &lt;FormError id="cpf-err"&gt;{err}&lt;/FormError&gt;}</pre>
+        <div class="ds-tokens-list">tokens: <strong>--ev-danger</strong> · <strong>--ev-text-xs</strong> · <strong>--ev-space-1</strong></div>
+      </div>
+
+      <div class="ds-callout">
+        <strong>Substituições nativas (regra 45):</strong> <code>window.alert()</code> → <code>toast.error / critical()</code> · <code>window.confirm()</code> → <code>confirm({...})</code> · <code>window.prompt()</code> → <code>prompt({...})</code>. Lints <code>no-window-alert</code> e <code>no-hardcoded-toast-message</code> bloqueiam commit (Sprint 00 Faixa 3). Para integração com IA Camada 3, <code>&lt;ActionConfirmDialog&gt;</code> da <a href="../../docs/decisions/0075-assistente-ia-universal-tres-camadas-tool-registry.md">ADR 0075</a> é wrapper sobre <code>&lt;ConfirmDialog&gt;</code> deste catálogo (composição, não duplicação). Ver <a href="../../docs/decisions/0089-sistema-mensagens-padronizadas.md">ADR 0089</a>.
+      </div>
     </section>
 
     <!-- ===================== MIGRAÇÃO SHADCN ===================== -->

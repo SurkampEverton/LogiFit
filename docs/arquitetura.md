@@ -24,6 +24,7 @@ Este é um sistema que manipula **dados sensíveis de saúde** (LGPD art. 11), c
   - Energia / atenção: `#E67E22` / `#D35400`
   - Warning: `#F39C12` / `#D68910`
   - Erro destrutivo: `#E74C3C` / `#C0392B`
+- **Mensagens ao usuário** ([ADR 0089](decisions/0089-sistema-mensagens-padronizadas.md) + regra 45) — catálogo fechado de 6 tipos: `<Toast>` (success/info/warning/error/critical, engine Sonner), `<Banner>` (info/warning/danger persistente), `<AlertDialog>`/`<ConfirmDialog>` (substitui `window.confirm`), `<PromptDialog>` (substitui `window.prompt`), `<FormError>` (inline). Helpers `toast.fromApiError(error)` consomem envelope ADR 0071 direto. Proibido `window.alert/confirm/prompt` (lints `no-window-alert` + `no-hardcoded-toast-message`). Primitivos no protótipo: `.ev-toast`/`.ev-banner`/`.ev-modal`/`.ev-alert-dialog`/`.ev-prompt-dialog`/`.ev-form-error` em [`prototipo/base.css`](../prototipo/base.css), demo em [`prototipo/designsystem/index.html#mensagens`](../prototipo/designsystem/index.html).
 
 ### Frontend
 - **Next.js 15 (App Router) + React 19**

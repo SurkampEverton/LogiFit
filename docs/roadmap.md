@@ -170,7 +170,7 @@ Sprints existentes que ainda não declaram esse item explicitamente herdam a reg
 
 ### Numeração pós-0046 (faixa fora-de-sprint)
 
-A faixa **0011-0046 está reservada** (acima); a faixa **0047+ é alocada sequencialmente** para ADRs **fora-de-sprint** (decisões transversais que não nascem dentro de uma sprint específica — DPO, hospedagem, passaporte, fiscal arquitetural). Atualmente: 0047-0050 (decisões recentes), 0051 livre, 0052-0079 publicados sequencialmente. **Próximo ADR fora-de-sprint disponível: 0089+**. Caso um sprint reservado precise produzir ADR mas a faixa 0011-0046 já alocou outro tema correlato, alocar próximo número livre acima de 0080 e referenciar back na tabela acima.
+A faixa **0011-0046 está reservada** (acima); a faixa **0047+ é alocada sequencialmente** para ADRs **fora-de-sprint** (decisões transversais que não nascem dentro de uma sprint específica — DPO, hospedagem, passaporte, fiscal arquitetural). Atualmente: 0047-0050 (decisões recentes), 0051 livre, 0052-0079 publicados sequencialmente, **0089 publicado** (sistema de mensagens padronizadas — fora da faixa 0080-0088 reservada para sprints 23-31, ver tabela abaixo). **Próximo ADR fora-de-sprint disponível: 0090+**. Caso um sprint reservado precise produzir ADR mas a faixa 0011-0046 já alocou outro tema correlato, alocar próximo número livre acima de 0080 e referenciar back na tabela acima.
 
 **Realocações da faixa 0011-0046 → 0080+** (auditorias 12, 14 e 15 — 2026-04-25, resolveram colisões herdadas):
 

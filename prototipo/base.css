@@ -226,7 +226,7 @@ textarea:focus-visible {
   margin: var(--ev-space-4) 0;
 }
 
-/* ===== Mensagens (Toast / Banner / Modal / AlertDialog / PromptDialog / FormError) — ADR 0080 ===== */
+/* ===== Mensagens (Toast / Banner / Modal / AlertDialog / PromptDialog / FormError) — ADR 0089 ===== */
 
 /* Toaster — container fixed que empilha toasts */
 .ev-toaster {

@@ -48,7 +48,7 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 ## Documentação de referência (leia antes de planejar)
 
 - [`docs/arquitetura.md`](docs/arquitetura.md) — visão geral da arquitetura e stack
-- [`docs/rules.md`](docs/rules.md) — **44 regras duras** (arquiteturais, multi-empresa, i18n, IA + LGPD, pesquisa global, responsividade, arquitetura IA + erros, escalabilidade banco, segurança em profundidade, assistente IA universal, passaporte cross-tenant, MFA obrigatório, design system "Equilíbrio Vital", processo, código). **Em conflito com regras operacionais abaixo, [`docs/rules.md`](docs/rules.md) prevalece como fonte única de verdade** — regras 1-29 abaixo são subset operacional para uso direto pela Claude.
+- [`docs/rules.md`](docs/rules.md) — **45 regras duras** (arquiteturais, multi-empresa, i18n, IA + LGPD, pesquisa global, responsividade, arquitetura IA + erros, escalabilidade banco, segurança em profundidade, assistente IA universal, passaporte cross-tenant, MFA obrigatório, design system "Equilíbrio Vital", mensagens ao usuário, processo, código). **Em conflito com regras operacionais abaixo, [`docs/rules.md`](docs/rules.md) prevalece como fonte única de verdade** — regras 1-29 abaixo são subset operacional para uso direto pela Claude.
 - [`docs/modulos.md`](docs/modulos.md) — catálogo de módulos por área (fundação, geral, academia, fisio, nutri) + quais verticais usam
 - [`docs/multiempresa.md`](docs/multiempresa.md) — hierarquia group → tenant → company → unit + flags de topology
 - [`docs/acesso-e-autorizacao.md`](docs/acesso-e-autorizacao.md) — 4 camadas (identidade, tenant, RBAC, consent)
@@ -62,7 +62,7 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 
 ## Regras que você (Claude) DEVE respeitar
 
-> **Numeração canônica:** os números abaixo (1-8, 11, 13-16, 27-44) **são os mesmos** de [`docs/rules.md`](docs/rules.md) — fonte única de verdade. Esta seção é um **digest** das regras mais relevantes ao trabalho diário; lista completa (44 regras + bloco "Convenções de colaboração com Claude" abaixo) está em `rules.md`.
+> **Numeração canônica:** os números abaixo (1-8, 11, 13-16, 27-45) **são os mesmos** de [`docs/rules.md`](docs/rules.md) — fonte única de verdade. Esta seção é um **digest** das regras mais relevantes ao trabalho diário; lista completa (45 regras + bloco "Convenções de colaboração com Claude" abaixo) está em `rules.md`.
 >
 > **Omitidas deste digest** (ainda existem e valem em `rules.md`): regras 9-10 (sprint timebox + commits direto em main), 12 (feature flag PostHog), 17-20 (Biome + cobertura + segredos + imports), 21-26 (multi-empresa: matriz/filial, CNPJ unique global, fiscal `company_id`, transferência via UPDATE, clínico não cruza company em franchise, `groups` agregado). Quando precisar de uma dessas, consultar `rules.md` direto.
 >
@@ -131,6 +131,10 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 
 **44.** **Antes de criar/modificar tela ou componente UI, ler o design system "Equilíbrio Vital".** Hoje (pré-Sprint 00): [`prototipo/tokens.css`](prototipo/tokens.css) (tokens `--ev-*`) + [`prototipo/base.css`](prototipo/base.css) (primitivos `.ev-btn`/`.ev-card`/`.ev-badge`/`.ev-input`/`.ev-table`/`.ev-dot`), visualizados em [`prototipo/designsystem/index.html`](prototipo/designsystem/index.html). Pós-Sprint 00: `packages/ui/tokens.css` + `packages/ui/shadcn-mapping.css` + styleguide em `apps/web/app/styleguide/`. **Proibido:** hardcode de hex/font/spacing/radius/font-size — sempre via `var(--ev-*)` ou alias shadcn (`var(--primary)`/`var(--background)`/`var(--radius)`); construir botão/card/input do zero quando primitivo existe; `box-shadow` decorativa (flat extremo — focus ring é exceção funcional via `--ev-focus-ring`). **Obrigatório:** nova variante visual entra primeiro no styleguide (`designsystem/index.html`) e depois nas telas; mudança de token muda SOMENTE em `tokens.css` (aliases shadcn herdam). Lint `no-hardcoded-design-token` (pós-Sprint 00) bloqueia commit. Ver [arquitetura.md §1](docs/arquitetura.md).
 
+### Mensagens ao usuário (rules.md 45)
+
+**45.** **Proibido `window.alert/confirm/prompt`** (e qualquer dialog nativo). Toda mensagem ao usuário usa o **catálogo fechado de 6 tipos** em `packages/ui/components/messages/*` (protótipo equivalente em [`prototipo/base.css`](prototipo/base.css) com `.ev-toast`/`.ev-banner`/`.ev-modal`/`.ev-alert-dialog`/`.ev-prompt-dialog`/`.ev-form-error`; demo em [`prototipo/designsystem/index.html#mensagens`](prototipo/designsystem/index.html)): `<Toast>` (success/info/warning/error/critical — efêmero pós-ação), `<Banner>` (info/warning/danger — estado persistente da página/tenant), `<AlertDialog>`/`<ConfirmDialog>` (substitui `window.confirm`), `<PromptDialog>` (substitui `window.prompt`), `<FormError>` (erro inline sob input). Helpers imperativos: `toast.success/info/warning/error/critical(t('...'))`, `toast.fromApiError(error)` (consome envelope ADR 0071), `await confirm({ title, body, danger })`, `await prompt({ title, label, validator })`. **Engine de toast:** Sonner com `<Toaster nonce={cspNonce}>` (CSP-compatível, regra 35). **i18n obrigatório (regra 27)** — nunca string literal; lint `no-hardcoded-toast-message` bloqueia. **a11y obrigatório:** Toast `role="status|alert"` + `aria-live` correto, dialogs `role="alertdialog|dialog"` + `aria-modal` + focus trap, `<FormError>` linkado via `aria-describedby` ao input. **`<ActionConfirmDialog>`** (ADR 0075 IA Camada 3) é wrapper sobre `<ConfirmDialog>` deste catálogo, nunca paralelo. Lints `no-window-alert` + `no-hardcoded-toast-message` em CI. Ver [ADR 0089](docs/decisions/0089-sistema-mensagens-padronizadas.md).
+
 ### Convenções de colaboração com Claude (sem número canônico)
 
 Estas são convenções específicas do agente Claude trabalhando neste repo — não estão em `rules.md` porque não geram CI vermelho, mas violar quebra a confiança do usuário:
@@ -140,7 +144,7 @@ Estas são convenções específicas do agente Claude trabalhando neste repo —
 - **Antes** de sugerir nova feature, confirmar com o usuário se cabe no sprint corrente ou vai para backlog.
 - **Nunca** escrever path absoluto (drive letter, `D:\...`, `/Users/...`, `~/...`) em doc versionada — repo é clonado em máquinas diferentes; usar sempre caminhos relativos a partir da raiz do repo.
 
-Lista completa de regras em [`docs/rules.md`](docs/rules.md) (44 regras duras; índice por bloco no topo do arquivo).
+Lista completa de regras em [`docs/rules.md`](docs/rules.md) (45 regras duras; índice por bloco no topo do arquivo).
 
 ## Stack (fixa — mudanças exigem ADR)
 

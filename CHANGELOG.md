@@ -6,6 +6,39 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs+protótipo — ADR 0089 + regra 45: sistema de mensagens padronizadas 2026-04-26
+
+Catálogo fechado de 6 tipos para feedback ao usuário com proibição de `window.alert/confirm/prompt` desde o primeiro commit React. Resolve lacuna identificada: ADR 0071 estabelecia fundação backend (envelope `{ok, data | error}` + `system_alerts` realtime) e citava `sonner.toast()` em 1 parágrafo, mas faltava: (a) catálogo de tipos de mensagem, (b) contrato de API cliente, (c) substituição formal de alerts nativos do Chrome, (d) integração com tokens "Equilíbrio Vital", CSP nonce (regra 35), responsividade 3 viewports (regra 31), a11y (ARIA live, focus trap), i18n (regra 27), (e) composição com `<ActionConfirmDialog>` IA (ADR 0075).
+
+**Adições:**
+
+- [docs/decisions/0089-sistema-mensagens-padronizadas.md](docs/decisions/0089-sistema-mensagens-padronizadas.md) — ADR completo: catálogo de 6 tipos (Toast/Banner/AlertDialog/PromptDialog/FormError + Toast crítico ∞), Sonner ratificada como engine, contrato declarativo + imperativo, mapeamento `toast.fromApiError(error)` → envelope ADR 0071, CSP nonce via `<Toaster nonce>`, ARIA por construção, lints `no-window-alert` + `no-hardcoded-toast-message`, composição IA Camada 3 (ADR 0075). **Numeração:** 0089 (não 0080) porque 0080-0088 estão reservados pelas Sprints 23/24/26/27/28/29/30/31 (auditorias 12, 14 e 15 — [roadmap §Numeração pós-0046](docs/roadmap.md)).
+- [prototipo/base.css](prototipo/base.css) — primitivos novos `.ev-toast` (5 severidades), `.ev-banner` (3 severidades), `.ev-modal` (overlay + content com bottom-sheet mobile / centered desktop), `.ev-alert-dialog` (variante danger), `.ev-prompt-dialog`, `.ev-form-error` — todos via tokens `--ev-*` (zero hardcoded), filosofia flat preservada (sem `box-shadow` exceto focus ring funcional).
+- [prototipo/designsystem/index.html](prototipo/designsystem/index.html) — seção "Mensagens" (Componentes · 08) com 5 toasts, 3 banners, AlertDialog danger, PromptDialog com FormError, FormError isolado; ARIA roles + aria-live + aria-modal + aria-describedby validados via `preview_eval` (10 elementos com role correto, 4 dismiss labels, 1 close label, 2 describedby resolvendo IDs reais). Sidebar nav com link "Mensagens".
+- [docs/rules.md](docs/rules.md) — **regra 45 nova** (44 → 45 regras duras): "Mensagens ao usuário" proíbe `window.alert/confirm/prompt`, lista catálogo de 6 tipos + helpers imperativos + ARIA mínimo + composição com IA (ADR 0075) + lints. Índice e contador atualizados.
+
+**Atualizações cruzadas:**
+
+- [CLAUDE.md](CLAUDE.md) — bloco "Mensagens ao usuário (rules.md 45)" no digest; contadores 44 → 45 atualizados nas 3 referências (resumo `docs/rules.md`, frase "27-44", rodapé "Lista completa"); índice da seção `docs/rules.md` reflete novo bloco.
+- [docs/sprints/00-setup-infra.md](docs/sprints/00-setup-infra.md) — bloco "Sistema de mensagens padronizadas (ADR 0089 + regra 45)" com 11 itens concretos (Sonner, 7 componentes, 3 helpers, `toast.fromApiError`, `<Toaster nonce>`, i18n catalog `messages.json`, 2 lints, storybook page, E2E Playwright 3 viewports); ADR 0089 listado em "Decisões tomadas"; lints adicionados ao escopo da Faixa 3.
+- [docs/arquitetura.md](docs/arquitetura.md) §1 (Design System) — bullet "Mensagens ao usuário" com link pro ADR 0089 + regra 45.
+- [docs/modulos.md](docs/modulos.md) — linha "Sistema de mensagens padronizadas (ADR 0089 + regra 45)" em **Fundação**, próxima ao bloco de tratamento de erros (ADR 0071) e antes da Observabilidade de IA.
+- [docs/roadmap.md](docs/roadmap.md) §Numeração pós-0046 — "Próximo ADR fora-de-sprint disponível" bumped de 0089+ → 0090+ (consequência de claim do 0089).
+
+**Verificação visual** (Edge MCP em `prototipo/designsystem/#mensagens`, `localhost:3001`):
+
+- Light desktop: tokens corretos (`--ev-success` `#2ECC71` em border-left, `--ev-danger-soft` `#FBEAE8` em bg do toast crítico, `--ev-radius-lg` em modais).
+- Dark desktop: tokens dark resolvem (`--ev-surface` `#2C3E50`, `--ev-text` `#ECF0F1`, `--ev-danger` dark `#EC7063`, soft variants em rgba 0.15).
+- Mobile (≤767px): `<AlertDialog>` footer vira `flex-direction: column-reverse` (ação primária acima, cancelar abaixo) — pattern bottom-sheet correto.
+- ARIA: 4 toasts não-críticos com `role="status\|alert"` + `aria-live` correto; toast crítico sem dismiss button (requer ack); 3 banners polite; AlertDialog `role="alertdialog" aria-modal="true" aria-labelledby="ad-title"`; PromptDialog `role="dialog" aria-modal="true" aria-labelledby="pd-title"`; 2 inputs com `aria-describedby` linkando IDs existentes; 5 botões com `aria-label`.
+- Console: zero erros, zero warnings.
+
+**Não inclui:**
+
+- Implementação React dos componentes (vai pro Sprint 00 — listado como TODO, não feito agora; pré-Sprint 00 não há `apps/web/` nem `packages/ui/components/messages/`).
+- `<ActionConfirmDialog>` IA (ADR 0075) — Sprint 17, será wrapper composto sobre `<ConfirmDialog>` (já formalizado no ADR 0089 como nota de composição).
+- Push web PWA (Canal 5 ADR 0071) — Sprint 26, distinto do catálogo deste ADR.
+
 ### Docs — 20ª auditoria 2026-04-26 (escopo intra-tenant ADR 0070 + 11 falsos positivos descartados)
 
 3 agentes Explore em paralelo cobrindo áreas ainda não auditadas a fundo: (a) sprints fundacionais (01a/01b/02/04) + clínicos densos (20/26/32/33), (b) ADRs antigos (0001/0002/0005/0006/0007/0010) + medianos (0049/0050/0051/0053/0061/0062/0066/0068/0070/0071), (c) cross-doc de schemas + runbooks restantes (`rotate-secrets`/`lockout-conta`/`falha-nfe`/`asaas-outage`/`upstash-down`/`focus-nfe-outage`/`oracle-cutover-rollback`/`exfiltracao-detectada`/`ia-byok-emergencial`) + threat-models (`pagamento-asaas`/`pipeline-exames`/`whatsapp-inbound`/`device-hub-oauth`/`login-mfa`).

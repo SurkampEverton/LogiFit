@@ -1,6 +1,6 @@
 # Regras do Projeto LogiFit
 
-**44 regras duras e inquebráveis.** Organizadas em 4 blocos + regras transversais. Violação = CI vermelho, revert, ou sprint não fecha.
+**45 regras duras e inquebráveis.** Organizadas em 4 blocos + regras transversais. Violação = CI vermelho, revert, ou sprint não fecha.
 
 > **Como usar:** toda discussão técnica começa perguntando "isso fere alguma regra?". Se sim, ou mudamos a regra (ADR) ou mudamos a solução. Regras não são sugestões.
 
@@ -19,6 +19,7 @@
 - **Passaporte cross-tenant (42)**
 - **MFA obrigatório (43)**
 - **Design system "Equilíbrio Vital" (44)**
+- **Mensagens ao usuário (45)**
 
 ---
 
@@ -190,6 +191,38 @@ CI tem teste E2E que tenta cada ação sem MFA recente e verifica falha. Lint cu
 **Lint pós-Sprint 00:** `no-hardcoded-design-token` bloqueia commit que introduz hex/spacing/radius/font-size literal em `apps/web/**/*.{ts,tsx,css}` (exceto o próprio `tokens.css`). Complementa regra 31 (responsividade) e regra 27 (i18n) — ambas governam a superfície UI.
 
 Ver [arquitetura.md §1](arquitetura.md), [ADR 0063](decisions/0063-responsividade-total-mobile-first.md), e CHANGELOG `[Unreleased] Prototipo — Design system styleguide "Equilíbrio Vital"`.
+
+---
+
+## Mensagens ao usuário
+
+**45.** **Proibido `window.alert`, `window.confirm`, `window.prompt`** (e qualquer dialog nativo do navegador). Toda mensagem ao usuário usa o **catálogo fechado de 6 tipos** em `packages/ui/components/messages/*` (pós-Sprint 00; protótipo equivalente em [`prototipo/base.css`](../prototipo/base.css) com primitivos `.ev-toast`/`.ev-banner`/`.ev-modal`/`.ev-alert-dialog`/`.ev-prompt-dialog`/`.ev-form-error` e demo em [`prototipo/designsystem/index.html`](../prototipo/designsystem/index.html#mensagens)):
+
+| Tipo | Quando | Substitui |
+|---|---|---|
+| `<Toast>` (success/info/warning/error) | feedback efêmero pós-ação (5s) | `alert("salvo!")` |
+| `<Toast>` critical (∞ + ack) | erro de plataforma + alerta realtime severity≥critical | — |
+| `<Banner>` (info/warning/danger) | estado persistente da página/tenant (trial expira, conta suspensa, comitê IA pendente) | — |
+| `<AlertDialog>` / `<ConfirmDialog>` | confirmação destrutiva ou irreversível | `window.confirm()` |
+| `<PromptDialog>` | input curto antes de ação ("digite o motivo") | `window.prompt()` |
+| `<FormError>` | erro inline sob input (Zod parse, server-side) | `:invalid` tooltip do browser |
+
+**Helpers imperativos** (em `@repo/ui/messages`): `toast.success/info/warning/error/critical(t('...'))`, `toast.fromApiError(error)` (envelope ADR 0071), `await confirm({ title, body, danger })` → `Promise<boolean>`, `await prompt({ title, label, validator })` → `Promise<string | null>`. **Nunca** passar string literal — sempre `t('namespace.key')` (regra 27). Severidade segue tokens `--ev-success/warning/energy/danger`. **Engine de toast:** Sonner com `<Toaster nonce={cspNonce}>` (CSP-compatível, regra 35).
+
+**Acessibilidade obrigatória:**
+- Toast `success/info` → `role="status" aria-live="polite"`; `warning/error/critical` → `role="alert" aria-live="assertive"`
+- `<AlertDialog>` / `<PromptDialog>` → `role="alertdialog"` / `role="dialog"` + `aria-modal="true"` + `aria-labelledby` + focus trap (Radix nativo)
+- `<FormError>` → linkado via `aria-describedby` ao input pai; **nunca** isolado; `aria-invalid="true"` no input
+- `<Banner>` → `role="status" aria-live="polite"` + botão dismiss com `aria-label`
+- Cor **nunca** é único sinal — sempre acompanhar com ícone + texto
+
+**Composição com IA:** `<ActionConfirmDialog>` da [ADR 0075](decisions/0075-assistente-ia-universal-tres-camadas-tool-registry.md) (Camada 3 write tools) é wrapper sobre `<ConfirmDialog>` deste catálogo — **nunca** componente paralelo.
+
+**Lints (Sprint 00 Faixa 3):**
+- `no-window-alert` — bloqueia `window.alert/confirm/prompt`. Exceção via `// alert-exempt: <motivo>` apenas para integração com `<iframe>` 3rd-party.
+- `no-hardcoded-toast-message` — bloqueia string literal e template literal sem `t()` em `toast.*()`, `confirm({title|body})`, `prompt({title|label})`, `<Banner>`.
+
+Ver [ADR 0089](decisions/0089-sistema-mensagens-padronizadas.md) e [ADR 0071](decisions/0071-sistema-tratamento-erros-alertas-tempo-real.md) (envelope `ApiError` que `toast.fromApiError()` consome).
 
 ---
 
