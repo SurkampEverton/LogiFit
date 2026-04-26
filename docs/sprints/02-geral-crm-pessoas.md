@@ -181,7 +181,7 @@ Consumidores no MVP: timeline UI via Realtime (mesmo tenant). Fase 2+ (cross-ale
 **Members core:**
 
 - [ ] Schema Drizzle: `members`, `member_events` (append-only), `member_notes`, `member_tags`
-- [ ] RLS em todas as tabelas novas, testada nos 4 cenários canônicos
+- [ ] RLS em todas as tabelas novas, testada nos 5 cenários canônicos
 - [ ] Zod schemas em `packages/types/members.ts`
 - [ ] Server Actions com retorno padronizado
 - [ ] Eventos publicados em `domain_events` + Realtime
@@ -241,7 +241,7 @@ Consumidores no MVP: timeline UI via Realtime (mesmo tenant). Fase 2+ (cross-ale
 
 - [ ] Feature flag `crm_v1` ligada em dev
 - [ ] Testes unit + E2E verdes
-- [ ] RLS verificada nos 4 cenários
+- [ ] RLS verificada nos 5 cenários
 - [ ] Migrations Drizzle aplicadas
 - [ ] CHANGELOG atualizado
 - [ ] Roadmap: sprint 02 → `done`, item #4 → `done`

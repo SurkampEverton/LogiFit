@@ -6,6 +6,42 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — 10ª auditoria 2026-04-25 (cascade da 9ª: "4 → 5 cenários canônicos")
+
+Auditoria de cascade effects do commit `29f0f57` (9ª auditoria) + áreas que a 9ª explicitamente não cobriu (sprints linha-a-linha, ADRs em profundidade, coerência numérica/regulatória). 3 agentes Explore em paralelo. Validações diretas eliminaram **falsos positivos significativos** dos agentes (Sprint 19b inexistente — Glob confirmou que existe; "4 cenários" em CHANGELOG/ADR 0060 são contexto NF-e, não multi-tenant). **17 ocorrências reais corrigidas em 15 arquivos:**
+
+**P1 — Cascade da mudança "4 → 5 cenários canônicos" (16 ocorrências):**
+
+A 9ª auditoria adicionou o 5º cenário (Modo Solo, `tenants.mode='solo'`) em `docs/multiempresa.md` mas não propagou. Correções:
+
+- [CLAUDE.md:191](CLAUDE.md) — comentário do `pnpm db:seed`
+- [.github/pull_request_template.md:30](.github/pull_request_template.md) — checklist de RLS
+- [docs/modulos.md:49](docs/modulos.md) — descrição do módulo Hierarquia
+- [docs/sprints/01a-identidade-e-topology.md](docs/sprints/01a-identidade-e-topology.md) — 5 ocorrências (Goal, Critério, Commit, DoD x2). Esclarecido que 01a popula 4 cenários multi-empresa; 5º solo entra em 01b junto com a coluna `tenants.mode`
+- [docs/sprints/01b-rbac-e-consent.md](docs/sprints/01b-rbac-e-consent.md) — 4 ocorrências (Goal, schema do `mode`, E2E, DoD); reescrita da linha 57 para coerência
+- [docs/sprints/02:184,244](docs/sprints/02-geral-crm-pessoas.md), [03:103](docs/sprints/03-geral-agenda-universal.md), [04:168](docs/sprints/04-geral-financeiro-asaas.md), [05:108](docs/sprints/05-geral-ofertas-comerciais.md), [08:100](docs/sprints/08-academia-controle-acesso.md), [15:225](docs/sprints/15-geral-erp-financeiro-core.md) — checklists de RLS
+- [docs/decisions/0005:21](docs/decisions/0005-rbac-com-consent-cross-module.md), [0006:33](docs/decisions/0006-hierarquia-group-tenant-company-unit.md), [0007:22-27,38](docs/decisions/0007-topology-owned-vs-franchise.md) — ADRs core multi-empresa atualizados; 0007 ganhou cenário 5 explícito; 0006 lista os 5 nominalmente
+- [docs/plano-estrutura.md:91-95,114,173](docs/plano-estrutura.md) — historical doc atualizado com 5º cenário marcado como "acrescentado pós-plano original"
+
+**P3 — Estimativa stale em ADR 0064:**
+
+- [docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md:390](docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md) — linha dizia "Sprint 06: 2 → 3-4 semanas" mas Sprint 06 já está em **5-6 semanas** porque ADR 0075 (posterior) re-expandiu. Adicionada nota apontando estimativa vigente.
+
+**Falsos positivos descartados (verificações diretas):**
+
+- "Sprint 19b inexistente" (alegado pelo agente 2): existe — `docs/sprints/19b-migracao-hospedagem-oracle.md` (Glob confirmou)
+- "4 cenários" em CHANGELOG L1178/L1197 e ADR 0060: contexto NF-e (devolução, complementar, ajuste, entrada própria), coincidência semântica
+- "4 cenários" em CHANGELOG L16 (entrada da 9ª): histórico — descrição correta do estado anterior, não deve ser alterada
+- Coerência numérica/regulatória (agente 3): **4.816 valores verificados** (quotas IA, NFS-e, retenções 5a/20a, leis 13.787/3.268/6.316/6.583/9.696, datas CFM 2.454/2026, ANS TISS 4.01, RDC 657/2022) — zero divergências
+- "ADR 0078 com 8 regras de portabilidade não centralizadas em rules.md": by-design (ADR é fonte da verdade, CI lints implementam), não é bug
+- "ADRs 0006-0010 órfãos sem citações": esses são ADRs base do schema multi-empresa — citados implicitamente pelas regras 21-26 e por ADR 0077. Mantidos como referência arquitetural.
+
+**Verificação:** sem testes automatizados (docs-only). Validação por leitura humana + grep dirigido. Cascade efetivamente fechado: `grep "4 cen[áa]rios" -r docs/ CLAUDE.md .github/` retorna apenas as 4 ocorrências legítimas (CHANGELOG histórico + ADR 0060 NF-e).
+
+**Recomendação para 11ª:** rodar quando Sprint 02 ou 03 entrar em `doing` — aí haverá schema/código real para conferir contra ADRs 0077/0049+. Auditorias só sobre docs estão chegando ao retorno diminuto (10ª já encontrou apenas cascade incremental, não problemas estruturais novos).
+
+---
+
 ### Docs — 9ª auditoria 2026-04-25 (revisão completa pedida pelo usuário)
 
 Revisão completa da documentação solicitada pelo usuário ("faça uma revisão completa procurando falhas, sem ver commits"). 3 agentes Explore em paralelo cobriram (1) docs core, (2) ADRs, (3) sprints/compliance/runbooks/threat-models. Validações diretas eliminaram **falsos positivos significativos** dos agentes (gap ADRs 0011-0046 é INTENCIONAL conforme `roadmap.md §122-165`; conflito 0001 vs 0064 já reconciliado via Addendum 2026-04-25; sprints 34-40 sem arquivo conforme convenção; compliance/runbooks/threat-models 100% completos). **8 falhas reais corrigidas (2 P0 + 3 P1 + 3 P2):**

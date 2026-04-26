@@ -7,7 +7,7 @@
 
 ## Goal
 
-Autenticação + **cadastro central `persons`** + hierarquia completa (group/tenant/company/unit com `person_id` FK onde aplicável) + RLS raiz + seed dos 4 cenários canônicos, tudo funcionando ponta-a-ponta.
+Autenticação + **cadastro central `persons`** + hierarquia completa (group/tenant/company/unit com `person_id` FK onde aplicável) + RLS raiz + seed dos 5 cenários canônicos (4 multi-empresa + 1 modo solo), tudo funcionando ponta-a-ponta.
 
 ## Critério de aceite
 
@@ -26,7 +26,7 @@ Autenticação + **cadastro central `persons`** + hierarquia completa (group/ten
 - Teste E2E: usuário do tenant A não vê dados do tenant B (nem via API, nem via Supabase client direto)
 - Teste E2E: cadastrar pessoa PF → criar user linkando → não duplica dados de contato
 - Teste E2E: cadastrar pessoa PJ → criar company-filial linkando → não duplica CNPJ/endereço
-- Seed dos 4 cenários canônicos populado em dev (com persons + users + companies linkadas)
+- Seed dos 5 cenários canônicos populado em dev (com persons + users + companies linkadas) — nota: 5º cenário (modo solo) usa `tenants.mode='solo'` que será criado no Sprint 01b; 01a popula somente os 4 multi-empresa
 - Troca de contexto de tenant (para usuário multi-tenant) reassina JWT
 - **Trial 14d + ciclo de retenção 30d (ADR 0066)**: tenant criado em `/signup` ganha `trial_ends_at = now() + 14 days` + `subscription_status='trialing'`. Job diário `process-trial-lifecycle` aplica:
   - **D+14 (trial expirou sem conversão)**: `status='trial_expired'` + UI bloqueada exceto export/conversão; banner "trial expirado, dados retidos por 30d"
@@ -148,7 +148,7 @@ Em `apps/web/app/settings/users/actions.ts`:
 - [ ] Botão "atualizar dados da Receita" em `/app/pessoas/[id]`
 - [ ] Job Vercel Cron semanal `/api/jobs/cnpj/validate-situacao-weekly` para companies + suppliers ativos
 - [ ] RLS raiz em todas as tabelas criadas (persons incluída)
-- [ ] Script de seed com os 4 cenários canônicos (persons + companies + users linkados corretamente)
+- [ ] Script de seed com os 4 cenários canônicos multi-empresa (persons + companies + users linkados corretamente); 5º cenário modo solo entra em Sprint 01b junto com a coluna `tenants.mode`
 - [ ] Teste E2E Playwright: isolamento entre tenants + fluxo de cadastro pessoa → papel
 - [ ] Teste CI: script que falha se tabela nova não tem RLS
 - [ ] Página `/login`, `/signup`, `/select-tenant`, `/settings/mfa`
@@ -180,8 +180,8 @@ Em `apps/web/app/settings/users/actions.ts`:
 ## Definition of Done
 
 - [ ] Feature flag `auth_v1` criada
-- [ ] Testes unit (validador CPF/CNPJ) + E2E verdes (incluindo os 4 cenários de seed)
-- [ ] RLS verificada nos 4 cenários
+- [ ] Testes unit (validador CPF/CNPJ) + E2E verdes (incluindo os 4 cenários multi-empresa do seed; 5º solo cobre Sprint 01b)
+- [ ] RLS verificada nos 4 cenários multi-empresa (5º solo é DoD do Sprint 01b)
 - [ ] Migrations Drizzle aplicadas
 - [ ] CHANGELOG.md atualizado
 - [ ] Roadmap atualizado (item #2 → done)

@@ -27,7 +27,7 @@
 <!-- Marcar todos os aplicáveis. Se um item não se aplica, marcar e adicionar "— N/A: motivo" -->
 
 - [ ] Testes unit + e2e verdes
-- [ ] **RLS verificada** (se mexeu em tabela com `tenant_id`) — testei nos 4 cenários canônicos?
+- [ ] **RLS verificada** (se mexeu em tabela com `tenant_id`) — testei nos 5 cenários canônicos?
 - [ ] Migration Drizzle revisada (reversível, sem bloqueio longo de tabela)
 - [ ] Feature flag criada se feature nova (PostHog)
 - [ ] CHANGELOG.md atualizado (se mudou comportamento observável)

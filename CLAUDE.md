@@ -188,7 +188,7 @@ pnpm dev              # Next.js em localhost:3000
 pnpm test             # Vitest
 pnpm test:e2e         # Playwright
 pnpm db:migrate       # Drizzle migrate
-pnpm db:seed          # Seed dos 4 cenários canônicos
+pnpm db:seed          # Seed dos 5 cenários canônicos
 pnpm db:rls-check     # Teste que falha se tabela sem RLS
 pnpm lint             # Biome lint + format
 pnpm typecheck        # tsc --noEmit

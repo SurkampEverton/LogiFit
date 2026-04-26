@@ -18,7 +18,7 @@ Dentro do mesmo tenant convivem profissionais de áreas distintas (instrutor de 
 
 ## Consequences
 
-- Modelo poderoso e fiel ao requisito regulatório, mas complexo. Testes de RLS nos 4 cenários canônicos viram parte do CI desde o início.
+- Modelo poderoso e fiel ao requisito regulatório, mas complexo. Testes de RLS nos 5 cenários canônicos viram parte do CI desde o início.
 - Onboarding de cliente: fluxo de consentimento é obrigatório, não opcional. UX precisa ser clara.
 - Performance: policies RLS com múltiplos joins (user_roles, consents) podem ficar lentas. Mitigado com views materializadas em casos pesados + índices corretos.
 - Expansão para novos módulos é trivial — basta novo escopo de permission e nova categoria de consent.

@@ -165,7 +165,7 @@ Em `packages/db/schema/financeiro.ts`:
 - [ ] Feature flag `financeiro_v1` ligada em dev
 - [ ] Testes unit + E2E verdes
 - [ ] Webhook idempotente comprovado (replay 10x gera 1 payment)
-- [ ] RLS verificada nos 4 cenários
+- [ ] RLS verificada nos 5 cenários
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
 - [ ] Roadmap: sprint 04 → `done`, item #6 → `done`

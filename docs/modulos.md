@@ -46,7 +46,7 @@ Visão funcional do sistema, agrupada por **área**. Cada módulo tem "quais ver
 | **Categorização sensível de exames** | Permission `exam.sensitive.read` para HIV/psiquiátrico/genético/paternidade; audit reforçado | Fisio + Nutri | 33 | futuro |
 | **Opt-out de IA em exames por tenant** | Admin pode desabilitar IA e manter só OCR + revisão humana (para tenants com LGPD mais restritivo) | todas | 33 | futuro |
 | Identidade + MFA | Login (magic link + OAuth), TOTP obrigatório para profissionais | todas | 01a | todo |
-| Hierarquia group→tenant→company→unit | Schema multi-tenant com RLS raiz, 4 cenários canônicos no seed | todas | 01a | todo |
+| Hierarquia group→tenant→company→unit | Schema multi-tenant com RLS raiz, 5 cenários canônicos no seed (incl. modo solo) | todas | 01a | todo |
 | Login contextual + troca de tenant | Usuário multi-tenant escolhe contexto; JWT é reassinado | todas | 01a | todo |
 | RBAC com scope | Roles + permissions + scope (`group`/`tenant`/`company`/`unit`) | todas | 01b | todo |
 | Role custom por tenant | Admin edita `role_permissions` ou cria role custom (ex: `contador_externo`) | todas | 01b | todo |

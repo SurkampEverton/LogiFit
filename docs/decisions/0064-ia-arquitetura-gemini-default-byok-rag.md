@@ -387,7 +387,7 @@ UI bloqueia seleção abaixo do tier mínimo com mensagem explicativa.
 
 **Sprints ajustados:**
 
-- **06 Copilot base** — escopo cresce: 7 tabelas novas + RAG ingestion job + system prompt builder + quota enforcement + circuit breaker + UI `/app/settings/ia` + white-label settings + seed de providers/models/task_routing + Vertex AI client + Groq client + Anthropic client (fallback) + OpenAI client (fallback). De 2 semanas → 3-4 semanas
+- **06 Copilot base** — escopo cresce: 7 tabelas novas + RAG ingestion job + system prompt builder + quota enforcement + circuit breaker + UI `/app/settings/ia` + white-label settings + seed de providers/models/task_routing + Vertex AI client + Groq client + Anthropic client (fallback) + OpenAI client (fallback). De 2 semanas → 3-4 semanas. **Atualização (2026-04-25):** ADR 0075 (Assistente IA Universal — 3 camadas + tool registry) expandiu o escopo posteriormente; estimativa vigente em [Sprint 06 header](../sprints/06-geral-copilot-base.md): **5-6 semanas**.
 - **13 WhatsApp** — classificador usa `resolveModelForTask('classification', 'whatsapp_attachment')`; handler de áudio usa `transcription`
 - **20 Prontuário** — CID autocomplete usa task routing; IA via ADR 0064
 - **21 Evolução mídias** — foto postural usa task `vision`

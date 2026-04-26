@@ -105,7 +105,7 @@ Em `packages/db/schema/ofertas.ts`:
 
 - [ ] Schema Drizzle: `promotions`, `promotion_uses`, `plan_items`, `appointment_credits`, `credit_consumptions`, `referrals`, `referral_uses`
 - [ ] Migration: adicionar coluna `kind` em `plans`
-- [ ] RLS + testes nos 4 cenários
+- [ ] RLS + testes nos 5 cenários
 - [ ] Zod schemas em `packages/types/ofertas.ts`
 - [ ] Validador de promoção (`canApply(promotion, ctx)`) centralizado em `packages/db/ofertas/validate.ts`
 - [ ] Consumo automático de crédito no `createAppointment` do Sprint 03 (se member tem crédito válido do `service_type` pedido)

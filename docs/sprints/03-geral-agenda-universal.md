@@ -100,7 +100,7 @@ Consumidor no MVP: UI via Realtime. Financeiro (Sprint 04) consome `appointment.
 
 - [ ] Schema Drizzle: `resources`, `recurring_slots`, `appointments`, `appointment_waitlist`
 - [ ] Exclusion constraint `tstzrange` aplicada via migration SQL (Drizzle não cobre — ir para `packages/db/rls/` ou migration raw)
-- [ ] RLS em todas as tabelas novas + testes nos 4 cenários
+- [ ] RLS em todas as tabelas novas + testes nos 5 cenários
 - [ ] Zod schemas + Server Actions
 - [ ] Materialização lazy do slot recorrente (função utility `expandRecurring(range)`)
 - [ ] Promoção automática de waitlist em `cancelAppointment`

@@ -97,7 +97,7 @@ Consumidores no MVP:
 ## Commit (checklist)
 
 - [ ] Schema Drizzle: `access_devices`, `access_secrets`, `access_events` (append-only + partition), `access_blocks`, `member_face_embeddings` (se facial ativo)
-- [ ] RLS + testes nos 4 cenários
+- [ ] RLS + testes nos 5 cenários
 - [ ] HMAC QR em `packages/ai/qr.ts` (gerador + validador com tolerância de 1 rotação)
 - [ ] **Pipeline facial (opcional por tenant):** embedding generator (MediaPipe ou serviço externo conforme ADR 0018) + matching via pgvector similarity (threshold configurável); requer consent LGPD explícito antes de capturar embedding
 - [ ] API Route `/api/acesso/checkin` idempotente suportando **ambos os modos** (`qr_token` OU `face_image_b64`); mesmo qr_token pode vir 2x se reintentar

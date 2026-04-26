@@ -222,7 +222,7 @@ Em `packages/db/schema/erp-financeiro.ts`:
 - [ ] Testes unit + E2E verdes
 - [ ] OCR.space integrado e funcionando em sandbox
 - [ ] Parser NF-e valida contra XSD nacional
-- [ ] Workflow de aprovação auditado nos 4 cenários canônicos
+- [ ] Workflow de aprovação auditado nos 5 cenários canônicos
 - [ ] RLS verificada
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado

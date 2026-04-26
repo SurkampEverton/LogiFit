@@ -25,6 +25,7 @@ Cenários canônicos (obrigatórios no seed de dev/teste):
 2. **Franquia clássica:** `franchise` + `distributed` + `cross=false`
 3. **Franquia com passaporte:** `franchise` + `distributed` + `cross=true` com `franchise_agreements`
 4. **Mix loja avulsa + rede no mesmo group:** dois tenants configurados diferentemente, agrupados por `group_id`
+5. **Modo solo:** `mode='solo'` + `owned` + `distributed` (degenerado) + `cross=false` — 1 company matriz + 0/1 unit, profissional autônomo (formalizado pelo ADR 0069)
 
 Implicações principais em `franchise`:
 
@@ -35,6 +36,6 @@ Implicações principais em `franchise`:
 ## Consequences
 
 - Uma flag resolve várias topologias de mercado sem fork de produto.
-- Seed de testes precisa cobrir os 4 cenários — se um quebra, CI vermelho.
+- Seed de testes precisa cobrir os 5 cenários — se um quebra, CI vermelho.
 - Onboarding fica mais rico (quiz decide flags); documentação do produto precisa ser clara.
 - Mudança de flag depois de dados carregados é migração traumática — documentar como "escolha inicial, não muda".

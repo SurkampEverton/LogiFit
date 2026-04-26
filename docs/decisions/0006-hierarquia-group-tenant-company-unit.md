@@ -30,7 +30,7 @@ Hierarquia de 4 níveis:
 
 ## Consequences
 
-- Modelo cobre 4 cenários canônicos (rede própria, franquia clássica, franquia com passaporte, mix loja avulsa + rede no mesmo group) com o mesmo schema.
+- Modelo cobre 5 cenários canônicos (rede própria, franquia clássica, franquia com passaporte, mix loja avulsa + rede no mesmo group, modo solo autônomo) com o mesmo schema. (5º cenário modo solo formalizado pelo ADR 0069.)
 - Crescimento orgânico (loja avulsa vira rede) é `INSERT`, não migração.
 - Complexidade maior no onboarding — cliente precisa escolher topologia/flags ao criar tenant.
 - RLS principal continua em `tenant_id`; `company_id` e `unit_id` filtram via RBAC/scope.

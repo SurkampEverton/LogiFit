@@ -88,11 +88,12 @@ Três blocos: **Arquiteturais** (1–8, 21–26), **Processo** (9–15), **Códi
 - Diagrama group/tenant/company/unit
 - Tabela comparativa dos 4 níveis (jurídica? RLS? dado sensível?)
 - Flags do tenant: `topology`, `financial_mode`, `cross_company_access`
-- **4 cenários canônicos obrigatórios no seed:**
+- **5 cenários canônicos obrigatórios no seed:**
   1. Rede própria (`owned` + `distributed` + `cross=true`) — matriz + filiais com CNPJ
   2. Franquia clássica (`franchise` + `distributed` + `cross=false`) — franquias isoladas
   3. Franquia com passaporte (`franchise` + `distributed` + `cross=true`) — com `franchise_agreements`
   4. **Mix no mesmo grupo** — `group` agregando 1 tenant de loja avulsa (1 company-matriz + 1 unit) + 1 tenant de rede (N companies + M units); dono vê dashboard consolidado sem vazar dado individual
+  5. **Modo solo** (`mode='solo'`) — profissional autônomo (1 company matriz + 0/1 unit), formalizado pelo ADR 0069 (acrescentado pós-plano original)
 - **Loja avulsa é a própria matriz** — matriz é obrigatória, filial é opcional; loja avulsa = 1 company `type=matriz` + 1 unit, sem filial; constraint no banco garante exatamente 1 matriz por tenant
 - **Árvore de decisão: várias lojas do mesmo dono** — 1 tenant com N companies (se alunos/agenda/operação integrados) vs N tenants no mesmo group (se negócios independentes); padrão conservador é separar em tenants (mais fácil unir no futuro do que dividir)
 - Regras de mobilidade do aluno entre units/companies (dentro do mesmo tenant, nunca cross-tenant mesmo do mesmo group)
@@ -111,7 +112,7 @@ Formato solo sprint-por-funcionalidade: Goal, Critério de aceite, Dependências
 Monorepo Turborepo+pnpm, Supabase local, Drizzle, tokens "Equilíbrio Vital", CI (type-check, biome, vitest, drizzle migrate, teste RLS), observabilidade (Sentry+PostHog).
 
 ### `docs/sprints/01a-identidade-e-topology.md`
-Auth + MFA, `groups`, `tenants` com flags, `companies` (matriz/filial, constraint 1-matriz-por-tenant), `units`, JWT com custom claims, RLS nível tenant, seed dos 4 cenários canônicos (incluindo "loja avulsa + rede no mesmo group").
+Auth + MFA, `groups`, `tenants` com flags, `companies` (matriz/filial, constraint 1-matriz-por-tenant), `units`, JWT com custom claims, RLS nível tenant, seed dos 5 cenários canônicos (incluindo "loja avulsa + rede no mesmo group" e "modo solo" autônomo).
 
 ### `docs/sprints/01b-rbac-e-consent.md`
 `roles`, `permissions`, `user_roles` com scope, RLS nível company/unit, `consents`, `franchise_agreements`, `audit_log` particionado, testes E2E de isolamento entre scopes.
@@ -170,7 +171,7 @@ Total: 20 arquivos novos + 1 edição (9 ADRs + 4 sprints + 4 docs raiz-docs + `
 5. `cat CLAUDE.md` contém referência explícita a `docs/rules.md` e `docs/sprints/`
 6. `docs/arquitetura.md` contém palavras-chave `group`, `company`, `unit`, `topology`, `franchise_agreements`, `financial_mode`, `cross_company_access`, e tem seção "Comunicação entre camadas"
 7. `docs/rules.md` contém 26 regras numeradas
-8. `docs/multiempresa.md` contém os 4 cenários canônicos (rede própria, franquia clássica, franquia com passaporte, mix loja avulsa + rede no mesmo group) e a decisão de billing por tenant
+8. `docs/multiempresa.md` contém os 5 cenários canônicos (rede própria, franquia clássica, franquia com passaporte, mix loja avulsa + rede no mesmo group, modo solo autônomo) e a decisão de billing por tenant
 9. `git status` mostra os arquivos novos como untracked; working tree limpo fora de `docs/`, `CHANGELOG.md`, `CLAUDE.md`, `.github/`
 10. `git diff docs/arquitetura.md` mostra apenas a atualização de hierarquia + nova seção (sem reescrita destrutiva do conteúdo original)
 

@@ -7,7 +7,7 @@
 
 ## Goal
 
-Autorização com scope (group/tenant/company/unit), consent cross-module/cross-company, audit log particionado, **registros profissionais em conselho (CRM/CRN/CREFITO/CREF)** para habilitar assinatura regulatória e faturamento TISS nas fases seguintes — todos testados nos 4 cenários canônicos.
+Autorização com scope (group/tenant/company/unit), consent cross-module/cross-company, audit log particionado, **registros profissionais em conselho (CRM/CRN/CREFITO/CREF)** para habilitar assinatura regulatória e faturamento TISS nas fases seguintes — todos testados nos 5 cenários canônicos (4 multi-empresa + 1 modo solo).
 
 ## Critério de aceite
 
@@ -54,7 +54,7 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 - [ ] Policies RLS multi-nível (tenant + company + unit) com **union** de `user_roles` + `user_permissions` ativos (função SQL `has_permission(user_id, permission, scope_type, scope_id)` centraliza)
 - [ ] Schema `consents` + fluxo de opt-in (onboarding do aluno)
 - [ ] **Schema `patient_data_access_log` (ADR 0077, regra 42, retenção 5 anos via ADR 0072)** — particionado por mês desde dia 1 (regra 34 — volume estimado 10-15M linhas/ano com 30% adoção do passaporte). Colunas: `id uuid pk`, `recorded_at timestamptz not null`, `reader_user_id uuid not null`, `reader_tenant_id uuid not null`, `source_tenant_id uuid not null`, `patient_person_id uuid not null`, `module_type text` (`academia/personal_training/fisioterapia/nutricao/pilates`), `category text` (data_level coberto), `resource_type text`, `resource_id uuid nullable`, `request_id uuid not null` (correlation com wrapAction), `ip inet`, `user_agent text`. PK `(id, recorded_at)`. PARTITION BY RANGE (recorded_at). Indexes na partição: `(reader_tenant_id, recorded_at DESC)`, `(source_tenant_id, recorded_at DESC)`, `(patient_person_id, recorded_at DESC)`. Job `create-next-partitions` (regra 34) inclui essa tabela. RLS: leitor pode SELECT no próprio tenant (`reader_tenant_id`); paciente pode SELECT do próprio (`patient_person_id`); admin LogiFit super_admin via PAM. **Tabela ainda fica vazia até Sprint 02 ativar passaporte cross-tenant** — só schema + partições aqui.
-- [ ] **Coluna `tenants.mode enum ('multi','solo') default 'multi'`** (ADR 0069 — Plano Solo) com check constraint `NOT (mode='solo' AND cross_company_access=true)`; seed dos 4 cenários canônicos define `mode='multi'`; cenário 5º **adicionado**: tenant Solo com 1 company (matriz) + 0 units, cobertura básica para profissional autônomo. Sprint 01a já criou a tabela `tenants` — esta sprint **adiciona a coluna via migration**.
+- [ ] **Coluna `tenants.mode enum ('multi','solo') default 'multi'`** (ADR 0069 — Plano Solo) com check constraint `NOT (mode='solo' AND cross_company_access=true)`; seed dos 5 cenários canônicos: 4 cenários multi-empresa com `mode='multi'` + 5º cenário modo solo com `mode='solo'` + 1 company (matriz) + 0 units (cobertura para profissional autônomo). Sprint 01a já criou a tabela `tenants` — esta sprint **adiciona a coluna via migration** e **popula o 5º cenário no seed**.
 - [ ] Schema `franchise_agreements` + UI básica
 - [ ] Schema `audit_log` append-only + partições mensais; eventos: `grant.created`, `grant.revoked`, `role.created`, `role.updated`
 - [ ] Views `group_metrics`, `group_revenue_30d` com policies próprias
@@ -88,7 +88,7 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 - [ ] UI `/app/pessoas/[id]/registros` — lista + add/edit + mudança de situação com audit
 - [ ] Upload opcional de documento (carteirinha/comprovante) para Storage bucket `professional-docs` privado com URL assinada curta
 - [ ] Seed dos 4 conselhos base no enum: CRM, CRN, CREFITO, CREF; preparar (no enum mas sem seed de dados): CRF, CRP, COREN, CRO
-- [ ] Testes E2E contra os 4 cenários canônicos
+- [ ] Testes E2E contra os 5 cenários canônicos (incluindo modo solo)
 - [ ] Testes E2E específicos de grants: criar, usar, revogar, expirar
 - [ ] Teste E2E de registro profissional: cadastro + atestação + mudança de situação + unicidade global
 - [ ] **`roles.requires_mfa bool`** (regra 43 + ADR 0073 camada 2). Login bloqueia se `requires_mfa=true` e `user.mfa_enabled=false`. **Seed completo de roles base com flag explícita:**
@@ -139,7 +139,7 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 
 - [ ] Feature flag `rbac_v1` criada
 - [ ] Testes unit + E2E verdes
-- [ ] RLS verificada nos 4 cenários com roles diferentes
+- [ ] RLS verificada nos 5 cenários com roles diferentes
 - [ ] Migrations Drizzle aplicadas
 - [ ] CHANGELOG.md atualizado
 - [ ] Roadmap atualizado (item #3 → done)
