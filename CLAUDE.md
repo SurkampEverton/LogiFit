@@ -194,6 +194,7 @@ pnpm db:seed          # Seed dos 5 cenários canônicos
 pnpm db:rls-check     # Teste que falha se tabela sem RLS
 pnpm lint             # Biome lint + format
 pnpm typecheck        # tsc --noEmit
+node scripts/docs-check.mjs   # Lint da documentação (slug ADR ≡ filename, links MD resolvem, ADR esperado sem colisão); roda em CI via .github/workflows/docs-check.yml. Sprint 00 wraps em `pnpm docs:check`.
 ```
 
 ## Convenções

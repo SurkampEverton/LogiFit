@@ -448,7 +448,7 @@ Confirmado em 2026-04-25 como **opção futura válida** após implementação d
 
 ## Related
 
-- Depende de [ADR 0004 — Pagamentos Asaas](0004-pagamentos-asaas.md) — LogiFit reusa infra
+- Depende de [ADR 0001 — Stack base (Asaas como gateway de pagamento)](0001-stack-base.md) — LogiFit reusa infra
 - Depende de [ADR 0059 — Emissão fiscal Focus NFe](0059-ciclo-fiscal-emissao-focus-nfe.md) — emite NFS-e própria + provider único no MVP
 - Depende de [ADR 0064 — Arquitetura IA](0064-ia-arquitetura-gemini-default-byok-rag.md) — quotas por plano
 - Integra com [ADR 0067 — DPO + governança](0067-dpo-governanca-compliance-lgpd.md) — Enterprise inclui DPO-as-a-service add-on

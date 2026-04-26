@@ -73,7 +73,7 @@ Exemplo (Pipeline Exames):
 - [ ] Relatório de validação clínica
 - [ ] Política de pós-mercado
 - [ ] Política de privacidade (link `logifit.com.br/privacidade`)
-- [ ] DPA com sub-processadores envolvidos (Google Vertex AI, Groq se aplicável) — ver [ADR 0067](../decisions/0067-dpo-governanca-compliance-lgpd.md)
+- [ ] DPA com sub-processadores envolvidos (Google Vertex AI, Groq se aplicável) — ver [ADR 0067](../../decisions/0067-dpo-governanca-compliance-lgpd.md)
 
 ## 9. Histórico de mudanças
 

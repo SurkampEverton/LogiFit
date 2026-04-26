@@ -34,7 +34,7 @@ Cálculo automático de comissão/repasse por profissional (fisio autônomo, per
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0030 (esperado)** — Modelo de comissão: `professional_contracts` + `commission_rules` (overrides por tipo). Base de cálculo configurável (faturado vs recebido vs pago). Fechamento mensal com imutabilidade após aprovação.
+- **ADR 0086 (esperado)** — Modelo de comissão: `professional_contracts` + `commission_rules` (overrides por tipo). Base de cálculo configurável (faturado vs recebido vs pago). Fechamento mensal com imutabilidade após aprovação. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0030 já alocado a Sprint 22 pipeline atualização TISS.)
 - **Pergunta aberta:** tributação — o sistema deve calcular INSS/IR retidos ou só o valor bruto? Começar só bruto; tributação vira stretch ou sprint posterior.
 
 ## Módulos entregues
@@ -110,7 +110,7 @@ Em `packages/db/schema/rh.ts`:
 - [ ] Testes unit da calculadora (todos os 4 `kind` × 3 bases × overrides)
 - [ ] Testes E2E: fluxo atendimento → pagamento → comissão → fechamento → transferência
 - [ ] Feature flag `rh_v1`
-- [ ] ADR 0030 publicado
+- [ ] ADR 0086 publicado
 
 ## Stretch
 
@@ -132,7 +132,7 @@ Em `packages/db/schema/rh.ts`:
 - [ ] Transferência Asaas sandbox funcional
 - [ ] CHANGELOG atualizado
 - [ ] Roadmap: sprint 19 → `done`
-- [ ] ADR 0030 publicado
+- [ ] ADR 0086 publicado
 
 ## Retro
 

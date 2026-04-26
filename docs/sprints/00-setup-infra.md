@@ -198,9 +198,11 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 
 - [ ] **Runbook esqueleto `docs/runbooks/adicionar-novo-locale.md`** (ADR 0052 — extensibilidade) — passo-a-passo canônico de 10 passos para adicionar um locale futuro (de-DE, fr-FR, etc): atualizar `LOCALES`/`LOCALE_NAMES`, criar diretório `messages/{locale}/`, rodar `pnpm i18n:translate --target {locale}`, revisão humana, INSERT em `translations` para catálogos clínicos via seed, atualizar `CHECK` constraint, `pnpm i18n:check`, smoke E2E na matrix de locales, deploy. Conteúdo amadurece conforme catálogos clínicos e templates email/PDF aterrissarem nos sprints respectivos.
 
+- [ ] **Wire `pnpm docs:check`** no `package.json` raiz apontando para `node scripts/docs-check.mjs` (script já existe na raiz desde a 15ª auditoria). Workflow CI `.github/workflows/docs-check.yml` já roda automaticamente em PRs/push tocando `docs/`; após Sprint 00, dev local roda via pnpm. Validações: número H1 ADR ≡ filename, links MD relativos resolvem, "ADR NNNN (esperado)" não colide entre sprints nem com ADR publicado.
+
 **README e docs:**
 
-- [ ] README atualizado com `pnpm dev`, `pnpm test`, `pnpm db:migrate`, `pnpm db:rls-check`, `pnpm i18n:check`
+- [ ] README atualizado com `pnpm dev`, `pnpm test`, `pnpm db:migrate`, `pnpm db:rls-check`, `pnpm i18n:check`, `pnpm docs:check`
 
 ## Stretch
 

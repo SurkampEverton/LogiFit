@@ -346,10 +346,10 @@ Canal de aquisição de alunos via benefícios corporativos. Gympass foi rebrand
 |---|---|---|---|---|
 | App nativo Expo | Aluno/paciente mobile; PWA (Sprint 26) cobre 90% antes | todas | 35 | futuro |
 | Módulo fiscal (Focus NFe) | **Ciclo fiscal completo de emissão** via Focus NFe: NFS-e + NF-e produto + NFC-e varejo + NF-e devolução + NF-e transferência + NF-e remessa/retorno conserto + NF-e entrada própria + eventos (cancelamento, CC-e, inutilização). Ver [ADR 0059](decisions/0059-ciclo-fiscal-emissao-focus-nfe.md) | todas | 36 | futuro |
-| **Apuração mensal de receita (Grupo C — ADR 0061 + ADR a alocar ≥0086)** | Consolida receita por regime Simples/Presumido/Real + gera memorial "pré-DAS"/"pré-DARF" | todas | 37 | **futuro (pós-produção)** |
-| **Guias oficiais DAS/DARF/DAM (Grupo D — ADR a alocar ≥0086)** | Integração PGDAS-D + geração DARF com código de receita + opcional integração Contabilizei/Conube/Omie/Alterdata | todas | 38 | **futuro (pós-produção)** |
-| **Obrigações acessórias SPED/ECD/ECF (Grupo E — ADR a alocar ≥0086)** | SPED Fiscal + Contribuições + ECD + ECF + DCTF-Web + PGDAS-D + DEFIS + DIRF; avaliar make vs buy | todas | 39 | **futuro (avaliar)** |
-| **Folha CLT + eSocial (Grupo F — ADR a alocar ≥0086)** | Folha completa (salário, horas, DSR, férias, 13º, rescisão) + INSS patronal + FGTS + IRRF folha + eventos eSocial S-1000 a S-5013; avaliar integração TOTVS/Senior/ADP vs motor próprio | todas | 40 | **futuro (avaliar)** |
+| **Apuração mensal de receita (Grupo C — ADR 0061 + ADR a alocar ≥0089)** | Consolida receita por regime Simples/Presumido/Real + gera memorial "pré-DAS"/"pré-DARF" | todas | 37 | **futuro (pós-produção)** |
+| **Guias oficiais DAS/DARF/DAM (Grupo D — ADR a alocar ≥0089)** | Integração PGDAS-D + geração DARF com código de receita + opcional integração Contabilizei/Conube/Omie/Alterdata | todas | 38 | **futuro (pós-produção)** |
+| **Obrigações acessórias SPED/ECD/ECF (Grupo E — ADR a alocar ≥0089)** | SPED Fiscal + Contribuições + ECD + ECF + DCTF-Web + PGDAS-D + DEFIS + DIRF; avaliar make vs buy | todas | 39 | **futuro (avaliar)** |
+| **Folha CLT + eSocial (Grupo F — ADR a alocar ≥0089)** | Folha completa (salário, horas, DSR, férias, 13º, rescisão) + INSS patronal + FGTS + IRRF folha + eventos eSocial S-1000 a S-5013; avaliar integração TOTVS/Senior/ADP vs motor próprio | todas | 40 | **futuro (avaliar)** |
 | Prescrição adaptativa IA por RPE | Consome `workout_sessions.rpe` do Sprint 11 + ajusta carga automaticamente | Academia | pós-35 | futuro (depende de app nativo) |
 
 ---

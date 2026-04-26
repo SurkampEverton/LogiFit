@@ -452,7 +452,7 @@ Receita escala mais rápido que custo (margem 95%+).
 
 **Nova regra 34** em `docs/rules.md`:
 
-> Toda tabela com volume estimado **>5M linhas/ano** ou **>50k linhas/dia** **deve nascer particionada** (PARTITION BY RANGE em coluna temporal ou HASH em `tenant_id`/`member_id`). CI tem teste que falha em migration que cria tabela sem partição quando estimativa de volume excede o limite (declaração obrigatória `@volume_estimate_yearly` em comentário SQL). Toda tabela com retenção definida tem job de partition lifecycle (`create-next-partitions`/`drop-old-partitions`/`archive-cold`) cadastrado. Ver [ADR 0072](decisions/0072-escalabilidade-banco-particionamento-retencao-cold-storage.md).
+> Toda tabela com volume estimado **>5M linhas/ano** ou **>50k linhas/dia** **deve nascer particionada** (PARTITION BY RANGE em coluna temporal ou HASH em `tenant_id`/`member_id`). CI tem teste que falha em migration que cria tabela sem partição quando estimativa de volume excede o limite (declaração obrigatória `@volume_estimate_yearly` em comentário SQL). Toda tabela com retenção definida tem job de partition lifecycle (`create-next-partitions`/`drop-old-partitions`/`archive-cold`) cadastrado. Ver este ADR (0072).
 
 **Sprints ajustados:**
 

@@ -540,7 +540,7 @@ applyCashbackToNextInvoice(memberId, amountCents)
 ## Related
 
 - Reforça [ADR 0020 esperado — Bundles](../sprints/05-geral-ofertas-comerciais.md) — bundle vira `plan` com `kind='bundle'`
-- Reforça [ADR 0010 — Financeiro topology](0010-financial-mode-centralizado.md) — service_prices respeita `company_id`
+- Reforça [ADR 0010 — Financeiro topology](0010-financial-mode-centralized-usa-1-matriz-n-units.md) — service_prices respeita `company_id`
 - Integra com [ADR 0029 esperado — TISS](../sprints/22-fisio-tiss-tuss-convenios.md) — `insurance_procedure_prices` migra
 - Integra com [ADR 0061 — Motor de retenções](0061-motor-retencoes-e-cobertura-fiscal-faseada.md) — `services.tax_nature_id` default
 - Integra com [ADR 0059 — Emissão fiscal](0059-ciclo-fiscal-emissao-focus-nfe.md) — `services.chart_account_id` + `cbo_code`/`tuss_code` usados na emissão NFS-e/NF-e

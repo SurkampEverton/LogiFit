@@ -1,0 +1,36 @@
+name: docs-check
+
+# Lint custom da documentação — valida:
+# A. Número no H1 do ADR bate com filename
+# B. Links markdown relativos resolvem
+# C. "ADR NNNN (esperado)" não colide entre sprints nem com ADR publicado
+#
+# Roda em PR e push tocando docs/, scripts/docs-check.mjs, CLAUDE.md ou CHANGELOG.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'scripts/docs-check.mjs'
+      - 'CLAUDE.md'
+      - 'CHANGELOG.md'
+      - '.github/workflows/docs-check.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'scripts/docs-check.mjs'
+      - 'CLAUDE.md'
+      - 'CHANGELOG.md'
+      - '.github/workflows/docs-check.yml'
+
+jobs:
+  docs-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run docs-check
+        run: node scripts/docs-check.mjs

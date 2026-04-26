@@ -6,6 +6,39 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Tooling — `docs-check` lint custom + 15ª auditoria 2026-04-25 (3 colisões ADR + 9 links quebrados achados pela lint)
+
+Após 14 auditorias manuais consecutivas encontrarem ~10-18 falhas reais cada, criei lint custom para automatizar. Lint encontrou imediatamente bugs que escaparam de TODAS as 14 auditorias.
+
+**Lint criada:**
+- [scripts/docs-check.mjs](scripts/docs-check.mjs) — Node.js plain (sem deps, roda com `node` direto). 3 validações:
+  - **A.** Número no H1 do ADR (`# ADR NNNN — Título`) bate com prefixo do filename (`NNNN-*.md`)
+  - **B.** Todo link markdown relativo dentro de `docs/` (+ CLAUDE.md, CHANGELOG.md, README.md) que aponta para `.md` resolve para arquivo existente
+  - **C.** `ADR NNNN (esperado)` em qualquer sprint não colide com ADR já publicado em `docs/decisions/` nem com outra sprint reivindicando o mesmo número
+- [.github/workflows/docs-check.yml](.github/workflows/docs-check.yml) — workflow CI roda em PR/push tocando `docs/`, `scripts/docs-check.mjs`, `CLAUDE.md`, `CHANGELOG.md` ou o próprio workflow
+- [CLAUDE.md](CLAUDE.md) seção "Comandos comuns" — comando `node scripts/docs-check.mjs` documentado (Sprint 00 wraps em `pnpm docs:check`)
+- [Sprint 00](docs/sprints/00-setup-infra.md) — DoD adiciona item de wire `pnpm docs:check` no `package.json` quando o monorepo for criado
+
+**Bugs encontrados pela lint na primeira execução (15 erros corrigidos):**
+
+*9 links markdown quebrados (todos refs internas a docs/):*
+- [compliance/anvisa-notifications/_template.md:76](docs/compliance/anvisa-notifications/_template.md): `../decisions/...` (path errado, era `../../decisions/...`)
+- [compliance/ripd/v0.1-cobranca-financeiro.md](docs/compliance/ripd/v0.1-cobranca-financeiro.md) (4 ocorrências): refs a `sprints/17-geral-fiscal-inbox.md` (não existe — Sprint 15 entrega NF-e inbox) e a `decisions/0061-cobertura-fiscal-faseada.md` (slug errado — real é `0061-motor-retencoes-e-cobertura-fiscal-faseada.md`)
+- [decisions/0066:451](docs/decisions/0066-plano-comercial-pricing-trial.md): ref a `0004-pagamentos-asaas.md` (não existe — ADR 0004 é Drizzle; Asaas é parte de ADR 0001)
+- [decisions/0068:543](docs/decisions/0068-catalogo-servicos-precos-contextuais-link-financeiro.md): ref a `0010-financial-mode-centralizado.md` (escrita errada — real é `centralized` com s)
+- [decisions/0072:455](docs/decisions/0072-escalabilidade-banco-particionamento-retencao-cold-storage.md): self-reference com `decisions/decisions/` duplicado
+- [decisions/0077](docs/decisions/0077-passaporte-paciente-vinculo-cross-tenant.md) (3 ocorrências): refs a slugs planejados originais (`0047-cadastro-central-persons-contact-fk.md`, `0048-cnpj-busca-automatica.md`) que mudaram quando ADRs foram formalizados
+
+*3 colisões ADR novas (mesmo padrão das 12ª e 14ª, escapou de novo):*
+- ADR 0030: Sprint 22 (TISS terminologia) **e** Sprint 23 (Modelo comissão) — Sprint 23 realocada para **0086**
+- ADR 0031: Sprint 22 (Validador TISS) **e** Sprint 24 (Estoque PEPS) — Sprint 24 realocada para **0087**
+- ADR 0032: Sprint 20 (Fechamento prontuário) **e** Sprint 26 (Member auth) — Sprint 26 realocada para **0088**
+- Cascatas: roadmap.md tabela de realocações ganha 0086+0087+0088; placeholders fiscais "≥0086" → "≥0089" em modulos/roadmap/Sprint 35; backref RIPD `v1.0-portal-paciente.md` atualizado de "ADR 0032" → "ADR 0088"
+
+**Por que essa lint vale o esforço:**
+
+A classe de bugs "ADR esperado colide com publicado/outro" é gerada por mudanças incrementais — cada vez que um ADR é formalizado ou um sprint criado, uma colisão pode nascer. Diff manual não pega porque a colisão pode estar em arquivo distante. Classe "link MD quebrado" idem — refactors de slugs propagam mal. Lint roda em segundos, fail-fast em CI antes de merge.
+
 ### Docs — 14ª auditoria 2026-04-25 (colisões ADR 0033/0034 + RIPD refs quebradas + 4 backrefs RIPD)
 
 3 agentes Explore em paralelo. Achado mais sério (mesmo padrão da 12ª, escapou de novo): **2 colisões de numeração ADR** + **2 RIPDs apontando para arquivo inexistente** + **4 backrefs RIPD ainda faltando**. **17 ocorrências reais corrigidas em 17 arquivos:**

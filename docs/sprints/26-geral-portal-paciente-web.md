@@ -55,7 +55,7 @@ Portal web self-service do paciente/aluno, entregue como PWA para funcionar como
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0032 (esperado)** — Autenticação do member: magic link por email/SMS com TTL 15min; JWT com claim `role=member` bloqueia acesso a telas de operador; sessão longa (30d). Separação clara do namespace de role operador.
+- **ADR 0088 (esperado)** — Autenticação do member: magic link por email/SMS com TTL 15min; JWT com claim `role=member` bloqueia acesso a telas de operador; sessão longa (30d). Separação clara do namespace de role operador. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0032 já alocado a Sprint 20 política de fechamento de prontuário.)
 - **Pergunta aberta:** cancelamento de agendamento — ir direto ou entrar em fila de "cancelamento a aprovar"? Por vertical: Academia (livre até X horas antes), Fisio (aviso ao profissional), Nutri (reagendamento).
 
 ## Módulos entregues
@@ -181,7 +181,7 @@ RLS: `member_id = auth.uid() AND auth.jwt() ->> 'role' = 'member'`. Tabelas de d
 - [ ] Testes unit
 - [ ] Testes E2E: fluxo magic link → agenda → pagamento → logout
 - [ ] Feature flag `portal_member_v1`
-- [ ] ADR 0032 publicado
+- [ ] ADR 0088 publicado
 
 **Cross-tenant PWA-grade (ADR 0077 + ADR 0067 addendum):**
 
@@ -223,7 +223,7 @@ RLS: `member_id = auth.uid() AND auth.jwt() ->> 'role' = 'member'`. Tabelas de d
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
 - [ ] Roadmap: sprint 22 → `done`
-- [ ] ADR 0032 publicado
+- [ ] ADR 0088 publicado
 
 ## Retro
 

@@ -17,7 +17,7 @@ Controle de estoque de materiais consumíveis (gaze, agulha, atadura, descartáv
 - Saídas por consumo interno (gasto em atendimento) + venda no balcão + ajuste
 - Cálculo de saldo em tempo real via soma de movimentações (não mantém contador denormalizado — evita divergência)
 - Alerta quando saldo ≤ mínimo (Realtime + email/WhatsApp via régua Sprint 13)
-- Método de custo: PEPS (FIFO) ou custo médio — configurável por tenant (ADR 0031)
+- Método de custo: PEPS (FIFO) ou custo médio — configurável por tenant (ADR 0087)
 - POS simples para venda: select item → quantidade → forma pagamento → gera `invoice` no Sprint 04
 - Vinculação opcional de consumo a `appointment_id` / `consulta_id` (auditoria)
 - Inventário: contagem física com diferença apurada em `stock_movements` tipo `ajuste`
@@ -32,7 +32,7 @@ Controle de estoque de materiais consumíveis (gaze, agulha, atadura, descartáv
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0031 (esperado)** — Método de custo (PEPS vs custo médio) e modelo de saldo (soma de movimentações vs contador denormalizado com trigger). Recomendação: soma + view materializada para performance se necessário.
+- **ADR 0087 (esperado)** — Método de custo (PEPS vs custo médio) e modelo de saldo (soma de movimentações vs contador denormalizado com trigger). Recomendação: soma + view materializada para performance se necessário. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0031 já alocado a Sprint 22 validador TISS proativo.)
 - **Pergunta aberta:** multi-depósito — permitir estoque por `unit` ou só por `company`? Começar por `company` (simples); multi-unit é evolução se surgir demanda.
 
 ## Módulos entregues
@@ -106,7 +106,7 @@ Em `packages/db/schema/estoque.ts`:
 - [ ] Testes unit do cálculo de saldo + custo PEPS/médio
 - [ ] Testes E2E: cadastrar, comprar, vender, inventariar
 - [ ] Feature flag `estoque_v1`
-- [ ] ADR 0031 publicado
+- [ ] ADR 0087 publicado
 
 ## Stretch
 
@@ -128,7 +128,7 @@ Em `packages/db/schema/estoque.ts`:
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
 - [ ] Roadmap: sprint 20 → `done`
-- [ ] ADR 0031 publicado
+- [ ] ADR 0087 publicado
 
 ## Retro
 

@@ -17,7 +17,7 @@ Princípio implícito (não regra numerada — referência a "regra 26" naquele 
 
 [ADR 0069](0069-perfil-paciente-hub-operacional.md) já entregou o **hub operacional do paciente** (perfil unificado com tabs por especialidade), mas escopado **dentro de um tenant**. Falta a camada cross-tenant.
 
-[ADR 0047](0047-cadastro-central-persons-contact-fk.md) já entregou `persons` como entidade canônica cross-tenant (sem `tenant_id`), o que viabiliza tecnicamente o modelo aqui proposto.
+[ADR 0047](0047-cadastro-central-persons.md) já entregou `persons` como entidade canônica cross-tenant (sem `tenant_id`), o que viabiliza tecnicamente o modelo aqui proposto.
 
 ### Decisões prévias do usuário (2026-04-25)
 
@@ -342,7 +342,7 @@ Resultados:
 - **CPF único na rede** — 1 conta por CPF (constraint global em `persons`)
 - **Cloudflare Turnstile** no signup (free tier — já provisionado no Sprint 00)
 - **Rate limit:** 3 cadastros/h por IP, 1 cadastro/dia por mesmo CPF tentado (anti-fraude)
-- **Verificação de CPF na Receita** (BrasilAPI / ReceitaWS — já provisionado no [ADR 0048](0048-cnpj-busca-automatica.md)) — opcional, ativada em Fase 2 se fraude virar problema
+- **Verificação de CPF na Receita** (BrasilAPI / ReceitaWS — já provisionado no [ADR 0048](0048-busca-cnpj-provider-abstrato.md)) — opcional, ativada em Fase 2 se fraude virar problema
 
 #### Cobrança no Path B
 
@@ -452,7 +452,7 @@ Isso só existe porque os dados cruzam. É o motivo de ter LogiFit em vez de 3 s
 
 - [ADR 0002 — RLS como isolamento primário](0002-rls-como-isolamento-primario.md)
 - [ADR 0005 — RBAC com consent cross-module](0005-rbac-com-consent-cross-module.md)
-- [ADR 0047 — Cadastro central persons (Contact-FK)](0047-cadastro-central-persons-contact-fk.md)
+- [ADR 0047 — Cadastro central persons (Contact-FK)](0047-cadastro-central-persons.md)
 - [ADR 0054 — LGPD art. 11 + RIPD versionado](0054-lgpd-art11-dados-saude-ripd-versionado.md)
 - [ADR 0067 — DPO + governança LGPD](0067-dpo-governanca-compliance-lgpd.md)
 - [ADR 0069 — Perfil do paciente como hub operacional](0069-perfil-paciente-hub-operacional.md)
