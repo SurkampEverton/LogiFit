@@ -1,7 +1,7 @@
 # Sprint 00 — Setup de Infra
 
 - **Início:** planejado
-- **Fim planejado:** **+4 semanas** (revisado 2026-04-25 — escopo foi expandido pelas 4 auditorias com 8 lints custom + estruturas compliance/runbooks/threat-models + arquivos `dev/portability.md`/`realtime.md` + `high-risk-actions.ts`; absorve melhor em 4 semanas que em 3)
+- **Fim planejado:** **+4 semanas** (revisado 2026-04-25 — escopo foi expandido pelas 4 auditorias com 8 lints custom + estruturas compliance/runbooks/threat-models + arquivos `dev/portability.md`/`realtime.md` + `high-risk-actions.ts`; absorve melhor em 4 semanas que em 3). Revisão posterior 2026-04-25 — bullets pequenos de extensibilidade i18n (ADR 0052 reforçado): `LOCALE_NAMES`/`FALLBACK_CHAIN` em config, schema TEXT+CHECK (sem enum), `i18n:translate` script, `playwright-locales.ts` helper, runbook `adicionar-novo-locale.md` esqueleto. Cabe na Faixa 1 sem estourar timebox.
 - **Status:** planejado
 - **Item do roadmap:** #1
 
@@ -71,6 +71,7 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
   - **Implementação completa do `<SideMenu>` (hamburger overlay + registry por módulo + filtros) fica no Sprint 00b** — aqui entra apenas o slot do `<HamburgerTrigger>` no `<AppLayout>`
 - [ ] **Tokens responsivos** em `packages/ui/tokens.ts`: `min-h-touch` = 44px, `min-h-input` = 48px, utility `safe-area-*` (top/bottom/left/right para iPhone notch + home indicator), breakpoints sincronizados com Tailwind
 - [ ] **Helper `packages/config/playwright-viewports.ts`** — exporta matrix: `iphone-13` (390×844), `pixel-5` (393×851), `ipad-portrait` (768×1024), `ipad-landscape` (1024×768), `desktop-1280`, `desktop-1920`; função `forEachViewport(test, name, fn)` que roda teste em 3 canônicos por padrão
+- [ ] **Helper `packages/config/playwright-locales.ts`** (ADR 0052 — extensibilidade i18n) — exporta `forEachLocale(test, name, fn)` que itera `LOCALES` de `packages/i18n/config.ts`; smoke obrigatório `apps/web/e2e/i18n-smoke.spec.ts` carrega `/`, `/login`, `/signup` em cada locale e assertiva: (a) sem chaves nuas tipo `common.foo.bar` na DOM, (b) sem overflow horizontal, (c) `<LocaleSwitcher>` lista todos `LOCALE_NAMES` corretos. Adicionar locale futuro herda smoke automaticamente (zero edição de teste)
 - [ ] **Meta viewport correta** em `app/layout.tsx` — `viewport: { width: 'device-width', initialScale: 1, maximumScale: 1, viewportFit: 'cover' }` (Next.js 15 metadata API)
 - [ ] **Regra Biome/ESLint custom "no-desktop-only-layout"** — falha CI se `className` em `<button>` clicável tem `h-<valor <44>` sem classe `min-h-touch` override; falha se `<table>` é usada diretamente fora de `<ResponsiveTable>`
 - [ ] **Teste visual Playwright base** em `apps/web/e2e/responsiveness.spec.ts` — roda homepage + /login + /signup em 3 viewports; screenshot baseline + assertiva de não overflow horizontal em mobile
@@ -99,11 +100,19 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 - [ ] Middleware de detecção de locale (`middleware.ts`) com cookie `NEXT_LOCALE` + fallback `Accept-Language` + default `pt-BR`
 - [ ] Estrutura `apps/web/src/messages/{pt-BR,en-US,es-419}/` com namespace mínimo (`common.json` + `auth.json`)
 - [ ] Seed de strings comum em 3 locales (tradução inicial via Claude para en/es; revisar antes de release)
-- [ ] `packages/i18n/config.ts` exporta `LOCALES = ['pt-BR', 'en-US', 'es-419']` + `DEFAULT_LOCALE = 'pt-BR'`
+- [ ] `packages/i18n/config.ts` exporta:
+  - `LOCALES = ['pt-BR', 'en-US', 'es-419'] as const` + `type Locale = (typeof LOCALES)[number]`
+  - `DEFAULT_LOCALE: Locale = 'pt-BR'`
+  - `FALLBACK_CHAIN: Locale[] = ['en-US', 'pt-BR']` (regra genérica ADR 0052 — qualquer locale → en-US → pt-BR)
+  - `LOCALE_NAMES: Record<Locale, string> = { 'pt-BR': 'Português', 'en-US': 'English', 'es-419': 'Español' }` (nome nativo — `<LocaleSwitcher>` consome dinamicamente; adicionar locale futuro = adicionar 1 linha aqui, sem editar componente)
+- [ ] **Schema `persons.preferred_locale`** = `text NOT NULL DEFAULT 'pt-BR'` + `CHECK (preferred_locale = ANY(ARRAY['pt-BR','en-US','es-419']))` — **proibido enum SQL** (ADR 0052 §Persistência); validação na borda Zod via `z.enum(LOCALES)`. Mesmo padrão para `tenants.default_locale`. Adicionar locale futuro = atualizar `LOCALES` no app + migration trivial de `CHECK` constraint, sem `ALTER TYPE`.
 - [ ] Script `pnpm i18n:extract` que percorre código e lista chaves usadas via regex `/t\(['"]([^'"]+)['"]\)/`
 - [ ] Script `pnpm i18n:check` que compara chaves usadas vs presentes em cada locale; falha CI se divergir
-- [ ] Componente `<LocaleSwitcher>` em `packages/ui`
+- [ ] Script `pnpm i18n:translate --target {locale}` (Claude-assistido) — versão básica que lê pt-BR de cada namespace e gera tradução do locale alvo via Anthropic SDK; revisão humana antes de commit; usado pelo runbook de adição de locale
+- [ ] Componente `<LocaleSwitcher>` em `packages/ui` — consome `LOCALES` + `LOCALE_NAMES` dinamicamente (zero hardcode de label)
 - [ ] Formatação de datas/números via `Intl` nativo wrapado em helpers de `packages/i18n`
+- [ ] **Templates Resend nascem multi-locale** — Sprint 01a (primeiro template de auth/recovery) e demais sprints com email seguem padrão `apps/web/src/messages/{locale}/email-{template}.json`; render no locale do destinatário via `persons.preferred_locale` com fallback `tenants.default_locale` (ADR 0052 §Escopo de impacto)
+- [ ] Runbook `docs/runbooks/adicionar-novo-locale.md` (esqueleto inicial em Sprint 00 — conteúdo amadurece conforme implementação avança)
 
 **RLS e qualidade:**
 
@@ -187,6 +196,8 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
   Cada arquivo já contém `Status: TODO`, link para `_template.md`, sprint dependente e deadline em prosa. CI bloqueia merge da sprint correspondente se RIPD ainda está em `Status: TODO`.
 
 - [ ] Criar `scripts/hash-ripd.ts` que computa SHA-256 do conteúdo de cada RIPD em `docs/compliance/ripd/v*.md` e atualiza o campo `Hash SHA-256` no frontmatter; rodado em CI antes de merge (regra 29). Arquivo só vira `Status: Vigente` se hash bate com último commit que tocou o conteúdo.
+
+- [ ] **Runbook esqueleto `docs/runbooks/adicionar-novo-locale.md`** (ADR 0052 — extensibilidade) — passo-a-passo canônico de 10 passos para adicionar um locale futuro (de-DE, fr-FR, etc): atualizar `LOCALES`/`LOCALE_NAMES`, criar diretório `messages/{locale}/`, rodar `pnpm i18n:translate --target {locale}`, revisão humana, INSERT em `translations` para catálogos clínicos via seed, atualizar `CHECK` constraint, `pnpm i18n:check`, smoke E2E na matrix de locales, deploy. Conteúdo amadurece conforme catálogos clínicos e templates email/PDF aterrissarem nos sprints respectivos.
 
 **README e docs:**
 

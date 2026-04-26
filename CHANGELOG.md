@@ -6,6 +6,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — reforço de extensibilidade i18n 2026-04-25
+
+Pergunta do usuário: "futuramente vamos ter outras [linguagens] diferentes de pt-br, o sistema já vai estar preparado e facilitado para a implementação?". Diagnóstico: a base já estava bem desenhada (ADR 0052 + Regra 27 + Sprint 00), mas tinha 6 pontos onde pequenos ajustes/explicitações tornam a futura adição de locale (`de-DE`, `fr-FR`, etc) um runbook mecânico em vez de refactor. Nenhum locale novo aplicado agora — apenas garantir que o caminho fique aberto.
+
+**Mudanças:**
+
+- [ADR 0052 §Decision](docs/decisions/0052-i18n-tres-idiomas-pt-en-es.md) — (1) **cadeia de fallback genérica** "qualquer locale → en-US (pivô) → pt-BR (default)" derivada de `FALLBACK_CHAIN` constant, não mais hardcoded em "es-419 → en-US → pt-BR"; (2) **threshold fechado de catálogos**: > 500 linhas usa tabela `translations(entity_type, entity_id, locale, field, value)` (CID/CIF/TUSS/TACO/exercícios/suplementos/analitos), ≤ 500 usa colunas `name_pt/en/es` — antes "decidir durante execução"; (3) **persistência `persons.preferred_locale` como TEXT + CHECK**, proibido enum SQL (evita `ALTER TYPE` ao adicionar locale).
+- [ADR 0052 §Escopo de impacto](docs/decisions/0052-i18n-tres-idiomas-pt-en-es.md) — (4) **templates Resend e PDF nascem multi-locale** desde primeiro template (Sprint 01a/04/20/22/29); (5) **`<LocaleSwitcher>` consome `LOCALE_NAMES` registry** dinamicamente; novo subtópico "Adicionar um locale novo no futuro" linkando runbook.
+- [Sprint 00](docs/sprints/00-setup-infra.md) — `packages/i18n/config.ts` ganha `FALLBACK_CHAIN` + `LOCALE_NAMES: Record<Locale, string>` (nomes nativos: Português/English/Español); schema `persons.preferred_locale = TEXT NOT NULL DEFAULT 'pt-BR' + CHECK` (sem enum); script `pnpm i18n:translate --target {locale}` (Claude-assistido); helper `packages/config/playwright-locales.ts` + smoke `apps/web/e2e/i18n-smoke.spec.ts` (matrix de locales); runbook esqueleto `adicionar-novo-locale.md`.
+- **Novo** [docs/runbooks/adicionar-novo-locale.md](docs/runbooks/adicionar-novo-locale.md) — procedimento canônico de 10 passos para adição futura (`de-DE`, `fr-FR`, etc): atualizar `LOCALES`/`LOCALE_NAMES`, `mkdir messages/{locale}/`, `pnpm i18n:translate`, revisão humana, `INSERT` em `translations`, migration trivial de `CHECK`, `pnpm i18n:check`, smoke E2E, deploy. Inclui critérios de pré-requisito (i18n vs l10n vs RTL) e rollback. Esqueleto inicial — conteúdo amadurece conforme catálogos clínicos e templates email/PDF aterrissarem.
+
+**Fora deste commit (deliberado):** nenhum locale novo aplicado; nenhuma mudança em código (`apps/`/`packages/` ainda não existem — repo em fase de documentação); regulamentação BR-only continua (Asaas/Focus NFe/CPF/LGPD); timezone, moedas regionais LATAM e termos clínicos em SOAP livre seguem fora do ADR 0052 (futuros ADRs se vier demanda real).
+
+**Verificação:** sem testes automatizados (docs-only). Mental check: dev daqui 1 ano consegue adicionar `de-DE` seguindo apenas o runbook? Sim — `LOCALES`/`LOCALE_NAMES`/`FALLBACK_CHAIN`/`<LocaleSwitcher>`/CI `i18n:check`/Playwright smoke são todos data-driven; nenhum refactor de código necessário.
+
+---
+
 ### Docs — 10ª auditoria 2026-04-25 (cascade da 9ª: "4 → 5 cenários canônicos")
 
 Auditoria de cascade effects do commit `29f0f57` (9ª auditoria) + áreas que a 9ª explicitamente não cobriu (sprints linha-a-linha, ADRs em profundidade, coerência numérica/regulatória). 3 agentes Explore em paralelo. Validações diretas eliminaram **falsos positivos significativos** dos agentes (Sprint 19b inexistente — Glob confirmou que existe; "4 cenários" em CHANGELOG/ADR 0060 são contexto NF-e, não multi-tenant). **17 ocorrências reais corrigidas em 15 arquivos:**

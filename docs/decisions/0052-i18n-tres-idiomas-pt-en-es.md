@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-04-23
+- **Revisado:** 2026-04-25 — reforço de extensibilidade (cadeia de fallback genérica, threshold de catálogos, persistência TEXT sem enum, templates email/PDF multi-locale desde dia 1, `LOCALE_NAMES` registry, runbook de adição de locale). Sem mudança de decisão central — apenas explicitações para que adicionar locale futuro (de-DE, fr-FR, etc) seja `INSERT`/runbook, nunca refactor.
 
 ## Context
 
@@ -22,12 +23,15 @@ Adotar **next-intl** como biblioteca de i18n para Next.js 15 App Router, com 3 l
 ### Estratégia
 
 - **UI 100% via chaves i18n** — proibido hardcode de string em componente React (nova regra 27 em `docs/rules.md`)
-- **Catálogos (exercícios, alimentos TACO, analitos, CID, CIF, suplementos)** ganham colunas `name_pt`, `name_en`, `name_es` OU tabela `translations` (decidir por catálogo durante execução; catálogos pequenos usam colunas, grandes usam tabela)
+- **Catálogos com tradução** seguem regra de threshold (extensibilidade por design — adicionar locale futuro deve ser `INSERT`, nunca `ALTER`):
+  - **Catálogo > 500 linhas → tabela `translations(entity_type, entity_id, locale, field, value)`** (PK composta, FK por `entity_type`+`entity_id`, índice em `(entity_type, entity_id, locale)`). Adicionar locale = `INSERT` em massa, sem migration. Canônicos: CID-10/CID-11 (~15k), CIF (~1500), TUSS (~5k), TACO alimentos (~3000), exercícios, suplementos, analitos laboratoriais.
+  - **Catálogo ≤ 500 linhas → colunas `name_pt`, `name_en`, `name_es`** (mais simples, custo de migration aceitável). Canônicos: tipos de plano comercial, tipos de pagamento, status enums com label visível, categorias de produto, motivos de cancelamento.
 - **Seed inicial** em pt-BR completo; en-US e es-419 em paridade prioritária para strings de UI; catálogos traduzidos on demand via IA (Claude sugere tradução que admin revisa)
 - **Regulamentação BR-only** — CPF/CNPJ continuam obrigatórios; validação de documento só BR; moeda BRL padrão; Asaas único gateway
 - **Formatação regional** via Intl nativo: BRL com vírgula (pt-BR), USD com ponto (en-US), ARS/MXN/COP conforme tenant (es-419 aceita múltiplas moedas no texto mas padrão BRL)
 - **Datas**: pt-BR `DD/MM/YYYY`, en-US `MM/DD/YYYY`, es-419 `DD/MM/YYYY`
-- **Fallback em cadeia**: chave não traduzida em es-419 → cai em en-US → cai em pt-BR com aviso de string faltando (log para tradutor)
+- **Persistência do locale escolhido** — `persons.preferred_locale` é `TEXT NOT NULL DEFAULT 'pt-BR'` com `CHECK (preferred_locale = ANY(ARRAY['pt-BR','en-US','es-419']))` lido da constante `LOCALES` (`packages/i18n/config.ts`); validação principal na borda Zod usando `z.enum(LOCALES)`. **Proibido enum SQL** (`CREATE TYPE locale_enum AS ENUM …`) — `ALTER TYPE … ADD VALUE` em Postgres é operação que não pode rodar dentro de transação e tem casos degenerados. Adicionar locale futuro = atualizar `LOCALES` no app + atualizar `CHECK` constraint via migration trivial (rebuild de constraint, não de tipo). Tenant default em `tenants.default_locale` segue mesma regra.
+- **Fallback em cadeia genérica** (extensibilidade): chave não traduzida em qualquer locale → cai em **en-US** (pivô internacional) → cai em **pt-BR** (default LogiFit) com aviso de string faltando (log para tradutor). Implementação deriva da constante `FALLBACK_CHAIN = ['en-US', 'pt-BR']` em `packages/i18n/config.ts` — adicionar `de-DE`, `fr-FR`, etc futuro herda a mesma cadeia automaticamente sem editar lógica de fallback.
 
 ### Organização dos message catalogs
 
@@ -100,13 +104,19 @@ Esses temas ficam para futuro ADR (0060+) quando houver demanda real de mercado.
 
 ## Escopo de impacto
 
-- **Sprint 00** cresce com: instalar next-intl + middleware + estrutura de messages/ + script de extração + CI check de chaves faltantes
+- **Sprint 00** cresce com: instalar next-intl + middleware + estrutura de messages/ + script de extração + CI check de chaves faltantes + `LOCALE_NAMES` registry + runbook esqueleto de adição de locale + matrix Playwright em locales
 - **Regra 27 (nova)** em `docs/rules.md`: "Proibido hardcode de string de UI. Toda string visível vai via `t('namespace.key')` com catálogo nos 3 locales."
 - **CLAUDE.md** adiciona i18n na seção de stack + convenção de trabalho
 - **docs/arquitetura.md** — stack inclui next-intl v4+
 - **docs/modulos.md** — novo módulo transversal "i18n (3 idiomas)" na Fundação
 - **Todos os sprints** — DoD ganha item: "[ ] Strings UI extraídas em 3 locales (pt-BR obrigatório, en-US + es-419 via Claude + revisão)"
+- **Templates de email (Resend) e PDF (recibo, prontuário, plano alimentar, NF-e visualização) nascem multi-locale desde o primeiro template** — cada template tem 1 catálogo i18n próprio (`apps/web/src/messages/{locale}/email-{template}.json` ou `pdf-{template}.json`); render no locale do destinatário via `persons.preferred_locale`; fallback `tenants.default_locale` quando destinatário sem locale (paciente novo). Sprints 01a (primeiro Resend de auth), 04 (primeira fatura Asaas), 20 (primeiro PDF de prontuário), 22 (XML/PDF TISS), 29 (PDF plano alimentar nutri) ganham bullet "templates por locale" no DoD.
+- **`<LocaleSwitcher>` consome `LOCALE_NAMES` registry** (`packages/i18n/config.ts`) — proibido hardcode de label em componente; adicionar locale futuro = adicionar 1 linha em `LOCALE_NAMES` e o componente herda.
 - **CHANGELOG.md** — entrada
+
+### Adicionar um locale novo no futuro (extensibilidade)
+
+Procedimento canônico em [`docs/runbooks/adicionar-novo-locale.md`](../runbooks/adicionar-novo-locale.md). Resumo: (1) adicionar string em `LOCALES` array; (2) adicionar entrada em `LOCALE_NAMES` (nome nativo); (3) criar diretório `apps/web/src/messages/{novo-locale}/`; (4) rodar `pnpm i18n:translate --target {locale}` (Claude-assistido); (5) revisão humana; (6) `INSERT` em `translations` para catálogos clínicos via script seed; (7) atualizar `CHECK` constraint de `persons.preferred_locale`; (8) `pnpm i18n:check` deve passar; (9) smoke E2E Playwright na matrix de locales; (10) deploy. **Nenhum refactor de código** — design preserva extensibilidade por construção.
 
 ## Alternativas rejeitadas
 
