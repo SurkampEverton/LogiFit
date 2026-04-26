@@ -10,7 +10,7 @@
 
 ## Pré-requisitos
 
-- [ ] Acesso ao bucket Cloudflare R2 com chave GPG de descriptografia (ADR 0073 regra 40)
+- [ ] Acesso ao bucket Cloudflare R2 com chave GPG de descriptografia ([ADR 0073](../decisions/0073-postura-seguranca-defesa-em-profundidade.md), regra 40)
 - [ ] Conta Supabase free tier disponível para instância temporária
 - [ ] Sessão privilegiada PAM aberta (ADR 0073 camada 7)
 - [ ] `pgBackRest` ou `pg_restore` instalado localmente

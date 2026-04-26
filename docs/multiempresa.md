@@ -63,41 +63,54 @@ Três flags em `tenants` definem o comportamento:
 
 ---
 
-## Os 4 cenários canônicos (obrigatórios no seed de dev/teste)
+## Os 5 cenários canônicos (obrigatórios no seed de dev/teste)
 
 ### 1. Rede própria com múltiplos CNPJs
-`owned` + `distributed` + `cross=true`
+`owned` + `distributed` + `cross=true` + `mode='multi'`
 
 Dono tem matriz + filiais, cada uma com CNPJ próprio, alunos circulam livre. DRE consolidado. Exemplo: "Rede Fit Pro".
 
 ### 2. Franquia clássica
-`franchise` + `distributed` + `cross=false`
+`franchise` + `distributed` + `cross=false` + `mode='multi'`
 
 Cada franquia é autônoma, alunos não circulam. Admin da matriz não opera filiais, só vê agregados. Exemplo: Smart Fit-like.
 
 ### 3. Franquia com passaporte
-`franchise` + `distributed` + `cross=true` com `franchise_agreements`
+`franchise` + `distributed` + `cross=true` + `mode='multi'` com `franchise_agreements`
 
 Franqueados aceitam aluno de outras franquias mediante acordo bilateral. Tabela `franchise_agreements` define pares, split, condições. Exemplo: rede de academias com "plano rede nacional".
 
 ### 4. Mix loja avulsa + rede no mesmo group
-`group` agrega 2+ tenants de perfis diferentes. Dono vê dashboard consolidado de todos seus negócios. Exemplo: "Grupo João" com 1 rede grande + 1 loja avulsa independente.
+`group` agrega 2+ tenants de perfis diferentes (cada um com seu `mode`). Dono vê dashboard consolidado de todos seus negócios. Exemplo: "Grupo João" com 1 rede grande + 1 loja avulsa independente.
 
-CI roda teste de RLS contra os 4 cenários. Se um quebra, pipeline falha.
+### 5. Modo Solo (profissional autônomo)
+`mode='solo'` + `owned` + `distributed` (degenerado) + `cross=false` — 1 company matriz, 0/1 unit, 1 profissional
+
+Profissional autônomo (CREF/CREFITO/CRN/CRP/CRO/Pilates/esteticista) com UX simplificada — sem multi-empresa visível, sem hierarquia operacional. Backend respeita o mesmo schema (RLS, audit, etc), mas a UI esconde flags multi-empresa. Plano comercial Solo R$ 49 / Solo Combo R$ 69 ([ADR 0069](decisions/0069-perfil-paciente-hub-operacional.md) + [ADR 0066](decisions/0066-plano-comercial-pricing-trial.md)). Exemplo: "Personal trainer atendendo em domicílio".
+
+CI roda teste de RLS contra os 5 cenários. Se um quebra, pipeline falha.
 
 ---
 
-## Mobilidade do aluno
+## Mobilidade do aluno / paciente
+
+Dois conceitos distintos coexistem aqui — não confundir:
+
+- **Member contratual** (`members`) — vínculo de contrato/cobrança; pertence a **1 tenant** e não migra entre contratos SaaS distintos.
+- **Pessoa física** (`persons`, ADR 0047) — pode ter presença em N tenants simultaneamente como paciente, via passaporte cross-tenant (ADR 0077 / regra 42).
 
 | Caso | Regra |
 |---|---|
 | Aluno dentro da **mesma company** | Sempre pode |
 | Aluno cross-company **mesmo tenant** | Respeita `tenant.cross_company_access` |
-| Aluno cross-tenant **mesmo group** | **Nunca** (são empresas juridicamente distintas) |
-| Aluno cross-group | **Nunca** |
-| Transferência de aluno entre filiais | `UPDATE members SET company_id = X` + `audit_log`. Nunca deletar/recriar |
+| Member **como contrato** cross-tenant | **Nunca** — `members` pertence a 1 tenant; member não migra entre contratos SaaS distintos |
+| Mesma pessoa **como paciente** em N tenants (mesmo group ou não) | **Permitido** via `patient_company_links` ativo + módulo liberado em `patient_link_modules` (ADR 0077 / regra 42). Cross-tenant entrega resumido; financeiro nunca cruza; prontuário CFM bruto nunca cruza; toda leitura grava `patient_data_access_log` |
+| Transferência de aluno entre filiais (mesmo tenant) | `UPDATE members SET company_id = X` + `audit_log`. Nunca deletar/recriar |
 
-Em franchise com passaporte, check-in cross-company dispara regra de billing/split conforme `franchise_agreements`.
+Existem **dois "passaportes" distintos** no sistema — não confundir:
+
+1. **Passaporte de franquia** (`franchise_agreements`) — cross-company **dentro do mesmo tenant**, em `topology='franchise'` + `cross_company_access=true`. Check-in dispara billing/split conforme acordo bilateral entre franqueados.
+2. **Passaporte cross-tenant do paciente** (`patient_company_links`) — cross-tenant entre contratos SaaS distintos, governado por consent do paciente e módulos clínicos liberados. Ver [ADR 0077](decisions/0077-passaporte-paciente-vinculo-cross-tenant.md).
 
 ---
 

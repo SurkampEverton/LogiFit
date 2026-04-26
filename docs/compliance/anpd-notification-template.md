@@ -172,4 +172,4 @@
 - [`docs/runbooks/incidente-lgpd-72h.md`](../runbooks/incidente-lgpd-72h.md) — runbook que invoca este template
 - [`docs/runbooks/exfiltracao-detectada.md`](../runbooks/exfiltracao-detectada.md) — runbook complementar (vetor exfiltração)
 - [ADR 0067](../decisions/0067-dpo-governanca-compliance-lgpd.md) — DPO + governança compliance
-- [ADR 0073 regra 39](../decisions/0073-postura-seguranca-defesa-em-profundidade.md) — hash chain audit + WORM S3
+- [ADR 0073](../decisions/0073-postura-seguranca-defesa-em-profundidade.md) (regra 39) — hash chain audit + WORM S3

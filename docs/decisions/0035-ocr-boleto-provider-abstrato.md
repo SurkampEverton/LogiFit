@@ -5,6 +5,8 @@
 - **Date formalização:** 2026-04-25
 - **Sprint que implementa:** [Sprint 15 — ERP Financeiro Core](../sprints/15-geral-erp-financeiro-core.md)
 
+> **⚠️ Violação reconhecida da [regra 13](../rules.md) (CLAUDE.md):** "ADR criado no mesmo dia da decisão; nunca retroativo". Esta ADR foi formalizada ~7 semanas após a decisão original ter sido tomada em conversa e tratada como aceita por documentos downstream. **Causa:** decisão se materializou implicitamente em vários docs antes de ganhar arquivo próprio em `docs/decisions/`. **Lição aprendida:** quando uma decisão arquitetural for citada em ≥2 docs (sprint, modulos, roadmap, outro ADR), criar o ADR no mesmo turno — não deixar para depois. **Compromisso:** nenhum ADR retroativo adicional será criado; auditoria documental futura sinaliza imediatamente decisões implícitas para virarem ADR no dia.
+
 ## Context
 
 Sprint 15 (ERP Financeiro Core) entrega Contas a Pagar (AP) com workflow de aprovação. **Lançar AP a partir de PDF/foto de boleto** é um dos fluxos mais frequentes do dia-a-dia financeiro — recepção/financeiro recebe boleto por email, WhatsApp ou impresso e precisa cadastrá-lo sem retrabalho de digitação.
@@ -135,5 +137,5 @@ LogiFit não absorve custo — tenant que escolher provider pago paga direto ao 
 ## Related
 
 - Pattern coerente com [ADR 0048 — Busca CNPJ provider abstrato](0048-busca-cnpj-provider-abstrato.md), [ADR 0064 — IA Gemini default + BYOK](0064-ia-arquitetura-gemini-default-byok-rag.md), [ADR 0051 — WhatsApp inbound canal multi-fluxo](0051-whatsapp-inbound-canal-multifluxo.md)
-- Reforça [ADR 0073 regra 38 — scan de upload](0073-postura-seguranca-defesa-em-profundidade.md) — todo PDF de boleto passa por `scanUpload()` antes de OCR
+- Reforça [ADR 0073](0073-postura-seguranca-defesa-em-profundidade.md) (regra 38 — scan de upload) — todo PDF de boleto passa por `scanUpload()` antes de OCR
 - Citado em modulos.md (módulo "OCR de boleto"), roadmap.md (decisões fechadas), Sprint 15

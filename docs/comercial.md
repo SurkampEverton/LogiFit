@@ -145,6 +145,8 @@ Todo plano com emissão fiscal traz um **pacote de notas inclusas no preço-base
 
 | Plano | Notas inclusas/mês | Custo por nota extra | Tipos cobertos no contador* |
 |---|---|---|---|
+| Solo R$ 49 | 20 | R$ 0,50 | NFS-e (serviço) |
+| Solo Combo R$ 69 | 30 | R$ 0,50 | NFS-e (serviço) |
 | Starter R$ 99 | 50 | R$ 0,50 | NFS-e (serviço) |
 | Pro R$ 199 | 200 | R$ 0,40 | NFS-e + NF-e + NFC-e + devolução + transferência + conserto |
 | Business R$ 449 | 1.000 | R$ 0,35 | Todos os tipos + intercompany |

@@ -6,6 +6,8 @@
 
 **Índice:**
 - **Arquiteturais base (1–8)**
+- **Processo (9–15)**
+- **Código (16–20)**
 - **Multi-empresa (21–26)**
 - **i18n (27)**
 - **IA + LGPD (28–29)**
@@ -17,8 +19,6 @@
 - **Passaporte cross-tenant (42)**
 - **MFA obrigatório (43)**
 - **Design system "Equilíbrio Vital" (44)**
-- **Processo (9–15)**
-- **Código (16–20)**
 
 ---
 

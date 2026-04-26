@@ -8,19 +8,25 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 
 ## Modelo comercial
 
-- **4 planos principais** (ADR 0066 revisado 2026-04-25):
-  - **Starter R$ 99** (100 members; **MVP entrega Academia** — Fisio liberado em Fase 2 / Nutri em Fase 3 conforme módulos saem; 5 profissionais; 50 NFS-e inclusas)
-  - **Pro R$ 199** (500 members; **todas verticais simultâneas**; Focus NFe completo; Device Hub; Pipeline Exames; 200 NFS-e)
-  - **Business R$ 449** (2.000 members; multi-company; intercompany; adquirência; 1.000 NFS-e)
-  - **Enterprise sob consulta** (BYOK IA + SLA + white-label + **DPO-as-a-service add-on opcional via firma externa revendida**; 5.000 NFS-e)
-- **Plano Solo R$ 49 / Solo Combo R$ 69** (ADR 0069 — `tenants.mode='solo'`) para profissional autônomo (CREF/CREFITO/CRN/CRP/CRO/Pilates/esteticista) com UX simplificada e templates por profissão
-- **Overage suave R$ 0,50/member** acima do incluído; cap por tier força upgrade sugerido. **1 active member por (paciente, tenant)** — passaporte cross-tenant (ADR 0077) **não duplica cobrança** (paciente em N tenants = 1 member por tenant cada)
-- **Notas fiscais inclusas + overage proporcional** (ADR 0066 revisado 2026-04-25): Starter 50 / Pro 200 / Business 1.000 / Enterprise 5.000 inclusas. Excedente cobrado a R$ 0,50 / 0,40 / 0,35 / 0,25 por **nota emitida** (NFS-e + NF-e + NFC-e + devolução + transferência + conserto). **Eventos não contam** (cancelamento, CC-e, inutilização — não contam no overage). Repasse calibrado sobre custo Focus NFe + margem operacional
-- **Trial 14 dias** sem cartão com features Pro; dados retidos 30 dias após expiração e então **anonimizados** (preserva agregados estatísticos, remove PII; ver ADR 0054 + Sprint 01a). Conversão antes do dia 30 reativa dados originais
-- **Multi-tenant por subdomínio** (ADR 0065): `{slug}.logifit.com.br`
-- **Cobrança**: Asaas próprio LogiFit + NFS-e automática via Focus NFe (Sprint 36)
-- **IA embutida** no plano (Gemini Flash default LogiFit) + BYOK opcional — ADR 0064. **Cota mensal por plano** (Solo 200 / Solo Combo 200 / Starter 500 / Pro 3.000 / Business 10.000 / Enterprise 25.000 chamadas/mês). Excedido = **hard-stop com convite a configurar BYOK** (não há overage IA pago)
-- **DPO interno LogiFit** ([ADR 0067](docs/decisions/0067-dpo-governanca-compliance-lgpd.md) + [`docs/compliance/dpo.md`](docs/compliance/dpo.md) — nomeação formal): canal `privacidade@logifit.com.br` + plano resposta incidente 72h + sub-processors públicos + auditoria interna trimestral. **DPO MVP é o fundador** (papel formal interino); **DPO-as-a-service** (firma externa revendida pela LogiFit) é **add-on opcional do Enterprise** — não confundir os dois
+**6 planos** ([ADR 0066](docs/decisions/0066-plano-comercial-pricing-trial.md) — versão vigente 2026-04-25; tabela abaixo é fonte canônica):
+
+| Plano | R$/mês | Members | Verticais | Profs | NFS-e/mês | IA/mês | Storage |
+|---|---|---|---|---|---|---|---|
+| **Solo** | 49 | 30 | 1 à escolha | 1 | 20 | 200 | 1 GB |
+| **Solo Combo** | 69 | 60 | até 3 simultâneas | 1 | 30 | 200 | 2 GB |
+| **Starter** | 99 | 100 | Academia (MVP) — Fisio/Nutri liberam em Fases 2/3 | 5 | 50 | 500 | 5 GB |
+| **Pro** | 199 | 500 | todas simultâneas + Focus NFe + Device Hub + Pipeline Exames | 10 | 200 | 3.000 | 50 GB |
+| **Business** | 449 | 2.000 | todas + multi-company (até 3 CNPJs) + intercompany + adquirência | 30 | 1.000 | 10.000 | 200 GB |
+| **Enterprise** | sob consulta (~1.199+) | ilimitado | todas + white-label + DPO add-on + SLA | ilimitado | 5.000 | 25.000 ou BYOK | 500 GB+ |
+
+- **Solo / Solo Combo** (`tenants.mode='solo'`, [ADR 0069](docs/decisions/0069-perfil-paciente-hub-operacional.md)) — profissional autônomo (CREF/CREFITO/CRN/CRP/CRO/Pilates/esteticista) com UX simplificada e templates por profissão.
+- **Overage member** R$ 0,50/member acima do incluído (Solo/Combo: R$ 0,40); cap por tier força upgrade sugerido após 2 ciclos consecutivos. **1 active member por (paciente, tenant)** — passaporte cross-tenant ([ADR 0077](docs/decisions/0077-passaporte-paciente-vinculo-cross-tenant.md)) **não duplica cobrança** (paciente em N tenants = 1 member por tenant cada).
+- **Overage NFS-e** R$ 0,50 / 0,40 / 0,35 / 0,25 por **nota emitida** (NFS-e + NF-e + NFC-e + devolução + transferência + conserto), por tier respectivo. **Eventos não contam** (cancelamento, CC-e, inutilização). Repasse calibrado sobre custo Focus NFe + margem operacional.
+- **Cota IA é hard-stop** — excedido = bloqueio até próximo ciclo + convite BYOK (não há overage IA pago). Default LogiFit: Gemini 2.5 Flash via Vertex AI ([ADR 0064](docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md)); runbook emergencial em [`docs/runbooks/ia-byok-emergencial.md`](docs/runbooks/ia-byok-emergencial.md).
+- **Trial 14 dias** sem cartão com features Pro; dados retidos 30 dias após expiração e então **anonimizados** (preserva agregados estatísticos, remove PII; ver ADR 0054 + Sprint 01a). Conversão antes do dia 30 reativa dados originais.
+- **Multi-tenant por subdomínio** ([ADR 0065](docs/decisions/0065-multi-tenant-por-subdominio.md)): `{slug}.logifit.com.br`.
+- **Cobrança**: Asaas próprio LogiFit + NFS-e automática via Focus NFe (Sprint 36).
+- **DPO interno LogiFit** ([ADR 0067](docs/decisions/0067-dpo-governanca-compliance-lgpd.md) + [`docs/compliance/dpo.md`](docs/compliance/dpo.md)): canal `privacidade@logifit.com.br` + plano resposta incidente 72h + sub-processors públicos + auditoria interna trimestral. **DPO MVP é o fundador** (papel formal interino); **DPO-as-a-service** (firma externa revendida pela LogiFit) é **add-on opcional do Enterprise** — não confundir os dois.
 
 ## Marcos regulatórios que norteiam o produto
 
@@ -147,7 +153,7 @@ Lista completa de regras em [`docs/rules.md`](docs/rules.md) (44 regras duras; �
 - **Observabilidade:** Sentry + PostHog + Logtail/Axiom
 - **Qualidade:** Vitest + Playwright + GitHub Actions + Biome
 - **Infra:** **Fase 1 (MVP):** Vercel + Supabase Pro · **Fase 2 (pós-Sprint 19b):** Vercel + Oracle Cloud OCI (PG self-hosted) + Cloudflare R2. Estratégia em 2 fases — [ADR 0078](docs/decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md)
-- **Backup off-site MVP:** **Cloudflare R2 free tier 10GB** (`pg_dump` weekly cifrado GPG via Vercel Cron + retenção 12 meses; chaves de criptografia em backup separado). **Fase 2:** AWS S3 us-east-1 com Object Lock WORM (R$ 100-300/mês). Ver [ADR 0073 regra 40](docs/decisions/0073-postura-seguranca-defesa-em-profundidade.md)
+- **Backup off-site MVP:** **Cloudflare R2 free tier 10GB** (`pg_dump` weekly cifrado GPG via Vercel Cron + retenção 12 meses; chaves de criptografia em backup separado). **Fase 2:** AWS S3 us-east-1 com Object Lock WORM (R$ 100-300/mês). Ver [ADR 0073](docs/decisions/0073-postura-seguranca-defesa-em-profundidade.md) (regra 40 — backup off-site).
 
 ### Regras de portabilidade durante MVP (ADR 0078)
 
@@ -217,16 +223,25 @@ group (opcional, sem CNPJ, só agregados)
            └── unit (local físico)
 ```
 
-**Flags do tenant:** `topology` (`owned`/`franchise`), `financial_mode` (`centralized`/`distributed`), `cross_company_access` (bool).
+**Flags do tenant:** `topology` (`owned`/`franchise`), `financial_mode` (`centralized`/`distributed`), `cross_company_access` (bool), `mode` (`multi`/`solo` — ADR 0069).
 
-**4 cenários canônicos obrigatórios no seed:** rede própria, franquia clássica, franquia com passaporte, mix loja avulsa + rede no mesmo group.
+**5 cenários canônicos obrigatórios no seed:** rede própria, franquia clássica, franquia com passaporte, mix loja avulsa + rede no mesmo group, modo solo (autônomo).
 
-### Terminologia — cross-company vs cross-tenant
+### Glossário canônico
 
+Termos com significado fixo no projeto — usar consistentemente em código, schemas, ADRs, sprints e UI.
+
+- **`person`** — schema central ([ADR 0047](docs/decisions/0047-cadastro-central-persons.md)) PF/PJ; toda entidade especializada (member, supplier, user, profissional) tem FK `person_id`. Sem duplicação de identidade.
+- **`member`** — termo **canônico do schema** para quem consome serviço/contrato no tenant (academia/clínica). Pertence a **1 tenant**. UI rotula como **"aluno"** (academia) ou **"paciente"** (fisio/nutri) — são apelidos de UI, não tipos distintos no schema (regra 24).
+- **`group`** — camada agregada organizacional (sem CNPJ, sem RLS); só dashboard consolidado via views. Nunca filtro de query operacional.
+- **`tenant`** — contrato SaaS, **RLS raiz**. Pode ter `mode='multi'` (rede/franquia/loja) ou `mode='solo'` (autônomo).
+- **`company`** — pessoa jurídica (CNPJ); 1 matriz obrigatória + 0..N filiais. Emite NF-e.
+- **`unit`** — local físico (endereço), filho de company.
 - **Cross-company (mesmo tenant):** Filial A ↔ Filial B sob o mesmo contrato SaaS. Governado por `tenant.cross_company_access` + `franchise_agreements` (quando `topology='franchise'`) + regra 25 (clínico nunca cruza company em franquia).
 - **Cross-tenant (contratos distintos):** Academia X ↔ Clínica Y como tenants diferentes do LogiFit. Governado por `patient_company_links` + `patient_link_modules` (passaporte do paciente, ADR 0077) + regra 42 + `patient_data_access_log`. Nunca cruza dado financeiro nem prontuário CFM bruto.
+- **Passaporte** — termo sobrecarregado; sempre qualificar: **passaporte de franquia** (`franchise_agreements`, intra-tenant) vs **passaporte cross-tenant do paciente** (`patient_company_links`, inter-tenant).
 
-Os dois nunca são sinônimos. Documentação que usa um pelo outro está errada.
+Cross-company e cross-tenant **não são sinônimos**. Documentação que usa um pelo outro está errada.
 
 ## Modelo de autorização (essencial — leia `docs/acesso-e-autorizacao.md`)
 

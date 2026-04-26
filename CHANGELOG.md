@@ -6,6 +6,42 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — 9ª auditoria 2026-04-25 (revisão completa pedida pelo usuário)
+
+Revisão completa da documentação solicitada pelo usuário ("faça uma revisão completa procurando falhas, sem ver commits"). 3 agentes Explore em paralelo cobriram (1) docs core, (2) ADRs, (3) sprints/compliance/runbooks/threat-models. Validações diretas eliminaram **falsos positivos significativos** dos agentes (gap ADRs 0011-0046 é INTENCIONAL conforme `roadmap.md §122-165`; conflito 0001 vs 0064 já reconciliado via Addendum 2026-04-25; sprints 34-40 sem arquivo conforme convenção; compliance/runbooks/threat-models 100% completos). **8 falhas reais corrigidas (2 P0 + 3 P1 + 3 P2):**
+
+**P0 — Contradições corrigidas:**
+
+- [docs/multiempresa.md](docs/multiempresa.md) — Tabela "Mobilidade do aluno" contradizia ADR 0077 (regra 42) ao listar "Aluno cross-tenant **mesmo group** Nunca". Reescrita para distinguir **member contratual** (1 tenant, não migra) vs **mesma pessoa como paciente em N tenants** (permitido via `patient_company_links` + `patient_link_modules`). Adicionado parágrafo separando os dois "passaportes" (franquia intra-tenant vs cross-tenant do paciente).
+- [docs/multiempresa.md](docs/multiempresa.md) — Adicionado **5º cenário canônico** "Modo Solo" (`tenants.mode='solo'`, ADR 0069). Linha "CI roda contra os 4 cenários" atualizada para 5. CLAUDE.md sincronizado.
+
+**P1 — Omissões em fontes canônicas:**
+
+- [docs/rules.md:7-22](docs/rules.md) — Índice estava fora de ordem numérica (Processo 9-15 e Código 16-20 listados após regras 30+). Reordenado para sequência 1→44.
+- [CLAUDE.md §Modelo comercial](CLAUDE.md) — Lista bullet substituída por **tabela canônica única** com 6 planos × 7 colunas (R$, members, verticais, profs, NFS-e, IA, storage), espelhando ADR 0066. Antes omitia storage de qualquer plano, profs Pro/Business, e NFS-e Solo/Combo.
+- [docs/comercial.md:146-152](docs/comercial.md) — Tabela "Emissão fiscal" omitia Solo (R$ 49, 20 NFS-e) e Solo Combo (R$ 69, 30 NFS-e). Linhas adicionadas.
+- [docs/modulos.md](docs/modulos.md) — Célula de prosa densa para "Planos comerciais" substituída por referência ao ADR 0066 + CLAUDE.md como fonte canônica única (evita tripla manutenção).
+
+**P2 — Limpezas menores:**
+
+- [CLAUDE.md §Hierarquia multi-empresa](CLAUDE.md) — Seção "Terminologia — cross-company vs cross-tenant" expandida para **Glossário canônico** com 9 termos: `person`, `member`, `group`, `tenant`, `company`, `unit`, cross-company, cross-tenant, passaporte (sobrecarregado — sempre qualificar).
+- 4 ocorrências de `[ADR 0073 regra N](...)` (link prometendo navegação para regra dentro do ADR que não existe como anchor) reescritas para `[ADR 0073](...) (regra N)` — link aponta corretamente ao topo, regra fica fora. Arquivos: `CLAUDE.md`, `docs/compliance/anpd-notification-template.md`, `docs/runbooks/restore-test.md`, `docs/decisions/0035-ocr-boleto-provider-abstrato.md`.
+- [docs/decisions/0035-...](docs/decisions/0035-ocr-boleto-provider-abstrato.md) — Header reconhecia formalização retroativa mas sem lição aprendida. Adicionada nota explícita: violação da regra 13, causa, lição, compromisso de não repetir.
+
+**Falsos positivos descartados (verificações diretas):**
+
+- "Gap ADRs 0011-0046": INTENCIONAL — faixa reservada para ADRs que nascem dentro de sprints específicos ([`roadmap.md §122-165`](docs/roadmap.md))
+- "Conflito ADR 0001 vs 0064 (provider IA)": já reconciliado via Addendum 2026-04-25 em [`0001-stack-base.md:34-43`](docs/decisions/0001-stack-base.md)
+- "Sprints 34-40 sem arquivo": convenção documentada em [`roadmap.md §114-120`](docs/roadmap.md)
+- "ADR 0066 versionamento ruim": header já tem "Versão vigente" canônica + histórico preservado, padrão intencional
+- "RIPDs incompletos / runbooks faltando / sub-processors fora de sync": tudo verificado existente (13 RIPDs, 11 runbooks, 5 STRIDE, 14 sub-processors em `dpo.md` 100% sincronizados com stack)
+
+**Verificação:** `~/.claude/plans/fa-a-uma-revis-o-completa-lazy-hartmanis.md` consolidado com 8 falhas reais + 6 falsos positivos descartados. Sem testes automatizados (docs-only). Validação por leitura humana + grep dirigido.
+
+**Recomendação para 10ª:** rodar quando Sprint 02 ou 03 entrar em `doing` (passaporte cross-tenant + agendamento) — aí haverá schema/código real para conferir contra ADRs 0077 e 0049+. Auditorias só sobre docs estão chegando ao retorno diminuto.
+
+---
+
 ### Docs — 8ª auditoria 2026-04-25 (ADR 0077 status coerente + exceção controlada MFA bypass)
 
 Oitava auditoria, recursiva sobre o commit `4b061e4` (6ª+7ª) + revisão semântica profunda. Agente A (cross-references nos novos artefatos) confirmou **zero regressões**. Agente B (contradições semânticas entre docs) propôs 5 achados; verificações diretas eliminaram **3 falsos positivos** (`patient_company_links` está em Sprint 02; WORM Object Lock está em Sprint 01a:130; nomes de role consistentes — zero `tenant_admin` ou `owner` standalone) + 1 P2 não-acionável (notificação trial coberta por consent prévio no signup).
