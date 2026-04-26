@@ -67,10 +67,10 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 | 37 | 35 | App nativo Expo (aluno/paciente) — Bluetooth + push + **Apple Health + Google Health Connect (expande Device Hub)** | mobile | futuro | MVP estável + #28 + #34 |
 | 38 | [36](sprints/36-geral-fiscal-focus-nfe.md) | **Módulo fiscal — emissão completa via Focus NFe** (NFS-e + NF-e produto + NFC-e + devolução + transferência + remessa conserto + entrada própria + eventos) — ADR 0059 | fiscal | futuro | #6, #18 (15 schemas), #20 (17 inbox), #24 (POS), #25 (equipamento) |
 | 39 | pós-35 | **Prescrição adaptativa IA por RPE** (ajuste de carga automático) | academia/ia | futuro | #13, #37 (app nativo com input RPE em tempo real) |
-| 40 | 37 | **Apuração mensal de receita (Grupo C — ADR 0061 + ADR a alocar ≥0084)** — consolida receita por regime Simples/Presumido/Real + gera memorial "pré-DAS"/"pré-DARF"; sem emissão oficial | fiscal | **futuro (pós-produção)** | #38, piloto com tenant real |
-| 41 | 38 | **Guias oficiais DAS/DARF/DAM (Grupo D — ADR a alocar ≥0084)** — integração PGDAS-D + geração DARF com código de receita; opcional integração Contabilizei/Conube/Omie | fiscal | **futuro (pós-produção)** | #40 |
-| 42 | 39 | **Obrigações acessórias SPED/ECD/ECF/DCTF-Web/DEFIS/DIRF (Grupo E — ADR a alocar ≥0084)** — motor ou delegação a provider tributário (SCI/Alterdata/Domínio); **alta complexidade** | fiscal | **futuro (avaliar make vs buy)** | #40, #41 |
-| 43 | 40 | **Folha CLT + eSocial (Grupo F — ADR a alocar ≥0084)** — folha completa (salário, horas, DSR, férias, 13º, rescisão) + INSS patronal + FGTS + IRRF + eventos eSocial S-1000 a S-5013; **muito complexa** — provável integração TOTVS/Senior/ADP vs motor próprio | rh | **futuro (avaliar make vs buy)** | — |
+| 40 | 37 | **Apuração mensal de receita (Grupo C — ADR 0061 + ADR a alocar ≥0086)** — consolida receita por regime Simples/Presumido/Real + gera memorial "pré-DAS"/"pré-DARF"; sem emissão oficial | fiscal | **futuro (pós-produção)** | #38, piloto com tenant real |
+| 41 | 38 | **Guias oficiais DAS/DARF/DAM (Grupo D — ADR a alocar ≥0086)** — integração PGDAS-D + geração DARF com código de receita; opcional integração Contabilizei/Conube/Omie | fiscal | **futuro (pós-produção)** | #40 |
+| 42 | 39 | **Obrigações acessórias SPED/ECD/ECF/DCTF-Web/DEFIS/DIRF (Grupo E — ADR a alocar ≥0086)** — motor ou delegação a provider tributário (SCI/Alterdata/Domínio); **alta complexidade** | fiscal | **futuro (avaliar make vs buy)** | #40, #41 |
+| 43 | 40 | **Folha CLT + eSocial (Grupo F — ADR a alocar ≥0086)** — folha completa (salário, horas, DSR, férias, 13º, rescisão) + INSS patronal + FGTS + IRRF + eventos eSocial S-1000 a S-5013; **muito complexa** — provável integração TOTVS/Senior/ADP vs motor próprio | rh | **futuro (avaliar make vs buy)** | — |
 
 ---
 
@@ -170,9 +170,9 @@ Sprints existentes que ainda não declaram esse item explicitamente herdam a reg
 
 ### Numeração pós-0046 (faixa fora-de-sprint)
 
-A faixa **0011-0046 está reservada** (acima); a faixa **0047+ é alocada sequencialmente** para ADRs **fora-de-sprint** (decisões transversais que não nascem dentro de uma sprint específica — DPO, hospedagem, passaporte, fiscal arquitetural). Atualmente: 0047-0050 (decisões recentes), 0051 livre, 0052-0079 publicados sequencialmente. **Próximo ADR fora-de-sprint disponível: 0084+**. Caso um sprint reservado precise produzir ADR mas a faixa 0011-0046 já alocou outro tema correlato, alocar próximo número livre acima de 0080 e referenciar back na tabela acima.
+A faixa **0011-0046 está reservada** (acima); a faixa **0047+ é alocada sequencialmente** para ADRs **fora-de-sprint** (decisões transversais que não nascem dentro de uma sprint específica — DPO, hospedagem, passaporte, fiscal arquitetural). Atualmente: 0047-0050 (decisões recentes), 0051 livre, 0052-0079 publicados sequencialmente. **Próximo ADR fora-de-sprint disponível: 0086+**. Caso um sprint reservado precise produzir ADR mas a faixa 0011-0046 já alocou outro tema correlato, alocar próximo número livre acima de 0080 e referenciar back na tabela acima.
 
-**Realocações da faixa 0011-0046 → 0080+** (auditoria 12 — 2026-04-25, resolveu colisões herdadas):
+**Realocações da faixa 0011-0046 → 0080+** (auditorias 12 + 14 — 2026-04-25, resolveram colisões herdadas):
 
 | ADR | Sprint que produz | Tema | Por que migrou |
 |---|---|---|---|
@@ -180,6 +180,8 @@ A faixa **0011-0046 está reservada** (acima); a faixa **0047+ é alocada sequen
 | **0081** | Sprint 29 | Plano alimentar (`meal_plans` → `meal_plan_meals` → `meal_items`) | 0036 alocado a Sprint 16 rateio intercompany |
 | **0082** | Sprint 30 | Suplementação separada de alimentos (`supplements`) | 0037 alocado a Sprint 17 Open Finance |
 | **0083** | Sprint 31 | Teleconsulta provider (Daily/Whereby/Jitsi/Twilio) | 0038 alocado a Sprint 17 NF-e recepção |
+| **0084** | Sprint 27 | CID → contraindicação de exercício (`cid_exercise_contraindications`) | 0033 alocado a Sprint 15 plano de contas hierárquico |
+| **0085** | Sprint 28 | Generative UI fisio (Vercel AI SDK `ui.streamUI` + registro componentes) | 0034 alocado a Sprint 15 workflow AP configurável |
 
 ## Operação
 

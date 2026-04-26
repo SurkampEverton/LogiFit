@@ -25,7 +25,7 @@
 | **Comunicação WhatsApp** | `whatsapp_messages` + `whatsapp_media` | consentimento explícito (`marketing_messages`) ou execução contrato | 1 ano | Twilio/Z-API/Meta + Supabase | v1.0-whatsapp |
 | **Financeiro/cobrança** | `invoices`, `payments`, `accounts_receivable` | art. 7º V — execução de contrato + obrigação fiscal | **5 anos** (Lei 8.218/91 + LC 174/2020) | Asaas + Focus NFe + Supabase | (operacional, sem RIPD próprio) |
 | **Auditoria** | `audit_log` (apend-only + hash chain) | art. 7º X — proteção do crédito ou exercício regular de direito | **5 anos** (LGPD + ADR 0072) | Supabase + R2 (cold) | (transversal) |
-| **IA audit** | `ai_audit_log` | art. 11 II "a" — supervisão CFM 2.454 | 1 ano hot + 5 anos cold | Supabase + R2 | v1.0-pipeline-exames-ia + outros |
+| **IA audit** | `ai_audit_log` | art. 11 II "a" — supervisão CFM 2.454 | 1 ano hot + 5 anos cold | Supabase + R2 | v1.0-exames-laboratoriais + v1.0-nutri-agent-ia + v1.0-ia-copilot-clinico |
 | **Cross-tenant access log** | `patient_data_access_log` | art. 7º X — proteção do crédito + LGPD direitos do titular | **5 anos** (auditoria obrigatória) | Supabase + R2 (cold) | v1.0-passaporte-paciente |
 
 ## Próximos passos

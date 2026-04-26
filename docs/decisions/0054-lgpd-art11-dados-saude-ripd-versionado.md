@@ -95,7 +95,7 @@ docs/compliance/ripd/
 ├── v1.0-prontuario-fisio.md
 ├── v1.0-exames-laboratoriais.md
 ├── v1.0-device-hub.md
-├── v1.0-pipeline-exames-ia.md
+├── v1.0-nutri-agent-ia.md
 ├── v1.0-teleconsulta.md
 └── v1.0-reconhecimento-facial.md
 ```

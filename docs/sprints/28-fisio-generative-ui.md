@@ -31,7 +31,7 @@ Primeira implementação de Generative UI no produto: resposta do Copilot (Sprin
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0034 (esperado)** — Generative UI: provider (Vercel AI SDK `ui.streamUI` ou framework próprio), registro de componentes, validação Zod por tool, streaming SSE → React. Componentes auditáveis (não código arbitrário).
+- **ADR 0085 (esperado)** — Generative UI: provider (Vercel AI SDK `ui.streamUI` ou framework próprio), registro de componentes, validação Zod por tool, streaming SSE → React. Componentes auditáveis (não código arbitrário). (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0034 já alocado a Sprint 15 workflow AP.)
 - **Pergunta aberta:** hard-coded components vs dinâmicos — começar com registro fixo (seguro); dinamic (LLM escreve JSX) fica fora de escopo indefinidamente (risco de segurança inaceitável).
 
 ## Módulos entregues
@@ -77,7 +77,7 @@ Minimal — estende `ai_messages` do Sprint 06:
 - [ ] Testes: componentes recebem dados reais (via RLS do member_id em contexto) + streaming funciona
 - [ ] Testes E2E: perguntas clínicas geram resposta com componente; clicar interage corretamente
 - [ ] Feature flag `genui_v1`
-- [ ] ADR 0034 publicado
+- [ ] ADR 0085 publicado
 
 ## Stretch
 
@@ -100,7 +100,7 @@ Minimal — estende `ai_messages` do Sprint 06:
 - [ ] CHANGELOG atualizado
 - [ ] Roadmap: sprint 24 → `done`
 - [ ] **Fase 2 encerrada** — Fisio em produção
-- [ ] ADR 0034 publicado
+- [ ] ADR 0085 publicado
 
 ## Retro
 

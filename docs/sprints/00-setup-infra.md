@@ -183,13 +183,12 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 
 **Compliance — esqueletos pra sprints clínicos consumirem:**
 
-- [ ] Criar **arquivos vazios de RIPD** (apenas frontmatter + TODO) em `docs/compliance/ripd/`, com proprietário e deadline declarados:
+- [ ] Criar **arquivos vazios de RIPD** (apenas frontmatter + TODO) em `docs/compliance/ripd/`, com proprietário e deadline declarados (nomes canônicos — alinhados com auditorias 11/12/14):
   - `v1.0-prontuario-fisio.md` — proprietário: dev Sprint 20 + DPO; deadline: feature flag `fisio_prontuario_v1` ON
-  - `v1.0-tiss-convenios.md` — proprietário: dev Sprint 22 + DPO; deadline: `convenios_v1` ON
-  - `v1.0-nutri-exames.md` — proprietário: dev Sprint 30 + DPO; deadline: `nutri_suplementos_exames_v1` ON
-  - `v1.0-diario-alimentar.md` — proprietário: dev Sprint 31 + DPO; deadline: `diario_v1` ON
+  - `v1.0-tiss-convenios.md` — proprietário: dev Sprint 22 + DPO; deadline: `convenios_v1` ON (a criar quando Sprint 22 entrar em doing)
+  - `v1.0-exames-laboratoriais.md` — proprietário: dev Sprint 30 + Sprint 33 + DPO; deadline: `nutri_suplementos_exames_v1` ON OU `exames_ia_v1` ON (RIPD compartilhado entre nutri exames e pipeline IA)
+  - `v1.0-nutri-diario.md` — proprietário: dev Sprint 31 + DPO; deadline: `diario_v1` ON
   - `v1.0-teleconsulta.md` — proprietário: dev Sprint 31 + DPO; deadline: `teleconsulta_v1` ON
-  - `v1.0-pipeline-exames-ia.md` — proprietário: dev Sprint 33 + DPO; deadline: `exames_ia_v1` ON
   - `v1.0-device-hub.md` — proprietário: dev Sprint 32 + DPO; deadline: `device_hub_v1` ON
   - `v1.0-reconhecimento-facial.md` — proprietário: dev Sprint 08 + DPO; deadline: `acesso_facial_v1` ON
 

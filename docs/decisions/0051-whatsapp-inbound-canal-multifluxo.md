@@ -169,5 +169,5 @@ Não cria sprint novo — cresce Sprint 13 e cada sprint consumidor ganha bullet
 - Reusa [ADR 0025 — Provider WhatsApp] (Sprint 13)
 - Reusa [ADR 0035 — OCR abstrato] para classificador + anexos
 - Alimenta [ADR 0050 — Pipeline Exames Laboratoriais] (Sprint 33)
-- Alimenta [ADR 0033/0034 — ERP Financeiro AP] (Sprint 15)
+- Alimenta [ADR 0033 (esperado) — Plano de contas hierárquico + ADR 0034 (esperado) — Workflow AP configurável] (Sprint 15)
 - Respeita regras 4 (dado sensível criptografado), 5 (audit), 6 (consent)

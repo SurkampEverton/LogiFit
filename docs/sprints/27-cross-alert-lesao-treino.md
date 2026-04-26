@@ -38,7 +38,7 @@ Implementar o primeiro **cross-alert real** do produto: quando uma lesão é reg
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0033 (esperado)** — Mapeamento CID → contraindicação de exercício. Começar com tabela `cid_exercise_contraindications` curada pela LogiFit + edit por tenant. Alternativa futura: IA infere (Copilot) — stretch.
+- **ADR 0084 (esperado)** — Mapeamento CID → contraindicação de exercício. Começar com tabela `cid_exercise_contraindications` curada pela LogiFit + edit por tenant. Alternativa futura: IA infere (Copilot) — stretch. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0033 já alocado a Sprint 15 plano de contas hierárquico.)
 - **Pergunta aberta:** autonomia do sistema — adaptação automática ou só sugere e instrutor escolhe? Começar com "sugere e instrutor confirma" para evitar erros clínicos sem supervisão humana.
 
 ## Módulos entregues
@@ -98,7 +98,7 @@ Em `packages/db/schema/cross.ts`:
 - [ ] Portal do paciente (Sprint 26) mostra o alerta em `/meu/alertas`
 - [ ] Testes: happy path + bloqueio sem consent + bloqueio em franchise
 - [ ] Feature flag `cross_alert_lesao_v1`
-- [ ] ADR 0033 publicado
+- [ ] ADR 0084 publicado
 
 ## Stretch
 
@@ -118,7 +118,7 @@ Em `packages/db/schema/cross.ts`:
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
 - [ ] Roadmap: sprint 23 → `done`
-- [ ] ADR 0033 publicado
+- [ ] ADR 0084 publicado
 
 ## Retro
 

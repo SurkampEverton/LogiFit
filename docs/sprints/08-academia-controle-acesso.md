@@ -25,6 +25,7 @@ Aluno da Academia entra na unidade via QR code dinâmico (HMAC rotativo 60s) lid
 - Teste E2E: member com invoice vencida +15d não consegue passar; paga invoice → libera em <5s
 - **Gate CREF para personal trainer (ADR 0055):** onboarding de user com role `personal` ou `instrutor` exige ao menos 1 `professional_registrations` ativo com `council_body='CREF'` (Lei 9.696/1998 art. 3º). Operador do tenant é orientado no fluxo a cadastrar o CREF antes de atribuir a role. Nota jurídica exibida na UI.
 - Teste E2E: tentar criar user com role `personal` sem CREF ativo → fluxo bloqueia com mensagem "Personal trainer exige CREF ativo (Lei 9.696/1998); cadastre em /app/pessoas/[id]/registros"
+- **RIPD [`docs/compliance/ripd/v1.0-academia-treino.md`](../compliance/ripd/v1.0-academia-treino.md)** publicado e assinado pelo DPO antes do feature flag `controle_acesso_v1` ir a produção (regra 29 + ADR 0054); cobre check-in (presença/horário) + face embedding (biometria art. 11 — RIPD `v1.0-reconhecimento-facial.md` separado para modalidade facial). Gate adicional: parecer DPO de reconhecimento-facial deve estar **assinado**, não pendente, antes da modalidade `facial` ir a produção.
 
 ## Dependências
 

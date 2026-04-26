@@ -26,6 +26,7 @@ Banco de dados nutricional nacional (TACO — Tabela Brasileira de Composição 
 - Regra 25 respeitada (dado clínico em `topology=franchise`)
 - Teste E2E: montar plano, verificar soma nutricional, gerar PDF, versionar
 - Seed: TACO completa + 10 planos modelo (emagrecimento, ganho massa, vegetariano, cetogênico, low carb, diabético, renal, etc)
+- **RIPD [`docs/compliance/ripd/v1.0-nutri-plano.md`](../compliance/ripd/v1.0-nutri-plano.md)** publicado e assinado pelo DPO antes do feature flag `nutri_plano_v1` ir a produção (regra 29 + ADR 0054); cobre plano alimentar (LGPD art. 11 — categoria saúde) + cruzamento cross-module com TDEE do treino (consent `nutri_sees_training`); retenção 20a (Lei 13.787 quando associado a CRN)
 
 ## Dependências
 

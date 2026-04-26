@@ -32,7 +32,7 @@
 | Nutri-Agent IA cruzando módulos | 34 | II (apoio decisão clínica) | Sim | **Sim** | (ADR 0043 esperado) |
 | Prescrição adaptativa por RPE | pós-35 | II (ajuste de carga com supervisão) | Sim | **Sim** | (a produzir) |
 | Cross-alert lesão→treino | 27 | II (alerta clínico operacional) | Sim | **Sim** | [0070](../decisions/0070-insights-cross-module-timeline-integrada.md) |
-| Generative UI fisio (componentes gerados por LLM) | 28 | I (UI estruturada via tools tipadas Zod; sem decisão clínica direta — apenas apresentação) | Não | Não | (ADR 0034 esperado) |
+| Generative UI fisio (componentes gerados por LLM) | 28 | I (UI estruturada via tools tipadas Zod; sem decisão clínica direta — apenas apresentação) | Não | Não | (ADR 0085 esperado) |
 | Modo Coach mobile-first PWA | (ADR 0074) | I se só sugere lembretes/treinos (apoio motivacional) — **revisar para II se ganhar prescrição adaptativa por feedback do member** | Condicional (II → sim) | Condicional (II → sim) | [0074](../decisions/0074-modo-coach-mobile-first-pwa.md) |
 
 ## Gate funcional (regra 28 + ADR 0053)

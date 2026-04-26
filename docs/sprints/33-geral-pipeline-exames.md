@@ -194,7 +194,7 @@ Em `packages/db/schema/exames.ts`:
 - [ ] **Pesquisa global** (ADR 0062): indexar `lab_results` como kind=`lab_result` com `is_sensitive=true` + `required_permission='exame.read'`; searchable_text = nome do exame + analito + valor; resultados exibidos com ícone de sensibilidade; clique grava audit; exames HIV/psiquiátrico/genético/paternidade exigem `exam.sensitive.read` (escalonamento de permission)
 - [ ] Feature flag `exames_ia_v1`
 - [ ] ADR 0050 publicado
-- [ ] **RIPD `docs/compliance/ripd/v1.0-pipeline-exames-ia.md`** publicado e assinado pelo DPO antes do feature flag ir a produção (regra 29 + ADR 0054); cobre OCR + IA generativa (Vertex AI Gemini SP) + classificador anti-prescrição + revisão humana obrigatória + retenção 20a (Lei 13.787); template em [`_template.md`](../compliance/ripd/_template.md)
+- [ ] **RIPD [`docs/compliance/ripd/v1.0-exames-laboratoriais.md`](../compliance/ripd/v1.0-exames-laboratoriais.md)** publicado e assinado pelo DPO antes do feature flag ir a produção (regra 29 + ADR 0054); cobre OCR + IA generativa (Vertex AI Gemini SP) + classificador anti-prescrição + revisão humana obrigatória + retenção 20a (Lei 13.787). RIPD compartilhado com Sprint 30 (nutri exames).
 - [ ] **Notificação ANVISA RDC 657/2022** (regra 28 + ADR 0053): pipeline interpretação é **SaMD Classe II** (apoio decisão clínica); criar `docs/compliance/anvisa-notifications/2026-{{mes}}-pipeline-exames.md` a partir do [`_template.md`](../compliance/anvisa-notifications/_template.md) + protocolo ANVISA via portal; feature não ativa em produção sem notificação aprovada
 
 ## Stretch

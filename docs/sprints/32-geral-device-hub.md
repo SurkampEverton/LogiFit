@@ -83,6 +83,7 @@ Regras configuráveis por tenant; disparam via cross-alert dispatcher (Sprint 07
 - Teste E2E: BLE bioimpedância via mock device → leitura vira `device_readings` com observation_code=WEIGHT e BODY_FAT_PCT
 - Teste E2E: revogar autorização para sync em seguida → ingestão zerada
 - Seed: 1 member com Garmin simulado + 30 dias de dados históricos
+- **RIPD [`docs/compliance/ripd/v1.0-device-hub.md`](../compliance/ripd/v1.0-device-hub.md)** publicado e assinado pelo DPO antes do feature flag `device_hub_v1` ir a produção (regra 29 + ADR 0054); cobre wearables (HR, VFC, sono, GPS) + bioimpedância (peso, %gordura) — categoria saúde art. 11; tokens OAuth criptografados por KEK do tenant; cross-tenant somente agregado via passaporte (regra 42)
 
 ## Dependências
 

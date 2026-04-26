@@ -23,6 +23,7 @@ Integração WhatsApp (provider abstraído) **bidirecional** (outbound + inbound
 - Rate-limit por tenant (config) — evita spam e controle de custo
 - Teste E2E: invoice fica overdue → régua D+1 dispara WhatsApp via sandbox → log gravado
 - Seed: 3 templates padrão (cobrança, reengajamento, boas-vindas) + 1 régua ativa por tenant
+- **RIPD [`docs/compliance/ripd/v1.0-whatsapp.md`](../compliance/ripd/v1.0-whatsapp.md)** publicado e assinado pelo DPO antes do feature flag `whatsapp_v1` ir a produção (regra 29 + ADR 0054); cobre mensageria outbound + inbound (anexos via `scanUpload` regra 38) + opt-in/opt-out + retenção 5a auditoria
 
 ## Dependências
 

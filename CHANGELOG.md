@@ -6,6 +6,34 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — 14ª auditoria 2026-04-25 (colisões ADR 0033/0034 + RIPD refs quebradas + 4 backrefs RIPD)
+
+3 agentes Explore em paralelo. Achado mais sério (mesmo padrão da 12ª, escapou de novo): **2 colisões de numeração ADR** + **2 RIPDs apontando para arquivo inexistente** + **4 backrefs RIPD ainda faltando**. **17 ocorrências reais corrigidas em 17 arquivos:**
+
+**Colisões ADR (4 sprints, 8 ocorrências):**
+- ADR 0033 alocado a Sprint 15 (Plano de contas) **e** Sprint 27 (CID→contraindicação) — Sprint 27 realocada para **0084**
+- ADR 0034 alocado a Sprint 15 (Workflow AP) **e** Sprint 28 (Generative UI) — Sprint 28 realocada para **0085**
+- Cascatas: [ADR 0051:172](docs/decisions/0051-whatsapp-inbound-canal-multifluxo.md) atualizado para qualificar 0033/0034; [samd-classification.md:35](docs/compliance/samd-classification.md) trocado para "(ADR 0085 esperado)"; [docs/roadmap.md](docs/roadmap.md) tabela de realocações ganha 0084 + 0085; placeholders fiscais "≥0084" → "≥0086" em modulos.md + roadmap.md + Sprint 35
+
+**RIPD refs quebradas (2 sprints):**
+- [Sprint 30:114](docs/sprints/30-nutri-suplementos-exames.md): `v1.0-nutri-exames.md` (não existia) → `v1.0-exames-laboratoriais.md` (compartilhado com Sprint 33)
+- [Sprint 33:197](docs/sprints/33-geral-pipeline-exames.md): `v1.0-pipeline-exames-ia.md` (não existia) → `v1.0-exames-laboratoriais.md`
+- Cascatas residuais corrigidas: [lgpd-data-inventory.md:28](docs/compliance/lgpd-data-inventory.md), [ADR 0054:98](docs/decisions/0054-lgpd-art11-dados-saude-ripd-versionado.md), [Sprint 00:188-194](docs/sprints/00-setup-infra.md) — checklist de "criar arquivos vazios de RIPD" alinhado com nomes canônicos reais
+
+**Backrefs RIPD adicionados (4 sprints):**
+- [Sprint 08](docs/sprints/08-academia-controle-acesso.md) → `v1.0-academia-treino.md` + gate adicional para parecer DPO de reconhecimento-facial assinar antes da modalidade `facial` ir a produção
+- [Sprint 13](docs/sprints/13-geral-whatsapp-e-regua-cobranca.md) → `v1.0-whatsapp.md`
+- [Sprint 29](docs/sprints/29-nutri-alimentos-e-plano.md) → `v1.0-nutri-plano.md`
+- [Sprint 32](docs/sprints/32-geral-device-hub.md) → `v1.0-device-hub.md`
+
+**Cosmético:**
+- [v1.0-reconhecimento-facial.md:3](docs/compliance/ripd/v1.0-reconhecimento-facial.md): header dizia "v0.1-skeleton" mas filename é v1.0; alinhado para "Skeleton" + esclarecido status interno (parecer DPO pendente).
+
+**Falsos positivos descartados:**
+- Sprint 00:62 "ADR 0062" para extensões `pg_trgm`/`unaccent` — atribuição correta (extensões são pré-requisito do ADR de Pesquisa Global)
+- Threat models para Sprints 24/25/27/31 — design intencional (ADR 0073 lista 5 críticos)
+- v0.1 RIPDs sem backref — design intencional (skeletons → v1.0 quando sprint roda)
+
 ### Docs — 13ª auditoria 2026-04-25 (cascade pós-12ª: slugs ADR 0035 quebrados + Sprint numbers stale em modulos.md/roadmap.md)
 
 3 agentes Explore em paralelo. Validações diretas eliminaram falsos positivos (threat models faltando para Sprints 24/25/27/31 — design intencional ADR 0073 lista 5 críticos; ADR 0059:292 referência a "ADR 0038 NF-e recepção" — está correto). **18 ocorrências reais corrigidas em 6 arquivos:**
