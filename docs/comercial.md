@@ -298,7 +298,7 @@ Durante o MVP, infra é Vercel + Supabase Pro. **Pós-Sprint 19b** (após MVP es
 | Integrações nativas | Asaas, WhatsApp, Resend, Supabase, Vercel, Focus NFe, Datasus CNES, ANS/TISS |
 | Providers IA | Gemini Flash (padrão LogiFit, datacenter SP), OpenAI e Anthropic (fallback automático), Groq Whisper (transcrição), Maritaca (BR opcional); BYOK em qualquer plano |
 | Roles pré-configurados | 9+ (super_admin, diretor, gerente, recepção, fisio, nutri, instrutor, aluno, group_owner) |
-| Cenários multi-empresa testados | 4 canônicos (rede própria, franquia clássica, franquia com passaporte, mix loja avulsa + rede) |
+| Cenários multi-empresa testados | 5 canônicos (rede própria, franquia clássica, franquia com passaporte de franquia, mix loja avulsa + rede no mesmo group, modo solo autônomo) |
 
 ---
 

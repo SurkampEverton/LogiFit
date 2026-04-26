@@ -35,6 +35,28 @@
 
 ---
 
+## Processo (quebrou = não fecha sprint)
+
+**9.** 1 sprint ativo por vez. Teto de 3 semanas por sprint. Estourou? Quebra em duas funcionalidades menores.
+**10.** Commits vão direto para `main` (desenvolvimento solo, sem PR review obrigatório). Branches `feat/*`, `fix/*`, `chore/*`, `docs/*` são **opcionais** — usar só quando a feature é longa, arriscada, ou o trabalho precisa ser testado isolado antes de merge.
+**11.** Conventional Commits obrigatórios (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
+**12.** Toda feature nova entra atrás de **feature flag** (PostHog) até ser validada.
+**13.** ADR criado no **mesmo dia** da decisão; nunca retroativo.
+**14.** `CHANGELOG.md` atualizado em todo commit que muda comportamento observável.
+**15.** Nenhum `--no-verify`, `--force` em `main`, nem skip de CI.
+
+---
+
+## Código (quebrou = CI vermelho)
+
+**16.** TypeScript `strict: true`. `any` só com comentário `// why:` justificando.
+**17.** Biome formata e linta; sem override pessoal.
+**18.** Cobertura mínima: 70% em `packages/db`, 60% em Server Actions.
+**19.** Nenhum segredo em código — `.env` + Vercel/Supabase secrets.
+**20.** Import ordenado por Biome; caminhos absolutos `@repo/*`.
+
+---
+
 ## Multi-empresa
 
 **21.** `companies` tem `type ∈ {matriz, filial}`; exatamente **1 matriz por tenant** (enforced por trigger/constraint).
@@ -65,32 +87,6 @@
 **30.** **Módulo novo com dado pesquisável deve registrar-se em `search_index`** via trigger `search_index_sync()` declarando explicitamente: `kind` (identificador do tipo), `label`/`subtitle`/`url` (o que mostrar), `searchable_text` (campos buscáveis), **`required_permission`** (permission mínima para aparecer no resultado), `required_vertical` (quando aplicável), `required_consent_purpose` (quando cross-module), `is_sensitive` (true → clique grava audit). Omissão de `required_permission` é proibido — operador sem permission nunca pode ver o resultado, nem "provocar" clique para descobrir existência. Ver [ADR 0062](decisions/0062-pesquisa-global-command-palette.md).
 
 **31.** **Toda UI de `/app/*` e `/meu/*` é responsiva mobile-first** nos 3 viewports canônicos (mobile 390px, tablet 768px, desktop 1280px). Componente **deve** usar os componentes base de `packages/ui/layout/*` (`<ResponsiveTable>`, `<ResponsiveModal>`, `<ResponsiveForm>`, `<AppLayout>`, `<BottomNav>`); proibido construir layout próprio duplicado. Touch targets ≥44px (botões) e ≥48px (inputs). Teste Playwright visual em 3 viewports obrigatório em sprints com UI nova — falha CI. Exceção (ex: tela admin técnica desktop-only) exige ADR de sprint justificando. Ver [ADR 0063](decisions/0063-responsividade-total-mobile-first.md).
-
----
-
-## Design system "Equilíbrio Vital"
-
-**44.** **Antes de criar/modificar qualquer tela ou componente UI, ler o design system "Equilíbrio Vital".** Fonte de verdade dual conforme fase:
-
-- **Hoje (pré-Sprint 00):** [`prototipo/tokens.css`](../prototipo/tokens.css) (todos os tokens `--ev-*` light + dark) + [`prototipo/base.css`](../prototipo/base.css) (primitivos `.ev-btn`, `.ev-card`, `.ev-badge`, `.ev-input`, `.ev-table`, `.ev-dot`, `.ev-divider`, utilities `.ev-stack`/`.ev-row`/`.ev-grid`). Visualização ao vivo em [`prototipo/designsystem/index.html`](../prototipo/designsystem/index.html) (14 seções: Foundation + Componentes + Migração shadcn).
-- **Após Sprint 00:** `packages/ui/tokens.css` + `packages/ui/shadcn-mapping.css` (aliases shadcn → vars EV — preview pronto em [`prototipo/designsystem/shadcn-mapping.css`](../prototipo/designsystem/shadcn-mapping.css)) + componentes shadcn customizados em `packages/ui/components/*` que consomem os tokens. Styleguide portado pra `apps/web/app/styleguide/`.
-
-**Proibido:**
-
-- Hardcode de hex (`#3498DB`), font-family (`'Inter'`), spacing literal (`padding: 16px`), radius (`border-radius: 8px`), font-size (`font-size: 14px`), line-height, weight, z-index. Sempre via `var(--ev-*)` ou alias shadcn (`var(--primary)`, `var(--background)`, `var(--radius)`).
-- Construir botão/card/input/badge/tabela/dot do zero quando primitivo equivalente existe — usar `.ev-btn` (HTML protótipo) ou `<Button>` shadcn (React, pós-Sprint 00) que já consomem tokens.
-- Adicionar `box-shadow` decorativa — design system é **flat extremo** (filosofia central documentada em [arquitetura.md](arquitetura.md) §1). Única exceção: focus ring funcional via `var(--ev-focus-ring)` (já previsto nos tokens).
-- Importar fonte sem registrar em tokens.css. Ibrand é **fonte de marca**, restrita a logo/headings de identidade — nunca corpo.
-
-**Obrigatório:**
-
-- **Nova variante visual** (ex: novo tipo de badge, novo size de botão) entra **primeiro** no styleguide (atualizar `prototipo/designsystem/index.html` ou `apps/web/app/styleguide/` no pós-Sprint 00) com a variante documentada e renderizada — depois consumir nas telas. Sem doc no styleguide = lint reprova.
-- **Mudança em token** (ex: ajustar contraste de `--ev-primary` por A11y) muda SOMENTE em `tokens.css`; aliases shadcn herdam automaticamente. Migrar todas as referências hardcoded encontradas no caminho.
-- Mudança em token ou primitivo dispara revisão visual via `pnpm test:e2e --grep="@design-system"` (suite Playwright pós-Sprint 00 que compara snapshot do styleguide light + dark).
-
-**Lint pós-Sprint 00:** `no-hardcoded-design-token` bloqueia commit que introduz hex/spacing/radius/font-size literal em `apps/web/**/*.{ts,tsx,css}` (exceto o próprio `tokens.css`). Complementa regra 31 (responsividade) e regra 27 (i18n) — ambas governam a superfície UI.
-
-Ver [arquitetura.md §1](arquitetura.md), [ADR 0063](decisions/0063-responsividade-total-mobile-first.md), e CHANGELOG `[Unreleased] Prototipo — Design system styleguide "Equilíbrio Vital"`.
 
 ---
 
@@ -171,25 +167,29 @@ CI tem teste E2E que tenta cada ação sem MFA recente e verifica falha. Lint cu
 
 ---
 
-## Processo (quebrou = não fecha sprint)
+## Design system "Equilíbrio Vital"
 
-**9.** 1 sprint ativo por vez. Teto de 3 semanas por sprint. Estourou? Quebra em duas funcionalidades menores.
-**10.** Commits vão direto para `main` (desenvolvimento solo, sem PR review obrigatório). Branches `feat/*`, `fix/*`, `chore/*`, `docs/*` são **opcionais** — usar só quando a feature é longa, arriscada, ou o trabalho precisa ser testado isolado antes de merge.
-**11.** Conventional Commits obrigatórios (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
-**12.** Toda feature nova entra atrás de **feature flag** (PostHog) até ser validada.
-**13.** ADR criado no **mesmo dia** da decisão; nunca retroativo.
-**14.** `CHANGELOG.md` atualizado em todo commit que muda comportamento observável.
-**15.** Nenhum `--no-verify`, `--force` em `main`, nem skip de CI.
+**44.** **Antes de criar/modificar qualquer tela ou componente UI, ler o design system "Equilíbrio Vital".** Fonte de verdade dual conforme fase:
 
----
+- **Hoje (pré-Sprint 00):** [`prototipo/tokens.css`](../prototipo/tokens.css) (todos os tokens `--ev-*` light + dark) + [`prototipo/base.css`](../prototipo/base.css) (primitivos `.ev-btn`, `.ev-card`, `.ev-badge`, `.ev-input`, `.ev-table`, `.ev-dot`, `.ev-divider`, utilities `.ev-stack`/`.ev-row`/`.ev-grid`). Visualização ao vivo em [`prototipo/designsystem/index.html`](../prototipo/designsystem/index.html) (14 seções: Foundation + Componentes + Migração shadcn).
+- **Após Sprint 00:** `packages/ui/tokens.css` + `packages/ui/shadcn-mapping.css` (aliases shadcn → vars EV — preview pronto em [`prototipo/designsystem/shadcn-mapping.css`](../prototipo/designsystem/shadcn-mapping.css)) + componentes shadcn customizados em `packages/ui/components/*` que consomem os tokens. Styleguide portado pra `apps/web/app/styleguide/`.
 
-## Código (quebrou = CI vermelho)
+**Proibido:**
 
-**16.** TypeScript `strict: true`. `any` só com comentário `// why:` justificando.
-**17.** Biome formata e linta; sem override pessoal.
-**18.** Cobertura mínima: 70% em `packages/db`, 60% em Server Actions.
-**19.** Nenhum segredo em código — `.env` + Vercel/Supabase secrets.
-**20.** Import ordenado por Biome; caminhos absolutos `@repo/*`.
+- Hardcode de hex (`#3498DB`), font-family (`'Inter'`), spacing literal (`padding: 16px`), radius (`border-radius: 8px`), font-size (`font-size: 14px`), line-height, weight, z-index. Sempre via `var(--ev-*)` ou alias shadcn (`var(--primary)`, `var(--background)`, `var(--radius)`).
+- Construir botão/card/input/badge/tabela/dot do zero quando primitivo equivalente existe — usar `.ev-btn` (HTML protótipo) ou `<Button>` shadcn (React, pós-Sprint 00) que já consomem tokens.
+- Adicionar `box-shadow` decorativa — design system é **flat extremo** (filosofia central documentada em [arquitetura.md](arquitetura.md) §1). Única exceção: focus ring funcional via `var(--ev-focus-ring)` (já previsto nos tokens).
+- Importar fonte sem registrar em tokens.css. Ibrand é **fonte de marca**, restrita a logo/headings de identidade — nunca corpo.
+
+**Obrigatório:**
+
+- **Nova variante visual** (ex: novo tipo de badge, novo size de botão) entra **primeiro** no styleguide (atualizar `prototipo/designsystem/index.html` ou `apps/web/app/styleguide/` no pós-Sprint 00) com a variante documentada e renderizada — depois consumir nas telas. Sem doc no styleguide = lint reprova.
+- **Mudança em token** (ex: ajustar contraste de `--ev-primary` por A11y) muda SOMENTE em `tokens.css`; aliases shadcn herdam automaticamente. Migrar todas as referências hardcoded encontradas no caminho.
+- Mudança em token ou primitivo dispara revisão visual via `pnpm test:e2e --grep="@design-system"` (suite Playwright pós-Sprint 00 que compara snapshot do styleguide light + dark).
+
+**Lint pós-Sprint 00:** `no-hardcoded-design-token` bloqueia commit que introduz hex/spacing/radius/font-size literal em `apps/web/**/*.{ts,tsx,css}` (exceto o próprio `tokens.css`). Complementa regra 31 (responsividade) e regra 27 (i18n) — ambas governam a superfície UI.
+
+Ver [arquitetura.md §1](arquitetura.md), [ADR 0063](decisions/0063-responsividade-total-mobile-first.md), e CHANGELOG `[Unreleased] Prototipo — Design system styleguide "Equilíbrio Vital"`.
 
 ---
 

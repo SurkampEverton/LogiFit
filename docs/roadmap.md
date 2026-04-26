@@ -160,6 +160,14 @@ ADRs no LogiFit seguem **numeração sequencial densa** com uma exceção legít
 
 **Referências a esses ADRs em outros documentos** (ex: regra que cita "ADR 0015") são **válidas como compromisso de produção** — quando o Sprint 06 rodar, ADR 0015 nasce e o link passa a resolve. Até lá, links como `(ADR 0015)` em corpo de texto são aceitos sem `.md` resolvendo.
 
+**Gate operacional (regra de processo aplicada a TODA sprint):** sprint que cita "ADR XXXX (esperado)" no header **não pode entrar em `status=doing`** sem antes publicar o ADR esperado. Na prática, isso vira o primeiro item do checklist de DoD da sprint:
+
+```markdown
+- [ ] ADR XXXX publicado em `docs/decisions/` antes de iniciar
+```
+
+Sprints existentes que ainda não declaram esse item explicitamente herdam a regra deste roadmap — auditar quando sprint for transicionar para `doing`.
+
 ### Numeração pós-0046 (faixa fora-de-sprint)
 
 A faixa **0011-0046 está reservada** (acima); a faixa **0047+ é alocada sequencialmente** para ADRs **fora-de-sprint** (decisões transversais que não nascem dentro de uma sprint específica — DPO, hospedagem, passaporte, fiscal arquitetural). Atualmente: 0047-0050 (decisões recentes), 0051 livre, 0052-0079 publicados sequencialmente. **Próximo ADR fora-de-sprint disponível: 0080+**. Caso um sprint reservado precise produzir ADR mas a faixa 0011-0046 já alocou outro tema correlato, alocar próximo número livre acima de 0080 e referenciar back na tabela acima.

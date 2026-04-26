@@ -64,6 +64,8 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 
 > **Numeração canônica:** os números abaixo (1-8, 11, 13-16, 27-44) **são os mesmos** de [`docs/rules.md`](docs/rules.md) — fonte única de verdade. Esta seção é um **digest** das regras mais relevantes ao trabalho diário; lista completa (44 regras + bloco "Convenções de colaboração com Claude" abaixo) está em `rules.md`.
 >
+> **Omitidas deste digest** (ainda existem e valem em `rules.md`): regras 9-10 (sprint timebox + commits direto em main), 12 (feature flag PostHog), 17-20 (Biome + cobertura + segredos + imports), 21-26 (multi-empresa: matriz/filial, CNPJ unique global, fiscal `company_id`, transferência via UPDATE, clínico não cruza company em franchise, `groups` agregado). Quando precisar de uma dessas, consultar `rules.md` direto.
+>
 > Quando outro doc cita "regra N", o número refere-se SEMPRE à numeração canônica abaixo / `rules.md`. Em conflito, `rules.md` prevalece.
 
 ### Arquiteturais base (rules.md 1-8)

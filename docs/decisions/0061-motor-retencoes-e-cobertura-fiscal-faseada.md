@@ -104,7 +104,7 @@ Unique constraint: `(source_type, source_id, tax)` — uma retenção por tribut
 - Permissions: `fiscal.read` + `financeiro.read` + `nfe.read` em **todas** as companies do tenant
 - **Sem escrita** em nenhum módulo (adequado para LGPD art. 11 — dado fiscal consolidado, não clínico)
 - Acesso via magic link por convite do admin (reusa fluxo Sprint 01a)
-- MFA obrigatório (regra 1b) — evita compartilhamento
+- MFA obrigatório (regra 43) — evita compartilhamento
 - Separado de `contador_interno` (role futura se tenant tiver contador funcionário)
 - Portal específico `/app/contador` — focado em export, relatórios, download em massa de XMLs; não tem acesso a clientes/members
 
@@ -122,10 +122,10 @@ Mapeados no roadmap (`docs/roadmap.md`) sem arquivos de sprint ainda. Cada um co
 
 | Sprint futuro | Grupo | Escopo inicial mapeado | ADR esperado |
 |---|---|---|---|
-| **37 — Apuração mensal de receita** | **C** | Calcula **receita bruta** consolidada do mês + base Simples/Presumido/Real por regime cadastrado; gera "pré-DAS" ou "pré-DARF" com memorial; **não emite guia oficial** nesta fase | ADR 0062 (esperado) |
-| **38 — Geração de guias oficiais** | **D** | Após apuração, gera boleto DAS (via API RFB/PGDAS-D) + DARF (código de receita + barcode) + DAM municipal quando suportado; opcional integração com Contabilizei/Conube/Omie | ADR 0063 |
-| **39 — Obrigações acessórias (SPED/ECD/ECF)** | **E** | Gerador de arquivo SPED Fiscal (EFD-ICMS/IPI) + SPED Contribuições + ECD + ECF + PGDAS-D + DEFIS + DCTF-Web + DIRF. **Alta complexidade** — decidir se é motor interno ou integração com provider tributário especializado (SCI, Alterdata, Domínio) | ADR 0064 |
-| **40 — Folha CLT + eSocial** | **F** | Folha completa (salários, horas extras, DSR, benefícios, férias, 13º, rescisão) + INSS patronal 20% + RAT + terceiros + FGTS 8% + IRRF folha + envio eventos eSocial (S-1000 a S-5013). **Muito complexo** — provável integração com provider (TOTVS, Senior, ADP) ou motor próprio após pesquisa | ADR 0065 |
+| **37 — Apuração mensal de receita** | **C** | Calcula **receita bruta** consolidada do mês + base Simples/Presumido/Real por regime cadastrado; gera "pré-DAS" ou "pré-DARF" com memorial; **não emite guia oficial** nesta fase | ADR a alocar quando Sprint 37 entrar (≥0080 conforme [roadmap §Convenção de numeração](../roadmap.md)) |
+| **38 — Geração de guias oficiais** | **D** | Após apuração, gera boleto DAS (via API RFB/PGDAS-D) + DARF (código de receita + barcode) + DAM municipal quando suportado; opcional integração com Contabilizei/Conube/Omie | ADR a alocar quando Sprint 38 entrar (≥0080) |
+| **39 — Obrigações acessórias (SPED/ECD/ECF)** | **E** | Gerador de arquivo SPED Fiscal (EFD-ICMS/IPI) + SPED Contribuições + ECD + ECF + PGDAS-D + DEFIS + DCTF-Web + DIRF. **Alta complexidade** — decidir se é motor interno ou integração com provider tributário especializado (SCI, Alterdata, Domínio) | ADR a alocar quando Sprint 39 entrar (≥0080) |
+| **40 — Folha CLT + eSocial** | **F** | Folha completa (salários, horas extras, DSR, benefícios, férias, 13º, rescisão) + INSS patronal 20% + RAT + terceiros + FGTS 8% + IRRF folha + envio eventos eSocial (S-1000 a S-5013). **Muito complexo** — provável integração com provider (TOTVS, Senior, ADP) ou motor próprio após pesquisa | ADR a alocar quando Sprint 40 entrar (≥0080) |
 
 **Princípio**: esses 4 sprints só entram em planejamento ativo quando (a) primeiro tenant pagante tiver demanda real **e** (b) análise custo/benefício mostrar que integração externa não é melhor caminho. Ficam no roadmap para sinalizar ambição mas sem data.
 
@@ -139,7 +139,7 @@ Mapeados no roadmap (`docs/roadmap.md`) sem arquivos de sprint ainda. Cada um co
 - **Alterdata Shop** — sistema pesado; tem API para integração
 - **Domínio Sistemas** — referência em contabilidade; API custom
 
-Quando Sprint 37+ entrar em discussão, ADR 0062 escolhe: motor interno ou delegação. Se delegação, entra **ADR de integração com provider contábil escolhido**.
+Quando Sprint 37+ entrar em discussão, o ADR alocado para Sprint 37 (≥0080) escolhe: motor interno ou delegação. Se delegação, entra **ADR de integração com provider contábil escolhido**.
 
 ## Consequences
 
@@ -189,10 +189,10 @@ Quando Sprint 37+ entrar em discussão, ADR 0062 escolhe: motor interno ou deleg
 
 ## Escopo de impacto — Fases futuras (mapeadas, não implementadas)
 
-- **Sprint 37** — Apuração mensal (Grupo C) → ADR 0062
-- **Sprint 38** — Guias oficiais (Grupo D) → ADR 0063
-- **Sprint 39** — Obrigações acessórias SPED (Grupo E) → ADR 0064
-- **Sprint 40** — Folha CLT + eSocial (Grupo F) → ADR 0065
+- **Sprint 37** — Apuração mensal (Grupo C) → ADR ≥0080 (a alocar)
+- **Sprint 38** — Guias oficiais (Grupo D) → ADR ≥0080 (a alocar)
+- **Sprint 39** — Obrigações acessórias SPED (Grupo E) → ADR ≥0080 (a alocar)
+- **Sprint 40** — Folha CLT + eSocial (Grupo F) → ADR ≥0080 (a alocar)
 - Integrações com Contabilizei/Conube/Omie/Alterdata/Domínio mencionadas como opções a avaliar no Sprint 37+
 
 ## Related
