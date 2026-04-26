@@ -127,7 +127,7 @@ Em `packages/db/schema/estoque.ts`:
 - [ ] RLS verificada
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 20 → `done`
+- [ ] Roadmap: sprint 24 → `done`
 - [ ] ADR 0087 publicado
 
 ## Retro

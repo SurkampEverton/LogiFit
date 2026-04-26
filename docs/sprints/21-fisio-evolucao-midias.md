@@ -112,7 +112,7 @@ Em `packages/db/schema/fisio.ts`:
 - [ ] RLS + franchise verificados
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 17 → `done`
+- [ ] Roadmap: sprint 21 → `done`
 
 ## Retro
 

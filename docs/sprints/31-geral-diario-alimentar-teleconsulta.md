@@ -154,7 +154,7 @@ Em `packages/db/schema/teleconsulta.ts`:
 - [ ] RLS verificada
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 27 → `done`
+- [ ] Roadmap: sprint 31 → `done`
 - [ ] ADR 0083 publicado
 
 ## Retro

@@ -123,7 +123,7 @@ Em `packages/db/schema/retencao.ts`:
 - [ ] Accuracy inicial documentada (mesmo que baixa — baseline registrado)
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 15 → `done`
+- [ ] Roadmap: sprint 19 → `done`
 - [ ] **MVP inteiro `done`** — fechamento oficial da Fase 1
 - [ ] ADR 0027 publicado
 

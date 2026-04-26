@@ -157,7 +157,7 @@ Não publica eventos de negócio; só renderiza os dos outros sprints.
 - [ ] Teste visual passa (zero sombra residual)
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 06 → `done`, item #9 → `done`
+- [ ] Roadmap: sprint 07 → `done`, item #9 → `done`
 - [ ] Faltam Sprint 08 (Acesso Academia) e Sprint 09 (Engajamento) para fechar MVP
 - [ ] Zero violação de regras
 

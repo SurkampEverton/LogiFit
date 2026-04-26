@@ -131,7 +131,7 @@ Em `packages/db/schema/nutri.ts`:
 - [ ] RLS verificada
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 26 → `done`
+- [ ] Roadmap: sprint 30 → `done`
 - [ ] ADR 0082 publicado
 
 ## Retro

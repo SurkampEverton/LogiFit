@@ -425,7 +425,7 @@ Rate-limit é **fonte primária em Redis** (Upstash), sem tabela persistente. Co
 - [ ] **Cotas test** — Starter no 501º msg bloqueia; soft daily warns
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 05 → `done`, item #8 → `done`
+- [ ] Roadmap: sprint 06 → `done`, item #8 → `done`
 - [ ] RIPD "Assistente IA universal" publicado em `ripd_documents` (regra 29)
 - [ ] Zero violação de regras
 

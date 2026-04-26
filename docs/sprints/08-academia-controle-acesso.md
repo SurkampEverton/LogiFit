@@ -139,7 +139,7 @@ Consumidores no MVP:
 - [ ] Partição do `access_events` aplicada
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 07 → `done`, item #7 → `done`
+- [ ] Roadmap: sprint 08 → `done`, item #10 → `done`
 - [ ] **MVP encerrado** — celebrar
 - [ ] Zero violação de regras
 

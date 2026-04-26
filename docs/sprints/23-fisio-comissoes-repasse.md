@@ -131,7 +131,7 @@ Em `packages/db/schema/rh.ts`:
 - [ ] Migrations aplicadas
 - [ ] Transferência Asaas sandbox funcional
 - [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 19 → `done`
+- [ ] Roadmap: sprint 23 → `done`
 - [ ] ADR 0086 publicado
 
 ## Retro

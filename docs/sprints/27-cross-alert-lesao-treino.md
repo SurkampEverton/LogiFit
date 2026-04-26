@@ -117,7 +117,7 @@ Em `packages/db/schema/cross.ts`:
 - [ ] RLS + consent + franchise verificados
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 23 → `done`
+- [ ] Roadmap: sprint 27 → `done`
 - [ ] ADR 0084 publicado
 
 ## Retro

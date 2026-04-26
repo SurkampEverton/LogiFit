@@ -222,7 +222,7 @@ RLS: `member_id = auth.uid() AND auth.jwt() ->> 'role' = 'member'`. Tabelas de d
 - [ ] Magic link rate-limited funcional
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 22 → `done`
+- [ ] Roadmap: sprint 26 → `done`
 - [ ] ADR 0088 publicado
 
 ## Retro

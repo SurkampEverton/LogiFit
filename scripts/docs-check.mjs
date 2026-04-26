@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // docs-check.mjs — lint custom para documentação LogiFit
 //
-// 3 validações que historicamente causaram bugs (auditorias 11-14):
+// 4 validações que historicamente causaram bugs (auditorias 11-16):
 //   A. Número no H1 do ADR bate com filename (ex: "# ADR 0035" em arquivo "0035-*.md")
 //      — slug é livre (é abreviação intencional do título); só o número é invariante
 //   B. Todo link markdown relativo dentro de docs/ aponta para arquivo existente
 //   C. "ADR NNNN (esperado)" em sprint não colide com ADR já publicado nem com outra sprint
+//   D. DoD "Roadmap: sprint NNN → done" em sprint NN-* bate com NN do filename
 //
 // Uso: node scripts/docs-check.mjs
 // Saída: lista de problemas + exit 1 se houver erros; exit 0 se limpo.
@@ -170,6 +171,42 @@ async function checkAdrCollisions() {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// VALIDAÇÃO D — DoD "Roadmap: sprint NNN → done" bate com NN do filename
+//
+// Padrão histórico de bug: sprint copia DoD da anterior e esquece de atualizar
+// o número (ex: sprint 28 diz "Roadmap: sprint 24 → done"). Lint faz match
+// estrito: sprint NN-* deve dizer "Roadmap: sprint NN → done" (zero-padded).
+
+async function checkSprintDodMatchesFilename() {
+  const sprintsDir = join(DOCS_DIR, 'sprints');
+  const sprintFiles = (await readdir(sprintsDir)).filter(f => f.endsWith('.md') && f !== '_template.md');
+
+  const ROADMAP_DOD_RE = /Roadmap:\s+sprint\s+(\S+?)\s+→/g;
+
+  for (const filename of sprintFiles) {
+    const filenameMatch = filename.match(/^(\d{2}b?|\d{2}[ab]?)-/);
+    if (!filenameMatch) continue;
+    const expectedNum = filenameMatch[1]; // "00", "00b", "01a", "01b", "19b", "20", etc
+
+    const fullPath = join(sprintsDir, filename);
+    const content = await readFile(fullPath, 'utf8');
+    const lines = content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.trim().startsWith('```')) continue;
+      let match;
+      ROADMAP_DOD_RE.lastIndex = 0;
+      while ((match = ROADMAP_DOD_RE.exec(line)) !== null) {
+        const dodNum = match[1];
+        if (dodNum !== expectedNum) {
+          err(`${rel(fullPath)}:${i + 1} — DoD diz "sprint ${dodNum}" mas filename é sprint ${expectedNum}: ${line.trim()}`);
+        }
+      }
+    }
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // Main
 
 async function main() {
@@ -178,6 +215,7 @@ async function main() {
   await checkAdrSlugMatchesFilename();
   await checkRelativeMarkdownLinks();
   await checkAdrCollisions();
+  await checkSprintDodMatchesFilename();
 
   if (warnings.length) {
     console.log(`${YELLOW}⚠ ${warnings.length} aviso(s):${RESET}`);

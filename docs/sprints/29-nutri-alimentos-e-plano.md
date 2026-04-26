@@ -137,8 +137,8 @@ Em `packages/db/schema/nutri.ts`:
 - [ ] TACO seed completa (validar contagem de alimentos)
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 25 → `done`
-- [ ] ADRs 0035 e 0036 publicados
+- [ ] Roadmap: sprint 29 → `done`
+- [ ] ADRs 0080 e 0081 publicados
 
 ## Retro
 

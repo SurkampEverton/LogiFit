@@ -6,6 +6,50 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs+tooling — 16ª auditoria 2026-04-25 (14 DoDs com sprint number errado + validação D na lint)
+
+3 agentes Explore em paralelo. Lint automatizada (criada na 15ª) já cobria 3 classes; auditoria manual focou em bugs semânticos. Achado mais sério: **padrão sistemático de copy-paste** em DoDs de sprints.
+
+**P1 — 14 sprints com DoD `Roadmap: sprint X → done` apontando para sprint ERRADA:**
+
+Template foi copiado de sprint anterior e número não atualizado. Se um dev seguir literalmente, marca a sprint errada como done no roadmap.
+
+| Sprint | DoD dizia | Agora |
+|---|---|---|
+| [06](docs/sprints/06-geral-copilot-base.md):428 | "sprint 05" | sprint 06 |
+| [07](docs/sprints/07-geral-dashboard.md):160 | "sprint 06" | sprint 07 |
+| [08](docs/sprints/08-academia-controle-acesso.md):142 | "sprint 07 → item #7" | sprint 08 → item #10 |
+| [19](docs/sprints/19-ia-previsao-churn.md):126 | "sprint 15" | sprint 19 |
+| [21](docs/sprints/21-fisio-evolucao-midias.md):115 | "sprint 17" | sprint 21 |
+| [23](docs/sprints/23-fisio-comissoes-repasse.md):134 | "sprint 19" | sprint 23 |
+| [24](docs/sprints/24-geral-estoque.md):130 | "sprint 20" | sprint 24 |
+| [25](docs/sprints/25-fisio-anvisa-cnes.md):143 | "sprint 21" | sprint 25 |
+| [26](docs/sprints/26-geral-portal-paciente-web.md):225 | "sprint 22" | sprint 26 |
+| [27](docs/sprints/27-cross-alert-lesao-treino.md):120 | "sprint 23" | sprint 27 |
+| [28](docs/sprints/28-fisio-generative-ui.md):101 | "sprint 24" | sprint 28 |
+| [29](docs/sprints/29-nutri-alimentos-e-plano.md):140 | "sprint 25 + ADRs 0035/0036" | sprint 29 + ADRs 0080/0081 (cascade auditoria 12) |
+| [30](docs/sprints/30-nutri-suplementos-exames.md):134 | "sprint 26" | sprint 30 |
+| [31](docs/sprints/31-geral-diario-alimentar-teleconsulta.md):157 | "sprint 27" | sprint 31 |
+
+**P2 — Inconsistência semântica em ADR 0077:**
+
+[ADR 0077:119](docs/decisions/0077-passaporte-paciente-vinculo-cross-tenant.md:119) dizia "Exceção controlada da regra 26" — mas o **mesmo ADR** em linhas 16 e 391 afirma `regra 26 NÃO muda — continua sobre groups; "regra 26" no contexto cross-tenant individual era confusão histórica`. A regra real que autoriza cross-tenant via passaporte é **regra 42**. Linha 119 atualizada para "Exceção controlada do princípio implícito de isolamento individual cross-tenant (formalizado agora como regra 42)".
+
+**P3 — URL HTTP em vez de HTTPS:**
+
+[v0.1-cobranca-financeiro.md:106](docs/compliance/ripd/v0.1-cobranca-financeiro.md:106) usava `http://normas.receita.fazenda.gov.br/...` para link da Receita Federal. Trocado para `https://`. Domínio `gov.br` suporta HTTPS.
+
+**Tooling — Validação D adicionada à lint:**
+
+[scripts/docs-check.mjs](scripts/docs-check.mjs) ganha 4ª validação `checkSprintDodMatchesFilename` — detecta DoD `Roadmap: sprint X → done` em sprint NN-* onde X ≠ NN. Pega P1 automaticamente daqui pra frente em qualquer PR. Lint passa zero erros zero avisos após correções.
+
+**Falsos positivos descartados:**
+- Threat models para Sprints 24/25/27/31 (design intencional ADR 0073 — 5 críticos + STRIDE leve)
+- RIPD `v1.0-tiss-convenios.md` "faltando" (Sprint 22 referencia como DoD futuro, padrão idêntico aos outros)
+- ADRs 0080-0088 esperados não criados como arquivo (gap reservado por design)
+- Glossário centralizado faltando (CLAUDE.md tem glossário operacional)
+- CRLF nos arquivos (falso positivo: Git armazena LF, warnings eram apenas autocrlf local Windows)
+
 ### Tooling — `docs-check` lint custom + 15ª auditoria 2026-04-25 (3 colisões ADR + 9 links quebrados achados pela lint)
 
 Após 14 auditorias manuais consecutivas encontrarem ~10-18 falhas reais cada, criei lint custom para automatizar. Lint encontrou imediatamente bugs que escaparam de TODAS as 14 auditorias.

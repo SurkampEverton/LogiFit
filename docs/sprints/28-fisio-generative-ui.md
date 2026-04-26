@@ -98,7 +98,7 @@ Minimal — estende `ai_messages` do Sprint 06:
 - [ ] Auditoria completa das tool calls
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 24 → `done`
+- [ ] Roadmap: sprint 28 → `done`
 - [ ] **Fase 2 encerrada** — Fisio em produção
 - [ ] ADR 0085 publicado
 

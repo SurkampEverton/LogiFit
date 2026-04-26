@@ -116,7 +116,7 @@ CREATE UNIQUE INDEX one_active_module_per_person
 
 - `patient_company_links` e `patient_link_modules` **não têm `tenant_id` direto** (a tabela vincula tenants); RLS usa `EXISTS (SELECT 1 FROM ... WHERE tenant_id = jwt.tenant_id)` com `link.tenant_id`.
 - `persons` (já existe ADR 0047) continua sem RLS de tenant — é canônica.
-- **Exceção controlada da regra 26:** policy de leitura cross-tenant em tabelas clínicas/operacionais expandida pra reconhecer `patient_link_modules.granted` válido (status='active' + module ativo + data_level cobre).
+- **Exceção controlada do princípio implícito de isolamento individual cross-tenant** (formalizado agora como **regra 42** — não regra 26, que continua sobre `groups`; ver Parte "Regra 26 NÃO muda" abaixo): policy de leitura cross-tenant em tabelas clínicas/operacionais expandida pra reconhecer `patient_link_modules.granted` válido (status='active' + module ativo + data_level cobre).
 
 ### Parte 3 — Fluxo de invite (cadastro novo OU paciente existente)
 

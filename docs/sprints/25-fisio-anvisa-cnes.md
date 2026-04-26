@@ -140,7 +140,7 @@ Em `packages/db/schema/vigilancia.ts`:
 - [ ] Migrations aplicadas
 - [ ] Relatório PDF fiscalização gera corretamente
 - [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 21 → `done`
+- [ ] Roadmap: sprint 25 → `done`
 
 ## Retro
 
