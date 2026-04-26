@@ -178,12 +178,16 @@ Adicionar à `<AppLayout>` (regra 31, ADR 0063):
 
 ### Parte 5 — Cotas alinhadas a planos comerciais (ADR 0066)
 
+Tabela alinhada a [ADR 0066](0066-plano-comercial-pricing-trial.md) vigente (2026-04-25) — 6 planos. Unidade canônica: **chamada** (1 invocação ao modelo que **não** seja cache hit, conforme `comercial.md` e ADR 0064). 1 turno do user pode disparar N chamadas internas (RAG + classifier + LLM principal + tool calls); ver "Regras de contagem" abaixo.
+
 | Plano | Limite mensal | Limite diário | O que conta? | BYOK |
 |---|---|---|---|---|
-| **Starter R$ 99** | 500 mensagens | ~50 msg/dia (soft) | Mensagens user (Camada 2 + 3) | — |
-| **Pro R$ 199** | 3.000 mensagens | ~150 msg/dia (soft) | Idem | opcional via add-on |
-| **Business R$ 449** | 10.000 mensagens | ~500 msg/dia (soft) | Idem | ✅ opcional |
-| **Enterprise** | 25.000 mensagens (default) | sem limit diário | Idem | ✅ ilimitado quando ativo |
+| **Solo R$ 49** | 200 chamadas | ~10/dia (soft) | Chamadas user (Camada 2 + 3) | — |
+| **Solo Combo R$ 69** | 200 chamadas | ~10/dia (soft) | Idem (cota não escala com nº de verticais — ver ADR 0066) | — |
+| **Starter R$ 99** | 500 chamadas | ~50/dia (soft) | Idem | — |
+| **Pro R$ 199** | 3.000 chamadas | ~150/dia (soft) | Idem | opcional via add-on |
+| **Business R$ 449** | 10.000 chamadas | ~500/dia (soft) | Idem | ✅ opcional |
+| **Enterprise** | 25.000 chamadas (default) | sem limit diário | Idem | ✅ ilimitado quando ativo |
 
 **Regras de contagem:**
 
@@ -193,9 +197,9 @@ Adicionar à `<AppLayout>` (regra 31, ADR 0063):
 - **Tool execution** (Server Action chamada) **não conta** na quota IA — conta no rate limit normal das Server Actions (regra 36)
 - **STT (transcription)** conta separado por **minuto** (Pro 60min, Business 300min, Enterprise 1500min — já em ADR 0066)
 
-**Soft daily limit:** previne burn rápido (user fazendo 500 mensagens em 1 dia esgota 90% do mês). Excedido o diário → toast "Limite diário atingido. Aguarde até amanhã ou faça upgrade." (não bloqueia o mensal — só desencoraja burst).
+**Soft daily limit:** previne burn rápido (user fazendo 500 chamadas em 1 dia esgota 90% do mês). Excedido o diário → toast "Limite diário atingido. Aguarde até amanhã ou faça upgrade." (não bloqueia o mensal — só desencoraja burst).
 
-**Excedido mensal:** circuit breaker → CTA "Configure BYOK" + bloqueia novas mensagens até próximo ciclo. Ações já em fila (Camada 3 pendente confirmação) podem terminar.
+**Excedido mensal:** circuit breaker → CTA "Configure BYOK" + bloqueia novas chamadas até próximo ciclo. Ações já em fila (Camada 3 pendente confirmação) podem terminar.
 
 **Cache hit** preserva quota — incentivo natural pra perguntas comuns (Help). Cache TTL 30d global; perguntas idênticas no mês não consomem.
 
@@ -229,6 +233,8 @@ Camada 3 começa com **whitelist conservadora**. Tools de alto risco entram em s
 - ❌ Qualquer tool que muda configuração de tenant (`tenant_settings`, RBAC, plano)
 
 **Convenção de código:** Server Action que **não** deve ser exposta ao LLM tem comentário literal `// ai-blocked: <motivo>` no topo. Lint custom `ai-block-respected` em CI verifica que nenhum `registerAITool` aponta para handler com esse comentário.
+
+**Compliance MFA recente (regra 43) em tools Camada 3:** cada tool write é avaliada contra `packages/security/high-risk-actions.ts`. Tools que alteram **RBAC** (`inviteUser` — atribui role), **financeiro** (cobrança, alteração de invoice), **compliance** (anonymizeMember, exportFullProntuario) ou **fiscal** (cancelTissGuide, cancelNfe) exigem `requireRecentMfa(maxAgeMin=15)` no handler — independente do role do user. Quando o LLM propõe via `proposeAction`, o `<ActionConfirmDialog>` força reauth TOTP/WebAuthn antes de chamar o handler real. Lint custom `high-risk-action-must-require-recent-mfa` ([ADR 0073](0073-postura-seguranca-defesa-em-profundidade.md) camada 2) garante. Proteção dupla com a `// ai-blocked:` (regra 41): IA nunca chega ao handler de ação realmente bloqueada; se chegasse via bypass, gate MFA pegaria.
 
 ### Parte 7 — Esquemas novos
 
@@ -402,7 +408,7 @@ Dashboard `/app/super-admin/ai-usage` (super_admin LogiFit) mostra:
 - **Escalabilidade sem god-file** — 200 tools? cada uma no seu módulo, lookup em `tools_registry` indexada
 - **Personas reduz tokens** — LLM recebe só ~10-15 tools relevantes em vez de 200; barato e mais preciso
 - **Cache hit grátis** — incentivo natural pra Help (perguntas comuns)
-- **Cotas concretas + alinhadas comercial** — ADR 0066 fica respeitado; user vê "47 de 500 mensagens" no UI
+- **Cotas concretas + alinhadas comercial** — ADR 0066 fica respeitado; user vê "47 de 500 chamadas" no UI
 - **FAB universal** — assistente acessível em qualquer tela, mobile-first compliance (regra 31)
 - **Compliance built-in** — regras 28/29/32/33/35/36/39 todas incorporadas; nada adicional pra acompanhar
 - **Whitelist Write conservadora** — começa pequeno (~9 tools), expande conforme evidência empírica de uso seguro

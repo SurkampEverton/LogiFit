@@ -154,15 +154,19 @@ emitNfeConsertoReturn(maintenanceId)
 emitNfce(saleId)
 emitNfeSelfEntry(input)                 // Comprador emite própria; popula nfe_received via ADR 0060
 
-// Eventos
-cancelEmission(emissionId, justification)
-issueCCe(emissionId, correction)
-inutilizeRange(companyId, kind, serie, from, to, justification)
+// Eventos — alto risco fiscal: gate `requireRecentMfa(maxAgeMin=15)` no wrapper (regra 43)
+cancelEmission(emissionId, justification)         // requireRecentMfa() — `cancelNfe` em high-risk-actions.ts
+issueCCe(emissionId, correction)                   // requireRecentMfa() — correção fiscal pós-emissão
+inutilizeRange(companyId, kind, serie, from, to, justification)  // requireRecentMfa() — afeta numeração
 
 // Consulta/retry
 queryEmissionStatus(emissionId)
 retryEmission(emissionId)
 ```
+
+**Gate MFA específico de Fiscal (regra 43, igual ao padrão Sprint 22 TISS):**
+
+- Cancelar emissão fiscal + emitir CC-e + inutilizar faixa de numeração = **ações de alto risco fiscal** — exigem **MFA recente (<15min)** mesmo para roles com MFA opcional. Wrapper `requireRecentMfa()` no handler valida claim `mfa_at` do JWT; expirado → forçar reauth com TOTP/WebAuthn antes de prosseguir. Audit log marca `mfa_required=true` + `mfa_at_action`. Coerente com **regra 43** ([rules.md](../rules.md)) e **`packages/security/high-risk-actions.ts`** (cancelNfe + voidPaidInvoice + updateInvoiceAmount).
 
 API Routes:
 - `POST /api/fiscal/focus-nfe/callback` — webhook idempotente (HMAC); atualiza `fiscal_emissions.status`, preenche `chave`, `xml_storage_path`, `pdf_storage_path`; emite domain events
@@ -221,6 +225,7 @@ Consumidores:
 - [ ] Convite de contador: `createContadorInvite({ email, tenantId })` — gera magic link via Resend + force MFA setup no 1º acesso; admin controla revogação em `/app/settings/contador`
 - [ ] Seed: ambiente homologação com emissões de cada tipo
 - [ ] Testes unit + E2E cobrindo 8 tipos + 3 eventos
+- [ ] **Teste E2E MFA (regra 43)**: `cancelEmission`/`issueCCe`/`inutilizeRange` sem `mfa_at` recente → `MFA_RECENT_REQUIRED` no envelope; após `requireRecentMfa()` (re-TOTP), executa OK; lint custom `high-risk-action-must-require-recent-mfa` verde em CI
 - [ ] Feature flag `fiscal_focus_v1`
 - [ ] **Pesquisa global** (ADR 0062): indexar `fiscal_emissions` como kind=`fiscal_emission` (label=número+tipo+destinatário, subtitle=valor+data+status, `required_permission='fiscal.read'`); permite operador achar "NFS-e 1234" direto
 - [ ] ADR 0059 publicado (já accepted)

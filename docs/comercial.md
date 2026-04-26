@@ -1,6 +1,6 @@
 # LogiFit — Apresentação Comercial
 
-> Material de venda/pitch baseado no planejamento técnico completo (sprints 00–30 + pós).
+> Material de venda/pitch baseado no planejamento técnico completo (sprints 00–36 + roadmap fase 3 até 40).
 > Linguagem voltada para **gestor de clínica/academia**, **investidor** e **decisor de compra** — não para dev.
 > Fonte técnica: [`modulos.md`](modulos.md) · [`roadmap.md`](roadmap.md) · [`arquitetura.md`](arquitetura.md).
 
@@ -173,7 +173,8 @@ Todo plano com emissão fiscal traz um **pacote de notas inclusas no preço-base
 **Segurança built-in:**
 
 - Aluno só vê e age sobre os **próprios dados** — IA respeita permissão automaticamente
-- Profissional clínico tem **classificador anti-prescrição** (CFM 2.454/2026): IA nunca diagnostica, sempre sugere com supervisão humana
+- **Conformidade CFM 2.454/2026 em duas camadas obrigatórias** para feature SaMD II+ (ex: pipeline de exames, Nutri-Agent): (1) **Comitê de IA cadastrado no tenant** + ata de criação — gate institucional; (2) **classificador anti-prescrição** que bloqueia "diagnóstico de", "prescrever", "tem [doença]" — gate técnico em toda chamada. Sem comitê = feature não ativa
+- IA nunca diagnostica, sempre sugere com supervisão humana documentada (`ai_audit_log` registra input, output, modelo, decisão humana)
 - **PII mascarada** antes de sair pro provider de IA (CPF/RG/email/telefone)
 - **Audit completo** de toda interação — quem perguntou, o que pediu, qual ação foi confirmada, por quem
 - **Ações destrutivas bloqueadas** no MVP (excluir, anonimizar, cobrar em massa) — exigem fluxo manual dedicado
@@ -181,7 +182,7 @@ Todo plano com emissão fiscal traz um **pacote de notas inclusas no preço-base
 ### Segurança e conformidade regulatória
 
 - LGPD 100%: criptografia, controle de acesso por nível, auditoria
-- Dados sensíveis nunca vazam entre franquias (regra dura no banco, não opcional)
+- Dado clínico nunca cruza company quando o tenant é franquia (regra dura no banco, não opcional — RLS + regra 25)
 - Multi-empresa: dono vê consolidado sem ver dado individual de outra empresa
 - Consent granular: paciente aprova exatamente o que quer compartilhar
 - Audit log completo: quem leu prontuário, quando e por quê
@@ -210,7 +211,7 @@ Todo plano com emissão fiscal traz um **pacote de notas inclusas no preço-base
 - **Franquia** — franqueado isolado, franqueador vê apenas agregados
 - **Grupo holding** — vários negócios do mesmo dono, dashboard consolidado
 - **Crescimento orgânico** — de avulsa para rede é configuração, não migração dolorosa
-- **Passaporte entre franquias** — aluno treina em qualquer unidade quando habilitado
+- **Passaporte de franquia** — aluno treina em qualquer unidade da rede (mesmo tenant) quando habilitado pelo franqueador
 
 ---
 
@@ -243,7 +244,7 @@ Todo plano com emissão fiscal traz um **pacote de notas inclusas no preço-base
 
 **Trial:** 14 dias com features Pro · sem cartão de crédito · dados **retidos 30 dias** após expiração e então **anonimizados** (preserva agregados, remove identificação pessoal — LGPD-friendly).
 
-**Desconto anual:** 2 meses grátis (~14%) — Starter R$ 89/mês · Pro R$ 179/mês · Business R$ 399/mês.
+**Desconto anual:** 2 meses grátis (~14%) — Starter R$ 89/mês · Pro R$ 179/mês · Business R$ 399/mês. (Solo e Solo Combo já entram com pricing de entrada e não acumulam desconto anual.)
 
 **Cobrança por paciente único por contrato:** se você opera vários contratos LogiFit (ex: 2 clínicas = 2 tenants), cada paciente conta como 1 active member em cada contrato em que está vinculado. **O passaporte cross-tenant entre clínicas não duplica** o paciente dentro do mesmo contrato — ele é 1 active member por (paciente, tenant).
 
@@ -289,15 +290,15 @@ Durante o MVP, infra é Vercel + Supabase Pro. **Pós-Sprint 19b** (após MVP es
 | Métrica | Valor |
 |---|---|
 | Módulos funcionais | 100+ |
-| Sprints planejados | 30 |
-| ADRs arquiteturais | 38+ |
+| Sprints planejados | 40+ |
+| ADRs arquiteturais | 44+ |
 | Municípios brasileiros (NFS-e) | 5.500+ |
 | Alimentos TACO | 3.000+ |
 | Nutrientes por alimento | 30+ |
 | Fórmulas antropométricas | 10+ |
 | Integrações nativas | Asaas, WhatsApp, Resend, Supabase, Vercel, Focus NFe, Datasus CNES, ANS/TISS |
 | Providers IA | Gemini Flash (padrão LogiFit, datacenter SP), OpenAI e Anthropic (fallback automático), Groq Whisper (transcrição), Maritaca (BR opcional); BYOK em qualquer plano |
-| Roles pré-configurados | 9+ (super_admin, diretor, gerente, recepção, fisio, nutri, instrutor, aluno, group_owner) |
+| Roles pré-configurados | 14+ (super_admin, tenant_owner, dpo, diretor, gerente, recepcao, medico, fisio, nutri, personal, enfermeiro, instrutor, member, group_owner) |
 | Cenários multi-empresa testados | 5 canônicos (rede própria, franquia clássica, franquia com passaporte de franquia, mix loja avulsa + rede no mesmo group, modo solo autônomo) |
 
 ---

@@ -450,4 +450,5 @@ packages/db/insights/
 - Estende [ADR 0069 — Perfil do paciente como hub](0069-perfil-paciente-hub-operacional.md) — widgets cross-module aparecem nas abas
 - Prepara [Sprint 34 Nutri-Agent](../sprints/34... nutri-agent) — IA consome insights
 - Reforça regra 6 (consent cross-module obrigatório + testado no CI)
+- **Escopo intra-tenant** — insights cross-module são SEMPRE intra-tenant + intra-company (regra 25 bloqueia clínico cross-company em franchise). Cruzamento entre tenants distintos requer vínculo `patient_company_links` ativo + `has_cross_tenant_access()` (regra 42 + [ADR 0077](0077-passaporte-paciente-vinculo-cross-tenant.md)) + audit em `patient_data_access_log` — fora do escopo deste ADR.
 - Fontes: Compendium of Physical Activities 2024 (Ainsworth et al.), Mifflin-St Jeor equation (1990), Harris-Benedict revised (Roza & Shizgal 1984), Katch-McArdle formula (1983), Oswestry Disability Index, Compendium of Drug-Drug Interactions (farmacologia)

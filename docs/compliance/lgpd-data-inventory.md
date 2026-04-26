@@ -15,7 +15,7 @@
 | **Endereço residencial** | `persons.address` | derivada da identidade | mesma da identidade | Supabase | — |
 | **Saúde — prontuário** | `consultas.content` (criptografado) | art. 11 II "a" — tutela da saúde por profissional | **20 anos** (Lei 13.787/2018 + CFM 2.299) | Supabase + (Fase 2 Oracle Cloud) | v1.0-prontuario-fisio |
 | **Saúde — exame laboratorial** | `lab_results` | art. 11 II "a" — tutela da saúde | **20 anos** (Lei 13.787) | Supabase + (Fase 2) | v1.0-exames-laboratoriais |
-| **Saúde — evolução fisio** | `evolucoes_sessao` | art. 11 II "a" — tutela da saúde | **5 anos** (COFFITO 415/2012) | Supabase + (Fase 2) | v1.0-prontuario-fisio |
+| **Saúde — evolução fisio** | `evolucoes_sessao` | art. 11 II "a" — tutela da saúde | **5 anos** (COFFITO 415/2012) | Supabase + (Fase 2) | v1.0-prontuario-fisio + v1.0-evolucao-midias |
 | **Saúde — diário alimentar** | `food_log` | art. 11 II "a" — tutela da saúde | 6 meses raw + 5 anos agregado | Supabase | v1.0-nutri-diario |
 | **Biométrico — face embedding** | `member_face_embeddings` | art. 11 II "d" + consentimento explícito | enquanto member ativo + 90d após desativação | Supabase | v1.0-reconhecimento-facial |
 | **Antropometria** | `assessment_measurements` | art. 11 II "a" — tutela da saúde | 5 anos + cold storage | Supabase | (parte de v1.0-prontuario-*) |

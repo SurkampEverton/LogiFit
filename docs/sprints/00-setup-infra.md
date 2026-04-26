@@ -26,7 +26,7 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 - `pnpm db:migrate` aplica migrations Drizzle no Supabase local
 - `pnpm db:rls-check` falha se encontrar tabela sem RLS habilitada (regra 2 enforced)
 - `pnpm i18n:check` falha se encontrar chave faltando em qualquer locale (regra 27 enforced)
-- CI (GitHub Actions) passa: type-check, Biome, Vitest, drizzle migrate dry-run, `db:rls-check`, `i18n:check`
+- CI (GitHub Actions) passa: type-check, Biome, Vitest, drizzle migrate dry-run, `db:rls-check`, `i18n:check`, `docs:check`
 - Sentry captura erro sintético em dev
 - PostHog registra pageview
 - Tokens "Equilíbrio Vital" aplicados em componente de teste (light/dark sem sombras residuais)
@@ -220,6 +220,7 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 - [ ] `pnpm test` verde
 - [ ] `pnpm db:rls-check` funcional (cria tabela sem RLS em branch de teste → script falha)
 - [ ] `pnpm i18n:check` funcional (remove chave de en-US em branch de teste → script falha)
+- [ ] `pnpm docs:check` funcional (cria slug ADR errado em branch de teste → script falha)
 - [ ] CI verde no branch
 - [ ] Sentry + PostHog capturando em dev
 - [ ] Tokens "Equilíbrio Vital" aplicados sem sombras residuais do shadcn

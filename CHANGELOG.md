@@ -6,6 +6,107 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — 20ª auditoria 2026-04-26 (escopo intra-tenant ADR 0070 + 11 falsos positivos descartados)
+
+3 agentes Explore em paralelo cobrindo áreas ainda não auditadas a fundo: (a) sprints fundacionais (01a/01b/02/04) + clínicos densos (20/26/32/33), (b) ADRs antigos (0001/0002/0005/0006/0007/0010) + medianos (0049/0050/0051/0053/0061/0062/0066/0068/0070/0071), (c) cross-doc de schemas + runbooks restantes (`rotate-secrets`/`lockout-conta`/`falha-nfe`/`asaas-outage`/`upstash-down`/`focus-nfe-outage`/`oracle-cutover-rollback`/`exfiltracao-detectada`/`ia-byok-emergencial`) + threat-models (`pagamento-asaas`/`pipeline-exames`/`whatsapp-inbound`/`device-hub-oauth`/`login-mfa`).
+
+**Resultado: 1 falha real BAIXA + 11 falsos positivos descartados.** Após 19 rondas e 26 falhas corrigidas, problemas restantes são sutis — esperado.
+
+**Baixa (1):**
+
+- [ADR 0070:447-453](docs/decisions/0070-insights-cross-module-timeline-integrada.md) seção "Related": ADR 0070 cobre insights cross-module mas é **estritamente intra-tenant** por design (RAG e widgets cruzam módulos do mesmo tenant). Faltava nota explícita esclarecendo que **cross-tenant** (paciente vinculado a tenants distintos via passaporte) é fora do escopo e requer regra 42 + ADR 0077 + `has_cross_tenant_access()` + log em `patient_data_access_log`. Adicionada linha de escopo na seção Related apontando para regra 25 (clínico em franchise) + ADR 0077.
+
+**Falsos positivos descartados (transparência):**
+
+1. "ADR 0066 NFS-e Starter sem qualificação por sprint" — ADR 0066:79 + 224 + 439 já citam Sprint 36 explicitamente como ativador de Focus NFe; ADR descreve produto-alvo, comercial.md tem fases. Não é falha.
+2. Sprint 01a/01b/02/04/20/26/32/33: agente A reportou 14 critérios checados (frontmatter, DoD, ADR esperado, schemas, refs cross-sprint, MFA alto-risco, webhook HMAC, scanUpload, volume_estimate, wrapAction, BetterAuth, roles MFA, regulamentos, i18n) — **ZERO falhas** após validação. Sprints fundacionais estão limpos.
+3. Schema name divergence (20+ tabelas verificadas via grep cross-doc): zero variações encontradas (`members`, `audit_log`, `ai_audit_log`, `patient_company_links` etc todos consistentes).
+4. Sprint number consistency: 0-40 + 00b/19b todos legítimos no roadmap.
+5. Runbooks `rotate-secrets`/`lockout-conta`/`falha-nfe`/`focus-nfe-outage`/`oracle-cutover-rollback`/`exfiltracao-detectada`/`ia-byok-emergencial`: existem, referenciam regras corretas (36 lockout, 43 MFA, 33 wrapAction, 39 hash chain, 40 backup), são esqueletos pré-Sprint conforme convenção.
+6. Threat-models 9 existem; templates `_template.md`/`_template-stride.md` confirmados.
+7. CLAUDE.md regras de portabilidade #1-#8 vs ADR 0078: 8/8 batem 100%.
+8. `packages/security/high-risk-actions.ts`: lista canônica em rules.md regra 43 + Sprint 00:150 + lint `high-risk-action-must-require-recent-mfa` em CI — coerente.
+9. 10 lints custom (no-unwrapped-action, no-raw-fetch, no-unscanned-upload, no-hardcoded-design-token, no-direct-supabase-query, no-supabase-functions, high-risk-action-must-require-recent-mfa, cross-tenant-read-must-log, ai-block-respected, no-desktop-only-layout): todos presentes em Sprint 00 commit checklist.
+10. ADR 0001-0010 (fundacionais): ADR 0001 tem addendum apontando para ADR 0078 (portabilidade); ADR 0002/0005/0006/0007/0010 ainda válidos sem conflito com regras novas 27-44.
+11. ADRs medianos 0047-0063: nenhum cita pricing/cota desatualizado; refs a regras corretas; CFM/COFFITO/Lei com numeração correta.
+
+`pnpm docs:check` passa zero erros zero avisos após correção.
+
+### Docs — 19ª auditoria 2026-04-26 (gates MFA fiscais + DPA template criado + sincronia ADR 0077)
+
+3 agentes Explore em paralelo cobrindo áreas ainda não auditadas a fundo: (a) modulos.md+multiempresa.md inteiros, (b) ADRs canônicos transversais (0064/0067/0072/0073/0075/0077), (c) sprints densos (06/13/17/22/36). 16 alegações brutas → **6 falhas reais** após validação direta + **10 falsos positivos descartados**.
+
+**Altas (4):**
+
+- [docs/sprints/36-geral-fiscal-focus-nfe.md:158-164](docs/sprints/36-geral-fiscal-focus-nfe.md): eventos fiscais `cancelEmission`/`issueCCe`/`inutilizeRange` listados como Server Actions sem menção a `requireRecentMfa()` — regra 43 + `packages/security/high-risk-actions.ts` exigem MFA recente <15min para `cancelNfe`. Sprint 22 (linhas 51-53) já estabeleceu o padrão para TISS; Sprint 36 ficou de fora. Adicionado bloco "Gate MFA específico de Fiscal" com texto canônico equivalente ao Sprint 22.
+- [docs/sprints/36-geral-fiscal-focus-nfe.md:223](docs/sprints/36-geral-fiscal-focus-nfe.md) Commit checklist: testes E2E listavam "8 tipos + 3 eventos" mas não cobriam MFA. Adicionado item explícito: `cancelEmission`/`issueCCe`/`inutilizeRange` sem `mfa_at` recente → `MFA_RECENT_REQUIRED` no envelope; com MFA <15min executa OK; lint `high-risk-action-must-require-recent-mfa` verde.
+- [docs/decisions/0075-assistente-ia-universal-tres-camadas-tool-registry.md:231](docs/decisions/0075-assistente-ia-universal-tres-camadas-tool-registry.md): whitelist Camada 3 (write tools) listava `inviteUser({email, role})` como risco "Médio" sem citar regra 43. `inviteUser` altera RBAC — `packages/security/high-risk-actions.ts` lista `updateUserRole` como exigindo MFA <15min. Adicionado parágrafo "Compliance MFA recente (regra 43) em tools Camada 3" explicando proteção dupla com lint `// ai-blocked:` (regra 41).
+- [docs/compliance/dpa-template.md](docs/compliance/dpa-template.md): **arquivo criado**. ADR 0067:301 declarava `dpa-template.md` na lista de docs em `docs/compliance/` mas o arquivo não existia. Skeleton com 10 cláusulas + cláusula 7-bis (cross-tenant via passaporte) + referências cruzadas para `dpo.md`, `lgpd-data-inventory.md`, `data-deletion-playbook.md` e `incidente-lgpd-72h.md`. Versão final completa fica para Sprint 02 (jurídico LogiFit + escritório externo).
+
+**Médias (1):**
+
+- [docs/decisions/0077-passaporte-paciente-vinculo-cross-tenant.md:367](docs/decisions/0077-passaporte-paciente-vinculo-cross-tenant.md): `CREATE TABLE patient_data_access_log` não tinha o `@volume_estimate_yearly` comment SQL exigido pela regra 34 (CI lint pode falhar em Sprint 02 review). ADR 0072:148 estima 10-15M linhas/ano com 30% adoção do passaporte — agora reproduzido como comment no schema do ADR 0077 + ref para retenção 5 anos + cold storage Parquet zstd após 2 anos (ADR 0072 §"Tabelas que vão pra cold storage").
+
+**Baixas (1):**
+
+- [docs/acesso-e-autorizacao.md:218-226](docs/acesso-e-autorizacao.md): tabela "5 níveis de dados" estava resumida vs [ADR 0077:191-198](docs/decisions/0077-passaporte-paciente-vinculo-cross-tenant.md) que é a fonte de verdade. Sem contradição, apenas perda de detalhe (cargas, presença sim/não, restrições motoras, "sem diário detalhado", clareza Nível 5 nunca exibido). Linhas sincronizadas com texto exato do ADR 0077 + nota apontando para a fonte de verdade.
+
+**Falsos positivos descartados (transparência):**
+
+- "Sprint 17 callback Open Finance sem HMAC" — Sprint 17:191 Commit já documenta "Wrapper Open Finance ... webhook callback valida HMAC + IP source" (agente leu só as API Routes, não o Commit)
+- "Sprint 06 seed task_routing vago no checklist" — linha 52 do Sprint 06 detalha (Gemini priority 100 em chat/embedding/etc); checklist linha 334 é resumo, não falha
+- "modulos.md usa 'paciente, tenant' em vez de 'member, tenant'" — regra 24 explicitamente permite UI rotular como "aluno"/"paciente" enquanto schema usa `member` (canônico); contexto comercial `(paciente, tenant)` é UX-friendly e correto
+- "Sprint 36 nome do módulo divergente em modulos.md" — design intencional; modulos.md é catálogo funcional, sprints/roadmap é técnico
+- "multiempresa.md sem link explícito para acesso-e-autorizacao.md" — clarificação cosmética; multiempresa.md:159 já referencia "RBAC e scopes" implicitamente
+- "ADR 0064 CFM 2.454/2026 não declara pré-compliance" — vigência ago/2026 é documentada implicitamente; ADR é preventivo (preparação MVP que vai produção 2026-08+ alinha)
+- "ADR 0073 mapeamento camadas↔regras ausente" — clarificação cosmética; cada camada tem seção dedicada com refs explícitas a regras 35-40
+- "ADR 0077 confusão histórica regra 26" — wording explica que a confusão era de **acesso-e-autorizacao.md** (já corrigida em auditoria anterior); rastreabilidade não é falha
+- "ai_audit_log.human_decision ambíguo por layer" — comment "(quando não clínica)" no ADR 0064:203 já cobre layer Help (null permitido)
+- "Job de archive `ai_audit_log` não nomeado especificamente" — ADR 0072:257 lista `ai_audit_log` na tabela canônica de cold storage (>1a → cold, >5a → delete); job genérico `archive-cold-partitions` cobre todas as tabelas listadas
+
+`pnpm docs:check` passa zero erros zero avisos após correções.
+
+### Docs — 18ª auditoria 2026-04-26 (drift entre fonte canônica e docs derivados)
+
+6 agentes Explore em 2 rondas, com validação direta de cada alegação (8 falsos positivos descartados — incluindo "ADRs 0011-0046 não existem", `samd-classification.md`/`lgpd-data-inventory.md` "faltam", runbooks "incidente-lgpd-72h" "ausente", `ai_audits` vs `ai_audit_log` etc — todos investigados e refutados por leitura direta). Foco da rodada: drift cross-doc entre rules.md (fonte canônica regra 43) e docs derivados; gaps auto-declarados (TODOs no design system); contradições com ADR 0078 portabilidade; refs a ADRs realocados.
+
+**Críticas / altas (4):**
+
+- [docs/acesso-e-autorizacao.md:23-24](docs/acesso-e-autorizacao.md): lista de roles MFA divergia da regra 43 canônica — incluía `instrutor`/`admin`/`gerente` (não obrigatórios) e listava `recepção` como obrigatório (regra 43 diz opcional). Faltavam `medico`, `personal`, `enfermeiro`, `tenant_owner`, `dpo`, `super_admin`. Linha agora reflete regra 43 + adiciona menção ao gate `requireRecentMfa()<15min` para alto-risco.
+- [docs/comercial.md:300](docs/comercial.md): "Roles pré-configurados | 9+" omitia `medico`, `personal`, `enfermeiro`, `tenant_owner`, `dpo`. Risco de cliente médico questionar suporte ao perfil. Atualizado para "14+" listando todos.
+- [docs/arquitetura.md:21-25](docs/arquitetura.md): seção §1 design system "Equilíbrio Vital" tinha TODO auto-declarado "**A adicionar:** cor de erro destrutiva e warning amarelo". Tokens de erro (`#E74C3C`/`#C0392B`) e warning (`#F39C12`/`#D68910`) agora preenchidos em variantes light/dark, sem anotação pendente. Sprint 00 pode materializar `tokens.css` sem gap.
+- [docs/arquitetura.md:120](docs/arquitetura.md): cross-module event bus listava "Supabase Realtime ou Edge Function" como consumers — contradiz regra de portabilidade #5 do ADR 0078 que **proíbe Supabase Edge Functions**. Trocado para "Supabase Realtime (Fase 1) / `LISTEN/NOTIFY` (Fase 2 — ADR 0078); webhooks externos via API Route Next.js".
+
+**Médias (6):**
+
+- [docs/threat-models/assistente-ia-tools.md:50](docs/threat-models/assistente-ia-tools.md): citava "ADR 0034 esperado" para Generative UI Sprint 28, mas roadmap.md:184 realocou ADR 0034 para Sprint 15 (workflow AP). Generative UI virou ADR 0085. Ref atualizada.
+- [docs/comercial.md:293-294](docs/comercial.md): "Sprints planejados | 30" e "ADRs arquiteturais | 38+" desatualizados — atualizados para "40+" e "44+" (real: 41 entradas no roadmap, 44 ADRs publicados).
+- [docs/comercial.md:5](docs/comercial.md): "sprints 00–30 + pós" — Sprint 36 (Focus NFe) tem arquivo, roadmap até 40. Atualizado para "00–36 + roadmap fase 3 até 40".
+- [docs/sprints/00-setup-infra.md:29 + 223](docs/sprints/00-setup-infra.md): `pnpm docs:check` aparecia em Commit (linha 201) e README (205) mas faltava do Critério de aceite e da DoD. Brecha permitia fechar Sprint 00 sem o lint de docs ativo. Adicionado em ambos os lugares.
+- [docs/decisions/0078-...md:108](docs/decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md): "BetterAuth ou Lucia" listadas como alternativas em ADR 0078, CLAUDE.md, arquitetura.md, sem ADR de fechamento. Adicionada nota explícita "Sub-decisão pendente — BetterAuth vs Lucia" com critérios + posicionamento como mini-ADR no início do Sprint 19b. Não é indecisão por esquecimento — é diferimento intencional documentado.
+- [docs/compliance/lgpd-data-inventory.md:18](docs/compliance/lgpd-data-inventory.md): linha de `evolucoes_sessao` apontava só para `v1.0-prontuario-fisio` — RIPD dedicado `v1.0-evolucao-midias.md` existe. Apontamento corrigido para listar ambos.
+
+**Baixas (4):**
+
+- [docs/acesso-e-autorizacao.md:96](docs/acesso-e-autorizacao.md): `(ADR 0019)` sem qualificador "(esperado, Sprint 01b)". Convenção do roadmap aceita, mas padronizado para clareza.
+- [CLAUDE.md:92](CLAUDE.md) regra 28: classificador de output listava só 2 termos proibidos (`'diagnóstico'`, `'tem [doença]'`); rules.md regra 28 canônica + ADR 0064:324 incluem `'prescrever'`. Digest do CLAUDE.md atualizado.
+- [docs/comercial.md:246](docs/comercial.md): linha de "Desconto anual" omitia Solo/Combo. Confirmado via grep no ADR 0066 que não há desconto anual definido para esses tiers (preço de entrada). Adicionado parêntese explícito "(Solo e Solo Combo já entram com pricing de entrada e não acumulam desconto anual.)".
+- [docs/compliance/ripd/_template.md:5](docs/compliance/ripd/_template.md): convenção de versionamento (v0.1 vs v1.0 vs `v1.0 (skeleton)`) não documentada — alguns RIPDs nascem `v0.1` (agendamento, ia-copilot), outros nascem `v1.0 (skeleton)` (prontuario-fisio). Template ganha linha explicando que ambos são aceitos enquanto Parecer DPO=Pendente; `v1.0` "limpo" só após aprovação + hash.
+
+**Falsos positivos descartados (transparência):**
+
+- "ADRs 0011-0046 não existem" — design intencional documentado em [roadmap.md:122-187](docs/roadmap.md): faixa reservada a sprints; convenção (linha 161) aceita citar `(ADR 0015)` sem `.md` resolvendo
+- `samd-classification.md`, `lgpd-data-inventory.md` "não existem" — ambos existem em `docs/compliance/`
+- runbooks `incidente-lgpd-72h.md`, `exfiltracao-detectada.md`, `falha-hash-chain.md` "ausentes" — todos existem em `docs/runbooks/`
+- "`ai_audits` vs `ai_audit_log` inconsistente" — Grep no repo inteiro retornou 100% `ai_audit_log` (singular)
+- "RIPDs todos com `Parecer DPO: Pendente` é falha" — design declarado: cada RIPD é "skeleton pré-Sprint X"; aceite formal só após implementação
+- "Hash SHA-256 dos RIPDs não populado" — Sprint 00 entrega `scripts/hash-ripd.ts`; pré-Sprint 00 estar vazio é estado esperado
+- "Lei 13.787 vs LGPD art. 16 conflito não resolvido" — [data-deletion-playbook.md:22-25](docs/compliance/data-deletion-playbook.md) resolve explicitamente
+- "`mfa-bypass-emergencial.md` tem gap operacional não resolvido em modo solo" — runbook reconhece e documenta 3 mitigações (cofre off-line + WebAuthn duplicado + envelope com advogado)
+- Stubs (`restore-pg.md`, `passaporte-cross-tenant.md`) "incompletos" — auto-marcados como "stub pré-Sprint X"; convenção aceita
+
+`pnpm docs:check` passa zero erros zero avisos após correções.
+
 ### Docs — 17ª auditoria 2026-04-25 (gap de schema em ADR 0064)
 
 3 agentes Explore em paralelo (qualidade interna dos stubs, ADRs internos, drift cross-doc). Lint automatizada (4 validações) já cobria o grosso. **1 bug real** encontrado (drift cross-doc retornou ZERO):

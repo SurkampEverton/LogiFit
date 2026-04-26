@@ -113,6 +113,20 @@ Cada RIPD contém (template ANPD):
 
 RIPDs são versionados em git; mudanças geram nova versão (`v1.1-`, `v2.0-`). CI tem script `pnpm compliance:ripd-check` que falha se módulo em produção não tem RIPD vigente.
 
+#### 3.1 Cadência de maturação do RIPD (gate pré-sprint)
+
+Adendo 2026-04-26 — derivado de auditoria documental que constatou RIPDs heterogêneos: alguns com seções 1-7 substanciais (exames-laboratoriais, ia-copilot-clinico, prontuario-fisio), outros como skeletons de ~30 linhas (avaliacoes-fisicas, evolucao-midias, prescricoes, portal-paciente, teleconsulta, nutri-agent-ia). Regra 29 valida apenas existência do registro, não substância. Para evitar passar lint com placeholder e deixar o sprint começar sem base de risco, o RIPD passa por **3 estados de maturação** atrelados ao ciclo de vida do sprint correspondente:
+
+| Estado | Quando exigido | Conteúdo mínimo | Gate |
+|---|---|---|---|
+| **v0.1-skeleton** | Quando módulo é mencionado em roadmap/sprint, mas sprint está em backlog | Identificação do tratamento + base legal + categorias de dado + ADR/Sprint de referência | Lint atual (regra 29) — só confere existência |
+| **v0.5-pre-sprint** | Quando sprint correspondente entra em **next-up** (1-2 sprints à frente do ativo no roadmap) | Tudo do v0.1 + fluxo de dados (diagrama) + medidas de segurança (5 camadas mínimas) + matriz de risco (≥4 cenários) + retenção concreta por categoria | Lint adicional (a criar Sprint 00 — `pnpm compliance:ripd-maturity-check`); sprint não passa de "next-up" para "doing" se RIPD do módulo entregue ainda for v0.1-skeleton |
+| **v1.0** | Após sprint correspondente fechar | Tudo do v0.5 + parecer DPO formal assinado + hash SHA-256 ancorado em `compliance_retention_log` + diagrama de fluxo final | Aprovação DPO bloqueante para release em produção |
+
+**Aplicabilidade análoga a Threat Models STRIDE** (`docs/threat-models/`): mesmo gate pré-sprint vale para feature crítica (login, prontuário, pagamento, IA, passaporte, exames, device hub, upload, observabilidade). Stub passa CI hoje; antes do sprint da feature entrar em "doing", threat model precisa ter STRIDE matrix de **6 categorias** + diagrama de trust boundaries. Já satisfazem este gate hoje: prontuario, login-mfa, pagamento-asaas, pipeline-exames, whatsapp-inbound (substanciais); assistente-ia-tools, passaporte-cross-tenant, device-hub-oauth (stubs declarados com STRIDE 6-categorias mínimo).
+
+Esta cadência **não cria fricção pré-MVP** — Sprint 00 reconhece RIPDs e threat models existentes hoje no estado em que estão. O gate v0.5/STRIDE-6 só impede que sprint **futuro** passe a "doing" sem maturação prévia.
+
 ### 4. Direitos do titular (art. 18)
 
 LogiFit implementa os 8 direitos do titular via portal e APIs:

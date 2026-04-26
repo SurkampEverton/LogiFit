@@ -18,11 +18,12 @@ Este é um sistema que manipula **dados sensíveis de saúde** (LGPD art. 11), c
   - Cards: `#FFFFFF` + borda 1px Grafite 10% / `#2C3E50`
   - Texto principal: `#2C3E50` / `#ECF0F1`
   - Divisores / inputs: 1px opacidade ou `#34495E` (dark)
-- **Ação:**
+- **Ação (light / dark):**
   - Primário: `#3498DB` / `#5DADE2`
-  - Sucesso / saúde: `#2ECC71`
-  - Energia / alertas: `#E67E22`
-  - **A adicionar:** cor de erro destrutiva (`#E74C3C`) e warning amarelo (`#F39C12`) — faltavam no rascunho.
+  - Sucesso / saúde: `#2ECC71` / `#27AE60`
+  - Energia / atenção: `#E67E22` / `#D35400`
+  - Warning: `#F39C12` / `#D68910`
+  - Erro destrutivo: `#E74C3C` / `#C0392B`
 
 ### Frontend
 - **Next.js 15 (App Router) + React 19**
@@ -117,7 +118,7 @@ Detalhes em [multiempresa.md](multiempresa.md#flags-do-tenant).
 ### Cross-module event bus
 - Tabela `domain_events` (event-sourcing leve) + Realtime do Supabase para fan-out
 - Eventos: `member.injury_registered`, `member.class_checked_in`, `member.diet_updated`
-- Consumers inscrevem-se via Supabase Realtime ou Edge Function
+- Consumers inscrevem-se via Supabase Realtime (Fase 1) / `LISTEN/NOTIFY` (Fase 2 — [ADR 0078](decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md)); webhooks externos vão por API Route Next.js. **Proibido Supabase Edge Functions** (regra de portabilidade #5 do ADR 0078; lint `no-supabase-functions` enforça em CI)
 
 ---
 

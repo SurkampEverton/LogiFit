@@ -364,6 +364,8 @@ Não vamos investir marketing pesado em Path B no MVP — ele existe pra **não 
 Toda leitura cross-tenant via vínculo grava em `patient_data_access_log` (síncrono não-bloqueante via trigger):
 
 ```sql
+-- @volume_estimate_yearly: 10000000  -- 10-15M linhas/ano com 30% adoção do passaporte (regra 34 + ADR 0072)
+-- Retenção: 5 anos (LGPD auditoria + passaporte). Cold storage Parquet zstd após 2 anos (ADR 0072 §"Tabelas que vão pra cold storage").
 CREATE TABLE patient_data_access_log (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   person_id       uuid NOT NULL,

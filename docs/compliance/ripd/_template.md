@@ -2,6 +2,7 @@
 
 > Relatório de Impacto à Proteção de Dados — exigido por LGPD art. 38 + Resolução ANPD nº 23/2024 para tratamento de larga escala de dados sensíveis (saúde, biométrico, genético).
 > **Template baseado em ANPD Guia Orientativo de RIPD (2024).** Copie este arquivo para `docs/compliance/ripd/v1.0-{{slug}}.md`, preencha, peça parecer DPO, mude versão a cada mudança substancial.
+> **Convenção de versionamento:** stubs pré-Sprint podem usar `v0.1` (rascunho explícito) OU `v1.0 (skeleton)` (versão-alvo com sufixo) — ambos aceitos enquanto `Parecer DPO: Pendente`. `v1.0` "limpo" (sem sufixo) só após o DPO aprovar a versão final pós-implementação **e** o hash SHA-256 estar populado pelo `scripts/hash-ripd.ts`. `v1.x+` = revisões substantivas pós-aprovação (semestral ou em mudança material).
 
 - **Versão:** v1.0
 - **Data de elaboração:** {{YYYY-MM-DD}}

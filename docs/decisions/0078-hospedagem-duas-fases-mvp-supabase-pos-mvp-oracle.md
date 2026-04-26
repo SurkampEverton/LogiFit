@@ -107,6 +107,8 @@ Se algum sinal aparecer **antes** do Sprint 19, antecipa pra Sprint mais cedo:
 | Monitoring final | Grafana ou Better Stack apontando pra Oracle | 4h |
 | **Total** | | **~60h** |
 
+**Sub-decisão pendente — BetterAuth vs Lucia:** a escolha do provider de Auth da Fase 2 fica adiada para spike no início do Sprint 19b (mini-ADR como sub-decisão). Critérios a avaliar: maturidade da lib, tamanho da comunidade, suporte WebAuthn/TOTP nativo (regra 43), custo de migrar claims customizados (`tenant_id`, `scopes[]`, `topology`, `mfa_at`), portabilidade pra eventual troca futura. Até a sub-decisão, este ADR + CLAUDE.md + arquitetura.md grafam "BetterAuth ou Lucia" intencionalmente — não é indecisão por esquecimento.
+
 ### Custo comparativo (12 meses pós-MVP)
 
 | Cenário | Mês 1-8 (MVP) | Mês 9-20 (pós-MVP) | Total 20 meses |

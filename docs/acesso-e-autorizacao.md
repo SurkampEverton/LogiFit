@@ -20,8 +20,9 @@ Modelo em 4 camadas. Cada camada é independente e reforça a anterior — se um
 
 - Autenticação via **Supabase Auth** (email + magic link, OAuth Google/Apple, senha).
 - JWT assinado pelo Supabase, vida curta (1h), refresh token 30d.
-- **MFA obrigatório** para roles profissionais (fisio, nutri, instrutor, admin, gerente, recepção). TOTP via aplicativo autenticador.
-- Aluno/paciente: MFA opcional (recomendado).
+- **MFA obrigatório** ([regra 43](rules.md)) para roles clínicos `medico`, `fisio`, `nutri`, `personal`, `enfermeiro` e administrativas críticas `tenant_owner`, `dpo`, `super_admin` (todos com `roles.requires_mfa=true`). TOTP via aplicativo autenticador ou WebAuthn.
+- Roles operacionais (`recepcao`) e `member` (aluno/paciente): MFA **opcional** mas com badge incentivando ativação. Tenant pode escalar via `tenant_settings.mfa_extra_roles[]`.
+- **Independente do role**, ações de alto-risco (cancelar guia TISS, anular invoice, alterar role de outro user, anonimizar member, etc — lista em `packages/security/high-risk-actions.ts`) exigem **MFA recente <15min** via gate `requireRecentMfa()` no wrapper. Ver [regra 43](rules.md) + [ADR 0073 camada 2](decisions/0073-postura-seguranca-defesa-em-profundidade.md).
 - JWT viaja em cookie `httpOnly` (Next.js) + header `Authorization` (Supabase client direto).
 
 ### Dois caminhos para criar conta de paciente (ADR 0077)
@@ -93,7 +94,7 @@ user_permissions    -- (user_id, permission, scope_type, scope_id,
                     -- grant direto pontual: uma permission específica, normalmente com validade
 ```
 
-### Três caminhos de autorização (ADR 0019)
+### Três caminhos de autorização (ADR 0019 — esperado, Sprint 01b)
 
 1. **Role base** — atribuir uma role existente (`recepcao`, `gerente_filial`, etc) em `user_roles`. Pacote fechado.
 2. **Role custom do tenant** — admin do tenant edita `role_permissions` ou cria role nova (ex: `contador_externo` com `financeiro.read`). Perfil repetível.
@@ -215,15 +216,15 @@ Vínculo é entre **paciente e empresa** (Modelo C híbrido); cada vínculo libe
 
 **Fluxo do vínculo:** profissional cadastra dados mínimos do paciente → invite por WhatsApp/email → paciente cria conta (ou loga se já existe) → vê pedido pendente → **aceita parcial ou total** (pode liberar só fisio e recusar nutri da mesma empresa) → vínculo ativo.
 
-**5 níveis de dados:**
+**5 níveis de dados** (resumo — fonte de verdade detalhada em [ADR 0077 §Parte 5](decisions/0077-passaporte-paciente-vinculo-cross-tenant.md)):
 
 | Nível | Categorias | Default |
 |---|---|---|
-| 1 — Identidade | nome, foto, contato, convênio (sem detalhes financeiros) | Sempre quando vínculo ativo |
-| 2 — Antropometria + sinais | peso, altura, IMC, bioimpedância, dobras, wearables | Default todos os módulos |
-| 3 — Treino e hábitos | plano treino + RPE, modalidades, restrições, plano alimentar (macros) | Default academia/personal/pilates |
-| 4 — Clínico | CID/CIF, alergias, medicações, exames lab, diário alimentar | Default fisio/nutricao (opt-in granular) |
-| 5 — Workspace interno | notas privadas profissional, hipóteses, anotações comportamentais | **Nunca cruza** — nem é exibido pro paciente |
+| 1 — Identidade | nome, foto, data nascimento, sexo, contato emergência, convênio (nome+nº — sem detalhes financeiros) | Sempre quando vínculo ativo |
+| 2 — Antropometria + sinais | peso, altura, IMC, bioimpedância, dobras, circunferências, wearables (FC repouso, sono, passos) | Default todos os módulos |
+| 3 — Treino e hábitos gerais | plano de treino ativo, RPE, cargas, modalidades, restrições motoras, frequência (presença sim/não), plano alimentar (macros + restrições — sem diário detalhado) | Default academia/personal/pilates |
+| 4 — Clínico | lesões ativas (CID/CIF), alergias, medicações em uso, doenças crônicas relevantes, cirurgias relevantes (5 anos), exames lab alterados ou completos, diário alimentar detalhado | Default fisio/nutricao (opt-in granular) |
+| 5 — Workspace interno do profissional | notas privadas, hipóteses diagnósticas, avaliação de aderência, anotações comportamentais | **Nunca cruza tenant** — nem é exibido pro paciente (acessos cross-tenant em `/meu/privacidade/acessos` mostram apenas quem leu seus dados, não o que pensaram) |
 
 ### Regras duras
 

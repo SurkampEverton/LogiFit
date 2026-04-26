@@ -47,7 +47,7 @@ A superfície é grande porque cada módulo expõe Server Actions ao LLM. O thre
 - Prompt injection multi-turn (LLM ataca a si mesmo via histórico de conversa)
 - Cross-tool chaining (LLM combina insight + write para extrair dado que não deveria — ex: lista members + propõe ação só pra "vazar" lista no diálogo)
 - BYOK (tenant configura modelo próprio Anthropic/OpenAI) — provider externo lê todos prompts; declarar como sub-processor + DPA (ADR 0067)
-- Generative UI (Sprint 28) — LLM gera componentes; validar Zod por tool (ADR 0034 esperado)
+- Generative UI (Sprint 28) — LLM gera componentes; validar Zod por tool ([ADR 0085 esperado, Sprint 28](../roadmap.md) — realocado de 0034 que foi para Sprint 15 workflow AP)
 - Modo Coach (ADR 0074) — assistente embarcado em PWA mobile, novo vetor
 
 ## Referências
