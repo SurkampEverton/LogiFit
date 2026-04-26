@@ -32,6 +32,7 @@ Catálogo de tipos de avaliação (bioimpedância, dobras cutâneas, antropometr
 - Teste E2E: registrar 3 avaliações de bioimpedância em datas diferentes → gráfico mostra tendência
 - Teste E2E: anamnese Academia vira registro em `assessments` com respostas estruturadas
 - Seed: 3 tipos padrão + 2 avaliações populadas por member de cenário canônico
+- **RIPD [`docs/compliance/ripd/v1.0-avaliacoes-fisicas.md`](../compliance/ripd/v1.0-avaliacoes-fisicas.md)** publicado e assinado pelo DPO antes do feature flag `avaliacoes_v1` ir a produção (regra 29 + ADR 0054); cobre antropometria + anamnese + bioimpedância — toda categoria é health_data art. 11
 
 ## Dependências
 

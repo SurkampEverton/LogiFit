@@ -41,7 +41,7 @@ Prescrição de suplementos (vitaminas, minerais, fitoterápicos) como entidade 
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0037 (esperado)** — Suplementação separada de alimentos: tabelas distintas (`supplements`, `supplement_prescriptions`) por posologia diferente, regulamentação ANVISA e flux de prescrição próprio.
+- **ADR 0082 (esperado)** — Suplementação separada de alimentos: tabelas distintas (`supplements`, `supplement_prescriptions`) por posologia diferente, regulamentação ANVISA e flux de prescrição próprio. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0037 já alocado a Sprint 17 Open Finance.)
 - **Pergunta aberta:** fonte dos valores de referência laboratorial — SBAC (Sociedade Brasileira de Análises Clínicas)? Manual curado pela LogiFit? Começar com curado + revisão semestral.
 
 ## Módulos entregues
@@ -110,7 +110,7 @@ Em `packages/db/schema/nutri.ts`:
 - [ ] Integração com régua (Sprint 13): `lab_result.alert_raised` pode disparar notificação ao profissional
 - [ ] PDF do plano (Sprint 29) inclui seção de suplementação
 - [ ] Feature flag `nutri_suplementos_exames_v1`
-- [ ] ADR 0037 publicado
+- [ ] ADR 0082 publicado
 - [ ] **RIPD `docs/compliance/ripd/v1.0-nutri-exames.md`** publicado e assinado pelo DPO antes do feature flag ir a produção (regra 29 + ADR 0054); cobre `lab_results` + `supplement_prescriptions` + interações; retenção 20a (Lei 13.787 — exames laboratoriais); template em [`_template.md`](../compliance/ripd/_template.md)
 
 ## Stretch
@@ -132,7 +132,7 @@ Em `packages/db/schema/nutri.ts`:
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
 - [ ] Roadmap: sprint 26 → `done`
-- [ ] ADR 0037 publicado
+- [ ] ADR 0082 publicado
 
 ## Retro
 

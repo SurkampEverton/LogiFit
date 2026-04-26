@@ -39,6 +39,7 @@ Portal web self-service do paciente/aluno, entregue como PWA para funcionar como
   - `/meu/dashboard`: pedidos pendentes em destaque, vínculos ativos resumidos, atalho pra "convidar profissional"
 - Teste E2E cross-tenant: paciente revoga acesso de Tenant X via swipe → próxima query do profissional do Tenant X retorna `FORBIDDEN` → audit registra evento de revogação
 - Teste E2E alertas: paciente vê alerta cross-prescription gerado por personal Maria → clica "ver detalhes" → entende justificativa registrada
+- **RIPD [`docs/compliance/ripd/v1.0-portal-paciente.md`](../compliance/ripd/v1.0-portal-paciente.md)** publicado e assinado pelo DPO antes do feature flag `portal_paciente_v1` ir a produção (regra 29 + ADR 0054); cobre canal de exercício LGPD art. 18 (acesso, correção, anonimização, portabilidade, revogação consent) com auditoria por acesso member
 
 ## Dependências
 

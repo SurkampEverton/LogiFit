@@ -33,7 +33,7 @@ App nativo iOS + Android (Expo + React Native) para aluno/paciente, expandindo o
 
 - ADR 0045 (esperado) — Stack mobile: Expo bare workflow vs managed; React Native vs Flutter
 - ADR 0046 (esperado) — Estratégia de release (app stores vs OTA Expo Updates)
-- ADR 0080+ (a alocar quando sprint começar) — Auth no app: BetterAuth same JWT vs OAuth nativo (Apple Sign-in mandatório); Política de versionamento + EOL de versões antigas. Numeração na sequência continuada (>=0080) já que faixa reservada 0011-0046 estará esgotada.
+- ADR 0084+ (a alocar quando sprint começar) — Auth no app: BetterAuth same JWT vs OAuth nativo (Apple Sign-in mandatório); Política de versionamento + EOL de versões antigas. Numeração ≥0084 (0080-0083 já consumidos pelas Sprints 29/30/31 — auditoria 12).
 
 ## ADRs já fechados que se aplicam
 

@@ -36,8 +36,8 @@ Banco de dados nutricional nacional (TACO — Tabela Brasileira de Composição 
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0035 (esperado)** — Banco de alimentos: TACO como seed global (domínio público via embrapa); estrutura `foods` + `food_nutrients` (1:N) OU `nutrients` em `jsonb` da própria row. Trade-off: jsonb mais simples, dedicated 1:N mais queryable. Decisão: **jsonb com schema validado via Zod** (≤30 nutrientes fixos, busca nutricional via operadores jsonb do Postgres).
-- **ADR 0036 (esperado)** — Plano alimentar: modelo `meal_plans` → `meal_plan_meals` → `meal_items`. Cálculo via função pura `calculateMealPlanNutrition(plan)` no servidor — reexecuta a cada mudança. Substituição via `food_equivalences` pré-calculadas por categoria + faixa calórica.
+- **ADR 0080 (esperado)** — Banco de alimentos: TACO como seed global (domínio público via embrapa); estrutura `foods` + `food_nutrients` (1:N) OU `nutrients` em `jsonb` da própria row. Trade-off: jsonb mais simples, dedicated 1:N mais queryable. Decisão: **jsonb com schema validado via Zod** (≤30 nutrientes fixos, busca nutricional via operadores jsonb do Postgres). (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0035 já alocado a OCR boleto, 0036 a Sprint 16 rateio intercompany.)
+- **ADR 0081 (esperado)** — Plano alimentar: modelo `meal_plans` → `meal_plan_meals` → `meal_items`. Cálculo via função pura `calculateMealPlanNutrition(plan)` no servidor — reexecuta a cada mudança. Substituição via `food_equivalences` pré-calculadas por categoria + faixa calórica.
 
 ## Módulos entregues
 

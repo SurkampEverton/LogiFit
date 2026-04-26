@@ -52,7 +52,7 @@ Testes E2E:
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0038 (esperado)** — Teleconsulta provider. Opções: Daily.co (simples, pay-per-use, boa reputação), Whereby Embed (white-label, plano fixo), Jitsi auto-hospedado (open source, operação própria), Twilio Video (robusto, caro). Critérios: LGPD (dados médicos via data processing agreement), custo por minuto, latência no Brasil, qualidade de gravação. Decisão com POC no início do sprint.
+- **ADR 0083 (esperado)** — Teleconsulta provider. Opções: Daily.co (simples, pay-per-use, boa reputação), Whereby Embed (white-label, plano fixo), Jitsi auto-hospedado (open source, operação própria), Twilio Video (robusto, caro). Critérios: LGPD (dados médicos via data processing agreement), custo por minuto, latência no Brasil, qualidade de gravação. Decisão com POC no início do sprint. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0038 já alocado a Sprint 17 NF-e recepção.)
 - **Pergunta aberta:** diário alimentar — paciente pode registrar sem plano ativo? Sim, permite; valor ainda é rastreabilidade.
 
 ## Módulos entregues
@@ -102,7 +102,7 @@ Em `packages/db/schema/diario.ts`:
 
 Em `packages/db/schema/teleconsulta.ts`:
 
-- `teleconsultation_sessions` — `id`, `tenant_id`, `appointment_id`, `consulta_id nullable`, `provider text` (do ADR 0038), `room_id text`, `started_at nullable`, `ended_at nullable`, `recording_storage_path nullable`, `transcript_storage_path nullable`, `recording_consent_granted bool`, `transcription_consent_granted bool`, `participants_log jsonb`
+- `teleconsultation_sessions` — `id`, `tenant_id`, `appointment_id`, `consulta_id nullable`, `provider text` (do ADR 0083), `room_id text`, `started_at nullable`, `ended_at nullable`, `recording_storage_path nullable`, `transcript_storage_path nullable`, `recording_consent_granted bool`, `transcription_consent_granted bool`, `participants_log jsonb`
 
 **RLS:** diário — member vê os seus; nutri vê dos pacientes em scope. Teleconsulta — member vê sessões próprias; profissional vê sessões em scope. Dado clínico (regra 25).
 
@@ -117,7 +117,7 @@ Em `packages/db/schema/teleconsulta.ts`:
 
 - [ ] Schema Drizzle: `meal_log_entries`, `meal_log_reviews`, `teleconsultation_sessions`
 - [ ] RLS + audit + franchise
-- [ ] POC dos providers (ADR 0038) + escolha final com justificativa
+- [ ] POC dos providers (ADR 0083) + escolha final com justificativa
 - [ ] Wrapper de teleconsulta em `packages/ai/teleconsulta/provider.ts` (interface)
 - [ ] API Routes de upload + webhook
 - [ ] UI paciente em `/meu/diario` (mobile-first)
@@ -128,8 +128,8 @@ Em `packages/db/schema/teleconsulta.ts`:
 - [ ] Integração conquistas: registrar 5 refeições → achievement
 - [ ] Widget "diário recente" em `/app/members/[id]` (slot `diario`): `{ slot: 'diario', requiredPermissions: ['nutri.read'], requiredVertical: 'nutri', consentPurpose: null, showWhen: (m) => m.has_active_meal_plan }`
 - [ ] Feature flags `diario_v1` e `teleconsulta_v1`
-- [ ] ADR 0038 publicado
-- [ ] **RIPD `docs/compliance/ripd/v1.0-diario-alimentar.md`** publicado e assinado pelo DPO antes do feature flag `diario_v1` ir a produção (regra 29 + ADR 0054); cobre `food_log` (consent específico do titular) + retenção 6 meses raw + agregado 5 anos
+- [ ] ADR 0083 publicado
+- [ ] **RIPD [`docs/compliance/ripd/v1.0-nutri-diario.md`](../compliance/ripd/v1.0-nutri-diario.md)** publicado e assinado pelo DPO antes do feature flag `diario_v1` ir a produção (regra 29 + ADR 0054); cobre `food_log` (consent específico do titular) + retenção 6 meses raw + agregado 5 anos
 - [ ] **RIPD `docs/compliance/ripd/v1.0-teleconsulta.md`** publicado e assinado pelo DPO antes do feature flag `teleconsulta_v1` ir a produção (regra 29 + ADR 0054); cobre gravação de áudio/vídeo + transcrição STT (Groq Whisper) + consent explícito de gravação no início da sessão; retenção 20a (Lei 13.787 — vincula a prontuário); template em [`_template.md`](../compliance/ripd/_template.md)
 
 ## Stretch
@@ -155,7 +155,7 @@ Em `packages/db/schema/teleconsulta.ts`:
 - [ ] Migrations aplicadas
 - [ ] CHANGELOG atualizado
 - [ ] Roadmap: sprint 27 → `done`
-- [ ] ADR 0038 publicado
+- [ ] ADR 0083 publicado
 
 ## Retro
 

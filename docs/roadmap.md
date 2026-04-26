@@ -170,7 +170,16 @@ Sprints existentes que ainda não declaram esse item explicitamente herdam a reg
 
 ### Numeração pós-0046 (faixa fora-de-sprint)
 
-A faixa **0011-0046 está reservada** (acima); a faixa **0047+ é alocada sequencialmente** para ADRs **fora-de-sprint** (decisões transversais que não nascem dentro de uma sprint específica — DPO, hospedagem, passaporte, fiscal arquitetural). Atualmente: 0047-0050 (decisões recentes), 0051 livre, 0052-0079 publicados sequencialmente. **Próximo ADR fora-de-sprint disponível: 0080+**. Caso um sprint reservado precise produzir ADR mas a faixa 0011-0046 já alocou outro tema correlato, alocar próximo número livre acima de 0080 e referenciar back na tabela acima.
+A faixa **0011-0046 está reservada** (acima); a faixa **0047+ é alocada sequencialmente** para ADRs **fora-de-sprint** (decisões transversais que não nascem dentro de uma sprint específica — DPO, hospedagem, passaporte, fiscal arquitetural). Atualmente: 0047-0050 (decisões recentes), 0051 livre, 0052-0079 publicados sequencialmente. **Próximo ADR fora-de-sprint disponível: 0084+**. Caso um sprint reservado precise produzir ADR mas a faixa 0011-0046 já alocou outro tema correlato, alocar próximo número livre acima de 0080 e referenciar back na tabela acima.
+
+**Realocações da faixa 0011-0046 → 0080+** (auditoria 12 — 2026-04-25, resolveu colisões herdadas):
+
+| ADR | Sprint que produz | Tema | Por que migrou |
+|---|---|---|---|
+| **0080** | Sprint 29 | Banco de alimentos TACO + estrutura `foods`/jsonb | 0035 já alocado a OCR boleto (Accepted) |
+| **0081** | Sprint 29 | Plano alimentar (`meal_plans` → `meal_plan_meals` → `meal_items`) | 0036 alocado a Sprint 16 rateio intercompany |
+| **0082** | Sprint 30 | Suplementação separada de alimentos (`supplements`) | 0037 alocado a Sprint 17 Open Finance |
+| **0083** | Sprint 31 | Teleconsulta provider (Daily/Whereby/Jitsi/Twilio) | 0038 alocado a Sprint 17 NF-e recepção |
 
 ## Operação
 

@@ -31,6 +31,7 @@ Biblioteca de exercícios com vídeos + montagem de treinos + atribuição (pres
   - **Restrição motora não respeitada:** prescreveu deadlift mas paciente tem restrição "sem agachamento profundo" cadastrada por fisio em outro tenant → alerta vermelho
   - Banner exibido **antes** de `prescribeWorkout` salvar; profissional pode: (a) ajustar e re-tentar; (b) prosseguir mesmo assim com justificativa registrada em `cross_prescription_alerts.acknowledged_with_reason`
 - Teste E2E cross-prescrição: paciente Maria com dieta 1.400 kcal de Tenant Nutri Ana → personal Maria de Tenant Academia Forma tenta prescrever HIIT 5x/semana → banner aparece + alerta gravado
+- **RIPD [`docs/compliance/ripd/v1.0-prescricoes.md`](../compliance/ripd/v1.0-prescricoes.md)** publicado e assinado pelo DPO antes do feature flag `prescricoes_v1` ir a produção (regra 29 + ADR 0054); CI bloqueia se módulo prescrições ativo sem RIPD vigente
 
 ## Dependências
 

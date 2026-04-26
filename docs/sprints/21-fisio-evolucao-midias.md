@@ -22,6 +22,7 @@ Registro rápido de evolução do paciente por sessão (modelo SOAP — Subjetiv
 - Regra 25 respeitada (franchise — nunca cruza company)
 - Teste E2E: registrar evolução com foto de raio-X + vídeo de execução; verificar URL expira em 10min
 - Seed: 3 evoluções por paciente fisio de teste
+- **RIPD [`docs/compliance/ripd/v1.0-evolucao-midias.md`](../compliance/ripd/v1.0-evolucao-midias.md)** publicado e assinado pelo DPO antes do feature flag `evolucao_midias_v1` ir a produção (regra 29 + ADR 0054); cobre foto/vídeo de paciente (mídia clínica + biometria latente), retenção 20a (Lei 13.787 + COFFITO 415) com cold storage Parquet a partir de ano 2
 
 ## Dependências
 
