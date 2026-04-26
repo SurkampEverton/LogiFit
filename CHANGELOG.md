@@ -6,6 +6,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — 17ª auditoria 2026-04-25 (gap de schema em ADR 0064)
+
+3 agentes Explore em paralelo (qualidade interna dos stubs, ADRs internos, drift cross-doc). Lint automatizada (4 validações) já cobria o grosso. **1 bug real** encontrado (drift cross-doc retornou ZERO):
+
+- [ADR 0064:301-305](docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md): seção "Fallback cascade" diz `Audit marca fallback_used=true` mas o schema de `ai_audit_log` no mesmo ADR (linhas 187-205) não declarava a coluna `fallback_used`. Adicionada `fallback_used bool` ao schema com comentário explicativo. Quem implementar Sprint 06 agora encontra coluna coerente com o comportamento descrito.
+
+**Falsos positivos descartados:**
+- RIPDs citam ADRs 0023/0024/0032/0043/0044 (todos esperados na faixa reservada — design documentado em roadmap)
+- Parecer DPO "pendente" em 6 RIPDs stubs (design — viram vigente quando sprint correspondente roda)
+- Threat model passaporte com "implementada a partir de Sprint 02" (wording aceitável)
+- Runbooks com header "(a expandir)" com conteúdo parcial (coerente — esqueleto inicial)
+- Drift semântico cross-doc: agente verificou 13 pontos críticos (stack, planos, autorização, multi-empresa, regulações, regras digest, módulos, DPO, passaporte, IA CFM, LGPD, cenários, plano-estrutura) — ZERO drifts
+
 ### Docs+tooling — 16ª auditoria 2026-04-25 (14 DoDs com sprint number errado + validação D na lint)
 
 3 agentes Explore em paralelo. Lint automatizada (criada na 15ª) já cobria 3 classes; auditoria manual focou em bugs semânticos. Achado mais sério: **padrão sistemático de copy-paste** em DoDs de sprints.

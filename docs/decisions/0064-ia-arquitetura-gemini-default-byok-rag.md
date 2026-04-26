@@ -199,6 +199,7 @@ ai_audit_log              -- já previsto em 0053; detalhado aqui
   cost_usd_cents int
   latency_ms int
   cache_hit bool
+  fallback_used bool            -- true quando provider principal falhou (429/500/timeout) e cascade pegou
   human_decision text nullable  -- 'accepted'|'edited'|'rejected'|null (quando não clínica)
   is_sensitive bool             -- ADR 0053 classificação SaMD II+
   at timestamp
