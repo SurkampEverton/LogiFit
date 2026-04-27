@@ -51,7 +51,7 @@ Catálogos CID-11 + CIF vinculados ao atendimento, templates por especialidade (
 ## Decisões tomadas / ADRs esperados
 
 - **ADR 0028 (esperado)** — CID-11 + CIF como catálogos globais versionados; update anual via LogiFit admin (seed de release), não editáveis por tenant. Vinculação via `consulta_cids` (M:N) e `consulta_cifs`.
-- **ADR 0032 (esperado)** — Política de fechamento de prontuário por profissão: ICP-Brasil obrigatório (CFM), opcional (COFFITO) ou lacre autenticado (CFN). Matriz `signature_policies (profession, mode, min_cert_level, requires_mfa)`. Referencia CFM 2.299/2021, COFFITO 414/2012, CFN 599/2018.
+- **[ADR 0032](../decisions/0032-assinatura-prontuario-por-profissao.md) (Accepted — formalizado 2026-04-27)** — Política de fechamento de prontuário por profissão via tabela `signature_policies` (catálogo global LogiFit seedado, modos `icp_required`/`authenticated_lock`/`icp_optional`) + `tenant_signature_overrides` (só endurece) + wrapper `requireSignaturePolicy()` integrado a regra 39 (hash chain) + regra 43 (MFA recente <15min). Cobre CFM 2.299/2021, COFFITO 414/2012, CFN 599/2018, Lei 9.696/1998.
 - **Pergunta aberta:** biblioteca de assinatura digital — Cert.Sign vs Bry vs Vaultsign (HSM) vs A3 via extensão do navegador? Fechar no início do sprint.
 
 ## Módulos entregues

@@ -31,6 +31,9 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 - PostHog registra pageview
 - Tokens "Equilíbrio Vital" aplicados em componente de teste (light/dark sem sombras residuais)
 - **Idiomas: pt-BR default; en-US e es-419 funcionais;** troca via cookie `NEXT_LOCALE` + inferência por `Accept-Language`
+- **Suíte `smoke/` Playwright** com 10 esqueletos (`test.skip` com nome do caso conforme ADR 0090 §6) roda em <2min em todo PR; suíte `critical/` com 12 esqueletos (ADR 0090 §5); ambas usam matriz Playwright + helpers `auth.ts`/`seed.ts`/`time.ts`
+- **Coverage gate** ativo: ≥80% em `packages/errors|security|db/policies` (camadas de defesa, regra 18), ≥70% em `packages/db`, ≥60% em Server Actions; CI falha se threshold não bate
+- **Script `pnpm compliance:check`** valida: RIPD em `Status: Vigente` com hash batendo, ADR esperado de cada sprint publicado, threat-model presente para feature crítica, schema `ai_audit_log` com colunas obrigatórias (regra 28)
 
 ## Dependências
 
@@ -45,6 +48,7 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 - [ADR 0073 — Postura de segurança (defesa em profundidade)](../decisions/0073-postura-seguranca-defesa-em-profundidade.md) — **entrega camadas 1, 3 e 6 aqui** (security headers + CSP nonce + rate limit global + safeFetch + scanUpload + secret scanning + Dependabot/OSV-scanner + SBOM + `/.well-known/security.txt` + página `/seguranca` + regras 35-38 ativas em CI)
 - [ADR 0078 — Hospedagem em duas fases](../decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md) — **8 regras de portabilidade ativas desde aqui** (storage adapter pattern, RLS em SQL puro, JWT cookie próprio, sem Edge Functions, lint `no-supabase-functions` + `no-direct-supabase-query`)
 - [ADR 0089 — Sistema de mensagens padronizadas](../decisions/0089-sistema-mensagens-padronizadas.md) — **entrega catálogo de 6 tipos aqui** (Toast/Banner/AlertDialog/ConfirmDialog/PromptDialog/FormError + Sonner + helpers `toast`/`confirm`/`prompt` + `<Toaster nonce>` + lints `no-window-alert` + `no-hardcoded-toast-message` + regra 45 ativa em CI)
+- [ADR 0090 — Estratégia de testes (taxonomia T1-T21 + 3 níveis + suítes E2E)](../decisions/0090-estrategia-de-testes.md) — **entrega infra base aqui**: estrutura de 10 suítes E2E (`smoke`/`critical`/`regression`/`i18n`/`responsiveness`/`a11y`/`visual`/`perf`/`security`/`external`), helpers (`auth`/`seed`/`time`/`webhooks`/`db`), 10 esqueletos `smoke/` + 12 esqueletos `critical/` (`test.skip` com nome do caso), Vitest coverage gate por package, ferramentas instaladas (MSW + fast-check + axe-playwright + k6 + tsd), script `compliance:check`, helper `twoConnectionsTest()` (T6 RLS comportamental). Lost Pixel/Stryker/jazzer.js adiados para sprint dono (sem consumidor real ainda)
 
 ## Commit
 
@@ -154,6 +158,34 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 - [ ] Logtail/Axiom para logs estruturados (era stretch, agora core)
 - [ ] Pre-commit hook com biome + i18n:check
 
+**Estratégia de testes (ADR 0090 + regra 18 expandida):**
+
+- [ ] **Estrutura de pastas E2E** em `apps/web/e2e/`: `smoke/` · `critical/` · `regression/` · `i18n/` · `responsiveness/` · `a11y/` · `visual/` · `perf/` · `security/` · `external/` · `fixtures/` · `pages/` (Page Object Models) · `helpers/` · `_template.spec.ts` · `_mocks/` (MSW handlers)
+- [ ] **Helpers em `apps/web/e2e/helpers/`** (ADR 0090 §8 anti-flakiness):
+  - `auth.ts` — `loginAs(persona, scenario)` retorna `storageState` cacheado por persona × cenário (super_admin, tenant_owner, gerente, recepcao, fisio, nutri, member, contador_externo); login via API direto + cookie em `beforeAll`, nunca UI repetida
+  - `seed.ts` — carrega 1 dos 5 cenários canônicos do CLAUDE.md (rede própria / franquia clássica / franquia + passaporte / mix / solo) em schema PG dedicado por worker (template + clone)
+  - `time.ts` — `freezeAt('2026-04-27T10:00:00-03:00')` via `page.clock.install()`; obrigatório em todo teste com data
+  - `webhooks.ts` — `replayWebhook({provider, externalId, payload})` com HMAC válido; usado por T7 idempotência (Sprint 04+)
+  - `db.ts` — `twoConnectionsTest(tenantA, tenantB, fn)` abre 2 conexões PG distintas com `set_config('request.jwt.claims', ...)` por conexão; T6 RLS comportamental
+  - `waits.ts` — proibido `waitForTimeout()`; só `waitForResponse()`/`waitForSelector()`/`waitForLoadState()`
+- [ ] **Matriz Playwright** em `apps/web/playwright.config.ts`: viewports {390, 768, 1280} × locales {pt-BR, en-US, es-419} × browsers {Chromium, WebKit}; padrão por teste = 1 viewport × pt-BR × Chromium; marcadores `@responsive` e `@i18n` expandem; smoke + critical rodam em 2 browsers
+- [ ] **10 esqueletos suíte `smoke/`** com `test.skip(true, 'preencher no sprint dono')` (ADR 0090 §6): `auth-magic-link.spec.ts` · `tenant-switch.spec.ts` · `member-create.spec.ts` · `agenda-book.spec.ts` · `asaas-checkout.spec.ts` · `dashboard-by-role.spec.ts` · `global-search.spec.ts` · `messages-catalog.spec.ts` · `security-headers.spec.ts` · `mfa-recent-required.spec.ts` — roda em <2min em todo PR
+- [ ] **12 esqueletos suíte `critical/`** com `test.skip` (ADR 0090 §5): cross-tenant RLS · trial anonymize · cross-tenant audit log · constraint global passaporte · Asaas idempotência · cross-prescrição · NF-e 210210 · cutover hash chain · ICP-Brasil portal ITI · TISS XSD · revogar vínculo · regra 25 franchise — roda em PR de release + nightly
+- [ ] **Suítes vazias com 1 teste exemplo** em `regression/`, `a11y/` (axe-playwright em `/`), `i18n/` (smoke já planejado em `i18n-smoke.spec.ts`), `responsiveness/` (já planejado), `visual/` (sem baseline ainda — ferramenta Lost Pixel adiada), `perf/` (k6 instalado, sem cenário), `security/` (`security-headers.spec.ts` planejado), `external/` (vazio até Sprint 04)
+- [ ] **CI jobs por suíte** em `.github/workflows/ci.yml`:
+  - PR: `smoke` (bloqueia merge) + `i18n` (se tocou `messages/`) + `responsiveness` (se tocou `packages/ui/`) + `security` (se tocou auth/security) + `visual` (se tocou UI, sem baseline ainda)
+  - PR de release: + `critical` (bloqueia deploy prod)
+  - Nightly: `regression` + `a11y` + `perf` + `external`
+  - Schedule semanal: `external` com sandbox real (Asaas/Focus/Twilio)
+- [ ] **Vitest config** com `--coverage` + threshold por package (regra 18 expandida): `packages/errors|security|db/policies` ≥80% · `packages/db` ≥70% · Server Actions ≥60%
+- [ ] **Ferramentas instaladas (T7-T13 + T18)** com `pnpm add -D` em workspace root: `msw` (T7+T8) · `fast-check` (T10) · `@axe-core/playwright` (T5) · `tsd` (T9) · `k6` via Docker em CI (T13) · `@mswjs/data` para fixtures
+- [ ] **Adiados para sprint dono** (sem consumidor real no Sprint 00): T4 Lost Pixel (Sprint 00b ou 02 — primeira UI estabilizada) · T12 Stryker (Sprint 04 ou 23 — primeira função fiscal/clínica crítica) · T21 jazzer.js (Sprint 15 — primeiro parser real)
+- [ ] **`packages/db/tests/two-connections-test.ts` (T6)** — helper `twoConnectionsTest(scenarioName, fn)` abre 2 conexões PG distintas com claims JWT diferentes; teste exemplo cria tabela `_dummy_t6` com `tenant_id` + RLS, INSERT com tenant A, prova SELECT com tenant B retorna 0 rows
+- [ ] **`packages/types/tests/envelope.test-d.ts` (T9)** — type test do envelope `{ok: true, data: T} | {ok: false, error: ApiError}` (ADR 0071) com `expectType<>` validando 16 códigos fechados
+- [ ] **`scripts/compliance-check.ts` (T19)** — script CI que valida: (a) cada arquivo `docs/compliance/ripd/v*.md` tem `Status` válido + hash SHA-256 do conteúdo bate com frontmatter (regra 29 — `scripts/hash-ripd.ts` já planejado); (b) cada sprint em `doing` tem ADR esperado publicado (cruza com `scripts/docs-check.mjs` linha "ADR esperado"); (c) cada feature crítica em `docs/threat-models/` tem STRIDE 6-categorias mínimo; (d) schema `ai_audit_log` (Drizzle) tem colunas obrigatórias (`input`, `output`, `model`, `prompt_version`, `human_decision`, `guardrail_result`, `fallback_used`); rodado por `pnpm compliance:check` em CI
+- [ ] **Convenção de DoD** em `_template.md` de sprint (a criar — ainda não existe template) com bloco "Estratégia de testes (ADR 0090)" pré-preenchido: linha-base + obrigatórios extras + recomendados aplicados + recomendados em débito (issue criada) + opcionais avaliados
+- [ ] **README atualizado** com seção "Como testar" linkando para ADR 0090 + comando `pnpm test:smoke` (rapidão local) e `pnpm test:critical` (antes de PR de release)
+
 **Observabilidade de IA (novo):**
 
 - [ ] `packages/ai/observability.ts` — wrapper de logging padrão para chamadas IA (tokens, latência, modelo, cache hit/miss, custo)
@@ -256,7 +288,12 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 - [ ] Sentry + PostHog capturando em dev
 - [ ] Tokens "Equilíbrio Vital" aplicados sem sombras residuais do shadcn
 - [ ] LocaleSwitcher funcional
-- [ ] CHANGELOG.md entrada `[Unreleased] - Added — Monorepo, CI, observabilidade, i18n 3 idiomas`
+- [ ] **Suíte `smoke/` com 10 esqueletos** (`test.skip` nomeados conforme ADR 0090 §6); roda em <2min em PR; CI bloqueia merge se 1 falha
+- [ ] **Suíte `critical/` com 12 esqueletos** (ADR 0090 §5); CI bloqueia deploy prod se 1 falha
+- [ ] **Coverage gate ativo**: ≥80% em `packages/errors|security|db/policies`; ≥70% em `packages/db`; ≥60% em Server Actions; CI falha se threshold não bate (regra 18 expandida)
+- [ ] **`pnpm compliance:check` verde** (RIPD hash + ADR esperado + threat-model + schema `ai_audit_log`)
+- [ ] **Helper `twoConnectionsTest()` funcional** com teste exemplo provando isolamento RLS (T6)
+- [ ] CHANGELOG.md entrada `[Unreleased] - Added — Monorepo, CI, observabilidade, i18n 3 idiomas, estratégia de testes ADR 0090`
 - [ ] Roadmap atualizado (item #1 → done)
 
 ## Retro

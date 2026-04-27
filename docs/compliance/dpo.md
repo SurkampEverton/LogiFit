@@ -13,6 +13,43 @@
 - **Vigência:** até **50 tenants pagantes** OU **1º tenant hospital/Enterprise**, o que ocorrer primeiro
 - **Próxima revisão obrigatória:** 2026-10-25 (semestral)
 
+## DPO suplente / cobertura (férias, incapacitação, indisponibilidade)
+
+> **Obrigatório por LGPD art. 41** — Encarregado deve estar sempre disponível dentro do SLA. Solo dev sem suplente declarado é não-conformidade que ANPD pode autuar.
+
+### Cobertura curta (até 7 dias — férias planejadas, viagem)
+
+- **Estratégia:** auto-resposta `privacidade@logifit.com.br` informando indisponibilidade + canal de urgência (WhatsApp DPO ou email pessoal)
+- **Resposta de titular adiada** dentro do SLA legal de 15 dias úteis (LGPD art. 18) — ainda OK
+- **Incidente LGPD** durante esse período: titular ainda recebe email; runbook [incidente-lgpd-72h.md](../runbooks/incidente-lgpd-72h.md) tem `escalation_email` para advogado externo (item abaixo)
+
+### Cobertura longa (>7 dias — incapacitação, internação)
+
+- **Suplente designado:** **a contratar** — assessoria jurídica externa especializada em LGPD com SLA de cobertura de 72h
+- **Status atual:** **PENDENTE** — pré-acordo a fechar antes do **1º tenant pagante**. Bloqueador comercial.
+- **Candidatos avaliando** (atualizar quando contratado):
+  - [ ] Opice Blum Advogados (privacidade@opiceblum.com.br) — ~R$ 3-8k/mês
+  - [ ] BBL Advogados (LGPD especializada)
+  - [ ] Manesco Ramires Perez (escritório boutique privacidade)
+- **Escopo do contrato (mínimo):**
+  1. SLA de resposta a ANPD em 24h em casos de incidente
+  2. Cobertura férias/incapacitação do DPO interino (até 30 dias por evento)
+  3. Revisão semestral de RIPDs + sub-processadores
+  4. Drill simulado de incidente uma vez por ano
+
+### Drill obrigatório
+
+Antes do 1º tenant pagante, executar **simulação de incidente LGPD** com prazo de 72h:
+- Cenário: vazamento simulado de 50 emails de members
+- Objetivo: validar runbook + suplente externo + canal ANPD
+- Resultado documentado em `compliance_retention_log` + ajustes no runbook
+
+### Histórico de cobertura
+
+| Data | Período | DPO efetivo | Motivo | Resultado |
+|---|---|---|---|---|
+| (a preencher quando ocorrer) | | | | |
+
 ### Atribuições (LGPD art. 41 §2º)
 
 1. **Aceitar reclamações e comunicações dos titulares**, prestar esclarecimentos e adotar providências

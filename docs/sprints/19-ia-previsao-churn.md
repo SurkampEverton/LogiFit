@@ -30,8 +30,8 @@ Modelo preditivo de churn (probabilidade de cancelamento em 30/60/90 dias) consu
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0027 (esperado, no sprint)** — Estratégia de modelo: (a) API externa (Claude/GPT com prompt engineering — simples, caro, menos explicável); (b) modelo local via edge function Python (sklearn/XGBoost — mais complexo, controle total, custo menor); (c) serviço dedicado (Hugging Face Inference ou similar). Começar com (a) prompt engineering estruturado para ter baseline rápido; medir qualidade; migrar para (b) se volume justificar. Decisão no início do sprint após POC.
-- **Pergunta aberta:** granularidade de retreino — o modelo precisa retrainar com dados históricos ou heurística Claude basta? Depende do ADR 0027.
+- **[ADR 0027](../decisions/0027-estrategia-modelo-churn.md) (Proposed — formalizado 2026-04-27)** — Estratégia em 2 fases: **Fase 1 (este sprint)** Família A com Gemini 2.5 Flash via `task=classification` + `temperature=0` + cache 24h + schema Zod + fallback heurístico. **Fase 2 (pós 3 meses de dados)** migrar para Família B sklearn/XGBoost servido em Edge Function se gatilhos disparados (volume >500/dia OU precisão <70% OU latência P95 >500ms). Wrapper `predictChurn(memberId)` mantém assinatura entre fases.
+- **Pergunta aberta:** retreino mensal automático em Fase 2 vs trigger manual após análise de drift — decidir quando ADR de submissão da Fase 2 nascer.
 
 ## Módulos entregues
 

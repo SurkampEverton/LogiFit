@@ -6,6 +6,58 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — ADR 0090 + regra 18 expandida: estratégia de testes (taxonomia T1-T21 + 3 níveis + 10 suítes E2E) 2026-04-27
+
+Auditoria de testes nas 40 sprints (00 → 36 + 19b) identificou que infra de teste estava planejada (Vitest, Playwright, RLS check, 11 lints custom, i18n check) mas **sem estratégia formal**: faltava taxonomia, distinção entre obrigatório/recomendado/opcional, categorização das suítes E2E com gates por suíte, mapa "categoria de risco do sprint → testes obrigatórios", convenção anti-flakiness. ADR 0090 fecha isso e Sprint 00 materializa 18 dos 21 Ts (11 com código rodando + 7 com ferramenta pronta).
+
+**Adições:**
+
+- [docs/decisions/0090-estrategia-de-testes.md](docs/decisions/0090-estrategia-de-testes.md) — **Accepted.** Taxonomia fechada de 21 tipos canônicos (T1 unit, T2 integration testcontainer PG, T3 E2E Playwright, T4 visual Lost Pixel, T5 a11y axe-playwright, T6 RLS comportamental 2 conexões PG, T7 idempotência webhook, T8 contract MSW, T9 type-level tsd, T10 property-based fast-check, T11 snapshot determinístico PDF/XML, T12 mutation Stryker, T13 perf k6, T14 lint Biome custom, T15 SQL/migration linter, T16 smoke matrix 3×3×2, T17 QA scripted runbook, T18 chaos toxiproxy, T19 compliance verifier, T20 coverage gate, T21 fuzzing jazzer.js). 3 níveis de obrigatoriedade (Obrigatório bloqueia merge / Recomendado vira `test-debt` / Opcional avaliado caso a caso). 10 suítes E2E categorizadas (`smoke` <2min PR / `critical` <8min release / `regression` nightly / `i18n` / `responsiveness` / `a11y` / `visual` / `perf` / `security` / `external` schedule semanal). Top-12 "block release" + Top-10 "smoke" listados nominalmente. Mapa "categoria de risco → Ts extras" para 10 categorias (multi-tenant, webhook provider, cálculo financeiro, parser, IA SaMD, cross-tenant clínico, fiscal, clínico assinado, mobile/PWA, migração). 8 regras anti-flakiness. Convenção de citação no DoD com bloco padronizado. Status reavaliado pós-M3 (beta privado).
+
+**Atualizações:**
+
+- [docs/rules.md](docs/rules.md) — **regra 18** ampliada de "70% em `packages/db`, 60% em Server Actions" para incluir **80% em `packages/errors|security|db/policies`** (camadas de defesa) + referência canônica ao [ADR 0090](docs/decisions/0090-estrategia-de-testes.md) para estratégia completa (taxonomia + níveis + suítes E2E + gates + anti-flakiness). Cada sprint cita Ts específicos no DoD.
+- [docs/sprints/00-setup-infra.md](docs/sprints/00-setup-infra.md) — bloco "Estratégia de testes (ADR 0090)" com 18 itens executáveis na Faixa 1: estrutura de pastas `apps/web/e2e/{smoke,critical,regression,i18n,responsiveness,a11y,visual,perf,security,external}`, helpers (`auth.ts` storageState por persona × cenário, `seed.ts` 5 cenários canônicos, `time.ts` frozen clock, `webhooks.ts` `replayWebhook()`, `db.ts` `twoConnectionsTest()`), 10 esqueletos suíte `smoke/` + 12 esqueletos suíte `critical/` (`test.skip` com nome do caso), Vitest threshold por package, ferramentas instaladas (MSW, fast-check, axe-playwright, k6, tsd) + decisão de adiar (Lost Pixel, Stryker, jazzer.js para sprint dono), script `compliance:check`, helper `twoConnectionsTest()`. ADR 0090 listado em "Decisões tomadas".
+- [docs/sprints/_template.md](docs/sprints/_template.md) — bloco "Estratégia de testes (ADR 0090)" pré-preenchido entre "Commit" e "Stretch": campo de categoria de risco (multi-tenant / webhook / fiscal / clínico assinado / IA SaMD / etc), linha-base transversal default, 4 listas (Obrigatórios extras / Recomendados aplicados / Recomendados em débito com issue `test-debt` / Opcionais avaliados). DoD atualizado: item "Testes" cita ADR 0090 + coverage gate por package; item "Teste RLS" inclui `twoConnectionsTest()` comportamental além do `db:rls-check` estrutural. Novo sprint herda automaticamente o rito de declarar Ts no DoD.
+
+**Por que importa:** sem estratégia formal, sprints solo cortam teste primeiro pra caber em timebox; suítes E2E inflacionam sem critério; lacunas viram incidente pós-merge. Com ADR 0090: Obrigatório bloqueia CI (não negocia), Recomendado vira `test-debt` rastreável (não é "esquecido"), Opcional declarado no DoD (transparente). Top-12 "block release" são mínimo absoluto antes de prod — protegem incidente público (vazamento cross-tenant, receita dobrada, prazo SEFAZ, hash chain audit, assinatura ICP-Brasil, regra 25 franchise).
+
+### Docs — 19a auditoria: lacunas de planejamento + ADRs antecipados + plano ANVISA + suplente DPO + timeline 2026-04-27
+
+Auditoria profunda de planejamento e documentação identificou 3 falhas críticas (ADR 0032 inexistente, sub-processadores sem doc público, ANVISA com zero notificações emitidas), 2 média-altas (suplente DPO ausente, restore-test stub) e várias médias/baixas. Esta entrada formaliza correção das críticas e médias-altas + cria timeline absoluto.
+
+**Adições — ADRs antecipados** (regra de roadmap "sprint não entra em `doing` sem ADR esperado publicado"):
+
+- [docs/decisions/0025-provider-whatsapp.md](docs/decisions/0025-provider-whatsapp.md) — **Proposed.** BSP oficial Meta (Twilio Business API ou Gupshup BR — POC no Sprint 13); Z-API rejeitado por risco de ban. Abstração `WhatsAppProvider` por tenant; templates pré-aprovados; rate limit 3 msgs/hora/member; opt-in obrigatório com dupla confirmação; quiet hours 22h-7h.
+- [docs/decisions/0026-motor-regua-dsl.md](docs/decisions/0026-motor-regua-dsl.md) — **Proposed.** DSL JSON declarativa com 4 conceitos (`trigger`/`actions`/`stop_on`/`guards`) interpretada por motor único. Cron 5min + tabela `regua_jobs` idempotente + fallback de canal por action + dry-run nativo. Rejeita workflow externo (Temporal/n8n) por overhead.
+- [docs/decisions/0027-estrategia-modelo-churn.md](docs/decisions/0027-estrategia-modelo-churn.md) — **Proposed.** Estratégia em 2 fases: Fase 1 (Sprint 19) baseline via Gemini 2.5 Flash com `task=classification` + `temperature=0` + cache 24h; Fase 2 (pós 3 meses de dados) migrar para sklearn local servido em Edge Function se gatilhos disparados. Wrapper `predictChurn(memberId)` mantém assinatura entre fases.
+- [docs/decisions/0032-assinatura-prontuario-por-profissao.md](docs/decisions/0032-assinatura-prontuario-por-profissao.md) — **Accepted.** Tabela `signature_policies` (catálogo global LogiFit, seedado) com 4 modos (`icp_required`/`authenticated_lock`/`icp_optional`) + `tenant_signature_overrides` (só endurece, não afrouxa) + wrapper `requireSignaturePolicy()` integrado a regra 39 (hash chain) + regra 43 (MFA recente <15min). Cobre CFM 2.299/2021, COFFITO 414/415/2012, CFN 599/2018, Lei 9.696/1998. Provider ICP-Brasil em ADR de submissão durante Sprint 20 (BirdID/VaultID/Bry).
+
+**Adições — Compliance**:
+
+- [docs/compliance/sub-processors.md](docs/compliance/sub-processors.md) — **Documento público novo.** Lista canônica de 14 sub-processadores (espelho de [`docs/compliance/dpo.md`](docs/compliance/dpo.md)) servida em `logifit.com.br/sub-processors` com hash SHA-256 público. Fecha lacuna identificada na auditoria: tenant não tinha como saber quem processa seus dados. Política de mudança 30d antes + auditoria interna trimestral + endpoint de hash para detecção de mudança não-anunciada.
+- [docs/compliance/anvisa-notifications/2026-05-copilot-clinico-plano.md](docs/compliance/anvisa-notifications/2026-05-copilot-clinico-plano.md) — Plano de submissão ANVISA do Copilot SaMD II antes do fim Sprint 06. Cronograma de 8 etapas (classificação → ISO 14971 → manual técnico → submissão → protocolo → desbloqueio CI). Validação clínica interna comparativa com 200 casos sintéticos + revisor sênior externo CRM/CREFITO/CRN. Bloqueio explícito: feature em `disabled` indefinidamente se protocolo não chegar.
+
+**Atualizações**:
+
+- [docs/compliance/dpo.md](docs/compliance/dpo.md) — Seção "DPO suplente / cobertura" nova com cobertura curta (auto-resposta + escalação) e longa (assessoria jurídica externa pré-contratada — Opice Blum / BBL / Manesco em avaliação; pendente fechamento antes do 1º tenant pagante). Drill simulado de incidente LGPD obrigatório antes de produção.
+- [docs/runbooks/restore-test.md](docs/runbooks/restore-test.md) — Expandido de stub (43 linhas) para runbook executável (~150 linhas) com 6 critérios de sucesso, 4 fases (Preparação 15min · Restauração 60min/dump · Documentação 15min · Teardown 10min), passos `pg_restore` + `verify_audit_chain` + RLS check + âncora WORM, matriz de falha com severidade p0/p1/p2 + ações.
+- [CLAUDE.md](CLAUDE.md) §Stack — qualificou BYOK IA: explicitamente "**Anthropic Claude Opus/Sonnet recentes — não 3.5 nem Haiku** / OpenAI GPT-4 e superiores / Maritaca Sabiá com data residency BR" + lista de modelos deprecated proibidos (Claude 3.5, GPT-4o, Gemini 2.0, Grok 2). Resolve contradição com [ADR 0064 §Fora do escopo](docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md).
+- [docs/roadmap.md](docs/roadmap.md) §Mapeamento de ADRs — 0025/0026 marcados Proposed, 0027 movido de "reservado livre" para Sprint 19 Proposed (era 0040 antes — agora liberado), 0032 marcado Accepted; seção "Decisões pendentes" tachou itens resolvidos.
+
+**Adições — Planejamento**:
+
+- [docs/timeline.md](docs/timeline.md) — Documento novo com cronograma absoluto MVP (~14 meses calendar com buffer 15%), caminho crítico Sprint 00→19→19b, 8 marcos M1-M8, gates pré-Sprint obrigatórios (ANVISA antes de 06, drill antes de 19b, suplente DPO antes de 20), riscos P1/P2 por sprint (06 Copilot 5-6sem viola regra 9; 15 ERP 4sem candidato a quebra; 19b cutover 116 itens em 1.5-2sem). Buffer global 2 semanas/trimestre. Reavaliação obrigatória após M3 (beta privado) para decidir se Sprints 14-18 são MVP-must ou Fase 2.
+
+**Falhas identificadas mas não corrigidas neste commit** (rastreadas para sprints futuras):
+
+- Constraint global "1 active member por (paciente, tenant)" cross-tenant + sharding futuro (`tenants.shard_url`): necessita spike arquitetural pré-Sprint 02 — distributed lock vs registry table sem RLS vs redesenho. ADR 0077 não aborda implementação técnica.
+- ANVISA notificação Copilot precisa **execução humana** (cadastro gov.br + manual técnico + ISO 14971 + revisor sênior contratado) — plano criado, ação a executar pré-Sprint 06.
+- Suplente DPO externo precisa **contrato real** com escritório LGPD — placeholder criado, ação a executar pré-1º tenant pagante.
+- Break-even financeiro não simulado — pendente planilha de receita acumulada vs custo fixo nos primeiros 6 meses.
+- 11+ lints customizados sem política de manutenção/falsos positivos declarada.
+- Cookie isolation em custom domain (Pro+) não detalhado em ADR 0065.
+
 ### Docs+protótipo — ADR 0089 + regra 45: sistema de mensagens padronizadas 2026-04-26
 
 Catálogo fechado de 6 tipos para feedback ao usuário com proibição de `window.alert/confirm/prompt` desde o primeiro commit React. Resolve lacuna identificada: ADR 0071 estabelecia fundação backend (envelope `{ok, data | error}` + `system_alerts` realtime) e citava `sonner.toast()` em 1 parágrafo, mas faltava: (a) catálogo de tipos de mensagem, (b) contrato de API cliente, (c) substituição formal de alerts nativos do Chrome, (d) integração com tokens "Equilíbrio Vital", CSP nonce (regra 35), responsividade 3 viewports (regra 31), a11y (ARIA live, focus trap), i18n (regra 27), (e) composição com `<ActionConfirmDialog>` IA (ADR 0075).

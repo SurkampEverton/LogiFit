@@ -34,8 +34,8 @@ Integração WhatsApp (provider abstraído) **bidirecional** (outbound + inbound
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0025 (esperado, no sprint)** — Provider WhatsApp: Twilio Business API vs Z-API vs Meta Business API direto. Critérios: custo por conversa, risco de ban, latência de aprovação de templates. Decisão com POC no início do sprint.
-- **ADR 0026 (esperado)** — Motor de régua DSL: JSON schema validado por Zod. Estrutura: `{ trigger: { event, filter }, actions: [{ delay, channel, template, fallback }], stop_on: [events] }`. Evita código custom por tenant.
+- **[ADR 0025](../decisions/0025-provider-whatsapp.md) (Proposed — formalizado 2026-04-27)** — Provider WhatsApp: BSP oficial Meta (Twilio Business API ou Gupshup BR — POC no início do sprint); Z-API/whatsapp-web.js rejeitados por risco de ban. Abstração `WhatsAppProvider` por tenant; templates pré-aprovados; rate limit 3 msgs/hora/member; opt-in obrigatório. **Sub-decisão pendente (ADR de submissão durante sprint):** escolha final BSP entre Twilio e Gupshup com base no POC.
+- **[ADR 0026](../decisions/0026-motor-regua-dsl.md) (Proposed — formalizado 2026-04-27)** — Motor de régua DSL declarativa: JSON schema com 4 conceitos (`trigger`/`actions`/`stop_on`/`guards`) validado por Zod, motor único interpretando para todos os tenants. Cron 5min + tabela `regua_jobs` idempotente + fallback de canal por action + dry-run nativo + catálogo seed por tenant.
 - **ADR 0051 (accepted)** — WhatsApp inbound como canal multi-fluxo pluggable: hub central com identity matcher + intent router + classificador IA de anexos; sprints consumidores (15, 33, 12, 20) registram handlers próprios. Ver [ADR 0051](../decisions/0051-whatsapp-inbound-canal-multifluxo.md).
 
 ## Módulos entregues

@@ -78,11 +78,11 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 
 - Hardware da catraca + modalidade de auth (QR / facial / ambos) — Sprint 08 (ADR 0018)
 - DSL de regras de conquista — Sprint 09 (parte do ADR 0021)
-- Provider WhatsApp (Twilio / Z-API / Meta direto) — Sprint 13 (ADR 0025)
+- ~~Provider WhatsApp (Twilio / Z-API / Meta direto) — Sprint 13~~ — **resolvido** pelo [ADR 0025](decisions/0025-provider-whatsapp.md) (BSP oficial Meta — POC Twilio vs Gupshup no Sprint 13; Z-API rejeitado por risco de ban)
 - **Motor de rateio + modelo de intercompany** — Sprint 16 (ADR 0036)
 - **Provider Open Finance (Pluggy / Belvo / API direta) + provider NF-e recepção (Arquivei / Sieg / SEFAZ direto)** — Sprint 17 (ADRs 0037 e 0038)
 - **Adquirência: ordem de integração (Cielo/Stone/Rede/GetNet/PagSeguro) + antecipação** — Sprint 18 (ADR 0039)
-- Modelo de churn (API externa / local / serviço dedicado) — Sprint 19 (ADR 0040)
+- ~~Modelo de churn (API externa / local / serviço dedicado) — Sprint 19~~ — **resolvido** pelo [ADR 0027](decisions/0027-estrategia-modelo-churn.md) (Família A baseline LLM Gemini Flash → Família B sklearn pós-3 meses de dados)
 - Provider assinatura digital ICP-Brasil (Cert.Sign / Bry / Vaultsign) — Sprint 20 (parte do ADR 0041)
 - Submissão de guia TISS (manual vs automática SOAP) — Sprint 22 (parte do ADR 0042)
 - ~~Tributação em comissões (INSS/IR retidos ou só bruto) — Sprint 23~~ — **resolvido** pelo ADR 0061 (motor de retenções em AP e comissão/RPA)
@@ -136,21 +136,21 @@ ADRs no LogiFit seguem **numeração sequencial densa** com uma exceção legít
 | 0018 | Sprint 08 | Hardware da catraca + modalidade de auth | a produzir |
 | 0019 | Sprint 01b | RBAC: union user_roles + user_permissions com expires_at | a produzir |
 | 0020-0024 | reservados | (futuros, allotment livre) | livre |
-| 0025 | Sprint 13 | Provider WhatsApp (Twilio / Z-API / Meta direto) | a produzir |
-| 0026 | Sprint 13 | Motor declarativo de régua DSL JSON | a produzir |
-| 0027 | reservado | (livre — provavelmente Sprint 13/14) | livre |
+| [0025](decisions/0025-provider-whatsapp.md) | Sprint 13 | Provider WhatsApp (BSP oficial Meta — Twilio/Gupshup; Z-API rejeitado) | **Proposed (formalizado 2026-04-27)** |
+| [0026](decisions/0026-motor-regua-dsl.md) | Sprint 13 | Motor declarativo de régua DSL JSON (`trigger`/`actions`/`stop_on`/`guards`) | **Proposed (formalizado 2026-04-27)** |
+| [0027](decisions/0027-estrategia-modelo-churn.md) | Sprint 19 | Estratégia modelo churn (Família A LLM baseline → Família B sklearn Fase 2) | **Proposed (formalizado 2026-04-27)** |
 | 0028 | Sprint 20 | CID-11 + CIF como catálogos globais versionados | a produzir |
 | 0029 | Sprint 22 | Estrutura TISS/TUSS: schema + gerador XML | a produzir (detalha ADR 0079) |
 | 0030 | Sprint 22 | Pipeline atualização semestral terminologia ANS | a produzir (detalha ADR 0079) |
 | 0031 | Sprint 22 | Validador TISS proativo XSD + regras de negócio | a produzir (detalha ADR 0079) |
-| 0032 | Sprint 20 / 26 | Política de fechamento de prontuário + magic link member auth | a produzir |
+| [0032](decisions/0032-assinatura-prontuario-por-profissao.md) | Sprint 20 | Política de fechamento de prontuário por profissão (`signature_policies` ICP-Brasil/lacre autenticado) | **Accepted (formalizado 2026-04-27)** |
 | 0033-0034 | reservados | (futuros) | livre |
 | [0035](decisions/0035-ocr-boleto-provider-abstrato.md) | Sprint 15 | OCR de boleto: provider abstrato (OCR.space default + Google Vision + AWS Textract + Azure + Tesseract) | **Accepted (formalizado 2026-04-25)** |
 | 0036 | Sprint 16 | Motor de rateio + intercompany | a produzir |
 | 0037 | Sprint 17 | Provider Open Finance | a produzir |
 | 0038 | Sprint 17 | Provider NF-e recepção | a produzir |
 | 0039 | Sprint 18 | Adquirência: ordem de integração | a produzir |
-| 0040 | Sprint 19 | Modelo de churn | a produzir |
+| 0040 | reservado | (livre — Sprint 19 churn migrou para ADR 0027) | livre |
 | 0041 | Sprint 20 | Provider assinatura digital ICP-Brasil | a produzir |
 | 0042 | Sprint 22 (ou posterior) | Submissão de guia TISS automática SOAP | a produzir (Fase 2 do ADR 0079) |
 | 0043 | Sprint 34 | Arquitetura Nutri-Agent (especializado vs generalizado) | a produzir |

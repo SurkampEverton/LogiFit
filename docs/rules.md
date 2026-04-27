@@ -52,7 +52,7 @@
 
 **16.** TypeScript `strict: true`. `any` só com comentário `// why:` justificando.
 **17.** Biome formata e linta; sem override pessoal.
-**18.** Cobertura mínima: 70% em `packages/db`, 60% em Server Actions.
+**18.** Cobertura mínima: 70% em `packages/db`, 60% em Server Actions, **80% em `packages/errors|security|db/policies`** (camadas de defesa). Estratégia completa de testes — taxonomia fechada de 21 tipos (T1-T21), 3 níveis de obrigatoriedade (Obrigatório/Recomendado/Opcional), 10 suítes E2E categorizadas com gates por suíte, top-12 "block release" + top-10 "smoke", convenção anti-flakiness — em [ADR 0090](decisions/0090-estrategia-de-testes.md). Cada sprint cita os Ts específicos no DoD.
 **19.** Nenhum segredo em código — `.env` + Vercel/Supabase secrets.
 **20.** Import ordenado por Biome; caminhos absolutos `@repo/*`.
 
