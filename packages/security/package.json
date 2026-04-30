@@ -1,0 +1,17 @@
+{
+  "name": "@repo/security",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Defense-in-depth: rate limits, safeFetch, scanUpload, high-risk actions, MFA gates (ADR 0073, regras 35-40+43)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@repo/config": "workspace:*",
+    "typescript": "^5.7.2"
+  }
+}

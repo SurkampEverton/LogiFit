@@ -1,0 +1,19 @@
+{
+  "app": {
+    "title": "LogiFit",
+    "tagline": "ERP for Gym, Physical Therapy and Nutrition",
+    "environment": "Sprint 00 — infrastructure setup"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "ok": "OK",
+    "dismiss": "Dismiss",
+    "retry": "Try again"
+  },
+  "locale": {
+    "switcher": "Language",
+    "current": "Current language: {name}"
+  }
+}

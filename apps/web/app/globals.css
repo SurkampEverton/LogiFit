@@ -1,0 +1,50 @@
+@import "tailwindcss";
+@import "@repo/ui/tokens.css";
+
+/*
+ * Mapeia tokens "Equilíbrio Vital" para os tokens do Tailwind v4 (regra 44).
+ * Tudo continua sendo --ev-* como fonte canônica; aliases shadcn-style
+ * (background, foreground, primary, muted-foreground...) herdam dos --ev-*.
+ */
+@theme inline {
+  --color-background: var(--ev-bg);
+  --color-foreground: var(--ev-text);
+  --color-muted-foreground: var(--ev-text-muted);
+  --color-subtle-foreground: var(--ev-text-subtle);
+
+  --color-card: var(--ev-surface);
+  --color-card-muted: var(--ev-surface-muted);
+
+  --color-border: var(--ev-border);
+  --color-border-strong: var(--ev-border-strong);
+
+  --color-primary: var(--ev-primary);
+  --color-primary-hover: var(--ev-primary-hover);
+  --color-primary-foreground: var(--ev-text-inverse);
+
+  --color-success: var(--ev-success);
+  --color-warning: var(--ev-warning);
+  --color-energy: var(--ev-energy);
+  --color-danger: var(--ev-danger);
+
+  --font-sans: var(--ev-font-sans);
+  --font-mono: var(--ev-font-mono);
+
+  --radius-sm: var(--ev-radius-sm);
+  --radius-md: var(--ev-radius-md);
+  --radius-lg: var(--ev-radius-lg);
+  --radius-xl: var(--ev-radius-xl);
+  --radius-pill: var(--ev-radius-pill);
+}
+
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--ev-bg);
+  color: var(--ev-text);
+  font-feature-settings: var(--ev-font-feature-tabular);
+}

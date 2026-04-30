@@ -1,0 +1,42 @@
+{
+  "name": "logifit",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ERP SaaS B2B multi-tenant para Academia + Fisioterapia + Nutrição (self-host total Oracle SP — ADR 0091)",
+  "scripts": {
+    "dev:up": "docker compose up -d",
+    "dev:down": "docker compose down",
+    "dev:reset": "docker compose down -v && docker compose up -d",
+    "dev:logs": "docker compose logs -f",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "typecheck": "turbo run typecheck",
+    "docs:check": "node scripts/docs-check.mjs",
+    "i18n:extract": "node scripts/i18n-extract.mjs",
+    "i18n:check": "node scripts/i18n-check.mjs",
+    "lint:custom": "node scripts/lint-custom.mjs",
+    "compliance:check": "node scripts/compliance-check.mjs",
+    "hash:ripd": "node scripts/hash-ripd.mjs",
+    "db:migrate": "pnpm --filter @repo/db db:migrate",
+    "db:generate": "pnpm --filter @repo/db db:generate",
+    "db:rls-check": "pnpm --filter @repo/db db:rls-check",
+    "storage:bootstrap": "pnpm --filter @repo/storage bootstrap",
+    "test:smoke": "pnpm --filter @app/web exec playwright test e2e/smoke",
+    "test:critical": "pnpm --filter @app/web exec playwright test e2e/critical",
+    "test:e2e": "pnpm --filter @app/web exec playwright test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@10.29.3",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
+  }
+}

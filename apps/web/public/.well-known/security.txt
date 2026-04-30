@@ -1,0 +1,5 @@
+Contact: mailto:security@logifit.com.br
+Expires: 2027-04-27T00:00:00.000Z
+Preferred-Languages: pt-BR, en
+Policy: https://logifit.com.br/seguranca
+Canonical: https://logifit.com.br/.well-known/security.txt

@@ -1,4 +1,4 @@
-# Dependências (quando houver Node)
+# Dependências
 node_modules/
 .pnpm-store/
 .yarn/
@@ -33,15 +33,21 @@ Thumbs.db
 # Claude Code — local settings (não versionar)
 .claude/settings.local.json
 
-# Supabase local
-supabase/.branches/
-supabase/.temp/
+# Docker dev volumes (Postgres + Redis + MinIO + Mailhog + GlitchTip)
+.docker-data/
 
 # Logs
 *.log
 logs/
 npm-debug.log*
 pnpm-debug.log*
+
+# Drizzle migrations geradas (snapshots — versionar; introspecção temporária — não)
+packages/db/drizzle/meta/_journal.tmp.json
+
+# Backup local de dumps Postgres (uso pontual)
+*.sql.gz
+*.dump
 
 # Arquivos temporários do agente
 .git/COMMIT_MSG_TMP

@@ -1,0 +1,11 @@
+{
+  "title": "Segurança & Divulgação Responsável",
+  "intro": "Levamos segurança a sério. Esta página descreve nossa postura, nosso canal de relato e o escopo da nossa política de divulgação responsável.",
+  "contact": "Contato",
+  "policy": "Política de divulgação responsável",
+  "policy_text": "Aceitamos relatos de vulnerabilidades com até 90 dias para coordenação antes de divulgação pública. Em troca, nos comprometemos a responder em até 5 dias úteis e creditar pesquisadores publicamente quando autorizado.",
+  "scope": "Escopo",
+  "scope_text": "Domínios *.logifit.com.br e infraestrutura LogiFit. Fora de escopo: tenants individuais (procurar diretamente o cliente), engenharia social, ataques físicos, e DoS sem prova de exploração lógica.",
+  "hall_of_fame": "Hall da fama",
+  "hall_empty": "Aguardando primeiro relato — seu nome pode estar aqui."
+}

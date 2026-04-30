@@ -1,0 +1,18 @@
+{
+  "VALIDATION_ERROR": "Datos inválidos",
+  "UNAUTHORIZED": "Sesión expirada — inicia sesión nuevamente",
+  "FORBIDDEN": "Sin permiso para esta acción",
+  "NOT_FOUND": "No encontrado",
+  "CONFLICT": "Conflicto de datos — recarga e intenta de nuevo",
+  "RATE_LIMITED": "Demasiados intentos — espera un momento",
+  "INTERNAL_ERROR": "Error interno; estamos investigando",
+  "SERVICE_UNAVAILABLE": "Servicio temporalmente no disponible",
+  "AI_QUOTA_EXCEEDED": "Cuota mensual de IA agotada — contacta al admin",
+  "AI_PROVIDER_ERROR": "Fallo en el proveedor de IA — usando fallback",
+  "PAYMENT_FAILED": "Pago rechazado",
+  "FISCAL_REJECTED": "Documento fiscal rechazado por la autoridad",
+  "CONSENT_REQUIRED": "Esta acción requiere consentimiento explícito del paciente",
+  "COMMITTEE_REQUIRED": "Comité de IA no registrado — contacta al admin",
+  "SLUG_TAKEN": "Este subdominio ya está en uso",
+  "TENANT_SUSPENDED": "Cuenta temporalmente suspendida"
+}

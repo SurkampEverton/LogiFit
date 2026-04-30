@@ -109,11 +109,11 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 ### Segurança em profundidade (rules.md 35-40)
 
 **35.** **Security headers obrigatórios no `next.config.ts`** com CSP nonce dinâmico (sem `unsafe-inline` em script-src), HSTS preload, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy strict-origin, Permissions-Policy restritiva, COOP/CORP. CI valida cada header. Ver [ADR 0073](docs/decisions/0073-postura-seguranca-defesa-em-profundidade.md).
-**36.** **Toda Server Action / API Route / endpoint público tem rate limit Upstash Redis** dentro do `wrapAction()/wrapApiHandler()` (regra 33) com chave `(tenant_id, user_id, ip, endpoint)`. Limites canônicos em `packages/security/rate-limits.ts`. Excedido → `RATE_LIMITED` envelope. Login com 5 falhas/15min → lockout 30min + Turnstile.
+**36.** **Toda Server Action / API Route / endpoint público tem rate limit via Redis self-hosted** dentro do `wrapAction()/wrapApiHandler()` (regra 33) com chave `(tenant_id, user_id, ip, endpoint)`. Limites canônicos em `packages/security/rate-limits.ts`. Excedido → `RATE_LIMITED` envelope. Login com 5 falhas/15min → lockout 30min + Turnstile.
 **37.** **Toda chamada `fetch` para URL externa via `safeFetch()`** de `packages/security/safe-fetch.ts` com `allowedHosts` obrigatória, bloqueio de IP privado/loopback/link-local, timeout 30s, redirect manual. Lint custom `no-raw-fetch` bloqueia commit. LLM tool calling **nunca** chama URL arbitrária.
-**38.** **Todo upload em Supabase Storage passa por `scanUpload()`** de `packages/security/scan-upload.ts` — MIME real (file-type), magic bytes, embed proibido (PDF JS / Office macro), ClamAV scan. Tabela `upload_scans` rastreia status. Arquivo só vira `published` após `clean`. Lint `no-unscanned-upload`.
-**39.** **`audit_log` mantém hash chain** — trigger BEFORE INSERT computa `current_hash = sha256(... || previous_hash)` ligando linhas do mesmo tenant; job semanal verifica continuidade; quebra dispara `system_alerts critical`. Anchor S3 Object Lock WORM 1h.
-**40.** **Backup off-site cifrado + teste de restauração trimestral + DR plan documentado.** RPO 24h / RTO 4h. Chaves de criptografia em backup separado do dado (defesa em profundidade). MVP: Cloudflare R2; Fase 2: AWS S3 us-east-1.
+**38.** **Todo upload em MinIO passa por `scanUpload()`** de `packages/security/scan-upload.ts` — MIME real (file-type), magic bytes, embed proibido (PDF JS / Office macro), ClamAV scan. Tabela `upload_scans` rastreia status. Arquivo só vira `published` após `clean`. Lint `no-unscanned-upload`.
+**39.** **`audit_log` mantém hash chain** — trigger BEFORE INSERT computa `current_hash = sha256(... || previous_hash)` ligando linhas do mesmo tenant; job semanal verifica continuidade; quebra dispara `system_alerts critical`. Anchor WORM em VPS independente (Sprint 19+).
+**40.** **Backup off-site cifrado + teste de restauração trimestral + DR plan documentado.** RPO 24h / RTO 4h. Chaves de criptografia em backup separado do dado (defesa em profundidade). **Cloudflare R2** (free tier 10GB; pay-as-you-go $0.015/GB-mês + zero egress fee depois) — independente da infra Oracle (R2 storage físico em CDN global, separado do VPS). Quarterly DR drill ativando VPS Hetzner CX22 alternativo (pre-provisionado).
 
 ### Assistente IA universal (rules.md 41)
 
@@ -135,6 +135,10 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 
 **45.** **Proibido `window.alert/confirm/prompt`** (e qualquer dialog nativo). Toda mensagem ao usuário usa o **catálogo fechado de 6 tipos** em `packages/ui/components/messages/*` (protótipo equivalente em [`prototipo/base.css`](prototipo/base.css) com `.ev-toast`/`.ev-banner`/`.ev-modal`/`.ev-alert-dialog`/`.ev-prompt-dialog`/`.ev-form-error`; demo em [`prototipo/designsystem/index.html#mensagens`](prototipo/designsystem/index.html)): `<Toast>` (success/info/warning/error/critical — efêmero pós-ação), `<Banner>` (info/warning/danger — estado persistente da página/tenant), `<AlertDialog>`/`<ConfirmDialog>` (substitui `window.confirm`), `<PromptDialog>` (substitui `window.prompt`), `<FormError>` (erro inline sob input). Helpers imperativos: `toast.success/info/warning/error/critical(t('...'))`, `toast.fromApiError(error)` (consome envelope ADR 0071), `await confirm({ title, body, danger })`, `await prompt({ title, label, validator })`. **Engine de toast:** Sonner com `<Toaster nonce={cspNonce}>` (CSP-compatível, regra 35). **i18n obrigatório (regra 27)** — nunca string literal; lint `no-hardcoded-toast-message` bloqueia. **a11y obrigatório:** Toast `role="status|alert"` + `aria-live` correto, dialogs `role="alertdialog|dialog"` + `aria-modal` + focus trap, `<FormError>` linkado via `aria-describedby` ao input. **`<ActionConfirmDialog>`** (ADR 0075 IA Camada 3) é wrapper sobre `<ConfirmDialog>` deste catálogo, nunca paralelo. Lints `no-window-alert` + `no-hardcoded-toast-message` em CI. Ver [ADR 0089](docs/decisions/0089-sistema-mensagens-padronizadas.md).
 
+### Soberania de dependência externa (rules.md 46)
+
+**46.** **Toda dependência externa nova (SaaS, API paga, serviço gerenciado) exige ADR justificando.** O ADR cobre: (a) por que self-host não atende; (b) qual o lock-in concreto; (c) qual o custo mensal estimado; (d) qual o plano de saída. Sem ADR, sem dependência. **Externals já aprovados no MVP** ([ADR 0091](docs/decisions/0091-self-host-total-oracle-sp.md)): Oracle Cloud OCI (VPS), Cloudflare (DNS+proxy+Turnstile free), Cloudflare R2 (backup off-site), AWS SES (email), Vertex AI (LLM Gemini default), Asaas (pagamentos), Focus NFe (fiscal), WhatsApp BSP (Twilio/Gupshup), GitHub (SCM+Actions+GHCR). **Tudo o resto é self-hosted** em VPS único Oracle SP via Coolify (Postgres, Redis, MinIO, GlitchTip, Loki/Grafana). Dropar dependência externa quando viável é encorajado; adicionar exige defesa pública.
+
 ### Convenções de colaboração com Claude (sem número canônico)
 
 Estas são convenções específicas do agente Claude trabalhando neste repo — não estão em `rules.md` porque não geram CI vermelho, mas violar quebra a confiança do usuário:
@@ -144,35 +148,43 @@ Estas são convenções específicas do agente Claude trabalhando neste repo —
 - **Antes** de sugerir nova feature, confirmar com o usuário se cabe no sprint corrente ou vai para backlog.
 - **Nunca** escrever path absoluto (drive letter, `D:\...`, `/Users/...`, `~/...`) em doc versionada — repo é clonado em máquinas diferentes; usar sempre caminhos relativos a partir da raiz do repo.
 
-Lista completa de regras em [`docs/rules.md`](docs/rules.md) (45 regras duras; índice por bloco no topo do arquivo).
+Lista completa de regras em [`docs/rules.md`](docs/rules.md) (46 regras duras; índice por bloco no topo do arquivo).
 
 ## Stack (fixa — mudanças exigem ADR)
 
 - **Frontend:** Next.js 15 (App Router), React 19, Tailwind CSS v4, shadcn/ui, Zustand, TanStack Query, React Hook Form, Zod, **next-intl (i18n — pt-BR default + en-US + es-419)**
 - **Backend:** Next.js server-side (Server Components + Server Actions + API Routes) — sem serviço separado
-- **Banco/Auth/Realtime/Storage:** Supabase **(MVP)** → migra pra **Postgres no Oracle Cloud OCI free tier + BetterAuth/Lucia + Cloudflare R2 + LISTEN/NOTIFY** no Sprint 19b. Ver [ADR 0078](docs/decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md).
+- **Banco:** **Postgres 16 self-hosted** em container Coolify no VPS Oracle Cloud SP (sem Supabase). RLS + extensions (pg_trgm, unaccent, pgvector) habilitadas via Drizzle migrations. Ver [ADR 0091](docs/decisions/0091-self-host-total-oracle-sp.md).
+- **Auth:** **BetterAuth ou Lucia** (sub-decisão Sprint 01a) com JWT + cookie httpOnly próprio; MFA TOTP + WebAuthn nativos
+- **Storage:** **MinIO container S3-compatible** (mesmo VPS) via adapter pattern em `packages/storage/`
+- **Realtime:** Postgres `LISTEN/NOTIFY` + WebSocket próprio Next.js (sem Supabase Realtime)
 - **ORM:** Drizzle (fonte única de schema)
-- **IA:** Vercel AI SDK com **Gemini 2.5 Flash (Vertex AI SP) como default LogiFit** + **Groq Whisper para STT** + BYOK opcional (Anthropic Claude Opus/Sonnet recentes — **não 3.5 nem Haiku** / OpenAI GPT-4 e superiores / Maritaca Sabiá com data residency BR) + fallback cascade; tasks tipadas (chat/embedding/classification/extraction/vision/transcription/reasoning); `resolveModelForTask()` nunca hardcode; cache semântico pgvector + quota mensal + rate limit Upstash Redis. Modelos deprecated explicitamente proibidos: Claude 3.5, GPT-4o, Gemini 2.0, Grok 2 (ver [ADR 0064](docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md) §Fora do escopo).
-- **Rate limit:** **Upstash Redis** (sliding window por `(tenant_id, user_id, ip, endpoint)`) — regras 36 + 33; sub-processor declarado em [ADR 0067](docs/decisions/0067-dpo-governanca-compliance-lgpd.md)
-- **Pagamentos:** Asaas
-- **Email:** Resend
-- **Observabilidade:** Sentry + PostHog + Logtail/Axiom
+- **IA:** Vercel AI SDK (lib, não plataforma) com **Gemini 2.5 Flash (Vertex AI SP) como default LogiFit** + **Groq Whisper para STT** + BYOK opcional (Anthropic Claude Opus/Sonnet recentes — **não 3.5 nem Haiku** / OpenAI GPT-4 e superiores / Maritaca Sabiá com data residency BR) + fallback cascade; tasks tipadas (chat/embedding/classification/extraction/vision/transcription/reasoning); `resolveModelForTask()` nunca hardcode; cache semântico pgvector + quota mensal + rate limit via Redis self-host. Modelos deprecated explicitamente proibidos: Claude 3.5, GPT-4o, Gemini 2.0, Grok 2 (ver [ADR 0064](docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md) §Fora do escopo).
+- **Rate limit:** **Redis container self-hosted** (sliding window por `(tenant_id, user_id, ip, endpoint)`) — regras 36 + 33
+- **Pagamentos:** Asaas (external — sem self-host viável; mercado BR)
+- **Email transacional:** **AWS SES** (única dependência paga core; self-host SMTP rejeitado por deliverability)
+- **Observabilidade erro:** **GlitchTip self-hosted** (Sentry-API-compatível) — substitui Sentry SaaS
+- **Observabilidade logs:** **Loki + Grafana self-hosted** (`pino` → stdout → Loki) — substitui Logtail/Axiom
+- **Product analytics:** dropado no MVP (avaliar PostHog self-host pós-MVP quando houver dor real de funil)
 - **Qualidade:** Vitest + Playwright + GitHub Actions + Biome
-- **Infra:** **Fase 1 (MVP):** Vercel + Supabase Pro · **Fase 2 (pós-Sprint 19b):** Vercel + Oracle Cloud OCI (PG self-hosted) + Cloudflare R2. Estratégia em 2 fases — [ADR 0078](docs/decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md)
-- **Backup off-site MVP:** **Cloudflare R2 free tier 10GB** (`pg_dump` weekly cifrado GPG via Vercel Cron + retenção 12 meses; chaves de criptografia em backup separado). **Fase 2:** AWS S3 us-east-1 com Object Lock WORM (R$ 100-300/mês). Ver [ADR 0073](docs/decisions/0073-postura-seguranca-defesa-em-profundidade.md) (regra 40 — backup off-site).
+- **Infra:** **VPS único Oracle Cloud OCI free tier ARM Ampere** na região **Vinhedo (`sa-vinhedo-1`)** — São Paulo é uma região distinta (`sa-saopaulo-1`); Vinhedo escolhido por ter free tier ARM consistentemente disponível enquanto SP tem waitlist crônico. Rodando Coolify + Caddy + Next.js + Postgres + Redis + MinIO + GlitchTip + Loki/Grafana. **Sem Vercel.** Conta Oracle em modo PAYG (mantém free tier grátis, reduz risco de suspensão). Ver [ADR 0091](docs/decisions/0091-self-host-total-oracle-sp.md).
+- **CI/CD:** GitHub Actions multi-arch (`linux/amd64,linux/arm64`) → push GHCR → webhook Coolify → pull + rolling restart
+- **DNS + WAF/DDoS + Captcha:** Cloudflare free tier (DNS + proxy + Turnstile)
+- **Backup off-site:** **rclone diário cifrado GPG → Cloudflare R2** (free tier 10GB; pay-as-you-go $0.015/GB-mês + zero egress fee depois) — independente da infra Oracle (regra 40; revisado 2026-04-27, antes era Hetzner Storage Box); chaves GPG em GitHub Secrets + cópia offline em pen drive físico
+- **Cron jobs:** `node-cron` dentro do container Next.js OU container `ofelia` (decisão fina Sprint 00); sem Vercel Cron
 
-### Regras de portabilidade durante MVP (ADR 0078)
+### Regras de soberania perpétua ([ADR 0091](docs/decisions/0091-self-host-total-oracle-sp.md))
 
-Pra migração no Sprint 19b ser tranquila, **8 regras de portabilidade** valem desde o Sprint 00:
+Como **nunca usamos Supabase nem Vercel**, as 8 regras originalmente "de portabilidade pra fugir de Supabase" (ADR 0078, superseded) viram **regras de soberania perpétua** — proteção contra reintroduzir lock-in via porta dos fundos:
 
-1. RLS policies em SQL puro em `packages/db/policies/*.sql` (NUNCA via Supabase Studio)
-2. Auth via JWT + cookie httpOnly próprio (NUNCA `@supabase/auth-helpers-nextjs`)
-3. Storage com adapter pattern em `packages/storage/` (interface + `SupabaseStorageAdapter` default)
-4. Realtime usa PG `LISTEN/NOTIFY` quando possível; Supabase Realtime apenas pra broadcast pra muitos clients
-5. **PROIBIDO Supabase Edge Functions** — toda lógica server-side via Server Actions/API Routes; lint `no-supabase-functions` em CI
-6. PgBouncer-friendly desde dia 1 (sem prepared statements long-lived)
-7. Connection string via `DATABASE_URL` env; Drizzle direto, NUNCA `supabase.from(...).select()` pra queries; lint `no-direct-supabase-query` em CI
-8. Drizzle como única fonte de schema (regra 3 já existente)
+1. RLS policies em SQL puro em `packages/db/policies/*.sql` versionadas com Drizzle migrations
+2. Auth via JWT + cookie httpOnly próprio (BetterAuth/Lucia em Sprint 01a)
+3. Storage com adapter pattern em `packages/storage/` (interface + `MinioStorageAdapter` default em prod e dev)
+4. Realtime SEMPRE via PG `LISTEN/NOTIFY` + WebSocket próprio Next.js
+5. PgBouncer integrado no Coolify Postgres setup; sem prepared statements long-lived
+6. Connection string via `DATABASE_URL` env; Drizzle direto sempre
+7. Drizzle como única fonte de schema (regra 3 já existente)
+8. **Nova regra 46** — toda dependência externa nova exige ADR justificando (ver `rules.md`)
 
 ## Estrutura do monorepo
 
@@ -190,7 +202,10 @@ packages/
 ## Comandos comuns (Sprint 00 vai materializar)
 
 ```bash
-pnpm dev              # Next.js em localhost:3000
+pnpm dev:up           # docker compose up -d (Postgres + Redis + MinIO + Mailhog + GlitchTip + Loki/Grafana opcionais)
+pnpm dev:down         # docker compose down
+pnpm dev:reset        # drop volumes + recriar (uso em teste limpo)
+pnpm dev              # Next.js em localhost:3000 (assume dev:up rodando)
 pnpm test             # Vitest
 pnpm test:e2e         # Playwright
 pnpm db:migrate       # Drizzle migrate
@@ -252,7 +267,7 @@ Cross-company e cross-tenant **não são sinônimos**. Documentação que usa um
 
 ## Modelo de autorização (essencial — leia `docs/acesso-e-autorizacao.md`)
 
-4 camadas: Identidade (Supabase Auth + MFA) → Tenant (RLS raiz) → RBAC com scope → Consent (cross-module / cross-company).
+4 camadas: Identidade (BetterAuth/Lucia + JWT cookie próprio + MFA) → Tenant (RLS raiz) → RBAC com scope → Consent (cross-module / cross-company).
 
 JWT claims custom: `tenant_id`, `scopes[]`, `group_ids[]`, `topology`, `mfa`.
 

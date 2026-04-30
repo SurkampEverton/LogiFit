@@ -1,0 +1,17 @@
+{
+  "action": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "ok": "OK",
+    "dismiss": "Dispensar",
+    "retry": "Tentar novamente",
+    "view_details": "Ver detalhes",
+    "view_runbook": "Ver runbook",
+    "copy_request_id": "Copiar request_id"
+  },
+  "result": {
+    "succeeded": "Operação realizada",
+    "failed": "Falha na operação"
+  }
+}

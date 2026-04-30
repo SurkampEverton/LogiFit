@@ -1,7 +1,9 @@
 # ADR 0078 — Hospedagem em duas fases: MVP em Vercel + Supabase Pro · pós-Sprint 19 migra pra Vercel + Postgres no Oracle Cloud free tier
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR 0091](0091-self-host-total-oracle-sp.md) (2026-04-27)
 - **Date:** 2026-04-25
+
+> **Nota de supercessão (2026-04-27):** este ADR está superseded pelo [ADR 0091 — Self-host total Oracle SP](0091-self-host-total-oracle-sp.md). Conversa de visão de produto reabriu o trade-off "duas fases vs self-host total desde dia 1" e o fundador optou por pular a Fase 1 (Vercel + Supabase) inteira — vai direto pra self-host total Oracle SP + Coolify + Postgres + Caddy + observabilidade própria desde Sprint 00. As 8 regras de portabilidade abaixo viram **regras de soberania perpétua** no ADR 0091 (não mais "preparação pra migração"). Sprint 19b foi **deletado do roadmap** (não há migração futura). Conteúdo histórico abaixo preservado pra rastreabilidade da decisão e contexto de evolução.
 
 ## Context
 

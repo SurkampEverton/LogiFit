@@ -1,0 +1,176 @@
+/*
+ * Equilíbrio Vital — Design Tokens
+ * Filosofia: Flat Design extremo. Sem sombras, sem 3D, sem gradientes.
+ * Tipografia e conteúdo guiam o olhar. Bordas 1px substituem elevação.
+ *
+ * Fonte canônica: docs/arquitetura.md §1 (Design System) + regra 44.
+ * Mudanças aqui propagam para todos os aliases shadcn em globals.css de cada app.
+ */
+
+:root {
+  /* ===== Superfícies — LIGHT (off-white com leve tom grafite) ===== */
+  --ev-bg: #D8DDDB;              /* fundo geral — cinza mais presente */
+  --ev-surface: #F3F5F4;         /* cards, drawers, modais — off-white */
+  --ev-surface-muted: #CFD4D2;   /* áreas secundárias (hover de row, pill) */
+  --ev-border: rgba(44, 62, 80, 0.10);   /* borda padrão (grafite 10%) */
+  --ev-border-strong: rgba(44, 62, 80, 0.20); /* borda ativa/focada */
+
+  /* ===== Texto — LIGHT ===== */
+  --ev-text: #2C3E50;            /* principal */
+  --ev-text-muted: #5D6D7E;      /* labels, captions */
+  --ev-text-subtle: #85929E;     /* placeholders, disabled */
+  --ev-text-inverse: #FFFFFF;    /* em superfícies sólidas de ação */
+
+  /* ===== Ação (brand semânticas) ===== */
+  --ev-primary: #3498DB;         /* azul calmo */
+  --ev-primary-hover: #2E86C1;
+  --ev-success: #2ECC71;         /* verde saúde */
+  --ev-success-hover: #28B463;
+  --ev-warning: #F39C12;         /* amarelo atenção */
+  --ev-warning-hover: #D68910;
+  --ev-energy: #E67E22;          /* laranja alerta/ação */
+  --ev-energy-hover: #CA6F1E;
+  --ev-danger: #E74C3C;          /* vermelho destrutivo */
+  --ev-danger-hover: #CB4335;
+
+  /* Versões fracas pra backgrounds de badge/alerta */
+  --ev-primary-soft: #EBF5FB;
+  --ev-success-soft: #E8F8F0;
+  --ev-warning-soft: #FEF5E7;
+  --ev-energy-soft: #FDEDE1;
+  --ev-danger-soft: #FBEAE8;
+
+  /* ===== Tipografia ===== */
+  --ev-font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ev-font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --ev-text-xs: 0.75rem;    /* 12px — caption, metadata */
+  --ev-text-sm: 0.875rem;   /* 14px — body secundário, labels */
+  --ev-text-base: 1rem;     /* 16px — body padrão */
+  --ev-text-lg: 1.125rem;   /* 18px — destaque */
+  --ev-text-xl: 1.25rem;    /* 20px — h3 */
+  --ev-text-2xl: 1.5rem;    /* 24px — h2 */
+  --ev-text-3xl: 1.875rem;  /* 30px — h1 seção */
+  --ev-text-4xl: 2.25rem;   /* 36px — KPIs grandes */
+
+  --ev-leading-tight: 1.2;
+  --ev-leading-normal: 1.5;
+  --ev-leading-relaxed: 1.65;
+
+  --ev-weight-regular: 400;
+  --ev-weight-medium: 500;
+  --ev-weight-semibold: 600;
+  --ev-weight-bold: 700;
+
+  /* Tabular lining pra números em tabelas/KPIs */
+  --ev-font-feature-tabular: "tnum" 1, "lnum" 1;
+
+  /* ===== Espaçamento (escala 4px) ===== */
+  --ev-space-0: 0;
+  --ev-space-1: 0.25rem;  /*  4px */
+  --ev-space-2: 0.5rem;   /*  8px */
+  --ev-space-3: 0.75rem;  /* 12px */
+  --ev-space-4: 1rem;     /* 16px */
+  --ev-space-5: 1.25rem;  /* 20px */
+  --ev-space-6: 1.5rem;   /* 24px */
+  --ev-space-8: 2rem;     /* 32px */
+  --ev-space-10: 2.5rem;  /* 40px */
+  --ev-space-12: 3rem;    /* 48px */
+  --ev-space-16: 4rem;    /* 64px */
+
+  /* ===== Raios (flat + orgânico suave, WebDiet-inspired) ===== */
+  --ev-radius-none: 0;
+  --ev-radius-sm: 4px;
+  --ev-radius-md: 8px;      /* pequenos internos (chips, badges quadrados) */
+  --ev-radius-lg: 16px;     /* modais, drawers */
+  --ev-radius-xl: 24px;     /* cards prominentes (padrão de card) */
+  --ev-radius-pill: 9999px; /* buttons, inputs, badges pill, avatares */
+
+  /* ===== Bordas (substituem sombra em flat design) ===== */
+  --ev-border-width: 1px;
+  --ev-border-style: solid;
+
+  /* ===== Layout ===== */
+  --ev-topbar-height: 88px;
+  --ev-sidebar-width: 240px;
+  --ev-sidebar-collapsed-width: 64px;
+  --ev-container-max: 1440px;
+
+  /* ===== Touch targets (regra 31 — mobile-first) ===== */
+  --ev-touch-min: 44px;     /* alvo mínimo de toque (WCAG 2.5.5 / iOS HIG) */
+  --ev-input-min: 48px;     /* altura mínima de input em mobile */
+
+  /* ===== Transições (curtas, funcionais) ===== */
+  --ev-transition-fast: 120ms ease-out;
+  --ev-transition-base: 180ms ease-out;
+
+  /* ===== Foco acessível ===== */
+  --ev-focus-ring: 0 0 0 2px var(--ev-surface), 0 0 0 4px var(--ev-primary);
+
+  /* ===== Logo filter — neutro em light, brilho+saturação em dark ===== */
+  --ev-logo-filter: none;
+
+  /* ===== Z-index ===== */
+  --ev-z-dropdown: 100;
+  --ev-z-sticky: 200;
+  --ev-z-drawer: 300;
+  --ev-z-modal: 400;
+  --ev-z-toast: 500;
+}
+
+/* ===== DARK ===== */
+:root[data-theme="dark"] {
+  --ev-bg: #1A252F;
+  --ev-surface: #2C3E50;
+  --ev-surface-muted: #34495E;
+  --ev-border: rgba(236, 240, 241, 0.10);
+  --ev-border-strong: rgba(236, 240, 241, 0.22);
+
+  --ev-text: #ECF0F1;
+  --ev-text-muted: #BDC3C7;
+  --ev-text-subtle: #7F8C8D;
+  --ev-text-inverse: #1A252F;
+
+  /* Logo com brilho e saturação extras pra não apagar no fundo escuro */
+  --ev-logo-filter: brightness(1.2) saturate(1.2) drop-shadow(0 0 6px rgba(93, 173, 226, 0.15));
+
+  --ev-primary: #5DADE2;
+  --ev-primary-hover: #3498DB;
+  --ev-success: #2ECC71;
+  --ev-success-hover: #58D68D;
+  --ev-warning: #F5B041;
+  --ev-warning-hover: #F39C12;
+  --ev-energy: #EB984E;
+  --ev-energy-hover: #E67E22;
+  --ev-danger: #EC7063;
+  --ev-danger-hover: #E74C3C;
+
+  --ev-primary-soft: rgba(93, 173, 226, 0.15);
+  --ev-success-soft: rgba(46, 204, 113, 0.15);
+  --ev-warning-soft: rgba(245, 176, 65, 0.15);
+  --ev-energy-soft: rgba(235, 152, 78, 0.15);
+  --ev-danger-soft: rgba(236, 112, 99, 0.15);
+}
+
+/* ===== Respeita preferência do SO quando não houver override ===== */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --ev-bg: #1A252F;
+    --ev-surface: #2C3E50;
+    --ev-surface-muted: #34495E;
+    --ev-border: rgba(236, 240, 241, 0.10);
+    --ev-border-strong: rgba(236, 240, 241, 0.22);
+    --ev-text: #ECF0F1;
+    --ev-text-muted: #BDC3C7;
+    --ev-text-subtle: #7F8C8D;
+    --ev-text-inverse: #1A252F;
+    --ev-primary: #5DADE2;
+    --ev-primary-hover: #3498DB;
+    --ev-primary-soft: rgba(93, 173, 226, 0.15);
+    --ev-success-soft: rgba(46, 204, 113, 0.15);
+    --ev-warning-soft: rgba(245, 176, 65, 0.15);
+    --ev-energy-soft: rgba(235, 152, 78, 0.15);
+    --ev-danger-soft: rgba(236, 112, 99, 0.15);
+    --ev-logo-filter: brightness(1.2) saturate(1.2) drop-shadow(0 0 6px rgba(93, 173, 226, 0.15));
+  }
+}

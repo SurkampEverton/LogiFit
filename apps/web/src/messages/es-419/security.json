@@ -1,0 +1,11 @@
+{
+  "title": "Seguridad & Divulgación Responsable",
+  "intro": "Tomamos la seguridad en serio. Esta página describe nuestra postura, nuestro canal de reporte y el alcance de nuestra política de divulgación responsable.",
+  "contact": "Contacto",
+  "policy": "Política de divulgación responsable",
+  "policy_text": "Aceptamos reportes de vulnerabilidades con hasta 90 días de coordinación antes de la divulgación pública. A cambio, nos comprometemos a responder en hasta 5 días hábiles y a acreditar públicamente a los investigadores cuando esté autorizado.",
+  "scope": "Alcance",
+  "scope_text": "Dominios *.logifit.com.br e infraestructura LogiFit. Fuera de alcance: tenants individuales (contactar directamente al cliente), ingeniería social, ataques físicos y DoS sin prueba de explotación lógica.",
+  "hall_of_fame": "Hall de la fama",
+  "hall_empty": "Esperando el primer reporte — tu nombre puede estar aquí."
+}

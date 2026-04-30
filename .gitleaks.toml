@@ -1,0 +1,39 @@
+# Gitleaks config (regra 35 + ADR 0073). Roda em pre-commit hook (Faixa 4)
+# e GHA security.yml. Usa default rules + adições LogiFit.
+title = "LogiFit Gitleaks Config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "logifit-internal-key"
+description = "LogiFit LF_KEY_*"
+regex = '''LF_KEY_[A-Z0-9_]+\s*=\s*["']?([A-Za-z0-9/+=]{16,})'''
+tags = ["secret", "internal"]
+
+[[rules]]
+id = "asaas-api-key"
+description = "Asaas API key"
+regex = '''\$aact_[A-Za-z0-9]{30,}'''
+tags = ["secret", "asaas"]
+
+[[rules]]
+id = "focus-nfe-token"
+description = "Focus NFe token"
+regex = '''FOCUS_NFE_TOKEN\s*=\s*["']?([a-f0-9]{32,})'''
+tags = ["secret", "fiscal"]
+
+[[rules]]
+id = "gpg-armored-block"
+description = "GPG armored block"
+regex = '''-----BEGIN PGP (PRIVATE KEY|MESSAGE)-----'''
+tags = ["secret", "gpg"]
+
+[allowlist]
+description = "Examples, tests and docs"
+paths = [
+  '''.env\.example''',
+  '''docs/.*\.md''',
+  '''.*\.test\.ts''',
+  '''CHANGELOG\.md''',
+]

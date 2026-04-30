@@ -1,6 +1,6 @@
 # Regras do Projeto LogiFit
 
-**45 regras duras e inquebráveis.** Organizadas em 4 blocos + regras transversais. Violação = CI vermelho, revert, ou sprint não fecha.
+**46 regras duras e inquebráveis.** Organizadas em 4 blocos + regras transversais. Violação = CI vermelho, revert, ou sprint não fecha.
 
 > **Como usar:** toda discussão técnica começa perguntando "isso fere alguma regra?". Se sim, ou mudamos a regra (ADR) ou mudamos a solução. Regras não são sugestões.
 
@@ -20,6 +20,7 @@
 - **MFA obrigatório (43)**
 - **Design system "Equilíbrio Vital" (44)**
 - **Mensagens ao usuário (45)**
+- **Soberania de dependência externa (46)**
 
 ---
 
@@ -41,7 +42,7 @@
 **9.** 1 sprint ativo por vez. Teto de 3 semanas por sprint. Estourou? Quebra em duas funcionalidades menores.
 **10.** Commits vão direto para `main` (desenvolvimento solo, sem PR review obrigatório). Branches `feat/*`, `fix/*`, `chore/*`, `docs/*` são **opcionais** — usar só quando a feature é longa, arriscada, ou o trabalho precisa ser testado isolado antes de merge.
 **11.** Conventional Commits obrigatórios (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
-**12.** Toda feature nova entra atrás de **feature flag** (PostHog) até ser validada.
+**12.** Toda feature nova entra atrás de **feature flag** até ser validada. **MVP usa flags em DB próprio** (`feature_flags (key, scope: 'global'|'tenant'|'user', target_id?, enabled, rollout_percentage)`) consultado via helper `isFeatureEnabled(key, ctx)` com cache 60s in-memory. Self-host (sem PostHog/LaunchDarkly) — alinhado com regra 46 + [ADR 0091](decisions/0091-self-host-total-oracle-sp.md). Fase 2 pode plugar GrowthBook self-host se complexidade de targeting justificar.
 **13.** ADR criado no **mesmo dia** da decisão; nunca retroativo.
 **14.** `CHANGELOG.md` atualizado em todo commit que muda comportamento observável.
 **15.** Nenhum `--no-verify`, `--force` em `main`, nem skip de CI.
@@ -53,7 +54,7 @@
 **16.** TypeScript `strict: true`. `any` só com comentário `// why:` justificando.
 **17.** Biome formata e linta; sem override pessoal.
 **18.** Cobertura mínima: 70% em `packages/db`, 60% em Server Actions, **80% em `packages/errors|security|db/policies`** (camadas de defesa). Estratégia completa de testes — taxonomia fechada de 21 tipos (T1-T21), 3 níveis de obrigatoriedade (Obrigatório/Recomendado/Opcional), 10 suítes E2E categorizadas com gates por suíte, top-12 "block release" + top-10 "smoke", convenção anti-flakiness — em [ADR 0090](decisions/0090-estrategia-de-testes.md). Cada sprint cita os Ts específicos no DoD.
-**19.** Nenhum segredo em código — `.env` + Vercel/Supabase secrets.
+**19.** Nenhum segredo em código — `.env` (gitignored) em dev + GitHub Actions Secrets em CI + Coolify env vars em produção. Conferência via Gitleaks pre-commit + CI ([ADR 0091](decisions/0091-self-host-total-oracle-sp.md)).
 **20.** Import ordenado por Biome; caminhos absolutos `@repo/*`.
 
 ---
@@ -117,15 +118,15 @@
 
 **35.** **Security headers obrigatórios em todo response HTTP do app.** `next.config.ts` define em `headers()`: `Content-Security-Policy` (com nonce dinâmico via middleware), `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` restritiva, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-site`. CSP **proíbe `unsafe-inline` em script-src** (tailwind exige em style-src — aceito); JS dinâmico usa nonce. Domínio submetido ao [HSTS Preload List](https://hstspreload.org). CI tem teste E2E que faz request e valida cada header presente; falha = vermelho. Ver [ADR 0073](decisions/0073-postura-seguranca-defesa-em-profundidade.md) camada 1.
 
-**36.** **Toda Server Action / API Route / endpoint público tem rate limit Upstash Redis com sliding window.** Aplicado dentro de `wrapAction()` / `wrapApiHandler()` (regra 33) — chave composta `(tenant_id, user_id, ip, endpoint)`. Limites canônicos: `/login` 10/15min por IP + 5/15min por email · Server Actions read 100/min/user · Server Actions write 30/min/user · IA 20/min/user · search 30/min/user · webhooks externos 60/min/IP · `/signup` 3/h/IP. Excedido → `RATE_LIMITED` (envelope ADR 0071) com `retry_after_ms`. **Lockout** após 5 falhas em 15min de login dispara captcha (Turnstile) e bloqueio 30min. CI tem teste que verifica que cada nova rota está coberta pela tabela de limites. Ver [ADR 0073](decisions/0073-postura-seguranca-defesa-em-profundidade.md) camada 3.
+**36.** **Toda Server Action / API Route / endpoint público tem rate limit via Redis self-hosted com sliding window.** Aplicado dentro de `wrapAction()` / `wrapApiHandler()` (regra 33) — chave composta `(tenant_id, user_id, ip, endpoint)`. Limites canônicos: `/login` 10/15min por IP + 5/15min por email · Server Actions read 100/min/user · Server Actions write 30/min/user · IA 20/min/user · search 30/min/user · webhooks externos 60/min/IP · `/signup` 3/h/IP. Excedido → `RATE_LIMITED` (envelope ADR 0071) com `retry_after_ms`. **Lockout** após 5 falhas em 15min de login dispara captcha (Turnstile) e bloqueio 30min. CI tem teste que verifica que cada nova rota está coberta pela tabela de limites. Redis roda em container Coolify mesmo VPS Oracle ([ADR 0091](decisions/0091-self-host-total-oracle-sp.md)). Ver [ADR 0073](decisions/0073-postura-seguranca-defesa-em-profundidade.md) camada 3.
 
 **37.** **Toda chamada `fetch` para URL externa passa por `safeFetch()` de `packages/security/safe-fetch.ts`.** O wrapper: (a) só aceita `http://` ou `https://`; (b) resolve DNS e bloqueia se IP é privado/loopback/link-local (mitiga SSRF para metadata cloud `169.254.169.254`, banco `10.x`, etc); (c) exige `allowedHosts: string[]` declarada pelo caller (allowlist por integração — Asaas, Focus NFe, Gemini, WhatsApp media, Pluggy, Garmin, Oura — fora dali, lança); (d) timeout 30s default; (e) `maxResponseBytes` 50MB default; (f) `redirect: 'manual'` (atacante 302 → IP privado). **Proibido** `fetch()` direto em código que toca URL externa — lint custom `no-raw-fetch` bloqueia commit. Tool calling de LLM **nunca** chama URL arbitrária — só Server Actions tipadas (regra 32). Ver [ADR 0073](decisions/0073-postura-seguranca-defesa-em-profundidade.md) camada 3.
 
-**38.** **Todo upload em Supabase Storage passa por `scanUpload()` antes de aceitar.** `packages/security/scan-upload.ts` (provider abstrato) valida: (a) MIME real server-side via `file-type` (não confia em extensão nem `Content-Type` cliente); (b) magic bytes correspondem ao MIME declarado; (c) tamanho ≤ limite por bucket; (d) extension allowlist por bucket; (e) embed proibido (PDF com `/JavaScript`/`/JS`/`/OpenAction`/`/Launch`/`/EmbeddedFile`, Office com `vbaProject.bin`/`macros/` em zipped, polyglot detectado por magic bytes mismatch); (f) hash SHA256 lookup em `known_malicious_hashes` (opcional). **MVP usa scan próprio** (sem ClamAV — todos os checks acima são suficientes para ~90% dos casos comuns); **Fase 2** plugar adapter ClamAV self-hosted ou api.cloudmersive.com sem refactor de quem usa. Resultado em `upload_scans (id, tenant_id, storage_path, status enum 'pending'|'clean'|'suspicious'|'rejected'|'error', detection_reason text nullable, scanned_at)`; arquivo só vira `published` após `status='clean'`. Falha = arquivo deletado + `system_alerts severity=error`. Buckets cobertos: `lab-documents`, `fisio-evolucoes`, `exam-attachments`, `exercises` (vídeo), `certificados` (cert A1), `whatsapp-media`. Lint custom `no-unscanned-upload` em rotas de upload. Ver [ADR 0073](decisions/0073-postura-seguranca-defesa-em-profundidade.md) camada 3.
+**38.** **Todo upload em MinIO passa por `scanUpload()` antes de aceitar.** `packages/security/scan-upload.ts` (provider abstrato) valida: (a) MIME real server-side via `file-type` (não confia em extensão nem `Content-Type` cliente); (b) magic bytes correspondem ao MIME declarado; (c) tamanho ≤ limite por bucket; (d) extension allowlist por bucket; (e) embed proibido (PDF com `/JavaScript`/`/JS`/`/OpenAction`/`/Launch`/`/EmbeddedFile`, Office com `vbaProject.bin`/`macros/` em zipped, polyglot detectado por magic bytes mismatch); (f) hash SHA256 lookup em `known_malicious_hashes` (opcional). **MVP usa scan próprio** (sem ClamAV — todos os checks acima são suficientes para ~90% dos casos comuns); **Fase 2** plugar adapter ClamAV self-hosted no mesmo VPS sem refactor de quem usa. Resultado em `upload_scans (id, tenant_id, storage_path, status enum 'pending'|'clean'|'suspicious'|'rejected'|'error', detection_reason text nullable, scanned_at)`; arquivo só vira `published` após `status='clean'`. Falha = arquivo deletado + `system_alerts severity=error`. Buckets cobertos: `lab-documents`, `fisio-evolucoes`, `exam-attachments`, `exercises` (vídeo), `certificados` (cert A1), `whatsapp-media`. MinIO em container Coolify mesmo VPS Oracle ([ADR 0091](decisions/0091-self-host-total-oracle-sp.md)). Lint custom `no-unscanned-upload` em rotas de upload. Ver [ADR 0073](decisions/0073-postura-seguranca-defesa-em-profundidade.md) camada 3.
 
 **39.** **`audit_log` mantém hash chain — cada linha referencia hash da anterior.** Trigger SQL ao INSERT computa `current_hash = sha256(id || tenant_id || at || actor_user_id || action || sanitized_payload || previous_hash)` onde `previous_hash` é o `current_hash` da última linha do mesmo `tenant_id`. Job semanal `verify-audit-integrity` percorre cadeia e dispara `system_alerts severity=critical category=security` se quebra detectada. Anchor periódico em `system_audit_anchor` (timestamp confiável + assinatura LogiFit) a cada 1h cola `previous_hash` em referência externa imutável (S3 Object Lock WORM) — dificulta admin DB adulterar histórico sem deixar rastro detectável. Append-only (regra 5) continua valendo; hash chain é **camada extra de tamper detection**. Ver [ADR 0073](decisions/0073-postura-seguranca-defesa-em-profundidade.md) camada 4.
 
-**40.** **Backup automático + teste de restauração trimestral + DR plan documentado com RPO 24h e RTO 4h.** **MVP zero-custo:** Supabase backup nativo (incluído no plano Supabase) **mais** off-site `pg_dump` semanal cifrado com GPG para **Cloudflare R2** (free tier 10GB) ou **Backblaze B2** (10GB free) ou **GitHub Releases privado** (até 2GB/file, ilimitado total) — escolher um. Vercel Cron weekly. Retenção 12 meses (rotação automática). **Fase 2** (volume > 5GB ou tenant Enterprise): AWS S3 us-east-1 com Object Lock 90d WORM substitui (R$ 100-300/mês). Storage de mídia (`lab-documents`, `fisio-evolucoes`, `exam-attachments`) confia em Supabase replicação multi-region no MVP; off-site só Fase 2. Teste de restauração trimestral em Supabase free instance temporária — runbook em `runbooks/restore-test.md`; falha = `system_alerts critical` + ADR retroativo. Disaster Recovery Plan público para tenants Enterprise. **Chaves de criptografia (master + KEK por tenant + cert A1) nunca no mesmo backup do dado — separação obrigatória.** Ver [ADR 0073](decisions/0073-postura-seguranca-defesa-em-profundidade.md) camada 4.
+**40.** **Backup automático + teste de restauração trimestral + DR plan documentado com RPO 24h e RTO 4h.** Postgres `pg_dump` diário cifrado com GPG + snapshot MinIO (mídia clínica) semanal → **Cloudflare R2** (free tier 10GB; pay-as-you-go $0.015/GB-mês + zero egress fee depois — revisado 2026-04-27, antes era Hetzner Storage Box) via rclone S3 API. R2 storage físico em CDN global, **independente da infra Oracle** (regra de soberania separação de risco; provedor é Cloudflare, mesmo do DNS+Turnstile, mas backup vive em bucket separado com chaves dedicadas). Cron job dentro do container Next.js (`node-cron`) ou container `ofelia` separado; sem Vercel Cron. Retenção 12 meses (rotação automática). **Quarterly DR drill obrigatório** — derrubar VPS staging, recriar do zero via `infra/bootstrap-oracle.sh`, restaurar último backup, validar smoke tests; falha = `system_alerts critical` + ADR retroativo + runbook revisado. **Plano DR alternativo:** Hetzner CX22 Helsinki (€5/mês) pre-provisionado mas desligado; em caso de Oracle morrer, ligar e restaurar em <4h. Disaster Recovery Plan público para tenants Enterprise. **Chaves de criptografia (master + KEK por tenant + cert A1 + GPG backup) nunca no mesmo backup do dado — separação obrigatória.** Chave GPG armazenada em GitHub Secrets + cópia offline em pen drive físico do fundador. **Audit anchor WORM:** pendente Sprint 19+ (avaliar S3 Object Lock R$100-300/mês ou anchor próprio em VPS independente). Ver [ADR 0091](decisions/0091-self-host-total-oracle-sp.md) + [ADR 0073](decisions/0073-postura-seguranca-defesa-em-profundidade.md) camada 4.
 
 ---
 
@@ -146,7 +147,7 @@
 **43.** **Profissionais de saúde têm MFA obrigatório + ações de alto-risco exigem MFA recente <15min indistintamente do role.**
 
 **MFA por role (sempre exigido no login):**
-- Roles `medico`, `fisio`, `nutri`, `personal`, `enfermeiro` (e qualquer role que herde de `professional_clinical`) têm `roles.requires_mfa=true` enforced no Supabase Auth — login sem TOTP/WebAuthn é bloqueado em todos os fluxos (magic link inclusive)
+- Roles `medico`, `fisio`, `nutri`, `personal`, `enfermeiro` (e qualquer role que herde de `professional_clinical`) têm `roles.requires_mfa=true` enforced no provider de Auth (BetterAuth/Lucia — sub-decisão Sprint 01a; [ADR 0091](decisions/0091-self-host-total-oracle-sp.md)) — login sem TOTP/WebAuthn é bloqueado em todos os fluxos (magic link inclusive)
 - Roles administrativas (`tenant_owner`, `dpo`, `super_admin`) também têm MFA obrigatório por dever de cuidado
 - Roles operacionais (`recepcao`, `member`) têm MFA **opcional** mas com badge incentivando ativação
 - Tenant pode escalar exigência (ex: forçar MFA também na recepção) em `tenant_settings.mfa_extra_roles[]`
@@ -223,6 +224,38 @@ Ver [arquitetura.md §1](arquitetura.md), [ADR 0063](decisions/0063-responsivida
 - `no-hardcoded-toast-message` — bloqueia string literal e template literal sem `t()` em `toast.*()`, `confirm({title|body})`, `prompt({title|label})`, `<Banner>`.
 
 Ver [ADR 0089](decisions/0089-sistema-mensagens-padronizadas.md) e [ADR 0071](decisions/0071-sistema-tratamento-erros-alertas-tempo-real.md) (envelope `ApiError` que `toast.fromApiError()` consome).
+
+---
+
+## Soberania de dependência externa
+
+**46.** **Toda dependência externa nova (SaaS, API paga, serviço gerenciado de terceiro) exige ADR justificando.** O ADR cobre obrigatoriamente:
+- (a) por que **self-host não atende** (esforço de operar > custo do SaaS, ou dependência de regulação que self-host não cobre, ou expertise inviável solo)
+- (b) qual o **lock-in concreto** (formato de dado proprietário, API exclusiva, integração obrigatória de billing, etc)
+- (c) qual o **custo mensal estimado** (free tier + projeção pra ano 1, ano 2)
+- (d) qual o **plano de saída** (substituto disponível + esforço de migração)
+
+Sem ADR, sem dependência. CI bloqueia commit que adiciona import de SDK de provider externo não-listado em `packages/security/external-deps.ts`.
+
+**Externals já aprovados no MVP** ([ADR 0091](decisions/0091-self-host-total-oracle-sp.md)):
+
+| Categoria | Provider | Por quê irredutível |
+|---|---|---|
+| VPS hosting | Oracle Cloud OCI free tier (SP) | Free tier vitalício único do mercado; alternativa Hetzner pre-provisionada pra DR |
+| DNS + WAF + Captcha | Cloudflare free | Free tier real + DDoS mitigation + Turnstile imbatível |
+| Backup off-site | Cloudflare R2 (free tier 10GB) | Independente da infra Oracle; pay-as-you-go $0.015/GB-mês + zero egress fee; alternativa Backblaze B2 (mais barato pra <100GB) |
+| Email transacional | AWS SES | Self-host SMTP tem deliverability ruim por meses; SES tem reputação Amazon |
+| LLM | Vertex AI (Gemini Flash default) | Qualidade clínica; [ADR 0064](decisions/0064-ia-arquitetura-gemini-default-byok-rag.md); Ollama opcional fallback non-clinical |
+| Pagamentos | Asaas | Mercado BR; alternativas similares (Pagar.me/MercadoPago); direct-bank inviável |
+| Fiscal NFS-e/NF-e | Focus NFe | [ADR 0059](decisions/0059-ciclo-fiscal-emissao-focus-nfe.md) rejeita motor próprio (8-12 meses) |
+| WhatsApp | Twilio/Gupshup BSP | Meta exige BSP certificado |
+| SCM + CI + Container Registry | GitHub Free + Actions + GHCR | Free tier generoso; pode virar Forgejo self-host futuramente |
+
+**Tudo o resto é self-hosted** em VPS único Oracle SP via Coolify: Postgres, Redis, MinIO, GlitchTip, Loki, Grafana, Caddy, Next.js. **Lints obsoletos e removidos** ([ADR 0091](decisions/0091-self-host-total-oracle-sp.md)): `no-supabase-functions`, `no-direct-supabase-query` (não há Supabase).
+
+**Princípio cultural:** dropar dependência externa quando viável é **encorajado** sem precisar de ADR; **adicionar** exige defesa pública.
+
+Ver [ADR 0091](decisions/0091-self-host-total-oracle-sp.md).
 
 ---
 

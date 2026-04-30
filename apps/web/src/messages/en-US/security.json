@@ -1,0 +1,11 @@
+{
+  "title": "Security & Responsible Disclosure",
+  "intro": "We take security seriously. This page describes our posture, our reporting channel, and the scope of our responsible disclosure policy.",
+  "contact": "Contact",
+  "policy": "Responsible disclosure policy",
+  "policy_text": "We accept vulnerability reports with up to 90 days for coordination before public disclosure. In return, we commit to responding within 5 business days and publicly crediting researchers when authorized.",
+  "scope": "Scope",
+  "scope_text": "Domains *.logifit.com.br and LogiFit infrastructure. Out of scope: individual tenants (contact the customer directly), social engineering, physical attacks, and DoS without proof of logic exploitation.",
+  "hall_of_fame": "Hall of fame",
+  "hall_empty": "Awaiting first report — your name could be here."
+}

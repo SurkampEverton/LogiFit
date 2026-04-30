@@ -1,0 +1,93 @@
+# LogiFit — stack de desenvolvimento local
+#
+# Sprint 00 (ADR 0091) — paridade local da stack self-host que roda no Coolify
+# em prod (VPS Oracle Cloud Vinhedo). Mesmas imagens em dev e prod sempre que
+# possível para reduzir surpresas de "funciona aqui, falha lá".
+#
+# Uso:
+#   pnpm dev:up      # sobe os 4 serviços em background
+#   pnpm dev:down    # derruba (preserva volumes em ./.docker-data/)
+#   pnpm dev:reset   # derruba + apaga volumes + recria (uso em teste limpo)
+#   pnpm dev:logs    # tail dos logs
+#
+# Volumes ficam em ./.docker-data/{postgres,redis,minio} (gitignored).
+# Mailhog é stateless por design — sem volume.
+
+services:
+  postgres:
+    # pgvector/pgvector:pg16 = Postgres 16 oficial + pgvector built-in.
+    # Sprint 00 migration inicial faz `CREATE EXTENSION pg_trgm; unaccent; vector;`
+    # (regras 30/34 + ADR 0064 cache semântico IA). pg_trgm e unaccent já vêm no
+    # core do PG; vector exige imagem com a extensão compilada.
+    image: pgvector/pgvector:pg16
+    container_name: logifit-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: logifit
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./.docker-data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d logifit']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    # Rate limit (regra 36) + cache. Sem persistência em dev: o estado é
+    # recriado naturalmente. Em prod (Coolify) o appendonly fica ON.
+    image: redis:7-alpine
+    container_name: logifit-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - ./.docker-data/redis:/data
+    command: ['redis-server', '--appendonly', 'no', '--save', '']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    # Storage adapter (ADR 0091 — soberania perpétua #3). API S3 na 9000,
+    # Console web na 9001. Buckets criados sob demanda pela `MinioStorageAdapter`.
+    image: minio/minio:latest
+    container_name: logifit-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_REGION: sa-east-1
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - ./.docker-data/minio:/data
+    command: ['server', '/data', '--console-address', ':9001']
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:9000/minio/health/live || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailhog:
+    # Captura emails transacionais em dev sem mandar pra fora.
+    # Em prod o app fala AWS SES (regra 46); aqui o adapter SMTP aponta pra cá
+    # quando NODE_ENV=development e SMTP_HOST está setado (.env.example).
+    image: mailhog/mailhog:latest
+    container_name: logifit-mailhog
+    restart: unless-stopped
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '1m'
+        max-file: '1'

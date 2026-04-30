@@ -6,6 +6,248 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — `@repo/storage` real (`StorageAdapter` + `MinioStorageAdapter` + bootstrap dos 6 buckets canônicos) 2026-04-29
+
+Faixa 1 do Sprint 00 fecha o item da linha 73 ([sprints/00](docs/sprints/00-setup-infra.md)) e o equivalente da Faixa 2 (linha 262). Materializa a regra de soberania perpétua #3 ([ADR 0091](docs/decisions/0091-self-host-total-oracle-sp.md)): qualquer feature de negócio futura consome SOMENTE a interface `StorageAdapter` — `@aws-sdk/*` fica encapsulado neste package.
+
+**Adições — `packages/storage/src/`:**
+- `types.ts` — `interface StorageAdapter` (7 métodos: `put`/`get`/`head`/`delete`/`list`/`presignGet`/`presignPut`); Zod schemas validam input no boundary de cada método (regra 7); `StorageError` discriminado com 5 códigos (`NOT_FOUND`/`BUCKET_NOT_FOUND`/`PERMISSION_DENIED`/`INVALID_INPUT`/`INTERNAL`) usando `Error.cause` ES2022.
+- `buckets.ts` — `BUCKETS` const com os **6 buckets canônicos da regra 38** (`lab-documents`, `fisio-evolucoes`, `exam-attachments`, `exercises`, `certificados`, `whatsapp-media`); `physicalBucketName(prefix, name)` aplica `MINIO_BUCKET_PREFIX` (ex: `logifit-dev-lab-documents` em dev).
+- `tenant-key.ts` — `tenantKey({tenantId, ownerKind, ownerId, ext})` compõe chave `${tenantId}/${ownerKind}/${ownerId}/${YYYY}/${MM}/${uuid}.${ext}`; rejeita path traversal, UUID v4 obrigatório em tenant/owner, `ownerKind` regex lowercase, allowlist de 12 extensões; `keyBelongsToTenant(key, tenantId)` para auditoria.
+- `minio-adapter.ts` — `MinioStorageAdapter` via `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`; `forcePathStyle: true` (MinIO requer); traduz erros AWS em `StorageError`; `head()` retorna `null` em 404 (idiomático JS), `BUCKET_NOT_FOUND` faz throw mesmo no head (config drift não é caso normal); `put` aceita `string|Uint8Array|Buffer`; `get` retorna `ReadableStream<Uint8Array>` via `transformToWebStream`.
+- `factory.ts` — `createStorageAdapter(env)` lê `MINIO_ENDPOINT`/`MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY`/`MINIO_REGION` (default `sa-east-1`)/`MINIO_BUCKET_PREFIX` (default `logifit-dev`) com Zod; única porta permitida pra ler env de storage.
+- `index.ts` — public API curada (substitui placeholder `export {}`).
+
+**Adições — `packages/storage/scripts/`:**
+- `bootstrap-buckets.ts` — script idempotente (`tsx`) que cria os 6 buckets canônicos com `versioning=Enabled`; rerun seguro (status `created` na 1ª execução, `already-exists` nas seguintes); `pnpm storage:bootstrap` no root.
+
+**Adições — testes (Vitest, 25 testes verdes):**
+- `buckets.test.ts` (4) — verifica os 6 nomes canônicos + `physicalBucketName` (com/sem hífen final, prefix vazio).
+- `tenant-key.test.ts` (8) — composição correta + rejeições (UUID inválido, ownerKind ASCII, ext fora da allowlist) + `keyBelongsToTenant` anti-substring.
+- `factory.test.ts` (6) — env válida, defaults aplicados, falhas com URL inválida ou key vazia.
+- `minio-adapter.test.ts` (7, integração contra MinIO local) — round-trip put/head/get/delete; list por prefixo; `presignGet` retorna URL acessível via fetch real; head em chave inexistente retorna `null`; rejeição de path traversal e bucket fora do enum; tradução de `NoSuchBucket` em `StorageError` (via `put` — `head` perde a info por ser HEAD sem corpo).
+- `vitest.config.ts` — coverage threshold **80%** (mesmo piso de `errors|security|db/policies` por regra 18 + ADR 0090, camada de infra de defesa).
+- Suíte de integração **pula silenciosamente** se MinIO não estiver acessível (não quebra CI sem infra).
+
+**Atualizações:**
+- `packages/storage/package.json` — `@aws-sdk/client-s3@^3.705.0`, `@aws-sdk/s3-request-presigner@^3.705.0`, `zod@^3.23.8` em `dependencies`; `tsx`, `vitest`, `@types/node` em devDeps; scripts `test`, `bootstrap`.
+- Root `package.json` — script `storage:bootstrap` apontando pra `pnpm --filter @repo/storage bootstrap`.
+
+**Validado local:**
+- `pnpm --filter @repo/storage typecheck` ✓
+- `npx biome check packages/storage` ✓ (14 arquivos)
+- `pnpm storage:bootstrap` ✓ — 6 buckets criados; rerun emite `[=]` em todos (idempotente).
+- `pnpm --filter @repo/storage test` ✓ — **25/25 testes** (4 unit + 7 integração + 8 tenant-key + 6 factory).
+
+**Por que importa:** ancora a regra de soberania perpétua #3 (ADR 0091). O caminho do usuário fica `Server Action → wrapAction → scanUpload → adapter.put → INSERT em tabela de domínio` (regra 33 + 38) — quando primeira feature de upload chegar (Sprint 01b foto avatar / Sprint 11 anexo de exame / Sprint 12 mídia WhatsApp), a infra está pronta sem refactor.
+
+**Não escopo deste turno (mapeado):** `scanUpload` real (file-type + ClamAV + tabela `upload_scans`) — Faixa 3; lint custom `no-unscanned-upload` — Faixa 4; deploy MinIO em produção via Coolify — Faixa 2 (depende de bootstrap-oracle).
+
+### Build — `infra/bootstrap-oracle.sh` + `cloudflare-setup.md` (Faixa 2 destrava parcial) 2026-04-27
+
+Fundador confirmou conta **Cloudflare** ativa com domain `logifit.com.br` adicionado (Coolify ainda não — depende de VPS Oracle provisionado primeiro). Entrego 2 artefatos pra ele continuar quando quiser:
+
+- **`infra/bootstrap-oracle.sh`** — script bash idempotente: apt update+upgrade · Docker CE + buildx + compose plugin · UFW (22/80/443/8000) · fail2ban · unattended-upgrades · swap 4GB · hardening SSH · Coolify install via script oficial · valida `/data` mount. Loga em `/var/log/logifit-bootstrap-*.log` + imprime checklist de próximos passos manuais (Coolify admin + GHCR PAT + 6 containers + Caddy DNS-01).
+- **`docs/runbooks/cloudflare-setup.md`** — runbook completo dos 5 papéis Cloudflare no Free tier: (1) DNS + Proxy + SSL Full strict + HSTS preload; (2) R2 bucket `logifit-backup` + API token escopo bucket-only; (3) Turnstile site + vars `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET`; (4) Email Routing pra `security@`/`privacidade@`/`contato@`/`dpo@logifit.com.br` → email pessoal; (5) API Token global escopo `Zone DNS Edit` pra Caddy DNS-01.
+
+**Por que importa:** transforma "criar VPS Oracle do zero" em comando único e idempotente; e dá ao fundador um manual passo-a-passo do Cloudflare sem precisar de ajuda. Próximo desbloqueio único: conta Oracle PAYG + VPS Vinhedo + IP nos A records Cloudflare.
+
+### Build — Sistema de mensagens (ADR 0089) + AppLayout esqueleto + helpers Playwright completos 2026-04-27
+
+Faixa 4 do Sprint 00 avança ~85%. Tudo local sem dep externa.
+
+**Adições — `packages/ui/src/messages/` (catálogo de 6 tipos · regra 45 + ADR 0089):**
+
+- `toaster.tsx` — Sonner wrapper com prop `nonce` CSP (regra 35) + tokens EV.
+- `toast.ts` — helpers `toast.{success, info, warning, error, critical, fromApiError}`. `critical` é error sem auto-dismiss; `fromApiError` consome envelope `ApiError` (ADR 0071).
+- `banner.tsx` — variant info/warning/danger + ARIA correto.
+- `form-error.tsx` — inline com `aria-describedby`.
+- `alert-dialog.tsx`/`confirm-dialog.tsx`/`prompt-dialog.tsx` — stubs com `confirm()`/`prompt()` helpers lançando `not implemented yet — Sprint 01a`.
+
+**Adições — `packages/ui/src/layout/app-layout.tsx` (regra 31 + ADR 0063):** esqueleto com slot pra hamburger + slot pra conteúdo; touch-target 44px; sem sidebar fixa. Componentes responsive-{modal, table, form} adiados pra Sprint 01a.
+
+**Adições — `apps/web/e2e/helpers/`:** `webhooks.ts` (`replayWebhook` stub T7) + `waits.ts` (re-export curado anti-flakiness ADR 0090 §8 + `waitForRequestId` stub).
+
+**Adições — i18n catalog `messages` namespace:** 11 chaves × 3 locales = 33 traduções.
+
+**Atualizações:**
+
+- `packages/ui/package.json` — `sonner: ^1.7.0` + `@repo/errors` (peer) + `react`/`react-dom` peer + `@types/react`/`@types/react-dom` dev. Exports map: `./messages` e `./layout/app-layout`.
+- `apps/web/package.json` — `@repo/errors: workspace:*`.
+- `apps/web/app/layout.tsx` — `<Toaster nonce={...}>` integrado, lê `x-nonce` via `await headers()`.
+- `apps/web/src/i18n/request.ts` — `NAMESPACES` ganha `messages` (5º).
+- `scripts/lint-custom.mjs` — 5ª regra `no-hardcoded-toast-message` + helper `isCommentLine()` aplicado a todos checkers de código (evita falsos positivos em JSDoc).
+
+**Validado local:** `✓ lint-custom: 54 code + 2 css files clean (5 rules)` · `✓ i18n-check: 53 keys × 3 locales · 12 usages (5 namespaces)`.
+
+### Decided — Revisão ADR 0091: Cloudflare R2 substitui Hetzner Storage Box como provider de backup off-site 2026-04-27
+
+Conversa de custo MVP reabriu a opção de backup off-site (regra 40). Decisão revisada no mesmo dia da accepteddo ADR 0091.
+
+**Motivos:**
+
+- **(a) Custo zero MVP:** R2 free tier 10GB cobre o MVP inteiro; Hetzner Storage Box era €3.50/mês fixo. Custo MVP cai de "~R$ 20/mês" para "~R$ 0/mês".
+- **(b) Zero egress fee:** DR drills quarterly não pagam saída de banda (Hetzner cobraria proporcional ao volume baixado). Importante para validação de RPO/RTO sem orçamento.
+- **(c) Simplicidade operacional:** S3-compatible API + `rclone` é mais simples que SSH+`rsync`, elimina chave SSH dedicada, e o mesmo provider já oferece DNS + Turnstile + Email Routing (Cloudflare vira multi-uso, 4 funções no mesmo painel).
+
+**Trade-offs aceitos:**
+
+- Cloudflare passa a ter 4 papéis no MVP (DNS + R2 + Turnstile + Email Routing) — concentração de provider; mitigação: bucket R2 com chaves dedicadas (separadas do API token de DNS), e regra de soberania separação de risco mantida (Oracle continua provider distinto pra app).
+- Hetzner Storage Box vira alternativa rejeitada documentada — volta a ser considerada se volume backup >700GB (R2 a $0.015/GB-mês ≈ R$ 65/mês × 1TB ≈ R$ 65/mês > Hetzner R$ 22/mês 1TB). Cruzamento estimado em ~12 meses produção.
+- `pay-as-you-go zero egress` é vantagem genuína do R2 (não tem em Backblaze B2, S3, Hetzner) — preserva DR drill orçamento mesmo após sair do free tier.
+
+**Atualizados:**
+
+- [docs/decisions/0091-self-host-total-oracle-sp.md](docs/decisions/0091-self-host-total-oracle-sp.md) — nota de revisão no topo + diagrama ASCII (custo MVP "R$ 0") + tabela de externals (R2 promovido, Hetzner Storage Box vira alternativa) + alternativas rejeitadas (linha 230 reescrita) + sub-processors (Cloudflare passa a 4 papéis) + rsync→rclone em 2 lugares.
+- [docs/rules.md](docs/rules.md) regra 40 + tabela canônica externals (Backup off-site).
+- [CLAUDE.md](CLAUDE.md) regra 40 + seção Stack ("Backup off-site" trocado).
+- [.env.example](.env.example) — vars `R2_ACCOUNT_ID`/`R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY`/`R2_BUCKET`/`R2_ENDPOINT` substituem `HETZNER_STORAGEBOX_*`.
+- [docs/runbooks/dr-drill.md](docs/runbooks/dr-drill.md) — credencial R2 em GitHub Secrets + restore "do R2".
+- [docs/sprints/00-setup-infra.md](docs/sprints/00-setup-infra.md) — Log entry datada + checklist `Backup off-site (regra 40)` atualizado pra rclone S3 API.
+
+**Hetzner CX22 Helsinki continua como VPS DR alternativo pre-provisionado** — não confundir com Storage Box. Esse permanece (regra 40 mitigação 4: PAYG + backup R2 + bootstrap script + DR drill + Hetzner CX22 alternativo).
+
+### Build — Sprint 00 Faixas 3+4 parciais: security headers + packages/security + supply chain + lints custom + Playwright base 2026-04-27
+
+Sprint 00 chega a **50%** entregando tudo que dá pra fazer sem Coolify rodando ou contas externas (Oracle/Cloudflare). Faixa 2 (bootstrap Oracle + Coolify) e o resto da Faixa 3 (GlitchTip/Loki/R2 backup/Cloudflare proxy) ficam para sessão dedicada quando o fundador ativar conta Oracle PAYG + Cloudflare.
+
+**Adições — Security headers + CSP (regra 35 + ADR 0073):**
+
+- `apps/web/next.config.ts` — `headers()` retorna 7 headers estáticos: HSTS preload (max-age 2 anos + includeSubDomains) · X-Frame-Options DENY · X-Content-Type-Options nosniff · Referrer-Policy strict-origin-when-cross-origin · Permissions-Policy restritiva · COOP same-origin · CORP same-site.
+- `apps/web/middleware.ts` — CSP **dinâmico com nonce per-request** (`crypto.getRandomValues(16) + btoa()`); injetado em request headers (`x-nonce`) pra Server Components lerem; `script-src 'nonce-...' 'strict-dynamic'` (sem `'self'`); `connect-src 'self'` (sprints donos expandem); `frame-ancestors 'none'`; `object-src 'none'`; `upgrade-insecure-requests`. Mantém propagação de `x-request-id` e detecção de locale.
+
+**Adições — `packages/security` real (regras 36-38, 43):**
+
+- `safe-fetch.ts` (regra 37) — `SsrfError` + protocolo http/https obrigatório + allowedHosts mandatório + bloqueio de IP privado/loopback/link-local + timeout 30s default + redirect manual + max response 50MB.
+- `scan-upload.ts` esqueleto (regra 38) — interface `ScanProvider` + `OwnScanProvider` placeholder + 5 status canônicos (`pending`/`clean`/`suspicious`/`rejected`/`error`).
+- `rate-limits.ts` (regra 36) — tabela canônica `RATE_LIMITS` com 8 regras (loginByIp/Email · signupByIp · read/write/search/ai · webhookByIp) + stub `checkRateLimit` no-op até Faixa 3 ter Redis.
+- `high-risk-actions.ts` (regra 43) — array de 16 ações fiscais/RBAC/financeiro/compliance/super-admin com `requireMfaMaxAgeMins: 15` (4 marcadas `alsoBlockedFromAi: true` — dupla proteção regras 41+43).
+
+**Adições — Página pública /seguranca + security.txt:**
+
+- `apps/web/app/(public)/seguranca/page.tsx` — postura, contato (`security@logifit.com.br`), política 90d coordinated disclosure, escopo, hall da fama. i18n via namespace `security` × 3 locales.
+- `apps/web/public/.well-known/security.txt` (RFC 9116) — Contact/Expires (2027-04-27)/Preferred-Languages/Policy/Canonical.
+
+**Adições — Supply chain CI:**
+
+- `.gitleaks.toml` — 4 rules custom (LF_KEY/Asaas/Focus NFe/GPG armored block) + allowlist `.env.example` e `docs/`.
+- `.github/dependabot.yml` — npm + GitHub Actions, weekly segunda 06:00 SP, agrupado por minor+patch, máx 5 PRs npm + 3 actions.
+- `.github/workflows/security.yml` separado — 2 jobs (gitleaks + osv-scanner) + cron `0 5 * * 1` semanal.
+
+**Adições — Lints custom + compliance:**
+
+- `scripts/lint-custom.mjs` — 4 checkers regex-based (JS puro): `no-window-alert` (regra 45), `no-raw-fetch` (regra 37), `no-hardcoded-design-token` (regra 44), `no-rejected-saas-import` (regra 46 — bloqueia `@supabase/*`/`@upstash/*`/`@vercel/postgres|kv|blob`/`posthog-*` rejeitados pelo ADR 0091). Validado: ✓ 43 code + 2 css files clean.
+- `scripts/compliance-check.mjs` (T19 ADR 0090) — RIPD Status formal vs legacy + threat-models STRIDE warning + stubs ADR esperado/ai_audit_log schema. Validado: ✓ 1 formal + 18 legacy + 12 threat-models.
+- `scripts/hash-ripd.mjs` — SHA-256 do conteúdo de RIPD `Status: Vigente`, modos write e `--check` (CI).
+
+**Adições — Playwright base + 2 specs representativas:**
+
+- `apps/web/playwright.config.ts` — 5 projects (chromium-mobile/tablet/desktop + webkit-mobile/desktop); webServer auto-start; trace on-first-retry; reporter github+html em CI.
+- `packages/config/playwright-viewports.ts` — `VIEWPORTS` (6) + `CANONICAL_VIEWPORTS` (3: iphone-13/ipad-portrait/desktop-1280) + `forEachViewport` helper.
+- `packages/config/playwright-locales.ts` — `forEachLocale` consome `LOCALES` de `@repo/i18n` (zero edição ao adicionar locale futuro).
+- `apps/web/e2e/helpers/{auth,seed,time,db}.ts` — stubs com `throw new Error('not implemented yet — Sprint 01a')`. Tipos canônicos: `Persona` (8), `Scenario` (5).
+- `apps/web/e2e/_template.spec.ts` + `smoke/auth-magic-link.spec.ts` (Top-10 smoke) + `critical/cross-tenant-rls.spec.ts` (T6 + Top-12 block release). Todos `test.skip()` até Sprint 01a.
+
+**Adições — Runbooks + RIPD:**
+
+- `docs/runbooks/dr-drill.md` — DR drill quarterly esqueleto com 6 fases (snapshot pré-drill → provisão staging → restore → smoke tests → verify hash chain → teardown).
+- `docs/runbooks/coolify-operacoes.md` — cheatsheet operações comuns + troubleshooting comum (build failed, PG out of memory, Caddy SSL renew).
+- `docs/runbooks/bootstrap-oracle.md` — passo-a-passo Vinhedo (PAYG account → VM.Standard.A1.Flex 4OCPU/24GB → SSH key → DNS Cloudflare → bootstrap script → Coolify setup → containers → Caddy SSL → primeiro deploy "Hello World").
+- `docs/compliance/ripd/v1.0-tiss-convenios.md` — RIPD Sprint 22 com Status: TODO (completa lista canônica de 7 esperada pelo Sprint 00).
+
+**Atualizações:**
+
+- `package.json` raiz — 6 scripts novos (`lint:custom`, `compliance:check`, `hash:ripd`, `test:smoke`, `test:critical`, `test:e2e`).
+- `apps/web/package.json` — `@playwright/test ^1.49` e `@axe-core/playwright ^4.10` como devDeps.
+- `.github/workflows/ci.yml` — 2 jobs novos (`lint-custom`, `compliance`).
+- `apps/web/app/layout.tsx` — `themeColor` ganha comentário `// design-token-exempt: Next.js Viewport.themeColor é lido antes do CSS carregar` (caso edge legítimo regra 44).
+- `apps/web/src/i18n/request.ts` — namespace `security` adicionado.
+- `apps/web/src/messages/{pt-BR,en-US,es-419}/security.json` — 8 chaves × 3 locales.
+- `docs/sprints/00-setup-infra.md` Log + `docs/roadmap.md` % 25 → 50.
+
+**Por que importa:** todo PR que cria UI já passa por CSP nonce + 7 security headers + 4 lints custom + Gitleaks + OSV-scanner + Dependabot. Toda Server Action / fetch externo / upload tem pacote-base pra adotar (`@repo/security/{safeFetch,scanUpload,checkRateLimit}` + `HIGH_RISK_ACTIONS`). E2E está estruturado pra próxima sprint adicionar specs reais sem refactor.
+
+**Pendente Sprint 00 (não dá pra fazer agora):**
+
+- Faixa 2 (precisa do fundador): conta Oracle PAYG + SSH key + bootstrap-oracle.sh execution + Coolify install + primeiro deploy.
+- Faixa 3 (depende Coolify): GlitchTip self-host + Loki/Grafana self-host + Cloudflare R2 backup cron + Cloudflare proxy + Turnstile + OWASP ZAP weekly + DR drill real.
+- Faixa 4 (depende Sprint 01a): lints `no-unwrapped-action`/`high-risk-action-must-require-recent-mfa` + 9 esqueletos `smoke/` adicionais + 11 esqueletos `critical/` adicionais + helpers `webhooks.ts`/`waits.ts` + `verify-audit-chain.ts` + STRIDE 6-cat nos 12 threat-models legacy.
+
+### Build — `packages/errors` scaffolding (ADR 0071 + regra 33) 2026-04-27
+
+Trabalho avulso pós-Faixa 1 do Sprint 00. Sistema de tratamento de erros entregue como precondição de Sprint 01a (Server Actions reais) e Faixa 4 (lint `no-unwrapped-action`). Não fecha faixa específica; destrava trabalho cross-faixa.
+
+**Adições:**
+
+- **`packages/errors/src/api-error.ts`** — envelope canônico com 16 códigos fechados (`VALIDATION_ERROR`/`UNAUTHORIZED`/`FORBIDDEN`/`NOT_FOUND`/`CONFLICT`/`RATE_LIMITED`/`INTERNAL_ERROR`/`SERVICE_UNAVAILABLE`/`AI_QUOTA_EXCEEDED`/`AI_PROVIDER_ERROR`/`PAYMENT_FAILED`/`FISCAL_REJECTED`/`CONSENT_REQUIRED`/`COMMITTEE_REQUIRED`/`SLUG_TAKEN`/`TENANT_SUSPENDED`); tipo `ApiResult<T>`; classe `ApiException`; helpers `ok()`/`err()`/`isApiException()`.
+- **`sanitize.ts`** — `maskCpf`/`maskCnpj`/`maskEmail`/`maskPhone` regex-based + `sanitize()` recursivo que redact 27 chaves sensíveis (senha/token/dado clínico — LGPD art. 11). Aplicado antes de envelope ao cliente, payload GlitchTip e log estruturado.
+- **`fingerprint.ts`** — SHA-256 truncado em 16 hex de `(code, module, tenant_id, signal)` pra dedup multi-tenant em `system_alerts`. `node:crypto` (Node runtime apenas).
+- **`translators.ts`** — 10 stubs por provedor (Asaas / Focus NFe / Anthropic / Gemini / Groq / OpenAI / Twilio / TISS / Pluggy / Zod) + fallback genérico sempre-matches. Sprint dono de cada provedor refina.
+- **`wrap-action.ts`** — wrapper Server Actions → `ApiResult`. Captura `ApiException`, traduz erros desconhecidos, monta fingerprint, loga JSON. Hooks `auth/permissions/rate-limit/audit/alerts/GlitchTip` marcados com `// TODO Sprint 01a/Faixa 3`.
+- **`wrap-api-handler.ts`** — wrapper API Routes → `Response`. Status HTTP derivado do código (400/401/403/404/409/422/429/451/500/502/503); header `retry-after` injetado quando `retry_after_ms`.
+- **`wrap-job.ts`** — wrapper cron/queue. Loga e re-lança; retry com backoff fica para Sprint 01a (queue real).
+- **`apps/web/src/messages/{pt-BR,en-US,es-419}/errors.json`** — 16 mensagens × 3 locales (48 traduções).
+
+**Atualizações:**
+
+- `apps/web/src/i18n/request.ts` — `NAMESPACES = ['common', 'auth', 'errors']`.
+- `i18n-check` agora valida 33 keys × 3 locales (3 namespaces): ✓.
+
+**Por que importa:** Server Actions do Sprint 01a (auth, magic link, criar tenant) já podem ser escritos como `wrapAction({ module: 'auth.signin' }, async (input) => { ... })` — wrapper captura panic, traduz erro, retorna envelope tipado, loga estruturado. TODOs explícitos auditam antes de marcar Sprint 00 done.
+
+**Pendente nos wrappers até Sprint 01a + Faixa 3:** auth check + tenant scope; permissions RBAC; consent LGPD gate; `requireRecentMfa()` (regra 43); rate limit Redis sliding window; gate Comitê IA SaMD II+; insert `system_alerts` async; append `audit_log` com hash chain (regra 39); GlitchTip capture; retry com backoff exponencial (queue real).
+
+### Build — Sprint 00 Faixa 1: monorepo + Next.js scaffold + Drizzle + i18n + CI base 2026-04-27
+
+Sprint 00 entrou em **`doing`**. Faixa 1 (semana 1) materializa o monorepo executável: estrutura de packages, app Next.js 15, dev local via `docker compose`, Drizzle config + extensões PG, i18n em 3 locales (ADR 0052) e CI verde com 5 jobs paralelos. Faixas 2-4 (Coolify + Oracle Cloud SP, segurança em profundidade, lints custom + suítes E2E) ficam para sessões futuras.
+
+**Adições:**
+
+- **Packages skeleton** (`@repo/{config,ui,db,ai,types,i18n,storage,errors,security}`) e **`@app/web`**: cada um com `package.json` (`type: module`, `exports` map), `tsconfig.json` extends `@repo/config/tsconfig.base.json` e `src/index.ts` placeholder. Workspace root via `pnpm-workspace.yaml`.
+- **`apps/web`** Next.js 15 + React 19 + Tailwind v4 + next-intl v4: `next.config.ts` com `withNextIntl` + `transpilePackages: ['@repo/*']`, `middleware.ts` (cookie `NEXT_LOCALE` + Accept-Language fallback + propagação `x-request-id`), `app/layout.tsx` com `Inter` via `next/font/google` e `viewport: { viewportFit: 'cover' }` (regra 31), `app/globals.css` mapeando tokens EV → Tailwind v4 via `@theme inline`, esqueleto i18n em `src/messages/{pt-BR,en-US,es-419}/{common,auth}.json` (17 keys × 3 locales validados).
+- **`docker-compose.yml`** raiz com 4 services healthchecked: `pgvector/pgvector:pg16` (substitui `postgres:16-alpine` da spec original para que `CREATE EXTENSION vector` funcione — regra 30 + ADR 0064), `redis:7-alpine`, `minio/minio:latest` (API 9000 + console 9001), `mailhog/mailhog:latest`. Volumes em `.docker-data/` (gitignored).
+- **`packages/db`** real: `drizzle.config.ts` (`dialect: postgresql`, schema TS em `src/schema/`, out em `migrations/`), `init/0000_extensions.sql` idempotente (`pg_trgm` + `unaccent` + `vector` + `pgcrypto`), `scripts/migrate.ts` runner em duas fases (init/ → Drizzle migrator se houver journal), `src/client.ts` com `Pool` global pra HMR, `tests/rls-check.ts` que falha se `pg_class` mostrar tabela com `tenant_id` sem `relrowsecurity` (regra 1+2).
+- **`packages/i18n/src/config.ts`** real (ADR 0052): `LOCALES`/`DEFAULT_LOCALE`/`FALLBACK_CHAIN`/`LOCALE_NAMES` + `isLocale` type guard. Adicionar locale futuro = 1 linha + diretório `messages/{locale}/` + `CHECK` constraint, sem `ALTER TYPE`.
+- **`packages/ui/src/tokens.css`** — port fiel de `prototipo/tokens.css` (regra 44) + 2 tokens novos (`--ev-touch-min: 44px`, `--ev-input-min: 48px`) pra regra 31. Dark via `[data-theme="dark"]` + `prefers-color-scheme`.
+- **Scripts CI**: `scripts/i18n-extract.mjs` (regex `useTranslations|getTranslations` + `t('key')` com tracker de namespace por arquivo) + `scripts/i18n-check.mjs` (paridade entre locales + cobertura de uso vs default — regra 27 enforced). JS puro, sem deps.
+- **`.github/workflows/ci.yml`** com 5 jobs paralelos: `lint` (Biome) · `typecheck` (turbo) · `test` (Vitest stub) · `i18n` · `db` (sobe `pgvector/pgvector:pg16` como service container, roda `db:migrate` + `db:rls-check`). `concurrency` cancela PRs antigos. `permissions: contents: read`.
+- **`packages/config/vitest.base.ts`** — config base reusada por packages (env `node` default, coverage v8 com threshold 60% baseline da regra 18; pacotes críticos sobrescrevem via `mergeConfig`).
+
+**Atualizações:**
+
+- `package.json` raiz — scripts `db:migrate`/`db:generate`/`db:rls-check` (filter `@repo/db`) + `i18n:check`/`i18n:extract` (node).
+- `turbo.json` — task `db:generate` (`cache: false`).
+- `.github/workflows/docs-check.yml` — Node 20 → 22 alinhando ao `engines` do `package.json` raiz.
+- `README.md` — cabeçalho da seção "Comandos" sai de "Sprint 00 vai materializar"; nota explicativa sobre status inline.
+
+**Por que importa:** dev solo abre `pnpm dev:up && pnpm db:migrate && pnpm dev` e tem Postgres + Redis + MinIO + Mailhog + Next.js + i18n em 3 locales rodando local. CI verde sem Vercel ou Supabase. Próxima sessão pode iniciar Faixa 2 (Coolify + Oracle SP) ou pular pro Sprint 01a se prioridade for funcionalidade antes de prod.
+
+**Não entregue na Faixa 1** (rastreado para Faixas 2-4):
+
+- Faixa 2: bootstrap Oracle Cloud Vinhedo + Coolify + Caddy + GHA multi-arch GHCR + primeiro deploy `app.logifit.com.br` (semana 2).
+- Faixa 3: security headers + CSP nonce + `safeFetch`/`scanUpload` + Cloudflare proxy + GlitchTip + Loki/Grafana + Cloudflare R2 + OWASP ZAP + Gitleaks + Dependabot + OSV-scanner + SBOM (semanas 3-4).
+- Faixa 4: 8 lints custom + 10 esqueletos suíte `smoke/` + 12 esqueletos `critical/` + helpers Playwright + `compliance:check` + RIPDs vazios + runbooks (semana 5).
+
+### Decided — ADR 0091: self-host total Oracle Cloud SP + Coolify desde Sprint 00 (supersede ADR 0078) 2026-04-27
+
+Conversa de visão de produto reabriu o trade-off "duas fases vs self-host total desde dia 1" estabelecido no ADR 0078 (MVP Vercel+Supabase → Sprint 19b migra pra Postgres Oracle Cloud). Fundador optou por **pular Fase 1 inteira** — desde Sprint 00 a infra é self-host total: VPS único Oracle Cloud OCI free tier ARM Ampere (São Paulo) rodando Coolify + Caddy + Next.js + Postgres 16 + Redis + MinIO + GlitchTip + Loki/Grafana, com backup off-site em Cloudflare R2 (free tier 10GB; pay-as-you-go zero egress fee depois — revisado 2026-04-27, originalmente Hetzner Storage Box). Externals reduzidos a 8 categorias justificadas (Oracle/Cloudflare [DNS+R2+Turnstile]/AWS SES/Vertex AI/Asaas/Focus NFe/WhatsApp BSP/GitHub).
+
+**Adições:**
+
+- [docs/decisions/0091-self-host-total-oracle-sp.md](docs/decisions/0091-self-host-total-oracle-sp.md) — **Accepted.** Stack única (sem mais fases); 4 camadas de mitigação do risco Oracle suspensão (PAYG mode + backup independente Cloudflare R2 + bootstrap script + DR drill quarterly + alternativa Hetzner CX22 pre-provisionada); compatibilidade ARM Ampere documentada por imagem; dev local via `docker-compose.yml` (Postgres + Redis + MinIO + Mailhog); 8 regras antigas de portabilidade (ADR 0078) reformuladas como **regras de soberania perpétua**; nova regra 46 (justificar dependência externa).
+
+**Atualizações:**
+
+- [docs/decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md](docs/decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md) — Status `Accepted` → **`Superseded by ADR 0091`** (2026-04-27); nota de supercessão no topo; conteúdo histórico preservado.
+- [CLAUDE.md](CLAUDE.md) — seção "Stack" reescrita (Postgres self-hosted + BetterAuth/Lucia + MinIO + Redis self-host + GlitchTip + Loki/Grafana; sem Vercel, sem Supabase, sem Upstash, sem Sentry SaaS, sem Logtail, sem PostHog); "Regras de portabilidade durante MVP" virou "Regras de soberania perpétua"; comandos comuns ganham `dev:up`/`dev:down`/`dev:reset` Docker Compose; modelo de autorização com Auth = JWT cookie próprio.
+- [docs/rules.md](docs/rules.md) — **regra 46 nova** (Soberania de dependência externa: toda nova exige ADR justificando + tabela canônica de externals MVP); regra 12 revisada (feature flags via `feature_flags` table própria, sem PostHog); regra 19 revisada (segredos via `.env` + GitHub Actions + Coolify env vars, sem Vercel); regra 36 revisada (rate limit via Redis self-host); regra 38 revisada (uploads em MinIO em vez de Supabase Storage); regra 40 revisada (backup Cloudflare R2 + DR drill quarterly); regra 43 revisada (MFA via BetterAuth/Lucia em vez de Supabase Auth).
+- [docs/sprints/00-setup-infra.md](docs/sprints/00-setup-infra.md) — escopo expandido (4 → 5 semanas); nova Faixa 2 "Bootstrap Oracle Cloud SP + Coolify" (PAYG account, VPS provisionado, `infra/bootstrap-oracle.sh`, Coolify install, Caddy, containers, GitHub Actions multi-arch GHCR, primeiro deploy "Hello World", runbooks `bootstrap-oracle.md`/`coolify-operacoes.md`); seção "Portabilidade" virou "Soberania perpétua" + "Bootstrap Oracle"; observabilidade self-host (GlitchTip + Loki/Grafana) substitui Sentry/PostHog/Logtail; rate limit Redis self-host substitui Upstash; backup Cloudflare R2 (free tier 10GB) substitui plano original; lints `no-supabase-functions` e `no-direct-supabase-query` removidos (não há Supabase); novo lint `no-external-saas-import` (regra 46); ADR 0078 marcado como superseded em "Decisões tomadas".
+- [docs/roadmap.md](docs/roadmap.md) — Sprint 19b **deletado** da tabela MVP (~~22~~/~~19b~~) com nota explicativa; entrada em "Decisões já fechadas" marca ADR 0078 superseded e adiciona ADR 0091; faixa 0091 alocada em "Numeração pós-0046"; próximo ADR fora-de-sprint disponível: 0092+.
+
+**Por que importa:** reduz dependência externa de ~12 SaaS pra 8 (e dos 8, só 3-4 são pagos); custo MVP cai de R$ 250-400/mês (ADR 0078 fase A) pra ~R$ 0/mês (R2 free tier 10GB + SES sandbox + Oracle free tier + Cloudflare DNS+Turnstile free); zero migração futura (não há Sprint 19b); soberania completa do dado de saúde (LGPD art. 11) desde o primeiro commit; risco Oracle mitigado por 4 camadas independentes; Sprint 00 absorve +1 semana mas elimina os 60h da migração planejada do ADR 0078.
+
+**Trade-off aceito:** ops sobre o fundador desde dia 1 (mitigado por Coolify + runbooks + expertise prévia em projeto Deep Control); risco Oracle suspensão (mitigado por backup independente + DR alternativa Hetzner pre-provisionada); +1 semana de Sprint 00.
+
 ### Docs — ADR 0090 + regra 18 expandida: estratégia de testes (taxonomia T1-T21 + 3 níveis + 10 suítes E2E) 2026-04-27
 
 Auditoria de testes nas 40 sprints (00 → 36 + 19b) identificou que infra de teste estava planejada (Vitest, Playwright, RLS check, 11 lints custom, i18n check) mas **sem estratégia formal**: faltava taxonomia, distinção entre obrigatório/recomendado/opcional, categorização das suítes E2E com gates por suíte, mapa "categoria de risco do sprint → testes obrigatórios", convenção anti-flakiness. ADR 0090 fecha isso e Sprint 00 materializa 18 dos 21 Ts (11 com código rodando + 7 com ferramenta pronta).

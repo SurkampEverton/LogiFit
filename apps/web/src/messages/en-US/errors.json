@@ -1,0 +1,18 @@
+{
+  "VALIDATION_ERROR": "Invalid data",
+  "UNAUTHORIZED": "Session expired — please sign in again",
+  "FORBIDDEN": "You don't have permission for this action",
+  "NOT_FOUND": "Not found",
+  "CONFLICT": "Data conflict — please reload and try again",
+  "RATE_LIMITED": "Too many attempts — please wait a moment",
+  "INTERNAL_ERROR": "Internal error; we're investigating",
+  "SERVICE_UNAVAILABLE": "Service temporarily unavailable",
+  "AI_QUOTA_EXCEEDED": "Monthly AI quota exceeded — contact your admin",
+  "AI_PROVIDER_ERROR": "AI provider failure — using fallback",
+  "PAYMENT_FAILED": "Payment declined",
+  "FISCAL_REJECTED": "Fiscal document rejected by tax authority",
+  "CONSENT_REQUIRED": "This action requires explicit patient consent",
+  "COMMITTEE_REQUIRED": "AI Committee not registered — contact your admin",
+  "SLUG_TAKEN": "This subdomain is already in use",
+  "TENANT_SUSPENDED": "Account temporarily suspended"
+}

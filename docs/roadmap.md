@@ -10,7 +10,7 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 
 | # | Sprint | Funcionalidade | Status | Início | Fim | % | Bloqueios | PR |
 |---|---|---|---|---|---|---|---|---|
-| 1 | [00](sprints/00-setup-infra.md) | Setup de infra (monorepo, CI, observabilidade, componentes base responsivos) | todo | — | — | 0 | — | — |
+| 1 | [00](sprints/00-setup-infra.md) | Setup de infra (monorepo, CI, observabilidade, componentes base responsivos) | **doing** | 2026-04-27 | — | 55 | — | — |
 | 1b | [00b](sprints/00b-menu-lateral.md) | **Menu lateral (SideMenu hamburger overlay + registry por módulo + filtro permission/vertical/consent)** | todo | — | — | 0 | depende #1 + parcialmente #3 (permissions) | — |
 | 2 | [01a](sprints/01a-identidade-e-topology.md) | Identidade + Topology (groups/tenants/companies/units + RLS raiz) | todo | — | — | 0 | depende #1 | — |
 | 3 | [01b](sprints/01b-rbac-e-consent.md) | RBAC com scope + grants diretos + Consent LGPD | todo | — | — | 0 | depende #2 | — |
@@ -32,9 +32,9 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 | 19 | [17](sprints/17-geral-bancos-open-finance.md) | **Bancos + Open Finance + conciliação + automação NF-e SEFAZ** | todo | — | — | 0 | depende #17 | — |
 | 20 | [18](sprints/18-geral-adquirencia.md) | **Adquirência (maquininhas Cielo/Stone/Rede/GetNet/PagSeguro + split + antecipação)** | todo | — | — | 0 | depende #17 | — |
 | 21 | [19](sprints/19-ia-previsao-churn.md) | IA preditiva de churn + intervenções de retenção | todo | — | — | 0 | depende #4-#18 | — |
-| 22 | [19b](sprints/19b-migracao-hospedagem-oracle.md) | **Migração de hospedagem: Vercel+Supabase → Vercel+Postgres Oracle Cloud (ADR 0078)** | todo | — | — | 0 | depende #21 (MVP fechado + estável 30d) | — |
+| ~~22~~ | ~~19b~~ | ~~Migração hospedagem Vercel+Supabase → Oracle (ADR 0078)~~ | **deletado** | — | — | — | **superseded por [ADR 0091](decisions/0091-self-host-total-oracle-sp.md)** — self-host total desde Sprint 00; não há migração futura | — |
 
-**MVP fecha no Sprint 19.** 21 sprints + Sprint 19b (migração de hospedagem pós-MVP estável). ~6-8 meses de dev solo + 1.5-2 semanas de migração.
+**MVP fecha no Sprint 19.** 21 sprints. ~6-8 meses de dev solo. Sprint 19b foi **deletado** após [ADR 0091](decisions/0091-self-host-total-oracle-sp.md) (2026-04-27) que pula a fase Vercel+Supabase inteira — desde Sprint 00 a infra é self-host total Oracle Cloud SP + Coolify + Postgres + Caddy + GlitchTip + Loki/Grafana + MinIO. Sprint 00 ganha ~1 semana extra (passa de 4 → 5 semanas) pra absorver o bootstrap Oracle + Coolify + observabilidade self-host.
 
 ---
 
@@ -102,7 +102,8 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 - **Plano comercial / pricing / trial** — [ADR 0066](decisions/0066-plano-comercial-pricing-trial.md) accepted (revisado 2026-04-25 — 4 tiers principais + Solo/Combo + cota IA hard-stop + NFS-e inclusas + overage)
 - **NFS-e Padrão Nacional como provider complementar futuro** — [ADR 0076](decisions/0076-nfse-nacional-provider-complementar.md) accepted 2026-04-25 (não substitui Focus NFe; pós-Sprint 36 estável 3 meses + 10k notas/mês + 30% emissões em municípios aderidos)
 - **Passaporte do paciente (vínculo cross-tenant)** — [ADR 0077](decisions/0077-passaporte-paciente-vinculo-cross-tenant.md) accepted 2026-04-25 (Modelo C híbrido + 5 módulos canônicos + 5 níveis de dados + audit log particionado)
-- **Hospedagem em duas fases (MVP Supabase → Pós-MVP Oracle Cloud OCI)** — [ADR 0078](decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md) accepted 2026-04-25 (cutover Sprint 19b + 8 regras de portabilidade vigentes desde Sprint 00)
+- ~~**Hospedagem em duas fases (MVP Supabase → Pós-MVP Oracle Cloud OCI)**~~ — ~~[ADR 0078](decisions/0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md)~~ **superseded por [ADR 0091](decisions/0091-self-host-total-oracle-sp.md)** (2026-04-27)
+- **Self-host total Oracle Cloud SP + Coolify + Postgres + Caddy desde Sprint 00** — [ADR 0091](decisions/0091-self-host-total-oracle-sp.md) accepted 2026-04-27 (supersede ADR 0078; pula fase Vercel+Supabase; deleta Sprint 19b; cria regra 46 — toda dependência externa nova exige ADR)
 - **TISS 4.01 ANS padrão vigente** — [ADR 0079](decisions/0079-tiss-401-ans-padrao-vigente.md) accepted 2026-04-25 (Ofício-Circular ANS nº 1/2026; pipeline atualização semestral; ADRs 0029/0030/0031/0042 detalham implementação)
 
 ## Decisões já fechadas
@@ -170,7 +171,7 @@ Sprints existentes que ainda não declaram esse item explicitamente herdam a reg
 
 ### Numeração pós-0046 (faixa fora-de-sprint)
 
-A faixa **0011-0046 está reservada** (acima); a faixa **0047+ é alocada sequencialmente** para ADRs **fora-de-sprint** (decisões transversais que não nascem dentro de uma sprint específica — DPO, hospedagem, passaporte, fiscal arquitetural). Atualmente: 0047-0050 (decisões recentes), 0051 livre, 0052-0079 publicados sequencialmente, **0089 publicado** (sistema de mensagens padronizadas — fora da faixa 0080-0088 reservada para sprints 23-31, ver tabela abaixo). **Próximo ADR fora-de-sprint disponível: 0090+**. Caso um sprint reservado precise produzir ADR mas a faixa 0011-0046 já alocou outro tema correlato, alocar próximo número livre acima de 0080 e referenciar back na tabela acima.
+A faixa **0011-0046 está reservada** (acima); a faixa **0047+ é alocada sequencialmente** para ADRs **fora-de-sprint** (decisões transversais que não nascem dentro de uma sprint específica — DPO, hospedagem, passaporte, fiscal arquitetural). Atualmente: 0047-0050 (decisões recentes), 0051 livre, 0052-0079 publicados sequencialmente, **0089 publicado** (sistema de mensagens padronizadas — fora da faixa 0080-0088 reservada para sprints 23-31, ver tabela abaixo), **0090 publicado** (estratégia de testes T1-T21), **0091 publicado** (self-host total Oracle SP — supersede 0078). **Próximo ADR fora-de-sprint disponível: 0092+**. Caso um sprint reservado precise produzir ADR mas a faixa 0011-0046 já alocou outro tema correlato, alocar próximo número livre acima de 0080 e referenciar back na tabela acima.
 
 **Realocações da faixa 0011-0046 → 0080+** (auditorias 12, 14 e 15 — 2026-04-25, resolveram colisões herdadas):
 
