@@ -6,6 +6,47 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 00 Faixa 3 quase fechada: observabilidade + pool + backup-as-code subiram em prod 2026-05-11
+
+Sprint 00 sobe de 75% pra 90%. Stack self-host de observabilidade + connection pool + backup scripts versionados — última pendência é o user fornecer credentials R2 + GPG pra ativar cron de backup. 14 containers em prod usando 3.5 GB de 23 GB RAM (folga confortável).
+
+**Serviços novos rodando em prod:**
+
+- **GlitchTip self-host** em `https://errors.logifit.com.br` — `glitchtip/glitchtip:latest` v6.1.6 ARM64 + `postgres:16-alpine` dedicado + `redis:7.2-alpine` dedicado + worker Celery; `/_health/` retorna `ok`; painel Angular acessível; `ENABLE_USER_REGISTRATION=false`. UUID Coolify service: `lkji13qn0p561ovseh497wgq`. Integração `@sentry/nextjs` + DSN no `wrapAction()`/`wrapApiHandler()` (regra 33) pendente — destrava com Sprint 01a (primeira Server Action real).
+- **Loki + Promtail + Grafana** em `https://monitor.logifit.com.br` — `grafana/loki:3.2.0` + `grafana/promtail:3.2.0` + `grafana/grafana:11.3.0`. Promtail tail `/var/lib/docker/containers/*/*-json.log` de TODOS containers do VPS → Loki ingest → Grafana com **Loki datasource pré-provisionado** via bind-mount `/data/lokistack/grafana-provisioning/datasources/loki.yml` (provisioning como código — sobrevive a redeploy). Admin password 32 chars gerado random + cookies seguros (`GF_SECURITY_COOKIE_SECURE=true`). UUID Coolify service: `expwv4l6ydu39d1mhrq5nifh`. Falta: integração `pino` no Next.js (`pino` → stdout → Promtail já captura).
+- **PgBouncer** transaction pool — `edoburu/pgbouncer:latest` ARM64 conectado ao Postgres existente; `pool_mode=transaction`, `max_client_conn=200`, `default_pool_size=20`, `reserve_pool_size=5`. Conectado na network `coolify` → acessível como `pgbouncer-<uuid>:5432` por outros containers. Smoke test: `SELECT version()` via pool → PostgreSQL 17.9 aarch64 ✅ + 4 extensions ativas (pg_trgm, unaccent, vector 0.8.2, pgcrypto) ✅. UUID Coolify service: `sbd28p5yc2befkvjjl40u58f`. Sprint 01a vai usar `DATABASE_URL=postgres://postgres:PASS@pgbouncer-sbd28...:5432/logifit`.
+
+**Adições:**
+
+- **`infra/backup-r2.sh`** — script versionado idempotente que roda no host (não em container): `pg_dump` cifrado GPG das 2 DBs (`logifit` + `glitchtip`) → `gzip -9` → `gpg --encrypt` → `rclone rcat` pra R2; MinIO via `rclone sync` incremental (versioning interno + R2 como 2ª camada); Coolify metadata (`/data/coolify/`) via `tar -czf | gpg --encrypt`; lokistack configs (`/data/lokistack/`) via `tar -czf` (sem GPG — não tem secret). Retention `--min-age 30d`. Roda como cron 03:00 UTC. Logs via `journalctl -t logifit-backup`. Implementa regra 40.
+- **`infra/restore-r2.sh`** — script complementar com 6 comandos: `list` (mostra backups disponíveis), `postgres-logifit` (cria `logifit_restore` separado pra validar antes de promover), `postgres-glitchtip`, `minio` (rclone sync R2 → volume local), `coolify`, `lokistack`. Cada subcomando aceita opcionalmente `DATE_TAG` pra restore point-in-time. Não destrutivo por padrão — sempre cria DB shadow.
+- **`docs/runbooks/backup-r2.md`** — runbook seguindo `_template.md`: 5 passos primeira ativação (criar bucket R2 + token API no Cloudflare Dashboard, gerar par GPG `backup@logifit.com.br` em máquina local, SSH no VPS pra rclone config + import GPG public + setup `/etc/logifit/backup.env`, validar smoke test, agendar DR drill trimestral) + 3 cenários de restore (DB corrompido, MinIO perdido, VPS completo) + tabela de custos R2 + tabela de erros comuns. RTO target 4h, RPO 24h.
+
+**Atualizações:**
+
+- **`docs/sprints/00-setup-infra.md`** — marca itens da Faixa 3 entregues; adiciona log entry detalhado com 5 lições novas (Coolify v4 NÃO gera labels Traefik pra Docker Compose Service · `PATCH /envs` falha silenciosa quando env não existe · `connect_to_docker_network` rejeitado em `POST /services` · GlitchTip image não tem wget/curl → healthcheck Python · `SERVICE_NAME_*` envs auto-injetadas).
+- **`docs/roadmap.md`** — Sprint 00 sobe 75% → 90%.
+
+**Lições documentadas para runbook futuro (Faixa 3):**
+
+10. **Coolify v4 NÃO gera labels Traefik pra Docker Compose Service** — só pra Applications (build_pack=dockerfile). Magic env `SERVICE_FQDN_*` é silencioso aqui. Workaround: declarar labels Traefik manualmente em `services.<name>.labels[]` do compose, seguindo padrão `traefik.http.routers.<name>-https.rule=Host(\`fqdn\`)` + middlewares (gzip + redirect-to-https) + tls.certresolver=letsencrypt.
+11. **`PATCH /api/v1/services/{uuid}/envs` falha silenciosa** quando env não existe (retorna `key: None` + `value: 0`) — sempre fazer POST primeiro (auto-cria slot se compose referencia `${VAR}`, ou cria do zero se não). PATCH é só pra atualizar valor existente.
+12. **`POST /api/v1/services` rejeita campo `connect_to_docker_network`** em create — só editável depois via PATCH. Pra subir service que precisa network compartilhada (ex.: PgBouncer ↔ Postgres existente), declarar `networks: { coolify: { external: true } }` no compose direto.
+13. **GlitchTip image (Python-based) não tem `wget` nem `curl`** — healthcheck Docker via `python3 -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/_health/').status==200 else 1)"`. Coolify suporta sintaxe `CMD-SHELL` perfeitamente.
+14. **`SERVICE_NAME_*` envs auto-injetadas pelo Coolify** em todos serviços do compose (visíveis no `docker_compose` parsed) — úteis pra service discovery DNS interno; não confundir com user-defined envs (que vão pra `/envs` endpoint).
+
+**Por que importa:** o stack de observabilidade fica em pé ANTES da primeira feature de negócio (Sprint 01a) — Sprint 01a já pode validar `pino → stdout → Loki` + `Sentry SDK → GlitchTip` desde o primeiro commit. PgBouncer evita o desastre clássico do Next.js stateless (cada Server Action abre 1 connection direta → Postgres trava em ~100 reqs concorrentes). Backup-as-code (regra 40) garante DR drill replicável sem improviso.
+
+**Pendente Faixa 3 (depende user):**
+
+- Cloudflare R2 bucket `logifit-backups-prod` + API token + par GPG `backup@logifit.com.br`. Quando user passar, runbook `backup-r2.md` §3 (SSH setup) ativa em ~10min.
+
+**Pendente Faixa 4 (qualidade):**
+
+- 8 lints custom (`no-unwrapped-action`, `no-raw-fetch`, `no-unscanned-upload`, `cross-tenant-read-must-log`, `no-hardcoded-design-token`, `ai-block-respected`, `no-window-alert`, `no-hardcoded-toast-message`).
+- Esqueletos `e2e/smoke/` (10 testes) + `e2e/critical/` (12 testes) com helpers Playwright.
+- RIPDs vazios em `docs/compliance/ripd/`.
+
 ### Build — Sprint 00 Faixa 2 FECHADA 🟢: `https://app.logifit.com.br` rodando ponta a ponta 2026-05-11
 
 `HTTP/2 200` externo via Cloudflare → Traefik → Next.js standalone, 8/8 security headers da regra 35, CSP nonce dinâmico por request + `strict-dynamic` (sem `unsafe-inline` em `script-src`), i18n pt-BR/en-US/es-419 ativo (regra 27), Toaster CSP-safe propagando nonce (regra 45), design tokens "Equilíbrio Vital" aplicados (regra 44). Sprint 00 sai de 55% pra 75%.
