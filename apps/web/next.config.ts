@@ -34,9 +34,8 @@ const nextConfig: NextConfig = {
   // outputFileTracingRoot aponta pra raiz do monorepo pra Next traçar workspaces.
   output: 'standalone',
   outputFileTracingRoot: repoRoot,
-  experimental: {
-    typedRoutes: true,
-  },
+  // typedRoutes promovido de experimental → top-level em Next.js 15.5+
+  typedRoutes: true,
   transpilePackages: [
     '@repo/ai',
     '@repo/db',
