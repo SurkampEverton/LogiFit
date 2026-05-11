@@ -244,16 +244,16 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 
 **Bootstrap Oracle Cloud SP + Coolify (ADR 0091 — Faixa 2):**
 
-- [ ] **Conta Oracle Cloud OCI** criada com **PAYG mode ativado** (cartão de crédito vinculado, mas mantém free tier R$0 enquanto não exceder limites — reduz risco de suspensão sem aviso)
-- [ ] **VPS provisionado** na região **Vinhedo (`sa-vinhedo-1`)** — distinta de SP capital (`sa-saopaulo-1`); Vinhedo escolhido por ter free tier ARM consistentemente disponível (ADR 0091 §"Por que Vinhedo"). VM.Standard.A1.Flex ARM Ampere com 4 OCPU + 24 GB RAM + 200 GB block storage; Ubuntu 22.04 LTS ARM64; SSH key gerada localmente (RSA 4096 ou ed25519); IP público reservado
-- [ ] **`infra/bootstrap-oracle.sh`** versionado no repo: script idempotente que (a) atualiza apt + instala Docker + Docker Compose; (b) configura UFW firewall (22/SSH só de IP do fundador, 80/443/HTTP+S, 8000/Coolify console restrito); (c) instala Coolify via script oficial; (d) configura swap 4GB; (e) ativa unattended-upgrades de segurança; (f) instala fail2ban; (g) cria usuário `coolify` não-root pra serviços
-- [ ] **Coolify** instalado e acessível em `https://coolify.logifit.com.br` (subdomínio dedicado com Cloudflare proxy + Turnstile)
-- [ ] **Coolify configurado** com: GitHub integration (PAT pessoal LogiFit), GHCR como container registry source, webhook pra deploy on push em `main`
-- [ ] **Containers self-hosted no Coolify** (cada um em `docker-compose.yml` próprio gerenciado pelo Coolify): `postgres:16-alpine` + `pgbouncer/pgbouncer` (transaction pool) + `redis:7-alpine` + `minio/minio` + `glitchtip/glitchtip` + `clickhouse/clickhouse-server` (req do GlitchTip) + `grafana/loki` + `grafana/promtail` + `grafana/grafana` + Caddy (já incluso no Coolify)
-- [ ] **Volumes persistentes** mapeados em `/data/{postgres,redis,minio,glitchtip,loki,grafana}` (block storage Oracle 200GB montado em `/data`)
-- [ ] **Caddy reverse proxy** (já vem no Coolify) configurado pra: `app.logifit.com.br` → Next.js container, `coolify.logifit.com.br` → Coolify (auth basic+IP whitelist), `monitor.logifit.com.br` → Grafana, `errors.logifit.com.br` → GlitchTip; SSL automático via Let's Encrypt (DNS-01 challenge via Cloudflare API)
-- [ ] **`.github/workflows/deploy.yml`** — push em `main` → `docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/everton/logifit:$SHA .` → push GHCR → webhook Coolify → pull `arm64` no VPS → rolling restart (Coolify cuida de zero-downtime)
-- [ ] **Primeiro deploy "Hello World"** Next.js em `app.logifit.com.br` validado: `curl https://app.logifit.com.br` retorna 200 + página renderiza Tokens "Equilíbrio Vital"
+- [x] **Conta Oracle Cloud OCI** criada com **PAYG mode ativado** (cartão de crédito vinculado, mas mantém free tier R$0 enquanto não exceder limites — reduz risco de suspensão sem aviso) — **entregue 2026-05-09**
+- [x] **VPS provisionado** na região **Vinhedo (`sa-vinhedo-1`)** — VM.Standard.A1.Flex ARM Ampere com **4 OCPU + 24 GB RAM** + **150 GB block storage** (em vez de 200 GB pra ficar dentro do free tier de 200 GB total); Ubuntu 22.04 Minimal aarch64; SSH key `ssh-key-2026-05-06` (ed25519); IP público `157.151.31.227` reservado — **entregue 2026-05-09**
+- [x] **`infra/bootstrap-oracle.sh`** versionado no repo: script idempotente que (a) atualiza apt + instala Docker + Docker Compose; (b) configura UFW firewall (22/SSH só de IP do fundador, 80/443/HTTP+S, 8000/Coolify console restrito); (c) instala Coolify via script oficial; (d) configura swap 4GB; (e) ativa unattended-upgrades de segurança; (f) instala fail2ban — **entregue 2026-05-10**
+- [x] **Coolify** instalado e acessível em `https://coolify.logifit.com.br` (Cloudflare proxy 🟠 + Let's Encrypt) — **entregue 2026-05-06**
+- [x] **Coolify configurado** com Deploy Key SSH no GitHub repo (Private Key `logifit-github-deploy`); webhook automático on push em `main` — **entregue 2026-05-11**. _Desvio justificado:_ optamos por Coolify pegar o repo direto via Deploy Key + build no VPS, em vez de GHA → GHCR → webhook (item abaixo); reavaliar quando tempo de build no VPS virar gargalo.
+- [~] **Containers self-hosted no Coolify** — `pgvector/pgvector:pg17` (database `logifit` + 4 extensions) ✅ + `redis:7.2` ✅ + `minio/minio` (5 buckets) ✅ + `traefik:v3.6` (já incluso no Coolify) ✅. **Faltando Faixa 3:** GlitchTip + ClickHouse + Loki + Promtail + Grafana + PgBouncer.
+- [x] **Volumes persistentes** em `/data/coolify/...` (block storage Oracle 150 GB montado em `/data` ext4) — **entregue 2026-05-09**
+- [~] **Traefik reverse proxy** configurado pra: `app.logifit.com.br` → Next.js container ✅ (HTTP/2 + Let's Encrypt ACME via TLS-ALPN-01) + `coolify.logifit.com.br` → Coolify dashboard ✅. **Faltando Faixa 3:** `monitor.` → Grafana, `errors.` → GlitchTip.
+- [ ] **`.github/workflows/deploy.yml`** — push em `main` → `docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/everton/logifit:$SHA .` → push GHCR → webhook Coolify. _Pendente — atualmente Coolify faz build no VPS direto via Deploy Key (mais simples no Sprint 00, considerar migrar pra GHA+GHCR quando build no VPS virar gargalo ou quando virar prática multi-environment)._
+- [x] **Primeiro deploy "Hello World"** Next.js em `https://app.logifit.com.br` validado: `curl https://app.logifit.com.br` retorna `HTTP/2 200` com 8/8 security headers (HSTS preload, CSP com nonce dinâmico + `strict-dynamic`, XFO DENY, nosniff, Referrer-Policy, Permissions-Policy, COOP, CORP) + página renderiza tokens "Equilíbrio Vital" + i18n pt-BR ativo — **entregue 2026-05-11** (commit `3d5a463`)
 - [ ] **Runbook `docs/runbooks/bootstrap-oracle.md`** — passo-a-passo de criar conta Oracle, ativar PAYG, provisionar VPS, rodar `bootstrap-oracle.sh`, configurar Coolify, primeiro deploy. Atualizar em cada drift de processo
 - [ ] **Runbook `docs/runbooks/coolify-operacoes.md`** — cheatsheet de operações comuns: ver logs, restart container, backup volume, restore, troubleshooting comum
 
@@ -298,7 +298,12 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 
 ## Log
 
-- **2026-05-11 — Faixa 2 quase fechada: VPS Oracle Vinhedo provisionado + Coolify + 3 resources prod (Postgres pgvector pg17, Redis 7.2, MinIO + 5 buckets) + `apps/web/Dockerfile` pra Next.js standalone.**
+- **2026-05-11 — Faixa 2 FECHADA 🟢: `https://app.logifit.com.br` rodando ponta a ponta — Cloudflare → Traefik → Next.js standalone com 8/8 security headers (regra 35), CSP nonce dinâmico por request + `strict-dynamic` (sem `unsafe-inline` em `script-src`), i18n pt-BR/en-US/es-419 ativo (regra 27), Toaster CSP-safe propagando nonce (regra 45), design tokens "Equilíbrio Vital" aplicados (regra 44).**
+  - **Deploy final** commit `3d5a463` (terceira tentativa); container `Up (healthy)`; HTTP/2 200 externo via `cf-ray ...GRU` (Cloudflare São Paulo edge); HTTP 200 local via healthcheck `wget http://127.0.0.1:3000/`.
+  - **3 erros corrigidos no caminho** que viraram lição:
+    1. **TS error Sonner v1.7 ToasterProps não declara `nonce`** → spread `{...extra}` com cast `as any` + comentário `// biome-ignore` justificativa explícita; Sonner ≥2 expõe nativo (`packages/ui/src/messages/toaster.tsx`).
+    2. **Next.js 15.5 deprecation `experimental.typedRoutes`** → migrado pra top-level `typedRoutes: true` (`apps/web/next.config.ts`).
+    3. **Alpine BusyBox `wget --spider http://localhost:3000/` falhou com Connection refused** porque resolve `localhost` como `[::1]` IPv6 e Next.js standalone com `HOSTNAME=0.0.0.0` bind só em IPv4 → forçar `http://127.0.0.1:3000/` no `HEALTHCHECK` do Dockerfile (commit `3d5a463`).
   - **VPS Oracle Cloud Vinhedo (`sa-vinhedo-1`)** — VM.Standard.A1.Flex 4 OCPU + 24 GB RAM ARM Ampere; IP público `157.151.31.227`; Ubuntu 22.04 Minimal aarch64; block volume 150 GB ext4 montado em `/data`; `bootstrap-oracle.sh` rodado (UFW + fail2ban + Docker CE + Coolify install).
   - **Coolify v4.0.0** healthy há 5 dias com 4 containers internos (proxy Traefik v3.6 / db Postgres 15 / redis 7 / realtime).
   - **Cloudflare DNS** propagado: A records `app.logifit.com.br` + `coolify.` + `monitor.` + `errors.` apontando pro VPS (proxied 🟠).
@@ -306,15 +311,20 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
   - **`logifit-redis`** (`redis:7.2` healthy): auth `PONG` funcional, network alias `logifit-redis` no `coolify` network.
   - **`logifit-minio`** (`minio/minio:latest` ARM64 healthy): MinIO Server RELEASE.2025-09-07; 5 buckets criados (`logifit-uploads`, `logifit-backups`, `logifit-lab-documents`, `logifit-fisio-evolucoes`, `logifit-exam-attachments`); conectado a `coolify` network (10.0.2.9) + network próprio do compose. **Lição:** Coolify v4 `build_pack=dockerimage` ignora `start_command` — solução foi recriar via `Docker Compose Empty` com YAML explícito incluindo `command: server /data --console-address ":9001"`. Bitnami/minio descartado (tag `latest` removida em mudança Bitnami "Secure Images" 2025).
   - **Coolify SSH config**: ajustamos `Match Address 127.0.0.1,10.0.0.0/8,172.16.0.0/12` em `/etc/ssh/sshd_config.d/99-coolify-localhost.conf` pra permitir `root@host.docker.internal` (Docker bridge `10.0.1.1`); Deploy Keys do Coolify autorizadas em `/root/.ssh/authorized_keys` (sem `force_command` Ubuntu default removido); user no DB Coolify atualizado de `ubuntu` → `root` direto via `psql` (painel UI estava cached). Externalmente, root SSH continua bloqueado pelo `bootstrap-oracle.sh` hardening.
-  - **`apps/web/Dockerfile` + `.dockerignore`** criados — multi-stage Node 22 alpine + corepack pnpm + libc6-compat; non-root user `nextjs:nodejs` (UID 1001); standalone Next.js output (`output: 'standalone'` + `outputFileTracingRoot` pra monorepo); healthcheck wget porta 3000; CMD `node apps/web/server.js`. Build context = raiz do monorepo.
-  - **`next.config.ts`** ganha `output: 'standalone'` + `outputFileTracingRoot: repoRoot` (calculado via `import.meta.url` ESM) pra build Docker funcionar com workspaces pnpm.
+  - **`apps/web/Dockerfile` + `.dockerignore`** criados — multi-stage Node 22 alpine + corepack pnpm + libc6-compat; non-root user `nextjs:nodejs` (UID 1001); standalone Next.js output (`output: 'standalone'` + `outputFileTracingRoot` pra monorepo); healthcheck `wget --spider http://127.0.0.1:3000/` (IPv4 forçado); CMD `node apps/web/server.js`. Build context = raiz do monorepo.
+  - **`next.config.ts`** ganha `output: 'standalone'` + `outputFileTracingRoot: repoRoot` (calculado via `import.meta.url` ESM) + `typedRoutes: true` top-level (deprecation Next 15.5).
+  - **Application Coolify `logifit-web`** criada via API REST: repo `git@github.com:SurkampEverton/LogiFit.git` via Deploy Key (Private Key `logifit-github-deploy`), branch `main`, build_pack `dockerfile`, dockerfile_location `/apps/web/Dockerfile`, ports_exposes `3000`, domain `https://app.logifit.com.br`, TLS resolver `letsencrypt`, env `NODE_ENV=production` + `NEXT_TELEMETRY_DISABLED=1` (`is_buildtime` field, sem underscore — gotcha Coolify v4 API).
   - **Lições documentadas pra runbook futuro:**
-    1. Coolify v4 cria diretórios `/data/coolify/...` com ownership do user SSH; ubuntu user UID 1001 quebra acesso UID 9999 do Coolify → resolve com SSH user=root.
+    1. Coolify v4 cria diretórios `/data/coolify/...` com ownership do user SSH; ubuntu user UID 1001 quebra acesso UID 9999 do Coolify → resolve com SSH user=root + `Match Address` localhost-only.
     2. `start_command` não é aplicado em `build_pack=dockerimage` → usar `Docker Compose Empty` quando precisar de command custom.
     3. Bitnami images public sem tag `latest` desde 2025 → preferir imagens oficiais (`minio/minio`, `redis:7.2`, `postgres:17`) ou Bitnami Legacy.
     4. Image `postgres:17-alpine` não tem pgvector → forçar `pgvector/pgvector:pg17` via UPDATE direto no DB Coolify `standalone_postgresqls.image`.
     5. Docker-entrypoint-initdb.d só executa em cluster vazio; volume preservado entre redeploys ignora init scripts → criar database + extensions manualmente.
-  - **Pendente Faixa 2 (próximo):** criar Application `logifit-web` no Coolify apontando pro repo via Deploy Key + branch `main` + Dockerfile path `apps/web/Dockerfile` + domain `app.logifit.com.br` + Cloudflare DNS-01 challenge no Caddy/Traefik + primeiro deploy "Hello World".
+    6. **Alpine BusyBox resolve `localhost` → IPv6 `[::1]` primeiro** — em healthchecks de container Next.js standalone com `HOSTNAME=0.0.0.0` (IPv4 only) sempre usar `127.0.0.1` (não `localhost`).
+    7. **Coolify v4 API env var field é `is_buildtime` (sem underscore)** — `is_build_time` retorna `not allowed`. Pra evitar gotchas usar body mínimo `{"key": ..., "value": ...}`.
+    8. **Sonner v1.7 não tipa prop `nonce` em `ToasterProps`** apesar de aceitar em runtime — spread tipado com `as any` (ou upgrade ≥2 pós-Sprint 00); regra 45 ainda atendida pela arquitetura (nonce vem do middleware via `headers().get('x-nonce')`).
+    9. **Next.js 15.5+ promoveu `typedRoutes` de `experimental.*` para top-level** — manter na seção experimental imprime warning sem quebrar build, mas convém migrar logo.
+  - **Próximas faixas:** Faixa 3 (security headers já no ar — falta GlitchTip + Loki/Grafana + Cloudflare R2 backup com rclone+GPG) e Faixa 4 (8 lints custom + esqueletos `smoke/` e `critical/` + helpers Playwright + RIPDs vazios).
 
 - **2026-04-27 — Faixa 1 (semana 1) entregue.** Monorepo executável + dev local + CI verde.
   - **Monorepo:** Turborepo + pnpm workspace v10 + Node 22; 9 packages (`@repo/{config,ui,db,ai,types,i18n,storage,errors,security}`) com `package.json` (`type: module`, `exports` map) + `tsconfig.json` (extends `@repo/config/tsconfig.base.json`) + `src/index.ts` placeholder; `@app/web` Next.js 15 + React 19 + Tailwind v4 + next-intl v4.
@@ -385,7 +395,7 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 - [ ] CI verde no branch
 - [ ] GlitchTip self-host capturando em dev e prod (PostHog dropado — regra 12 revisada)
 - [ ] Loki + Grafana self-host recebendo logs estruturados (`pino` → stdout → Promtail → Loki) em prod
-- [ ] **Coolify rodando no VPS Oracle SP** + primeiro deploy "Hello World" Next.js em `app.logifit.com.br` validado
+- [x] **Coolify rodando no VPS Oracle Vinhedo** + primeiro deploy "Hello World" Next.js em `app.logifit.com.br` validado — entregue 2026-05-11 (Faixa 2)
 - [ ] **Backup off-site Cloudflare R2** funcional com cron diário + GPG cifrado
 - [ ] Tokens "Equilíbrio Vital" aplicados sem sombras residuais do shadcn
 - [ ] LocaleSwitcher funcional
