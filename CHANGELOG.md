@@ -6,6 +6,32 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 00 Faixa 4 FECHADA 🟢: qualidade + compliance preparados 2026-05-11
+
+Sprint 00 sobe de 90% pra 95%. 10 smoke + 12 critical esqueletos · 8 lints custom rodando limpo em 87 arquivos · 18 RIPDs em estado skeleton com hash SHA-256 validável via `pnpm compliance:check`. Resta apenas: ativação R2 backup (dependente user) pra fechar 100%.
+
+**Adições:**
+
+- **`apps/web/e2e/smoke/`** — 9 novos esqueletos (já tinha auth-magic-link da Faixa 1): `tenant-switch`, `member-create`, `agenda-book`, `asaas-checkout`, `dashboard-by-role`, `global-search`, `messages-catalog`, `security-headers`, `mfa-recent-required`. Cada um com `test.skip()` + cenário documentado + sprint dono + dependências. **Exceção:** `security-headers.spec.ts` já tem 3 testes ATIVOS validando 6 headers fixos + CSP nonce dinâmico + `/.well-known/security.txt` — passa em prod desde Faixa 2.
+- **`apps/web/e2e/critical/`** — 11 novos esqueletos (já tinha cross-tenant-rls): `trial-anonymize`, `cross-tenant-audit-log`, `passport-global-constraint`, `asaas-idempotencia`, `cross-prescricao-fisio-academia`, `nfe-210210-rejeicao`, `hash-chain-cutover`, `icp-brasil-portal-iti`, `tiss-xsd-validation`, `revoke-passport-link`, `franchise-rule-25-clinico-nao-cruza`. Cobrem regras 25, 39, 42; ADRs 0054, 0057, 0059, 0077, 0079, 0089; CFM 2.299/Lei 13.787 (ICP-Brasil), TISS 4.01, NF-e SEFAZ.
+
+**Atualizações:**
+
+- **`scripts/lint-custom.mjs`** — adiciona 3 lints novos (`no-unwrapped-action` + `high-risk-action-must-require-recent-mfa` + `cross-tenant-read-must-log`) ao set existente de 5 (`no-window-alert`, `no-raw-fetch`, `no-hardcoded-design-token`, `no-rejected-saas-import`, `no-hardcoded-toast-message`). Total **8 lints custom** cobrindo regras 27, 33, 37, 42, 43, 44, 45, 46. Lints 6-8 são "ready" — passam silenciosamente até Sprint dono criar o padrão (Server Action com `'use server'`, arquivo `high-risk-actions.ts`, query cross-tenant); quando feature aterrissa, lint vira fail automaticamente sem retrofit. Validado: ✓ 85 code + 2 css files clean (8 rules).
+
+**Lições novas (Faixa 4):**
+
+15. **`smoke/security-headers.spec.ts` é único que roda DESDE Sprint 00** (não precisa esperar Sprint 01a) — útil pra CI gate antes de qualquer feature de negócio. Faz curl em `/` + `/.well-known/security.txt`, valida 6 headers fixos + CSP com nonce dinâmico (2 requests → 2 nonces distintos comprovando `strict-dynamic` sem cache).
+16. **Lints 6-8 "ready"** — detectam padrão futuramente. Hoje, base de código não tem `'use server'`/`high-risk-actions.ts`/`origin_tenant_id` → lint passa silencioso. Quando Sprint 01a/02 introduzir o padrão, lint vira fail automaticamente. Filosofia: lint é onboarding pro dev futuro, não auditor retroativo.
+17. **Lint 7 lê fonte canônica** `packages/security/src/high-risk-actions.ts` — adicionar uma action lá força MFA recente nos handlers correspondentes automaticamente. Sprint 17/20/22 que adicionarem `cancelNfe`/`cancelTissGuide` só editam a lista; lint detecta sem mexer no código do lint.
+
+**Por que importa:** o CI ganha proteção retroativa pros próximos sprints sem precisar de retrofit. Sprint 01a já vai ter o piso enforced de regras 33+43 desde o primeiro commit; Sprint 02 idem pra regra 42. Smoke `security-headers` valida o que já está em prod, fechando o ciclo "código → prod → teste automatizado" de ponta a ponta.
+
+**Pendente (não faz parte do Sprint 00):**
+
+- Ativação R2 backup (regra 40) — depende user fornecer credentials.
+- Implementação real dos 22 esqueletos E2E — cada um destrava no Sprint dono (01a a 36).
+
 ### Build — Sprint 00 Faixa 3 quase fechada: observabilidade + pool + backup-as-code subiram em prod 2026-05-11
 
 Sprint 00 sobe de 75% pra 90%. Stack self-host de observabilidade + connection pool + backup scripts versionados — última pendência é o user fornecer credentials R2 + GPG pra ativar cron de backup. 14 containers em prod usando 3.5 GB de 23 GB RAM (folga confortável).
