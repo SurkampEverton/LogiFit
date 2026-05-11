@@ -67,8 +67,11 @@ USER nextjs
 
 EXPOSE 3000
 
-# Healthcheck simples (Next.js responde / com 200 quando rota raiz existe)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+# Healthcheck simples (Next.js responde / com 200 quando rota raiz existe).
+# IMPORTANTE: usar 127.0.0.1 (não localhost) — Alpine BusyBox wget resolve
+# localhost como IPv6 [::1] primeiro, e Next.js standalone com HOSTNAME=0.0.0.0
+# só bind em IPv4 → connection refused. 127.0.0.1 força IPv4.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/ || exit 1
 
 CMD ["node", "apps/web/server.js"]
