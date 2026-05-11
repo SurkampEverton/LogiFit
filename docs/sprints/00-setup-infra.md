@@ -298,6 +298,24 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 
 ## Log
 
+- **2026-05-11 — Faixa 2 quase fechada: VPS Oracle Vinhedo provisionado + Coolify + 3 resources prod (Postgres pgvector pg17, Redis 7.2, MinIO + 5 buckets) + `apps/web/Dockerfile` pra Next.js standalone.**
+  - **VPS Oracle Cloud Vinhedo (`sa-vinhedo-1`)** — VM.Standard.A1.Flex 4 OCPU + 24 GB RAM ARM Ampere; IP público `157.151.31.227`; Ubuntu 22.04 Minimal aarch64; block volume 150 GB ext4 montado em `/data`; `bootstrap-oracle.sh` rodado (UFW + fail2ban + Docker CE + Coolify install).
+  - **Coolify v4.0.0** healthy há 5 dias com 4 containers internos (proxy Traefik v3.6 / db Postgres 15 / redis 7 / realtime).
+  - **Cloudflare DNS** propagado: A records `app.logifit.com.br` + `coolify.` + `monitor.` + `errors.` apontando pro VPS (proxied 🟠).
+  - **`logifit-pg`** (`pgvector/pgvector:pg17` healthy): database `logifit` criada manualmente + 4 extensions ativadas (`pg_trgm`, `unaccent`, `vector` 0.8.2, `pgcrypto`) — Coolify v4 ignorou o `docker-entrypoint-initdb.d` (workaround: `docker exec psql` direto).
+  - **`logifit-redis`** (`redis:7.2` healthy): auth `PONG` funcional, network alias `logifit-redis` no `coolify` network.
+  - **`logifit-minio`** (`minio/minio:latest` ARM64 healthy): MinIO Server RELEASE.2025-09-07; 5 buckets criados (`logifit-uploads`, `logifit-backups`, `logifit-lab-documents`, `logifit-fisio-evolucoes`, `logifit-exam-attachments`); conectado a `coolify` network (10.0.2.9) + network próprio do compose. **Lição:** Coolify v4 `build_pack=dockerimage` ignora `start_command` — solução foi recriar via `Docker Compose Empty` com YAML explícito incluindo `command: server /data --console-address ":9001"`. Bitnami/minio descartado (tag `latest` removida em mudança Bitnami "Secure Images" 2025).
+  - **Coolify SSH config**: ajustamos `Match Address 127.0.0.1,10.0.0.0/8,172.16.0.0/12` em `/etc/ssh/sshd_config.d/99-coolify-localhost.conf` pra permitir `root@host.docker.internal` (Docker bridge `10.0.1.1`); Deploy Keys do Coolify autorizadas em `/root/.ssh/authorized_keys` (sem `force_command` Ubuntu default removido); user no DB Coolify atualizado de `ubuntu` → `root` direto via `psql` (painel UI estava cached). Externalmente, root SSH continua bloqueado pelo `bootstrap-oracle.sh` hardening.
+  - **`apps/web/Dockerfile` + `.dockerignore`** criados — multi-stage Node 22 alpine + corepack pnpm + libc6-compat; non-root user `nextjs:nodejs` (UID 1001); standalone Next.js output (`output: 'standalone'` + `outputFileTracingRoot` pra monorepo); healthcheck wget porta 3000; CMD `node apps/web/server.js`. Build context = raiz do monorepo.
+  - **`next.config.ts`** ganha `output: 'standalone'` + `outputFileTracingRoot: repoRoot` (calculado via `import.meta.url` ESM) pra build Docker funcionar com workspaces pnpm.
+  - **Lições documentadas pra runbook futuro:**
+    1. Coolify v4 cria diretórios `/data/coolify/...` com ownership do user SSH; ubuntu user UID 1001 quebra acesso UID 9999 do Coolify → resolve com SSH user=root.
+    2. `start_command` não é aplicado em `build_pack=dockerimage` → usar `Docker Compose Empty` quando precisar de command custom.
+    3. Bitnami images public sem tag `latest` desde 2025 → preferir imagens oficiais (`minio/minio`, `redis:7.2`, `postgres:17`) ou Bitnami Legacy.
+    4. Image `postgres:17-alpine` não tem pgvector → forçar `pgvector/pgvector:pg17` via UPDATE direto no DB Coolify `standalone_postgresqls.image`.
+    5. Docker-entrypoint-initdb.d só executa em cluster vazio; volume preservado entre redeploys ignora init scripts → criar database + extensions manualmente.
+  - **Pendente Faixa 2 (próximo):** criar Application `logifit-web` no Coolify apontando pro repo via Deploy Key + branch `main` + Dockerfile path `apps/web/Dockerfile` + domain `app.logifit.com.br` + Cloudflare DNS-01 challenge no Caddy/Traefik + primeiro deploy "Hello World".
+
 - **2026-04-27 — Faixa 1 (semana 1) entregue.** Monorepo executável + dev local + CI verde.
   - **Monorepo:** Turborepo + pnpm workspace v10 + Node 22; 9 packages (`@repo/{config,ui,db,ai,types,i18n,storage,errors,security}`) com `package.json` (`type: module`, `exports` map) + `tsconfig.json` (extends `@repo/config/tsconfig.base.json`) + `src/index.ts` placeholder; `@app/web` Next.js 15 + React 19 + Tailwind v4 + next-intl v4.
   - **Dev local:** `docker-compose.yml` com 4 services healthchecked (`pgvector/pgvector:pg16` + `redis:7-alpine` + `minio/minio:latest` + `mailhog/mailhog:latest`); volumes em `.docker-data/` gitignored. **Desvio justificado:** trocou `postgres:16-alpine` da spec por `pgvector/pgvector:pg16` para que `CREATE EXTENSION vector` funcione (regra 30 + ADR 0064).

@@ -1,5 +1,10 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import createNextIntlPlugin from 'next-intl/plugin'
 import type { NextConfig } from 'next'
+
+const here = path.dirname(fileURLToPath(import.meta.url))
+const repoRoot = path.join(here, '../../')
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
@@ -25,6 +30,10 @@ const SECURITY_HEADERS = [
 ]
 
 const nextConfig: NextConfig = {
+  // Standalone Next.js output pra Docker multi-stage (ADR 0091 — self-host).
+  // outputFileTracingRoot aponta pra raiz do monorepo pra Next traçar workspaces.
+  output: 'standalone',
+  outputFileTracingRoot: repoRoot,
   experimental: {
     typedRoutes: true,
   },

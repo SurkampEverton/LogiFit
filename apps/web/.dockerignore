@@ -1,0 +1,77 @@
+# Dockerignore — controla o build context enviado ao Docker daemon.
+# Build context = raiz do monorepo (Coolify configura).
+
+# Dependências (vão ser instaladas dentro do container)
+node_modules
+**/node_modules
+.pnpm-store
+.yarn
+
+# Build outputs
+.next
+**/.next
+dist
+**/dist
+out
+**/out
+.turbo
+**/.turbo
+build
+**/build
+
+# Dev volumes
+.docker-data
+
+# Tests / coverage
+coverage
+**/coverage
+.nyc_output
+
+# Git (build não precisa de histórico)
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Env (segredos vêm via Coolify env vars)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs
+npm-debug.log*
+pnpm-debug.log*
+
+# Docs/sprint/runbooks (não vão pro container)
+docs
+prototipo
+chaves
+CLAUDE.md
+CHANGELOG.md
+README.md
+*.dump
+*.sql.gz
+
+# CI/infra (não vão pro container app)
+.github
+.husky
+infra
+scripts
+
+# E2E tests (não vão pro container produção)
+apps/web/e2e
+playwright-report
+test-results
+
+# DB local artifacts
+packages/db/migrations
+packages/db/init
