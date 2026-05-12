@@ -1,0 +1,40 @@
+{
+  "toggle": "Abrir menú",
+  "close": "Cerrar menú",
+  "aria": {
+    "label": "Navegación principal"
+  },
+  "footer": {
+    "session_for": "Sesión de"
+  },
+  "modules": {
+    "inicio": "Inicio",
+    "pessoas": "Personas",
+    "agenda": "Agenda",
+    "acesso": "Control de acceso",
+    "comercial": "Comercial",
+    "financeiro": "Finanzas",
+    "fiscal": "Fiscal",
+    "clinico": "Clínico",
+    "vigilancia": "Vigilancia sanitaria",
+    "relacionamento": "Relacionamiento",
+    "estoque": "Inventario",
+    "engajamento": "Compromiso",
+    "rh": "RRHH",
+    "compliance": "Compliance",
+    "integracoes": "Integraciones",
+    "configuracoes": "Configuración"
+  },
+  "inicio": {
+    "home": "Tablero principal"
+  },
+  "pessoas": {
+    "members": "Alumnos/Pacientes",
+    "persons": "Personas (PF/PJ)"
+  },
+  "configuracoes": {
+    "users": "Usuarios",
+    "security": "Seguridad de la cuenta",
+    "sessions": "Mis sesiones"
+  }
+}

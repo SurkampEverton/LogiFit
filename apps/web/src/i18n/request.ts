@@ -1,8 +1,8 @@
+import { DEFAULT_LOCALE, type Locale, isLocale } from '@repo/i18n/config'
 import { getRequestConfig } from 'next-intl/server'
 import { cookies, headers } from 'next/headers'
-import { DEFAULT_LOCALE, isLocale, type Locale } from '@repo/i18n/config'
 
-const NAMESPACES = ['common', 'auth', 'errors', 'security', 'messages'] as const
+const NAMESPACES = ['common', 'auth', 'errors', 'security', 'messages', 'nav'] as const
 
 async function resolveLocale(): Promise<Locale> {
   const cookieStore = await cookies()
@@ -22,8 +22,7 @@ export default getRequestConfig(async () => {
   const locale = await resolveLocale()
   const entries = await Promise.all(
     NAMESPACES.map(
-      async (ns) =>
-        [ns, (await import(`../messages/${locale}/${ns}.json`)).default] as const,
+      async (ns) => [ns, (await import(`../messages/${locale}/${ns}.json`)).default] as const,
     ),
   )
   return { locale, messages: Object.fromEntries(entries) }

@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server'
 import { DEFAULT_LOCALE, isLocale } from '@repo/i18n/config'
+import { type NextRequest, NextResponse } from 'next/server'
 
 const COOKIE_LOCALE = 'NEXT_LOCALE'
 const COOKIE_LOCALE_MAX_AGE = 60 * 60 * 24 * 365
@@ -78,6 +78,9 @@ export function middleware(request: NextRequest) {
 
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-nonce', nonce)
+  // x-pathname pra Server Components saberem rota atual sem usePathname() client
+  // (Sprint 00b — AppShell marca item ativo no SideMenu via prop currentPath).
+  requestHeaders.set('x-pathname', pathname)
 
   const response = NextResponse.next({ request: { headers: requestHeaders } })
 

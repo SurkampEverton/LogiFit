@@ -152,7 +152,30 @@ Telemetria PostHog:
 
 ## Log
 
-- —
+- **2026-05-12 — Faixa A entregue 🟢 (Sprint 00b a 40%).** Foundation completo:
+  - **`packages/ui/src/menu/types.ts`** — interfaces canônicas `MenuItem`, `MenuModule`, `MenuFilterContext` + tipo `Vertical`. Comentado: `registerMenuItem()` runtime API ficou adiada (dev solo → file edit já resolve; overhead de registry runtime injustificado).
+  - **`packages/ui/src/menu/menu-items.ts`** — registry estático com **17 módulos canônicos** (Início, Pessoas, Agenda, Acesso, Comercial, Financeiro, Fiscal, Clínico, Vigilância, Relacionamento, Estoque, Engajamento, RH, Compliance, Integrações, Configurações). Apenas items cujas rotas EXISTEM hoje têm `url`; demais ficam comentados como TODO até feature aterrissar.
+  - **`packages/ui/src/menu/app-shell.tsx`** — Client Component principal:
+    - Hamburger ☰ trigger 44px touch (regra 31) com `aria-expanded` + `aria-controls`
+    - Overlay slide-in `transform translateX` + `transition cubic-bezier(0.4, 0, 0.2, 1)` 250ms (CSS puro, sem framer-motion)
+    - Largura adaptativa `min(85vw, 320px)` mobile + `max-width: 320px` (mobile/tablet/desktop unificado num breakpoint só por simplicidade Faixa A)
+    - Backdrop `rgba(0,0,0,0.5)` + `backdropFilter: blur(2px)` clicável pra fechar
+    - **Esc** fecha + restaura foco no trigger (a11y WCAG)
+    - **Ctrl/Cmd+B** toggle global (padrão VSCode)
+    - **Focus trap** quando aberto (Tab circula, Shift+Tab inverso)
+    - **localStorage** persiste estado aberto/fechado em desktop (`matchMedia('(min-width: 1024px)')`); mobile sempre fecha
+    - Mobile fecha ao clicar item (matchMedia)
+    - Filtro inline: `permissionSet.size === 0 || has(k)` (Faixa A → "todos visíveis"; Faixa C plugga `has_permission` real)
+    - Module visível só se 1+ items passarem nos filtros + module com `requiredVertical` checa contra `activeVerticals[]`
+  - **`apps/web/src/messages/{pt-BR,en-US,es-419}/nav.json`** — 3 catálogos i18n (regra 27 + ADR 0052): toggle/close/aria/footer + 16 module labels + items que existem (members/persons/users/security/sessions). `apps/web/src/i18n/request.ts` adicionou `'nav'` à lista de NAMESPACES.
+  - **`apps/web/app/app/layout.tsx`** — Server Component que `requireFullSession`, carrega `user.username` + `tenant.name` via Drizzle, achata catálogo `nav` em `Record<string, string>` serializável e passa pro `<AppShell>` client.
+  - **`apps/web/app/app/page.tsx`** — landing `/app` com cards de atalho (members + count, persons, users, security, sessions) + section "Em breve" (Sprints 03/04/06/07/08). Não é o Dashboard Sprint 07 (que reescreve 100% com widgets cross-module + KPIs por persona).
+  - **`apps/web/middleware.ts`** — adiciona header `x-pathname` (1 linha) pro Server Component saber rota atual sem `usePathname()` client wrapper.
+  - **`packages/ui/package.json`** — adiciona `@types/node` devDep (resolve typecheck pré-existente onde `@repo/ui` puxa `@repo/errors/fingerprint.ts` que importa `node:crypto`).
+
+  **Validações:** typecheck **11/11 packages** ✅ (pré-Sprint 00b estava em 10/11 com bug `@repo/ui` resolvido junto); build `@app/web` ✓ rota `/app` nova (183 B); lint Biome ✓.
+
+  **Faixas restantes:** B (swipe gesture mobile, header tenant logo); C (`has_permission()` lookup async via Server RPC + filtros vertical/consent reais); D (footer completo: avatar/tenant-switch/logout + E2E Playwright 3 viewports).
 
 ## Definition of Done
 

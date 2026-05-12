@@ -1,0 +1,40 @@
+{
+  "toggle": "Open menu",
+  "close": "Close menu",
+  "aria": {
+    "label": "Main navigation"
+  },
+  "footer": {
+    "session_for": "Signed in as"
+  },
+  "modules": {
+    "inicio": "Home",
+    "pessoas": "People",
+    "agenda": "Schedule",
+    "acesso": "Access control",
+    "comercial": "Sales",
+    "financeiro": "Finance",
+    "fiscal": "Tax",
+    "clinico": "Clinical",
+    "vigilancia": "Sanitary surveillance",
+    "relacionamento": "Engagement",
+    "estoque": "Inventory",
+    "engajamento": "Gamification",
+    "rh": "HR",
+    "compliance": "Compliance",
+    "integracoes": "Integrations",
+    "configuracoes": "Settings"
+  },
+  "inicio": {
+    "home": "Dashboard"
+  },
+  "pessoas": {
+    "members": "Members",
+    "persons": "Persons (individuals/orgs)"
+  },
+  "configuracoes": {
+    "users": "Users",
+    "security": "Account security",
+    "sessions": "My sessions"
+  }
+}

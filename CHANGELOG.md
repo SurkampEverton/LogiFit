@@ -6,6 +6,53 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 00b 40%: Menu lateral foundation + /app landing (Faixa A) 2026-05-12
+
+Faixa A do Sprint 00b. Foundation completo do `<AppShell>` overlay + 17 módulos canônicos + i18n 3 locales + rota `/app` landing autenticada. Sprint 00b sobe de 0% para 40%.
+
+**Adições:**
+
+- **`packages/ui/src/menu/types.ts`** — `MenuItem`, `MenuModule`, `MenuFilterContext`, tipo `Vertical`. API runtime `registerMenuItem()` adiada (dev solo → editar arquivo de registry direto resolve; overhead de registry runtime injustificado pra escala atual).
+- **`packages/ui/src/menu/menu-items.ts`** — registry estático com **17 módulos canônicos** (ADR 0063 + spec Sprint 00b): Início · Pessoas · Agenda · Acesso · Comercial · Financeiro · Fiscal · Clínico · Vigilância · Relacionamento · Estoque · Engajamento · RH · Compliance · Integrações · Configurações. Items hoje: `/app` · `/app/members` · `/app/pessoas` · `/app/settings/users` · `/seguranca` · `/meu/sessoes`. Demais ficam comentados como TODO até feature aterrissar.
+- **`packages/ui/src/menu/app-shell.tsx`** — Client Component overlay:
+  - Hamburger ☰ trigger 44px touch (regra 31) com `aria-expanded` + `aria-controls`
+  - Slide-in `transform translateX` + transition CSS `cubic-bezier(0.4, 0, 0.2, 1)` 250ms (sem framer)
+  - Backdrop dimmed + blur + click-to-close
+  - **Esc** fecha + restaura foco no trigger (a11y WCAG)
+  - **Ctrl/Cmd+B** toggle (padrão VSCode)
+  - **Focus trap** completo (Tab + Shift+Tab circulam dentro do menu)
+  - **localStorage** persiste estado em desktop; mobile sempre fecha
+  - Filtro inline: `permissionSet/featureFlagSet/verticalSet` lookup O(1); module some se 0 items passam
+- **`apps/web/src/messages/{pt-BR,en-US,es-419}/nav.json`** — **3 catálogos i18n** (regra 27 + ADR 0052): toggle/close/aria/footer + 16 module labels + 5 item labels (members/persons/users/security/sessions).
+- **`apps/web/app/app/layout.tsx`** — Server Component que `requireFullSession`, carrega `user.username` + `tenant.name` via Drizzle, achata `messages.nav` em `Record<string, string>` serializável pro `<AppShell>` Client.
+- **`apps/web/app/app/page.tsx`** — landing `/app` com 5 cards de atalho (members + count vivo, persons, users, security, sessions) + section "Em breve" (Sprints 03/04/06/07/08). Não é o Dashboard Sprint 07 — explicitamente shell até Sprint 07 reescrever com widgets cross-module + KPIs por persona.
+
+**Atualizações:**
+
+- **`apps/web/src/i18n/request.ts`** — adiciona `'nav'` à lista de NAMESPACES carregados.
+- **`apps/web/middleware.ts`** — adiciona header `x-pathname` (1 linha) pro Server Component saber rota atual via `headers()` sem precisar `usePathname()` client wrapper.
+- **`packages/ui/package.json`** — adiciona `@types/node` devDep. Resolve typecheck pré-existente onde `@repo/ui` puxa `@repo/errors/fingerprint.ts` (usa `node:crypto`); typecheck `@repo/ui` voltou ao verde de bug pré-existente que estava ignorado.
+- **`packages/ui/src/index.ts`** — re-exporta `./menu` (AppShell, MENU_MODULES, types).
+
+**Validações end-to-end:**
+
+- typecheck **11/11 packages** ✅ (era 10/11 antes — bug `@repo/ui` resolvido nesta rodada)
+- build `@app/web` ✓ rota nova `/app` (183 B)
+- lint Biome ✓ (1 warning ignorado: `useExhaustiveDependencies` em `useEffect` de hidratação localStorage — `// biome-ignore` documentado)
+
+**Lições documentadas:**
+
+1. Catálogos i18n não-triviais em monorepo: Server Component achata `messages.{ns}` em `Record<string, string>` antes de passar pra Client Component — evita serialização recursiva + Client não precisa carregar runtime next-intl.
+2. `x-pathname` injetado pelo middleware é o jeito leve de Server Components saberem rota corrente; alternativa (`usePathname()` em Client wrapper) infla bundle e atrasa LCP.
+3. Registry estático em arquivo TypeScript supera registry runtime `registerMenuItem({})` pra dev solo MVP — file edit é instantâneo e tipado; overhead de provider/context só compensa em multi-tenant developer org.
+4. Focus trap manual com `querySelectorAll('a[href], button:not([disabled])...')` cabe num useEffect — não precisa Radix Dialog pra menu de navegação.
+5. `noUncheckedIndexedAccess` força `focusables[focusables.length - 1]` retornar `T | undefined` — usar `?.focus()` cobre o caso array vazio sem rodeio.
+
+**Sprint 00b a 40%.** Faixas restantes:
+- **Faixa B** — swipe gesture mobile (touchstart/touchmove com threshold 50px), header com logo do tenant, breadcrumb opcional.
+- **Faixa C** — `has_permission()` lookup async (bulk RPC retornando set de permissions ativas do user) + `tenants.verticals_active` coluna real (Sprint 04+) + `consents` lookup (Sprint 11+).
+- **Faixa D** — footer com avatar + tenant-switch (multi-tenant) + logout button; E2E Playwright em 3 viewports (390/768/1280) validando 4 cenários (recepcionista/fisio/admin/multi-vertical); ADR 0063 cross-link.
+
 ### Build — Sprint 01b 75%: cron mark-grants-expired (D.6) 2026-05-12
 
 D.6 do Sprint 01b. SQL function `process_grants_expired()` + endpoint cron + 6 Vitest tests. Sprint 01b sobe de 70% pra 75%.
