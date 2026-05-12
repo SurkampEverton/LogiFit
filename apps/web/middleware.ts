@@ -21,7 +21,7 @@ const COOKIE_LOCALE_MAX_AGE = 60 * 60 * 24 * 365
  *   - Camada de defesa em profundidade: o pior caso (cookie presente mas
  *     sessão invalidada no DB) entra em /app/* e Server Component redireciona.
  */
-const PROTECTED_PATH_PREFIX = '/app'
+const PROTECTED_PATH_PREFIXES = ['/app', '/meu']
 const SESSION_COOKIE_NAME = 'logifit.session_token'
 
 function generateNonce(): string {
@@ -64,9 +64,10 @@ export function middleware(request: NextRequest) {
   const nonce = generateNonce()
   const { pathname } = request.nextUrl
 
-  // ─── Guard de sessão pra /app/* ────────────────────────────────────────
-  // Cookie ausente em rota protegida → redirect /login com `returnTo` query
-  if (pathname.startsWith(PROTECTED_PATH_PREFIX)) {
+  // ─── Guard de sessão pra rotas protegidas ─────────────────────────────
+  // Cookie ausente → redirect /login com `returnTo` query
+  const isProtected = PROTECTED_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  if (isProtected) {
     const hasSession = request.cookies.has(SESSION_COOKIE_NAME)
     if (!hasSession) {
       const loginUrl = new URL('/login', request.url)

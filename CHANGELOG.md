@@ -6,6 +6,46 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 01a Faixa C: RBAC + JWT claims + MFA helpers 2026-05-12
+
+12 system roles + 25 permissions seeded; plugin `customSession` injetando `tenantId`/`topology`/`roles[]`/`requiresMfa`/`mfaAt` no token BetterAuth; `requireRecentMfa()` helper pronto pra Sprint 04+ ativações. Sprint 01a sobe de 25% pra ~40%.
+
+**Adições:**
+
+- **`packages/db/src/schema/rbac.ts`** — 6 tabelas: `roles` (system + tenant-scoped), `permissions` (catálogo global), `role_permissions` (N:N), `user_roles` (com scope_company_id + scope_unit_id opcional pra regra 25), `user_permission_grants` (override direto), `user_mfa_recovery_codes` (10 codes one-time hash bcrypt).
+- **Migration `0002_brown_talon.sql`** — 6 tabelas + 12 índices + 13 FKs.
+- **`packages/db/src/policies/0006_rbac_rls.sql`** — RLS por tenant_id; system roles visíveis cross-tenant (read-only); `user_mfa_recovery_codes` DENY direto (só Server Action).
+- **`packages/db/src/policies/0007_rbac_seed.sql`** — seed idempotente: **12 system roles** (8 com requires_mfa=true — regra 43) + **25 permissions catálogo** (7 marcadas is_high_risk=true) + role_permissions assignments (super_admin/tenant_owner 25/25, gerente 15, recepcao 8, profissionais 5 cada, member 3).
+- **`packages/security/src/require-recent-mfa.ts`** — `requireRecentMfa()` + `requireRecentMfaForAction()` (lookup `HIGH_RISK_ACTIONS`) + `isMfaRecent()` helper UI. `MfaRecentRequiredError` com `code='MFA_RECENT_REQUIRED'` + `maxAgeMins` + `mfaAt` pra envelope ADR 0071. **13/13 Vitest tests verdes**.
+- **Plugin `customSession`** em `@repo/auth/server` — injeta `logifit: { userId, tenantId, topology, roles[], requiresMfa, mfaAt }` no payload BetterAuth via lookup de 4 queries (users + tenants + roles + role_permissions). Sprint 02+ vai cachear em Redis TTL 60s.
+- **`apps/web/app/app/settings/mfa/page.tsx`** — Server Component skeleton com `auth.api.getSession` guard. 3 seções (TOTP / Passkey / Recovery codes) marcadas Faixa D+ (enrollment real depende de email plugado).
+- **`apps/web/app/meu/sessoes/page.tsx`** — guard + mostra sessão atual; listagem completa via `<ResponsiveTable>` aguarda Faixa D.
+- **`packages/security/vitest.config.ts`** — coverage threshold 80% (mesmo piso storage/db/errors).
+
+**Atualizações:**
+
+- **`apps/web/middleware.ts`** — `PROTECTED_PATH_PREFIXES` agora cobre `/app` E `/meu` (era só `/app`).
+- **`packages/security/package.json`** — adiciona dev dep `vitest@^2.1.5` + scripts test/test:watch.
+
+**Validações end-to-end:**
+
+- Typecheck `@repo/auth` + `@repo/db` + `@repo/security` + `@app/web` ✅
+- `pnpm --filter @app/web build` → **8 rotas** + middleware 34.7KB ✅
+- Migration aplicada (2× idempotente) ✅
+- `db:rls-check` 4 regras OK em **23 tabelas** ✅
+- **47 Vitest tests** (34 db/document + 13 security/mfa) ✅
+- 8 lints custom: **108 code + 2 css files clean** ✅
+- **Seed validado**: 12/12 system roles + 25/25 permissions + role_permissions corretas
+
+**Lições documentadas:**
+
+1. `drizzle-orm` v0.45 exige `sql` template literal pra cross-cast `text → uuid` quando JOIN entre BetterAuth `auth_user.id` (text) e nossa `users.auth_user_id` (uuid). Workaround: `drizzleSql\`${user.id}::uuid\``.
+2. `customSession` plugin atrasa cada session lookup em ~4 queries. Sprint 02+ cache em Redis.
+3. System roles seed precisa `ON CONFLICT DO NOTHING` pra idempotência (re-run sem PK violation).
+4. `pgEnum` snake_case em SQL vs camelCase Drizzle TS — policies SQL puro usam snake_case sempre (`requires_mfa` não `requiresMfa`).
+
+**Sprint 01a a 40% — Faixa C de 8 fechada.** Próximo: Faixa D (Persons + CNPJ lookup via BrasilAPI + UI `/app/pessoas/*` + `<PersonPicker>`).
+
 ### Build — Sprint 01a Faixa B: BetterAuth integrado + login funcional 2026-05-12
 
 Auth layer completa pra magic link + TOTP (futuro Faixa C ativa enrollment). 6 rotas Next.js geradas em build, middleware guard de sessão ativo pra `/app/*`, 8 tabelas auth no DB. Sprint 01a sobe de 12% pra ~25%.

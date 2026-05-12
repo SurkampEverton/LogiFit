@@ -20,3 +20,6 @@ export * from './identity'
 // Sprint 01a Faixa B — BetterAuth (ADR 0092) + LogiFit auth_attempts/auth_lockouts
 export * from './better-auth'
 export * from './auth-attempts'
+
+// Sprint 01a Faixa C — RBAC com scope + recovery codes MFA (regra 43)
+export * from './rbac'

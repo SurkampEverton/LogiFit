@@ -1,4 +1,5 @@
 export * from './high-risk-actions'
 export * from './rate-limits'
+export * from './require-recent-mfa'
 export * from './safe-fetch'
 export * from './scan-upload'

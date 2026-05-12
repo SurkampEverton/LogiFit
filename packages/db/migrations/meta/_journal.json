@@ -15,6 +15,13 @@
       "when": 1778611369988,
       "tag": "0001_flawless_hannibal_king",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778612423326,
+      "tag": "0002_brown_talon",
+      "breakpoints": true
     }
   ]
 }

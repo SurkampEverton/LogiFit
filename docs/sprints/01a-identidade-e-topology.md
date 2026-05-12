@@ -175,6 +175,43 @@ Em `apps/web/app/settings/users/actions.ts`:
 
 ## Log
 
+- **2026-05-12 (noite) — Faixa C (RBAC + JWT claims + MFA helpers) FECHADA 🟢: 12 system roles + 25 permissions seeded, customSession injetando claims, gate MFA pronto.**
+  - **Schema RBAC** em `packages/db/src/schema/rbac.ts` — 6 tabelas: `roles` (system + tenant-scoped), `permissions` (catálogo global), `role_permissions` (N:N), `user_roles` (com scope_company_id + scope_unit_id opcional), `user_permission_grants` (override direto), `user_mfa_recovery_codes` (10 codes one-time hash bcrypt).
+  - **Migration `0002_brown_talon.sql`** — 6 tabelas + 12 índices + 13 FKs.
+  - **`policies/0006_rbac_rls.sql`** — RLS por tenant_id em `roles`/`user_roles`/`user_permission_grants` (com regra especial: system roles visíveis a todos, custom isoladas); `permissions`/`role_permissions` read-only pra autenticados; `user_mfa_recovery_codes` DENY direto (só via Server Action).
+  - **`policies/0007_rbac_seed.sql`** — seed canônico idempotente:
+    - **12 system roles**: `super_admin`, `tenant_owner`, `gerente`, `recepcao`, `medico`, `fisio`, `nutri`, `personal`, `enfermeiro`, `dpo`, `contador_externo`, `member`. 8 com `requires_mfa=true` (todas profissionais + admins críticos — regra 43).
+    - **25 permissions catálogo** organizadas em categorias `identidade`/`empresa`/`crm`/`seguranca`. 7 marcadas `is_high_risk=true` (consistente com `HIGH_RISK_ACTIONS` em `@repo/security`).
+    - **role_permissions assignments**: super_admin (25/25), tenant_owner (25/25), gerente (15), recepcao (8), profissionais (5 cada — base; clínicas vêm nas sprints donas), member (3).
+  - **`@repo/security/src/require-recent-mfa.ts`** — `requireRecentMfa({ session, maxAgeMins })` + `requireRecentMfaForAction(session, actionName)` (lookup automático em `HIGH_RISK_ACTIONS`) + `isMfaRecent()` helper boolean pra UI. `MfaRecentRequiredError` com `code='MFA_RECENT_REQUIRED'` + `maxAgeMins` + `mfaAt` pra envelope ADR 0071. **13/13 Vitest tests verdes** cobrindo: limite exato 15min, custom maxAgeMins, mfaAt null, lookup high-risk vs não-high-risk, helper UI.
+  - **Plugin `customSession`** em `@repo/auth/server` — injeta no payload de sessão BetterAuth:
+    - `logifit.tenantId` (de `user_tenants.is_default`)
+    - `logifit.topology` (de `tenants.topology`)
+    - `logifit.roles[]` (keys das roles ativas)
+    - `logifit.requiresMfa` (true se qualquer role tem `requires_mfa=true`)
+    - `logifit.mfaAt` (proxy via `session.updatedAt` — Sprint 02+ refina via `auth_two_factor.lastVerifiedAt`)
+    - Retorna `logifit: null` se user_auth existe mas ainda sem `users` row LogiFit (fluxo signup wizard incompleto — Faixa E desbloqueia).
+  - **UI skeletons em `apps/web/app/`**:
+    - `/app/settings/mfa` — Server Component com guard `auth.api.getSession`; 3 seções (TOTP / Passkey / Recovery codes) marcadas como "Faixa D+" (enrollment real vem com email Mailhog plugado).
+    - `/meu/sessoes` — guard + mostra sessão atual (`session.session.id` + `createdAt`); lista completa de sessões aguarda `<ResponsiveTable>` (regra 31).
+  - **Middleware estendido** — `PROTECTED_PATH_PREFIXES` agora cobre `/app` E `/meu` (cookie ausente → redirect `/login?returnTo=...`).
+  - **Validações end-to-end:**
+    - Typecheck `@repo/auth` + `@repo/db` + `@repo/security` + `@app/web` ✅
+    - `pnpm --filter @app/web build` → **8 rotas** (`/`, `/login`, `/signup`, `/seguranca`, `/api/auth/[...all]`, `/app/settings/mfa`, `/meu/sessoes`) + middleware 34.7KB ✅
+    - Migration aplicada idempotente (2× consecutivos) ✅
+    - **`db:rls-check` 4 regras OK em 23 tabelas** (era 17 na Faixa B) ✅
+    - **34 + 13 = 47 Vitest tests** verdes (validador CPF/CNPJ + MFA gates) ✅
+    - 8 lints custom limpos em **108 code + 2 css files** ✅
+    - **Seed validado em DB**: 12 system roles + 25 permissions + role_permissions corretas (super_admin/tenant_owner com 25 cada, gerente 15, recepcao 8, profissionais 5 base).
+  - **Lições documentadas:**
+    1. **`drizzle-orm` v0.45 esperava `where` clauses tipadas com `sql` template literal** quando comparando UUIDs com string — workaround `drizzleSql\`${user.id}::uuid\`` (BetterAuth user.id é text, nossa users.auth_user_id é uuid).
+    2. **`customSession` plugin atrasa cada session lookup em ~4 queries** (users + tenants + roles + role_permissions). Sprint 02+ vai cachear em Redis com TTL 60s.
+    3. **System roles seed precisa `ON CONFLICT DO NOTHING`** porque idempotência exige re-rodar; sem isso, 2º migrate quebra com PK violation.
+    4. **`pgEnum` muda nome de coluna em policy SQL** — `requires_mfa` em SQL vs `requiresMfa` em Drizzle TS (snake_case ↔ camelCase). Policies seed em SQL puro usam snake_case sempre.
+    5. **Schema RBAC `tenant_id` NULL é válido pra system roles** — policy `roles_select` usa `OR` permitindo visibilidade global; UPDATE/DELETE restrito a `tenant_id NOT NULL AND system=false`.
+
+  **Próxima faixa:** D — Persons + CNPJ lookup (BrasilAPI adapter + UI `/app/pessoas/*` + `<PersonPicker>` + auto-fill CNPJ).
+
 - **2026-05-12 (tarde) — Faixa B (Auth + sessões) FECHADA 🟢: BetterAuth integrado, login funcional, middleware guard ativo.**
   - **[ADR 0092](../decisions/0092-betterauth-vs-lucia.md)** publicado — **BetterAuth** escolhido sobre Lucia. Justificativa: TOTP + WebAuthn + magic link + recovery codes nativos out-of-the-box; Lucia exigiria ~500-700 linhas de boilerplate pra paridade. Lock-in mitigado via cookie httpOnly + JWT padrão (migrar é DB migration + ~200 linhas wrapper).
   - **`packages/auth/`** criado com 3 entry points: `@repo/auth/server` (instância `auth` + `nextJsHandler`), `@repo/auth/client` (Client Components, `signIn`/`signOut`/`useSession`), `@repo/auth` (placeholder forçando import explícito do subpath correto pra evitar shipar server-only no bundle).
