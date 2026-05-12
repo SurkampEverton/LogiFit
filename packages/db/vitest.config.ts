@@ -13,6 +13,10 @@ export default mergeConfig(
   baseConfig,
   defineConfig({
     test: {
+      // Integration tests compartilham o mesmo Postgres local — file-parallelism
+      // gera condições de corrida (uma suíte insere row de teste que outra
+      // observa em assertion de contagem). Sprint 02 Faixa A consolidou a regra.
+      fileParallelism: false,
       coverage: {
         thresholds: {
           lines: 80,
@@ -31,6 +35,7 @@ export default mergeConfig(
           'tests/trial-lifecycle.test.ts', // integration test trial lifecycle (Faixa G)
           'tests/passport.test.ts', // integration test passaporte cross-tenant (Sprint 01b)
           'tests/has-permission.test.ts', // integration test has_permission() (Sprint 01b D.1)
+          'tests/members-rls.test.ts', // integration test members RLS (Sprint 02 Faixa A)
         ],
       },
     },

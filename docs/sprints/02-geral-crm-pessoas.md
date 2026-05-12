@@ -235,7 +235,7 @@ Consumidores no MVP: timeline UI via Realtime (mesmo tenant). Fase 2+ (cross-ale
 
 ## Log
 
-- —
+- **2026-05-12 — Faixas A+B+C entregues (Sprint 02 a 70%).** Núcleo CRM members aterrissado: 4 tabelas (`members`, `member_events` append-only, `member_notes` Nível 5, `member_tags` PK composta), 12 RLS policies isolamento per-tenant + append-only, ADR 0011 (member como perfil único cross-module), 10 Server Actions wrapped (createMember/updateMember/archiveMember/transferMember/addNote/addTag/removeTag/listTimeline/listNotes/listMembers/getMember) com `emitEvent()` fire-and-forget, UI completa `/app/members/*` (lista + new wizard + detail com slots Sprint 03+ + timeline). **7 Vitest tests novos** members-rls (isolamento, append-only, PK composta, soft-delete) — total 77 verdes. `addNote` marcado `// ai-blocked: regra 41+42` (Nível 5 nunca via IA). **30% restante adiado:** passaporte Server Actions completas (Sprint 11), portal paciente `/meu/*` (Sprint 26), cadastro proativo + Turnstile (fechamento Sprint 02), WhatsApp invite (Sprint 13), `has_cross_tenant_access()` (quando primeira leitura cross-tenant aterrissar), widget framework (Sprint 03+), `member_events` particionado (Sprint 04+ quando volume justificar).
 
 ## Definition of Done
 

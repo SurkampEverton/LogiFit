@@ -6,6 +6,59 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 02 70%: CRM members (schema + RLS + Server Actions + UI) 2026-05-12
+
+Faixas A+B+C do Sprint 02 entregues. Núcleo CRM aterrissado — `members` (1 row por person×tenant), `member_events` (append-only), `member_notes` (Nível 5 nunca cruza tenant), `member_tags` (PK composta tenant_id+member_id+tag) + 12 RLS policies + 10 Server Actions wrapped + UI completa. Sprint 02 sobe de 0% para 70%.
+
+**Adições:**
+
+- **[ADR 0011](docs/decisions/0011-member-perfil-unico-cross-module.md)** — member como perfil único cross-module no tenant. Identidade vive em `persons` (FK), módulos (Academia/Fisio/Nutri) referenciam `member_id`, não duplicam identidade. Constraint `members_tenant_person_uq` força 1 row por (tenant, person).
+- **`packages/db/src/schema/members.ts`** — 4 tabelas:
+  - `members` (id, tenant_id, person_id, company_id, archived_at, archive_reason, created_at, updated_at) — soft-delete via `archived_at`; sem policy DELETE.
+  - `member_events` (id, tenant_id, member_id, actor_user_id?, kind enum, payload jsonb, created_at) — append-only, **sem policies UPDATE/DELETE**. Enum 7 kinds: `member.created/updated/archived/transferred/note_added/tag_added/tag_removed`.
+  - `member_notes` (id, tenant_id, member_id, author_user_id, visibility enum, body, created_at) — visibilidade enum `author_only/unit/company/tenant`. Nível 5 ADR 0077 (nunca cruza tenant nem via passaporte).
+  - `member_tags` (tenant_id, member_id, tag, created_at) — **PK composta** `(tenant_id, member_id, tag)` permite mesma tag em members de tenants diferentes.
+- **`packages/db/src/policies/0014_members_rls.sql`** — 12 policies:
+  - `members_*` 4 policies (SELECT/INSERT/UPDATE com WITH CHECK; **sem DELETE** — soft-delete only)
+  - `member_events_*` 2 policies (SELECT/INSERT; **sem UPDATE/DELETE** — append-only)
+  - `member_notes_*` 4 policies (CRUD per-tenant)
+  - `member_tags_*` 2 policies (SELECT/INSERT; sem UPDATE — DELETE via SQL no Server Action `removeTag`)
+- **`apps/web/app/app/members/actions.ts`** — **10 Server Actions** com `wrapServerAction()`:
+  - `listMembers`, `getMember`, `createMember` (valida `kind=pf` regra 24), `updateMember`, `archiveMember`, `transferMember` (cross-company intra-tenant), `addNote` (`// ai-blocked: regra 41+42` — Nível 5 nunca via IA), `addTag`, `removeTag`, `listTimeline`, `listNotes`.
+  - Helper `emitEvent(tx, kind, payload, member_id)` fire-and-forget INSERT em `member_events`.
+- **UI completa `/app/members/*`** (Server Components + Client wizards):
+  - `page.tsx` — lista com badge company + arquivado + busca por nome/CPF (text search via `unaccent` + `pg_trgm`).
+  - `new/page.tsx` + `new/new-member-form.tsx` — wizard cadastro com select PF (link "cadastre PF nova primeiro" → `/app/pessoas/new`) + select company (regra 25: clínico só vê na sua company — visível no label do select).
+  - `[id]/page.tsx` — detail com slots overview + timeline resumida + placeholders Sprint 03/04/06/08/09 (agenda, financeiro, IA, controle de acesso, engajamento).
+  - `[id]/timeline/page.tsx` — timeline completa com `KIND_LABELS` mapping pt-BR.
+- **`packages/db/tests/members-rls.test.ts`** — **7 Vitest tests novos**:
+  - RLS isolamento per-tenant (Rede vê seu member; Franquia vê 0; INSERT cross-tenant rejected via WITH CHECK).
+  - `member_events` append-only (INSERT permitido; UPDATE/DELETE → 0 rows).
+  - `member_tags` PK composta (duplicate insert → SQLSTATE 23505; tenant_id no PK).
+  - `members` soft-delete (UPDATE archived_at OK; DELETE → 0 rows).
+
+**Atualizações:**
+
+- **`packages/db/vitest.config.ts`** — exclui `members-rls.test.ts` do coverage gate (integration test) + `fileParallelism: false` (Postgres compartilhado entre suítes — Sprint 02 consolidou regra; antes corrida entre `members-rls` inserir person extra e `rls-runtime` assertar count exato).
+
+**Validações end-to-end:**
+
+- typecheck `@repo/db` + `@app/web` ✅
+- migration members + policy 0014 aplicadas (idempotente)
+- `db:rls-check` 4 regras OK em **36 tabelas** (era 32 — +4 members)
+- **77 Vitest tests verdes** (era 70 — +7 members-rls)
+- `pnpm --filter @app/web build` ✓ rotas existentes + **4 novas** `/app/members`, `/app/members/new`, `/app/members/[id]`, `/app/members/[id]/timeline`
+
+**Lições documentadas:**
+
+1. `fileParallelism: false` em packages com integration tests compartilhando DB local — caso contrário corrida entre `beforeAll` que insere e outra suíte que assert count exato (`expected 4 to be 5`).
+2. `// ai-blocked: <motivo>` no topo do Server Action é convenção da regra 41 — lint `ai-block-respected` em CI valida que LLM não pode chamar essa action via `proposeAction()`.
+3. `member_events` SEM `UPDATE`/`DELETE` policy + sem trigger = append-only puro. Retroactivo a partir do `payload jsonb` (mesma estratégia de `audit_log` regra 5, sem hash chain — eventos de domínio, não auditoria fiscal).
+4. `member_tags` PK composta `(tenant_id, member_id, tag)` permite mesma tag em tenants distintos sem conflict — alternativa a unique partial index.
+5. Soft-delete via `archived_at` + `archive_reason` (sem policy DELETE) é padrão para entidades com regulamentação de retenção (CFM 20a, COFFITO 20a — Lei 13.787/2018). Confirmar restore via UPDATE archived_at = NULL (testado).
+
+**Sprint 02 a 70%.** 30% restante adiado: passaporte completo Server Actions (Sprint 11), portal `/meu/*` (Sprint 26), `/cadastro` proativo + Turnstile (fechamento Sprint 02), WhatsApp invite (Sprint 13), `has_cross_tenant_access()` (quando primeira leitura cross-tenant aterrissar), widget framework registry (Sprint 03+), `member_events` particionado real (Sprint 04+ volume).
+
 ### Build — Sprint 01b 70%: has_permission() + UI registros profissionais 2026-05-12
 
 Faixa D do Sprint 01b. SQL function central de autorização + UI completa de profissional registrations + 11 Vitest tests novos. Sprint 01b sobe de 40% pra 70%.
