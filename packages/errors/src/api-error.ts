@@ -24,6 +24,7 @@ export const API_ERROR_CODES = [
   'COMMITTEE_REQUIRED',
   'SLUG_TAKEN',
   'TENANT_SUSPENDED',
+  'MFA_RECENT_REQUIRED',
 ] as const
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number]

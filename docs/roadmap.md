@@ -12,7 +12,7 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 |---|---|---|---|---|---|---|---|---|
 | 1 | [00](sprints/00-setup-infra.md) | Setup de infra (monorepo, CI, observabilidade, componentes base responsivos) | **done***  | 2026-04-27 | 2026-05-12 | 97 | — | — |
 | 1b | [00b](sprints/00b-menu-lateral.md) | **Menu lateral (SideMenu hamburger overlay + registry por módulo + filtro permission/vertical/consent)** | todo | — | — | 0 | depende #1 + parcialmente #3 (permissions) | — |
-| 2 | [01a](sprints/01a-identidade-e-topology.md) | Identidade + Topology (groups/tenants/companies/units + RLS raiz) | **doing** | 2026-05-12 | — | 70 | — | — |
+| 2 | [01a](sprints/01a-identidade-e-topology.md) | Identidade + Topology (groups/tenants/companies/units + RLS raiz) | **doing** | 2026-05-12 | — | 80 | — | — |
 | 3 | [01b](sprints/01b-rbac-e-consent.md) | RBAC com scope + grants diretos + Consent LGPD | todo | — | — | 0 | depende #2 | — |
 | 4 | [02](sprints/02-geral-crm-pessoas.md) | CRM unificado (members + timeline + dashboard do member) | todo | — | — | 0 | depende #3 | — |
 | 5 | [03](sprints/03-geral-agenda-universal.md) | Agenda universal + modalidades Academia | todo | — | — | 0 | depende #3, #4 | — |

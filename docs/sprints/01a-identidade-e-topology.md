@@ -175,6 +175,57 @@ Em `apps/web/app/settings/users/actions.ts`:
 
 ## Log
 
+- **2026-05-12 (manhã seguinte) — Faixa F (Audit + `wrapServerAction`) FECHADA 🟢: hash chain comprovado + envelope automático + audit fire-and-forget.**
+  - **3 tabelas novas em `@repo/db/schema/audit.ts`**:
+    - `audit_log` — append-only (regra 5 via RLS sem UPDATE/DELETE policy), 15 colunas (id, tenant_id, at, actor_*, action, resource_*, payload jsonb, current_hash, previous_hash, request_id, legal_basis), 3 índices canônicos (tenant+at desc, tenant+actor+at, tenant+resource); **comentário `@volume_estimate_yearly: 5M+`** documenta particionamento adiado pra Sprint 04+ (regra 34 exige `>5M/ano OU >50k/dia`; MVP <50k até primeiro member real).
+    - `system_alerts` — 17 colunas com `severity` enum (info/warning/error/critical) + `category` enum (security/data_leak/compliance/fiscal/financeiro/integration/infra/ai/clinical) + **fingerprint UNIQUE per tenant** pra dedup + retention_days por severity + acknowledged_at/resolved_at + min_role pra visibility role-based.
+    - `system_alert_occurrences` — ring buffer (Sprint 02+ cron purga 20+ mais antigas por alert).
+  - **`policies/0008_audit_rls.sql`** — RLS por tenant_id + trigger BEFORE INSERT `audit_log_hash_chain_trigger()` (regra 39):
+    - `SECURITY DEFINER` — função roda com privilégio do owner (`postgres`) pra bypassear RLS no `SELECT ... FOR UPDATE` (role `logifit_app` não tem UPDATE em audit_log por defesa em profundidade)
+    - Pega `previous_hash` da última linha do MESMO tenant_id com `FOR UPDATE` lock (serializa inserts concorrentes — sem lock, 2 INSERTs paralelos pegariam mesmo previous_hash → chain quebrada)
+    - Computa `current_hash = encode(sha256(id || tenant_id || at || actor || action || payload::text || previous_hash), 'hex')`
+    - `search_path = public` setado explicitamente (SECURITY DEFINER + search_path mutável = vetor de privilege escalation comum)
+  - **Smoke test do hash chain** (3 INSERTs em transação explícita BEGIN/COMMIT):
+    ```
+     action |     curr     |     prev
+    --------+--------------+--------------
+     first  | a132c6964486 |
+     second | 7d69b2c9ae9f | a132c6964486   ← chain: prev = curr da row anterior
+     third  | ed5e75aaf6ba | 7d69b2c9ae9f   ← chain encadeado
+    ```
+  - **`@repo/errors`** ganha código `MFA_RECENT_REQUIRED` (17º código) + `mfaRecentTranslator` (match por `error.name === 'MfaRecentRequiredError'` — sem dep direta de `@repo/security` pra evitar circular) + HTTP status 403 em `wrap-api-handler`.
+  - **`apps/web/app/lib/wrap-action.ts`** — `wrapServerAction(ctx, handler)` compose:
+    1. `requireFullSession(ctx.returnTo)` → garante user + tenant claims (redirect /login se falta)
+    2. `requireRecentMfaForAction(session, ctx.action)` → MFA gate <15min se action listada em HIGH_RISK_ACTIONS (regra 43); lança `MfaRecentRequiredError` capturado pelo `mfaRecentTranslator`
+    3. `withSessionContext(session.logifit, ...)` → seta `app.tenant_id` + `app.user_id` na conexão pool
+    4. handler recebe `{ session, setAuditResource }` — handler chama `setAuditResource(id, extra)` pra registrar resource_id em audit_log
+    5. Insere `audit_log` fire-and-forget após handler success (catch logs em console se RLS falhar; GlitchTip captura entra na Sprint 02+)
+    6. Compose com `wrapAction` base (`@repo/errors`) pra envelope ADR 0071 + fingerprint + translators
+  - **`sanitizeArgs()`** helper — antes de gravar em `audit_log.payload`, mascara PII: `password`/`totpSecret`/`recoveryCode`/`creditCard` → `[REDACTED]`; `document`/`cpf`/`cnpj` → `XXX***YY` (3 primeiros + 2 últimos dígitos).
+  - **`apps/web/app/app/pessoas/actions.ts` REFATORADO** — 4 Server Actions (`searchPersons`, `lookupCnpjAction`, `createPerson`, `archivePerson`) agora usam `wrapServerAction()`. Throws `ApiException` em vez de retornar envelope manual; translator + wrapAction cuidam do shape final. `setAuditResource(row.id, { kind, hasDocument })` registra em audit_log automaticamente.
+  - **Adiado pra próximas sprints (não-gate Faixa F):**
+    - Migração de signup/empresas/users Server Actions pra `wrapServerAction` — feita gradualmente conforme MFA/audit forem exigidos (signup é pre-auth, empresas/users não são high-risk no MVP).
+    - `system_audit_anchor` WORM S3 Object Lock — depende de S3 setup com chave LogiFit-managed pra assinatura (Sprint 04+ quando S3 estiver provisionado).
+    - Job `verify-audit-integrity` cron semanal — implementação real é background worker (Sprint 03+ quando cron daemon LogiFit estiver em prod).
+    - GlitchTip capture em wrapAction → integração `@sentry/nextjs` com DSN env (Sprint 02+ junto com integração GlitchTip self-host backend).
+    - Particionamento real `audit_log` PARTITION BY RANGE — Sprint 04+ via migration custom (ALTER tabela existente impossível; precisa de janela read-only + CREATE LIKE + INSERT SELECT).
+  - **Validações end-to-end:**
+    - typecheck `@repo/errors` + `@repo/db` + `@repo/security` + `@app/web` ✅
+    - `pnpm --filter @app/web build` → 15 rotas (mesma estrutura Faixa E; audit é transparente) + middleware 34.7KB ✅
+    - migrate aplicado (idempotente, 0008 adicionado)
+    - `db:rls-check` 4 regras OK em **26 tabelas** (era 23 na Faixa E)
+    - **34 db tests + 13 security tests = 47 Vitest tests verdes**
+    - **8 lints custom: 132 code + 2 css files clean**
+    - Hash chain smoke test verde (3 rows encadeadas; 2ª e 3ª têm prev_hash igual ao curr_hash da anterior)
+  - **Lições documentadas:**
+    1. **`SELECT ... FOR UPDATE` exige privilege de UPDATE**. Role `logifit_app` (sem UPDATE em audit_log por defesa em profundidade — regra 5 append-only) não consegue executar `FOR UPDATE` direto. Solução: trigger `SECURITY DEFINER` com owner = postgres (superuser bypass). Configurar `SET search_path = public` explicitamente é OBRIGATÓRIO em SECURITY DEFINER funcs — sem isso, atacante com CREATE privilege pode injetar functions homônimas em outro schema.
+    2. **`set_config(..., true)` é transaction-scoped** (is_local=true) — `psql` autocommit-on perde entre queries. Pra testes manuais: usar `BEGIN; ... ; COMMIT;` explícito. Pra prod: `withSessionContext` abre cliente do pool dedicado, faz tudo na mesma session.
+    3. **INSERT múltiplo em uma statement não enxerga próprias rows** — a row inserida só vira visível pro SELECT no próximo statement. Hash chain precisa de INSERTs separados (1 statement por row), o que `wrapServerAction` naturalmente faz (1 INSERT por chamada).
+    4. **`'use server'` exige todos exports async** — não cabem helpers/factories de função. `wrap-action.ts` é módulo helper (não Server Action) → sem diretiva `'use server'`; arquivos que CHAMAM `wrapServerAction` têm `'use server'` no topo deles.
+    5. **Translator MFA via `error.name`** evita dep circular `@repo/errors → @repo/security`. Trade-off: nome do erro vira parte do contrato; ADR 0071 lista nomes canônicos (`MfaRecentRequiredError`).
+
+  **Próxima faixa:** G — Trial 14d + anonymize 30d (ADR 0066) OU H — Seed 4 cenários + E2E críticos. Recomendação: **H primeiro** (destrava testes do isolamento RLS comprovado).
+
 - **2026-05-12 (madrugada+) — Faixa E (Topology UI + Onboarding) FECHADA 🟢: `/signup` wizard atômico + settings empresas/users.**
   - **`onboardTenant` Server Action atômica** em `apps/web/app/(auth)/signup/actions.ts` — cria 7 entidades numa transaction única (`withElevatedContext` faz `SET LOCAL ROLE postgres` pra bypass RLS porque tenant ainda não existe):
     1. `tenants` (slug + topology=owned + trial_ends_at = now + 14d, ADR 0066)

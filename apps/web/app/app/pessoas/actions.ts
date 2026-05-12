@@ -1,18 +1,14 @@
 'use server'
 
 /**
- * Server Actions para `persons` (ADR 0047 — cadastro central).
+ * Server Actions de persons — Sprint 01a Faixa F: migradas pra `wrapServerAction()`.
  *
- * Padrão LogiFit pra envelope (ADR 0071 — implementação completa em
- * `@repo/errors/wrapAction` vem na Faixa F). Sprint 01a Faixa D usa
- * envelope manual `{ ok: true/false }` — refatorar pra wrapAction quando
- * Sprint F entregar.
- *
- * Todas as ações:
- *   1. requireFullSession() → garante user autenticado com tenant claim
- *   2. validar input com Zod (regra 7)
- *   3. setar `app.tenant_id` via `withSessionContext()` → RLS aplica
- *   4. retornar `{ ok, data | error }` tipado
+ * Cada export passa por:
+ *   1. requireFullSession → garante tenant claims
+ *   2. requireRecentMfaForAction → MFA gate se high-risk (regra 43)
+ *   3. withSessionContext → seta app.tenant_id na conexão (RLS aplica)
+ *   4. audit_log fire-and-forget (regra 5 + hash chain regra 39)
+ *   5. envelope ADR 0071 ({ ok, data | error })
  */
 import { and, eq, ilike, isNull, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -22,12 +18,8 @@ import { db } from '@repo/db/client'
 import { parseDocument } from '@repo/db/persons'
 import { persons } from '@repo/db/schema'
 import type { PersonInsert, PersonRow } from '@repo/db/schema'
-import { requireFullSession, withSessionContext } from '../../lib/session'
-
-// ─── Envelope tipado (placeholder até wrapAction) ─────────────────────────
-type ActionResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: { code: string; message: string; details?: unknown } }
+import { ApiException } from '@repo/errors'
+import { wrapServerAction } from '../../lib/wrap-action'
 
 // ─── searchPersons ────────────────────────────────────────────────────────
 const searchPersonsInputSchema = z.object({
@@ -37,27 +29,16 @@ const searchPersonsInputSchema = z.object({
   limit: z.number().int().min(1).max(100).default(20),
 })
 
-// wrap-exempt: Sprint 01a Faixa D — envelope manual; Faixa F migra pra wrapAction()
-export async function searchPersons(
-  rawInput: z.input<typeof searchPersonsInputSchema>,
-): Promise<ActionResult<PersonRow[]>> {
-  const session = await requireFullSession('/app/pessoas')
-  const parsed = searchPersonsInputSchema.safeParse(rawInput)
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: { code: 'VALIDATION_ERROR', message: 'input inválido', details: parsed.error.flatten() },
-    }
-  }
-  const input = parsed.data
+export const searchPersons = wrapServerAction(
+  { module: 'persons', action: 'person.search', resourceType: 'persons' },
+  async (rawInput: z.input<typeof searchPersonsInputSchema>): Promise<PersonRow[]> => {
+    const input = searchPersonsInputSchema.parse(rawInput)
 
-  return withSessionContext(session.logifit, async () => {
     const conditions = []
     if (input.kind) conditions.push(eq(persons.kind, input.kind))
     if (!input.includeArchived) conditions.push(isNull(persons.archivedAt))
 
     if (input.query) {
-      // Busca por nome / display_name / document (sem formatação)
       const q = input.query
       const queryDigits = q.replace(/\D/g, '')
       const orParts = [
@@ -78,37 +59,40 @@ export async function searchPersons(
       .orderBy(persons.name)
       .limit(input.limit)
 
-    return { ok: true, data: rows }
-  })
-}
+    return rows
+  },
+)
 
 // ─── lookupCnpjAction ─────────────────────────────────────────────────────
 const lookupCnpjInputSchema = z.object({
-  cnpj: z.string().trim().min(11).max(20), // aceita formatado e não-formatado
+  cnpj: z.string().trim().min(11).max(20),
   skipCache: z.boolean().default(false),
 })
 
-// wrap-exempt: Sprint 01a Faixa D — envelope manual; Faixa F migra pra wrapAction()
-export async function lookupCnpjAction(
-  rawInput: z.input<typeof lookupCnpjInputSchema>,
-): Promise<ActionResult<CnpjData & { fromCache: boolean }>> {
-  await requireFullSession('/app/pessoas/new')
-  const parsed = lookupCnpjInputSchema.safeParse(rawInput)
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: { code: 'VALIDATION_ERROR', message: 'CNPJ inválido', details: parsed.error.flatten() },
+export const lookupCnpjAction = wrapServerAction(
+  { module: 'persons', action: 'cnpj.lookup' },
+  async (
+    rawInput: z.input<typeof lookupCnpjInputSchema>,
+  ): Promise<CnpjData & { fromCache: boolean }> => {
+    const input = lookupCnpjInputSchema.parse(rawInput)
+    const result = await lookupCnpj(input.cnpj, { skipCache: input.skipCache })
+    if (!result.ok) {
+      throw new ApiException({
+        code:
+          result.error.code === 'CNPJ_NOT_FOUND'
+            ? 'NOT_FOUND'
+            : result.error.code === 'CNPJ_INVALID'
+              ? 'VALIDATION_ERROR'
+              : result.error.code === 'CNPJ_RATE_LIMITED'
+                ? 'RATE_LIMITED'
+                : 'SERVICE_UNAVAILABLE',
+        message: messageForCnpjError(result.error),
+        request_id: '', // wrapAction reescreve
+      })
     }
-  }
-
-  const result = await lookupCnpj(parsed.data.cnpj, { skipCache: parsed.data.skipCache })
-  if (!result.ok) {
-    // Mapeia CnpjLookupError → envelope ActionResult
-    return { ok: false, error: { code: result.error.code, message: messageForCnpjError(result.error) } }
-  }
-
-  return { ok: true, data: { ...result.data, fromCache: result.fromCache } }
-}
+    return { ...result.data, fromCache: result.fromCache }
+  },
+)
 
 function messageForCnpjError(err: { code: string }): string {
   switch (err.code) {
@@ -127,8 +111,8 @@ function messageForCnpjError(err: { code: string }): string {
 
 // ─── createPerson ─────────────────────────────────────────────────────────
 const createPersonInputSchema = z.object({
-  document: z.string().trim().optional(), // CPF/CNPJ — opcional pra cadastro parcial
-  name: z.string().trim().min(2).max(200).optional(), // pode vir de autoFill
+  document: z.string().trim().optional(),
+  name: z.string().trim().min(2).max(200).optional(),
   displayName: z.string().trim().max(200).optional(),
   birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   sex: z.string().trim().max(50).optional(),
@@ -146,84 +130,67 @@ const createPersonInputSchema = z.object({
     })
     .optional(),
   notes: z.string().max(2000).optional(),
-  /** Se documento for CNPJ e autoFillCnpj=true, busca dados na Receita antes de salvar. */
   autoFillCnpj: z.boolean().default(true),
 })
 
-// wrap-exempt: Sprint 01a Faixa D — envelope manual; Faixa F migra pra wrapAction()
-export async function createPerson(
-  rawInput: z.input<typeof createPersonInputSchema>,
-): Promise<ActionResult<PersonRow>> {
-  const session = await requireFullSession('/app/pessoas/new')
-  const parsed = createPersonInputSchema.safeParse(rawInput)
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: { code: 'VALIDATION_ERROR', message: 'dados inválidos', details: parsed.error.flatten() },
-    }
-  }
-  const input = parsed.data
+export const createPerson = wrapServerAction(
+  { module: 'persons', action: 'person.create', resourceType: 'persons' },
+  async (
+    rawInput: z.input<typeof createPersonInputSchema>,
+    ctx,
+  ): Promise<PersonRow> => {
+    const input = createPersonInputSchema.parse(rawInput)
 
-  // 1. Valida documento (CPF/CNPJ) se fornecido
-  let kind: 'pf' | 'pj' | null = null
-  let normalizedDocument: string | null = null
-  if (input.document) {
-    const doc = parseDocument(input.document)
-    if (!doc.ok) {
-      return {
-        ok: false,
-        error: { code: 'INVALID_DOCUMENT', message: `documento inválido (${doc.reason})` },
+    let kind: 'pf' | 'pj' | null = null
+    let normalizedDocument: string | null = null
+    if (input.document) {
+      const doc = parseDocument(input.document)
+      if (!doc.ok) {
+        throw new ApiException({
+          code: 'VALIDATION_ERROR',
+          message: `Documento inválido (${doc.reason})`,
+          request_id: '',
+        })
+      }
+      kind = doc.kind
+      normalizedDocument = doc.normalized
+    } else if (input.birthDate || input.sex) {
+      kind = 'pf'
+    }
+
+    if (!kind) {
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: 'Forneça documento (CPF/CNPJ) ou dados PF',
+        request_id: '',
+      })
+    }
+
+    let autoFilled: Partial<PersonInsert> = {}
+    if (kind === 'pj' && normalizedDocument && input.autoFillCnpj) {
+      const lookup = await lookupCnpj(normalizedDocument)
+      if (lookup.ok) {
+        autoFilled = {
+          name: input.name ?? lookup.data.razaoSocial,
+          displayName: input.displayName ?? lookup.data.nomeFantasia ?? null,
+          email: input.email || lookup.data.email || null,
+          phone: input.phone ?? lookup.data.telefone ?? null,
+          address: input.address ?? lookup.data.address,
+        }
       }
     }
-    kind = doc.kind
-    normalizedDocument = doc.normalized
-  } else if (input.birthDate || input.sex) {
-    kind = 'pf' // tem campo PF-only → assume PF
-  }
 
-  if (!kind) {
-    return {
-      ok: false,
-      error: { code: 'KIND_REQUIRED', message: 'forneça documento (CPF/CNPJ) ou dados PF' },
+    const finalName = input.name ?? autoFilled.name
+    if (!finalName) {
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: 'Nome é obrigatório',
+        request_id: '',
+      })
     }
-  }
 
-  // 2. Auto-fill CNPJ se aplicável
-  let autoFilled: Partial<PersonInsert> = {}
-  if (kind === 'pj' && normalizedDocument && input.autoFillCnpj) {
-    const lookup = await lookupCnpj(normalizedDocument)
-    if (lookup.ok) {
-      autoFilled = {
-        name: input.name ?? lookup.data.razaoSocial,
-        displayName: input.displayName ?? lookup.data.nomeFantasia ?? null,
-        email: input.email || lookup.data.email || null,
-        phone: input.phone ?? lookup.data.telefone ?? null,
-        address: input.address ?? lookup.data.address,
-      }
-      // Alerta de situação ≠ ativa — Sprint 01a Faixa D: log warning;
-      // UI mostra banner antes do confirm (Faixa D fechamento)
-      if (lookup.data.situacao !== 'ativa') {
-        console.warn(
-          `[persons] criando company ${normalizedDocument} com situação ${lookup.data.situacao}`,
-        )
-      }
-    }
-    // lookup falhou? continua com dados manuais (não bloqueia)
-  }
-
-  // 3. Required check após autoFill
-  const finalName = input.name ?? autoFilled.name
-  if (!finalName) {
-    return {
-      ok: false,
-      error: { code: 'NAME_REQUIRED', message: 'nome é obrigatório' },
-    }
-  }
-
-  // 4. Insert com session context (RLS preenche tenant_id via app.tenant_id)
-  return withSessionContext(session.logifit, async () => {
     try {
-      const inserted = await db
+      const [row] = await db
         .insert(persons)
         .values({
           tenantId: sql`current_setting('app.tenant_id')::uuid`,
@@ -239,50 +206,56 @@ export async function createPerson(
           notes: input.notes ?? null,
         })
         .returning()
-      const row = inserted[0]
       if (!row) {
-        return { ok: false, error: { code: 'INTERNAL', message: 'insert retornou vazio' } }
+        throw new ApiException({
+          code: 'INTERNAL_ERROR',
+          message: 'insert retornou vazio',
+          request_id: '',
+        })
       }
-      return { ok: true, data: row }
+      ctx.setAuditResource(row.id, { kind, hasDocument: !!normalizedDocument })
+      return row
     } catch (err) {
+      if (err instanceof ApiException) throw err
       const msg = err instanceof Error ? err.message : String(err)
-      // Detect unique constraint do documento por tenant
       if (msg.includes('persons_tenant_document_uq')) {
-        return {
-          ok: false,
-          error: { code: 'DOCUMENT_TAKEN', message: 'documento já cadastrado neste tenant' },
-        }
+        throw new ApiException({
+          code: 'CONFLICT',
+          message: 'Documento já cadastrado neste tenant',
+          request_id: '',
+        })
       }
-      return { ok: false, error: { code: 'INTERNAL', message: msg.slice(0, 200) } }
+      throw err // translator do wrapAction pega
     }
-  })
-}
+  },
+)
 
 // ─── archivePerson ────────────────────────────────────────────────────────
 const archivePersonInputSchema = z.object({
   id: z.string().uuid(),
 })
 
-// wrap-exempt: Sprint 01a Faixa D — envelope manual; Faixa F migra pra wrapAction()
-export async function archivePerson(
-  rawInput: z.input<typeof archivePersonInputSchema>,
-): Promise<ActionResult<PersonRow>> {
-  const session = await requireFullSession('/app/pessoas')
-  const parsed = archivePersonInputSchema.safeParse(rawInput)
-  if (!parsed.success) {
-    return { ok: false, error: { code: 'VALIDATION_ERROR', message: 'id inválido' } }
-  }
+export const archivePerson = wrapServerAction(
+  { module: 'persons', action: 'person.archive', resourceType: 'persons' },
+  async (
+    rawInput: z.input<typeof archivePersonInputSchema>,
+    ctx,
+  ): Promise<PersonRow> => {
+    const input = archivePersonInputSchema.parse(rawInput)
 
-  return withSessionContext(session.logifit, async () => {
-    const updated = await db
+    const [row] = await db
       .update(persons)
       .set({ archivedAt: new Date(), updatedAt: new Date() })
-      .where(eq(persons.id, parsed.data.id))
+      .where(eq(persons.id, input.id))
       .returning()
-    const row = updated[0]
     if (!row) {
-      return { ok: false, error: { code: 'NOT_FOUND', message: 'pessoa não encontrada' } }
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Pessoa não encontrada',
+        request_id: '',
+      })
     }
-    return { ok: true, data: row }
-  })
-}
+    ctx.setAuditResource(row.id)
+    return row
+  },
+)

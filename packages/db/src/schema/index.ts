@@ -23,3 +23,6 @@ export * from './auth-attempts'
 
 // Sprint 01a Faixa C — RBAC com scope + recovery codes MFA (regra 43)
 export * from './rbac'
+
+// Sprint 01a Faixa F — audit_log + system_alerts (regras 5+34+39 + ADR 0071)
+export * from './audit'

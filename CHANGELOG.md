@@ -6,6 +6,62 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 01a Faixa F: audit_log + hash chain + wrapServerAction 2026-05-12
+
+audit_log append-only (regra 5) com hash chain SHA-256 trigger (regra 39) + system_alerts dedup (ADR 0071) + `wrapServerAction()` envelope automático compose session + MFA gate + audit fire-and-forget + sanitização PII. Sprint 01a sobe de 70% pra 80%.
+
+**Adições:**
+
+- **`packages/db/src/schema/audit.ts`** — 3 tabelas:
+  - `audit_log` (regra 5 append-only via RLS, 15 colunas, 3 índices canônicos, `@volume_estimate_yearly: 5M+` documentado pra particionamento Sprint 04+)
+  - `system_alerts` (17 colunas + fingerprint UNIQUE per tenant + retention_days por severity, ADR 0071)
+  - `system_alert_occurrences` (ring buffer ocorrências; cron purga 20+ mais antigas Sprint 02+)
+- **`packages/db/src/policies/0008_audit_rls.sql`** — RLS + trigger `audit_log_hash_chain_trigger()`:
+  - `SECURITY DEFINER` (owner postgres) bypasse RLS pra `SELECT ... FOR UPDATE` (role app sem UPDATE em audit_log)
+  - `SET search_path = public` previne privilege escalation
+  - Lock pessimista FOR UPDATE serializa inserts concorrentes (sem isso → chain quebrada)
+  - `current_hash = sha256(id || tenant_id || at || actor || action || payload || previous_hash)`
+- **`apps/web/app/lib/wrap-action.ts`** — `wrapServerAction(ctx, handler)` compose 5 etapas:
+  1. `requireFullSession` → 2. `requireRecentMfaForAction` → 3. `withSessionContext` (RLS) → 4. handler com `setAuditResource` callback → 5. INSERT `audit_log` fire-and-forget
+  - `sanitizeArgs` mascara PII: password/totpSecret/recoveryCode → `[REDACTED]`; document/cpf/cnpj → `XXX***YY`
+- **`@repo/errors`** ganha código 17 `MFA_RECENT_REQUIRED` + `mfaRecentTranslator` (match `error.name === 'MfaRecentRequiredError'` evita dep circular) + HTTP 403 em `wrap-api-handler`.
+- **Migration `0003_shocking_orphan.sql`** — 3 tabelas + enums + índices.
+
+**Atualizações:**
+
+- **`packages/errors/package.json`** — `@types/node` dev dep (fix `node:crypto` import resolvido).
+- **`apps/web/app/app/pessoas/actions.ts`** REFATORADO — 4 Server Actions (searchPersons, lookupCnpjAction, createPerson, archivePerson) usam `wrapServerAction()`. Throws `ApiException` em vez de envelope manual. `setAuditResource(id, extra)` registra resource_id em audit_log automaticamente.
+
+**Smoke test hash chain — verde:**
+
+```
+ action |     curr     |     prev
+--------+--------------+--------------
+ first  | a132c6964486 |               ← genesis
+ second | 7d69b2c9ae9f | a132c6964486   ← prev = first.curr ✅
+ third  | ed5e75aaf6ba | 7d69b2c9ae9f   ← prev = second.curr ✅
+```
+
+**Validações end-to-end:**
+
+- typecheck `@repo/errors` + `@repo/db` + `@repo/security` + `@app/web` ✅
+- migrate aplicado idempotente (policy 0008 com SECURITY DEFINER)
+- `db:rls-check` 4 regras OK em **26 tabelas** (era 23 na Faixa E)
+- 47 Vitest tests verdes
+- 8 lints custom: **132 code + 2 css files clean**
+
+**Lições documentadas:**
+
+1. **`SELECT ... FOR UPDATE` exige UPDATE privilege** — role `logifit_app` (sem UPDATE em audit_log por regra 5) não roda direto; trigger `SECURITY DEFINER` + `SET search_path = public` resolve (search_path explícito previne privilege escalation via function shadowing).
+2. **`set_config(..., true)` é transaction-scoped** — psql autocommit perde entre queries; testes precisam `BEGIN; ...; COMMIT;` explícito.
+3. **INSERT múltiplo em uma statement não enxerga próprias rows** — hash chain precisa INSERTs separados (1 statement/row); `wrapServerAction` naturalmente faz 1 INSERT por chamada.
+4. **`'use server'` exige exports async-only** — helpers/factories de função (`wrapServerAction`) NÃO podem estar em arquivo `'use server'`; arquivos consumidores têm a diretiva no topo.
+5. **Translator MFA via `error.name`** evita dep circular `@repo/errors → @repo/security`. Nome do erro vira contrato (ADR 0071 lista canônicos).
+
+**Adiado pra próximas sprints (não-gate Faixa F):** migração de signup/empresas/users Server Actions (não high-risk no MVP); `system_audit_anchor` WORM S3 (depende S3 setup); cron `verify-audit-integrity` (Sprint 03+ daemon); GlitchTip capture (Sprint 02+ DSN); particionamento real audit_log (Sprint 04+ quando volume justificar).
+
+**Sprint 01a a 80% — Faixa F de 8 fechada.** Próximo: H (seed 4 cenários canônicos + E2E críticos cross-tenant) ou G (trial lifecycle ADR 0066).
+
 ### Build — Sprint 01a Faixa E: Topology UI + `/signup` wizard atômico 2026-05-12
 
 `onboardTenant` Server Action cria 7 entidades atomicamente (transaction elevada com `SET LOCAL ROLE postgres`) + UI wizard 3 etapas com auto-fill CNPJ + settings empresas/users. Sprint 01a sobe de 55% pra 70%.

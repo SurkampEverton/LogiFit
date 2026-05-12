@@ -50,6 +50,28 @@ export const zodTranslator: ErrorTranslator = {
   }),
 }
 
+/**
+ * MFA gate (regra 43) — captura `MfaRecentRequiredError` de @repo/security.
+ * Não importamos diretamente pra evitar dep circular; match por error.name.
+ */
+export const mfaRecentTranslator: ErrorTranslator = {
+  matches: (e) => isErrorWithName(e, 'MfaRecentRequiredError'),
+  translate: (e) => {
+    const meta =
+      e instanceof Error && 'maxAgeMins' in e
+        ? {
+            maxAgeMins: (e as { maxAgeMins?: number }).maxAgeMins,
+            mfaAt: (e as { mfaAt?: Date | null }).mfaAt?.toISOString() ?? null,
+          }
+        : {}
+    return {
+      code: 'MFA_RECENT_REQUIRED',
+      message: 'Esta ação exige reautenticação MFA recente (<15 min)',
+      details: sanitize(meta),
+    }
+  },
+}
+
 export const asaasTranslator: ErrorTranslator = {
   matches: (e) => isErrorWithName(e, 'AsaasError'),
   translate: (e) => ({
@@ -143,6 +165,7 @@ export const genericTranslator: ErrorTranslator = {
 
 export const TRANSLATORS: ErrorTranslator[] = [
   zodTranslator,
+  mfaRecentTranslator,
   asaasTranslator,
   focusNfeTranslator,
   anthropicTranslator,

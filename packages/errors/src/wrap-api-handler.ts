@@ -24,6 +24,7 @@ const HTTP_STATUS: Record<ApiErrorCode, number> = {
   COMMITTEE_REQUIRED: 451,
   SLUG_TAKEN: 409,
   TENANT_SUSPENDED: 402,
+  MFA_RECENT_REQUIRED: 403, // user autorizado mas precisa re-MFA
 }
 
 export interface WrapApiContext {
