@@ -43,6 +43,8 @@ export const subscriptionStatusEnum = pgEnum('tenant_subscription_status', [
   'anonymized',
 ])
 export const companyTypeEnum = pgEnum('company_type', ['matriz', 'filial'])
+// Sprint 01b — ADR 0069 Plano Solo
+export const tenantModeEnum = pgEnum('tenant_mode', ['multi', 'solo'])
 
 // ─── groups ────────────────────────────────────────────────────────────────
 /**
@@ -80,6 +82,9 @@ export const tenants = pgTable(
     topology: topologyEnum('topology').notNull().default('owned'),
     financialMode: financialModeEnum('financial_mode').notNull().default('centralized'),
     crossCompanyAccess: boolean('cross_company_access').notNull().default(false),
+    // Sprint 01b — ADR 0069: 'solo' = profissional autônomo (1 matriz, 0 filiais)
+    // CHECK constraint via policy: solo NÃO PODE ter crossCompanyAccess=true
+    mode: tenantModeEnum('mode').notNull().default('multi'),
 
     // Trial + lifecycle (ADR 0066)
     subscriptionStatus: subscriptionStatusEnum('subscription_status')

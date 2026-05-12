@@ -133,7 +133,58 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 
 ## Log
 
-- —
+- **2026-05-12 (madrugada+) — Núcleo Sprint 01b entregue 🟢: schemas + passaporte cross-tenant + 5º cenário (solo).**
+  - **[ADR 0019](../decisions/0019-rbac-com-grants-diretos-union.md)** publicado — RBAC com grants diretos + union em policies RLS. Função `has_permission(user_id, perm, scope_type, scope_id)` centraliza. Roles canônicas (Sprint 01a Faixa C) + custom roles por tenant + grants diretos com `expires_at` obrigatório. Modelo híbrido escolhido sobre Casbin/OPA/CASL puro.
+  - **Schemas Faixa A (4 novas tabelas + 1 coluna + 1 check constraint)**:
+    - `tenants.mode` enum `('multi'|'solo')` default `'multi'` (ADR 0069 — Plano Solo)
+    - Check constraint: `NOT (mode='solo' AND cross_company_access=true)` — autônomo é 1 matriz + 0 filiais
+    - `professional_registrations` (ADR 0055) — `council_body` enum (CRM/CRN/CREFITO/CREF/CRF/CRP/COREN/CRO) + `council_number` + `council_state` + `situation` enum (active/suspended/cassated/expired/pending_verification/unknown) + verification_source. **Constraint global unique `(council_body, council_number, council_state)`** detecta fraude cross-tenant. Trigger `kind=pf` (ADR 0047).
+    - `franchise_agreements` (ADR 0007) — N:N franqueador↔franqueado com royalty% + fixed_fee + cross_company_access boolean (regra 25 mantida: clínico NÃO cruza). Unique parcial 1 acordo ativo por par.
+    - `consents` (LGPD art. 8) — 10 propósitos canônicos enum + 7 bases legais enum + revogação via INSERT nova row com `revoked_at` (preserva trilha; sem UPDATE).
+  - **Schemas Faixa B (3 tabelas passaporte cross-tenant — regra 42 + ADR 0077)**:
+    - `patient_company_links` — N:N paciente↔tenant com `passport_passport_id` global + status enum + creation_path (reactive/proactive). 1 link ativo por (passport, tenant).
+    - `patient_link_modules` — módulos canônicos enum (academia/personal_training/fisioterapia/nutricao/pilates) + responsável técnico + 5 níveis de dados via jsonb. **Constraint global unique** `(passport_passport_id, module) WHERE deactivated_at IS NULL` — 1 módulo ativo por (passport, module) em TODA a rede.
+    - `patient_data_access_log` — append-only (regra 5), audit de leitura cross-tenant. INSERT exige `reader_tenant_id = app.tenant_id`; UPDATE/DELETE rejeitados via ausência de policy. Particionamento Sprint 04+ (regra 34 ativa quando volume justificar; estimado 10-15M/ano).
+  - **Migrations**: `0004_cheerful_husk.sql` (Faixa A — 3 tabelas + tenants.mode coluna) + `0005_loud_nekra.sql` (Faixa B — 3 tabelas passaporte). Policies SQL: `0010_solo_mode_check.sql` (check constraint) + `0011_faixa_a_rls.sql` (3 tabelas + trigger kind=pf) + `0012_passport_rls.sql` (3 tabelas com RLS especial; logs append-only).
+  - **Seed Faixa C — 5 cenários canônicos** (era 4 na Sprint 01a):
+    - **Cenário 3 ENRIQUECIDO** com passaporte ativo do paciente Carlos: links em ambos tenants (Movimento Academia → módulo `academia`; Movimento Fisio → módulo `fisioterapia`) + 5 níveis de dados configurados por módulo
+    - **Cenário 5 NOVO — Modo Solo**: tenant `dra-mariana-silva` (`mode='solo'`, `cross_company_access=false`) + 1 matriz MEI + 0 filiais + 1 user admin (Dra. Mariana). Cobre profissional autônomo (ADR 0069).
+    - Counts finais: 7 tenants + 11 companies + 11 units + 2 users + 2 links passaporte + 2 link_modules ativos
+  - **9 Vitest tests novos em `packages/db/tests/passport.test.ts`** (T6 estendido):
+    - Academia vê APENAS seu link do Carlos (RLS) ✅
+    - Clinica vê APENAS seu link (RLS) ✅
+    - Tenant solo NÃO vê passaporte (RLS bloqueia) ✅
+    - JOIN patient_link_modules respeita RLS via subquery ✅
+    - Constraint global: 2º link com módulo academia ativo → unique_violation SQLSTATE 23505 ✅
+    - patient_data_access_log append-only: INSERT permitido; UPDATE retorna 0 rows ou erro RLS ✅
+    - tenants.mode=solo + cross_company_access=true → SQLSTATE 23514 check_violation ✅
+    - Cenário 5 valida mode='solo' + cross_company_access=false (consistente) ✅
+  - **Adiado pra próximas sprints (não-gate Sprint 01b deste commit)**:
+    - **Função SQL `has_permission()`** — Sprint 02+ implementa quando Server Actions começarem a checar (Sprint 02 CRM tem primeiros writes que precisam de permission gate)
+    - **UI `/app/pessoas/[id]/registros`** — Sprint 02+ (depende de ter member real cadastrado)
+    - **UI `/app/settings/roles`** custom roles — Sprint 02+ (depende role granting Server Actions)
+    - **`/meu/privacidade` portal scaffold** — Sprint 26 (portal paciente entrega completo)
+    - **Schemas IA Comitê** (`ai_committee_members`/`ai_committee_reviews`/`ai_feature_classifications`) — Sprint 06 (IA ativa)
+    - **PAM `privileged_sessions`** — Sprint 07 (super_admin LogiFit cross-tenant)
+    - **`data_subject_requests`** — Sprint 26 (portal paciente)
+    - **Contador externo convite + UI `/app/contador`** — Sprint 04 (financeiro tem o primeiro caso de uso)
+    - **Cron `mark-grants-expired`** — Sprint 03+ (daemon node-cron compartilhado com process-trial-lifecycle)
+    - **System roles ampliadas** (`super_admin_rede`, `diretor_matriz`, `gerente_filial`) — Sprint 02+ (CRM ativa scope multi-company)
+    - **Triggers cross-tenant `logCrossTenantAccess()`** automático em queries — Sprint 02+ (camada `@repo/passport` implementa)
+  - **Validações end-to-end:**
+    - Typecheck `@repo/db` + `@app/web` ✅
+    - 2 migrations + 3 policies novas aplicadas (idempotente)
+    - `db:rls-check` 4 regras OK em **32 tabelas** (era 26 na Sprint 01a)
+    - **59 Vitest tests verdes** (34 document + 8 rls-runtime + 8 trial-lifecycle + 9 passport)
+    - 8 lints custom: **141 code + 2 css files clean**
+    - Seed 5 cenários idempotente; passaporte Carlos cross-tenant validado em SQL
+  - **Lições documentadas:**
+    1. **UPDATE em append-only sem policy retorna 0 rows silencioso** (não erro). Test pattern: capturar `rowCount === 0` OU erro de policy explícito; ambos indicam que o RLS funcionou.
+    2. **Constraint global cross-tenant via `passport_passport_id`** (denormalizado em `patient_link_modules`) é a forma de garantir "1 módulo ativo por (paciente, módulo) em TODA a rede" sem JOIN cross-tenant em policy — denormalização é trade-off justificado pela criticidade da regra (LGPD + CFM/COFFITO).
+    3. **`patient_data_access_log.reader_tenant_id = app.tenant_id` WITH CHECK** garante que cada tenant só pode logar suas próprias leituras — impossível um tenant forjar log de outro tenant.
+    4. **Mode solo + cross_company_access=true** é check constraint pura (não trigger) — Postgres aplica antes do INSERT/UPDATE, mais eficiente; falha com SQLSTATE 23514 (check_violation) que UI mapeia pra mensagem amigável.
+
+  **Próximo:** Sprint 02 (CRM unificado — members + timeline + dashboard) **OU** D.1 do 01b (UI mínima `/app/pessoas/[id]/registros` + role granting). Adiar UI faz sentido — Sprint 02 já vai usar grants/registrations em contexto real (member cadastrado → fisio precisa ter CREFITO ativo pra fazer evolução).
 
 ## Definition of Done
 

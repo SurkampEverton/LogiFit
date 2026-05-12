@@ -27,6 +27,8 @@ import {
   authUser,
   companies,
   groups,
+  patientCompanyLinks,
+  patientLinkModules,
   persons,
   roles,
   tenants,
@@ -84,8 +86,8 @@ const SCENARIO_2 = {
 }
 
 // ─── Cenário 3: Rede + clínica fisio (2 tenants distintos, mesmo group) ──
-// Passaporte cross-tenant completo (patient_company_links) vem Sprint 01b.
-// Por enquanto: 2 tenants ligados via group; sem link de paciente.
+// Sprint 01b Faixa B/C — passaporte cross-tenant ATIVO entre os 2 tenants.
+// Paciente "Carlos" cadastrado em ambos via patient_company_links.
 const SCENARIO_3 = {
   groupId: '00000003-0001-0000-0000-000000000001',
   academiaTenantId: '00000003-0001-0000-0000-000000000010',
@@ -96,6 +98,27 @@ const SCENARIO_3 = {
   clinicaPersonId: '00000003-0001-0000-0000-0000000000a2',
   clinicaCompanyId: '00000003-0001-0000-0000-0000000000c2',
   clinicaUnitId: '00000003-0001-0000-0000-0000000000f2',
+  // Passaporte do paciente Carlos — Sprint 01b Faixa C ativa
+  passportId: '00000003-0001-0000-0000-0000000000bb', // global passport id
+  carlosAcademiaPersonId: '00000003-0001-0000-0000-0000000000ba', // persons row no tenant academia
+  carlosClinicaPersonId: '00000003-0001-0000-0000-0000000000bc', // persons row no tenant clinica
+  linkAcademiaId: '00000003-0001-0000-0000-0000000000bd', // patient_company_link tenant academia
+  linkClinicaId: '00000003-0001-0000-0000-0000000000be', // patient_company_link tenant clinica
+}
+
+// ─── Cenário 5: Modo Solo (ADR 0069 — profissional autônomo) ──────────────
+// Sprint 01b — tenants.mode='solo'. 1 matriz + 0 filiais; cross_company_access=false.
+const SCENARIO_5 = {
+  // group=null (autônomo NÃO está em rede)
+  tenantId: '00000005-0001-0000-0000-000000000010',
+  // Matriz (PF autônomo opera via PJ MEI; aceita PJ por padrão)
+  matrizPersonId: '00000005-0001-0000-0000-0000000000a1',
+  matrizCompanyId: '00000005-0001-0000-0000-0000000000c1',
+  matrizUnitId: '00000005-0001-0000-0000-0000000000f1',
+  // Profissional admin (fisio autônoma)
+  adminAuthUserId: '00000005-0001-0000-0000-0000000000d1',
+  adminPersonId: '00000005-0001-0000-0000-0000000000b1',
+  adminUserId: '00000005-0001-0000-0000-0000000000e1',
 }
 
 // ─── Cenário 4: Mix (loja avulsa + rede no mesmo group agregado) ──────────
@@ -139,7 +162,12 @@ async function main() {
         SCENARIO_3.clinicaTenantId,
         SCENARIO_4.lojaTenantId,
         SCENARIO_4.redeTenantId,
+        SCENARIO_5.tenantId,
       ]
+      // Passaporte links (cascade pra patient_link_modules)
+      await db
+        .delete(patientCompanyLinks)
+        .where(inArray(patientCompanyLinks.tenantId, scenarioTenants))
       await db.delete(userRoles).where(inArray(userRoles.tenantId, scenarioTenants))
       await db.delete(userTenants).where(inArray(userTenants.tenantId, scenarioTenants))
       await db.delete(users).where(inArray(users.tenantId, scenarioTenants))
@@ -157,7 +185,9 @@ async function main() {
             SCENARIO_4.groupId,
           ]),
         )
-      await db.delete(authUser).where(inArray(authUser.id, [SCENARIO_1.adminAuthUserId]))
+      await db
+        .delete(authUser)
+        .where(inArray(authUser.id, [SCENARIO_1.adminAuthUserId, SCENARIO_5.adminAuthUserId]))
     }
 
     // ─── Cenário 1: Rede própria ───────────────────────────────────────
@@ -176,6 +206,10 @@ async function main() {
     console.log('  • cenário 4: Mix loja avulsa + rede no mesmo group')
     await seedScenario4(db, tenantOwnerRole.id)
 
+    // ─── Cenário 5: Modo Solo (ADR 0069) ────────────────────────────────
+    console.log('  • cenário 5: Modo Solo (Fisio Autônoma — ADR 0069)')
+    await seedScenario5(db, tenantOwnerRole.id)
+
     console.log('✓ seed done')
 
     // Smoke check: contagens
@@ -184,28 +218,32 @@ async function main() {
       WHERE id = ANY(ARRAY[
         ${SCENARIO_1.tenantId}::uuid, ${SCENARIO_2.tenantId}::uuid,
         ${SCENARIO_3.academiaTenantId}::uuid, ${SCENARIO_3.clinicaTenantId}::uuid,
-        ${SCENARIO_4.lojaTenantId}::uuid, ${SCENARIO_4.redeTenantId}::uuid
+        ${SCENARIO_4.lojaTenantId}::uuid, ${SCENARIO_4.redeTenantId}::uuid,
+        ${SCENARIO_5.tenantId}::uuid
       ])
       UNION ALL
       SELECT 'companies', COUNT(*)::int FROM companies
       WHERE tenant_id = ANY(ARRAY[
         ${SCENARIO_1.tenantId}::uuid, ${SCENARIO_2.tenantId}::uuid,
         ${SCENARIO_3.academiaTenantId}::uuid, ${SCENARIO_3.clinicaTenantId}::uuid,
-        ${SCENARIO_4.lojaTenantId}::uuid, ${SCENARIO_4.redeTenantId}::uuid
+        ${SCENARIO_4.lojaTenantId}::uuid, ${SCENARIO_4.redeTenantId}::uuid,
+        ${SCENARIO_5.tenantId}::uuid
       ])
       UNION ALL
       SELECT 'units', COUNT(*)::int FROM units
       WHERE tenant_id = ANY(ARRAY[
         ${SCENARIO_1.tenantId}::uuid, ${SCENARIO_2.tenantId}::uuid,
         ${SCENARIO_3.academiaTenantId}::uuid, ${SCENARIO_3.clinicaTenantId}::uuid,
-        ${SCENARIO_4.lojaTenantId}::uuid, ${SCENARIO_4.redeTenantId}::uuid
+        ${SCENARIO_4.lojaTenantId}::uuid, ${SCENARIO_4.redeTenantId}::uuid,
+        ${SCENARIO_5.tenantId}::uuid
       ])
       UNION ALL
       SELECT 'users', COUNT(*)::int FROM users
       WHERE tenant_id = ANY(ARRAY[
         ${SCENARIO_1.tenantId}::uuid, ${SCENARIO_2.tenantId}::uuid,
         ${SCENARIO_3.academiaTenantId}::uuid, ${SCENARIO_3.clinicaTenantId}::uuid,
-        ${SCENARIO_4.lojaTenantId}::uuid, ${SCENARIO_4.redeTenantId}::uuid
+        ${SCENARIO_4.lojaTenantId}::uuid, ${SCENARIO_4.redeTenantId}::uuid,
+        ${SCENARIO_5.tenantId}::uuid
       ])
     `)
     for (const row of counts.rows) {
@@ -474,6 +512,139 @@ async function seedScenario3(db: ReturnType<typeof drizzle>, _tenantOwnerRoleId:
     name: 'Clínica Centro',
     address: { cidade: 'São Paulo', uf: 'SP' },
   })
+
+  // ─── Paciente Carlos — passaporte cross-tenant (Sprint 01b Faixa B) ────
+  // Mesmo CPF cadastrado em ambos tenants (persons rows distintas — RLS
+  // isola); patient_company_links liga via passport_id global.
+  const CARLOS_CPF = '11144477735'
+  await db.insert(persons).values({
+    id: S.carlosAcademiaPersonId,
+    tenantId: S.academiaTenantId,
+    kind: 'pf',
+    name: 'Carlos Aluno',
+    document: CARLOS_CPF,
+    email: 'carlos@aluno.test',
+  })
+  await db.insert(persons).values({
+    id: S.carlosClinicaPersonId,
+    tenantId: S.clinicaTenantId,
+    kind: 'pf',
+    name: 'Carlos Paciente',
+    document: CARLOS_CPF,
+    email: 'carlos@aluno.test',
+  })
+
+  // Link 1: paciente Carlos ↔ tenant academia (módulo academia ativo)
+  await db.insert(patientCompanyLinks).values({
+    id: S.linkAcademiaId,
+    passportPassportId: S.passportId,
+    personId: S.carlosAcademiaPersonId,
+    tenantId: S.academiaTenantId,
+    status: 'active',
+    creationPath: 'reactive',
+    acceptedAt: new Date('2026-05-01T10:00:00Z'),
+  })
+  await db.insert(patientLinkModules).values({
+    linkId: S.linkAcademiaId,
+    passportPassportId: S.passportId,
+    module: 'academia',
+    status: 'active',
+    dataLevels: { identidade: true, antropometria: true, treino: true, clinico: false },
+    activatedAt: new Date('2026-05-01T10:00:00Z'),
+  })
+
+  // Link 2: paciente Carlos ↔ tenant clínica (módulo fisioterapia ativo)
+  await db.insert(patientCompanyLinks).values({
+    id: S.linkClinicaId,
+    passportPassportId: S.passportId,
+    personId: S.carlosClinicaPersonId,
+    tenantId: S.clinicaTenantId,
+    status: 'active',
+    creationPath: 'reactive',
+    acceptedAt: new Date('2026-05-05T14:30:00Z'),
+  })
+  await db.insert(patientLinkModules).values({
+    linkId: S.linkClinicaId,
+    passportPassportId: S.passportId,
+    module: 'fisioterapia',
+    status: 'active',
+    dataLevels: { identidade: true, antropometria: true, treino: false, clinico: true },
+    activatedAt: new Date('2026-05-05T14:30:00Z'),
+  })
+}
+
+// ─── Cenário 5: Modo Solo (ADR 0069 — profissional autônomo) ────────────
+async function seedScenario5(db: ReturnType<typeof drizzle>, tenantOwnerRoleId: string) {
+  const S = SCENARIO_5
+  // Sem groupId — autônomo NÃO está em rede
+  await db.insert(tenants).values({
+    id: S.tenantId,
+    groupId: null,
+    name: 'Dra. Mariana Silva — Fisio Autônoma',
+    slug: 'dra-mariana-silva',
+    mode: 'solo', // ADR 0069
+    topology: 'owned',
+    financialMode: 'centralized',
+    crossCompanyAccess: false, // check constraint: solo NÃO pode ter true
+    subscriptionStatus: 'active',
+  })
+  // PJ MEI (autônomo opera via MEI)
+  await db.insert(persons).values({
+    id: S.matrizPersonId,
+    tenantId: S.tenantId,
+    kind: 'pj',
+    name: 'Mariana Silva — MEI ME',
+    displayName: 'Dra. Mariana — Fisio',
+    document: '34028316000103',
+  })
+  await db.insert(companies).values({
+    id: S.matrizCompanyId,
+    tenantId: S.tenantId,
+    personId: S.matrizPersonId,
+    type: 'matriz',
+    regimeTributario: 'mei',
+  })
+  await db.insert(units).values({
+    id: S.matrizUnitId,
+    tenantId: S.tenantId,
+    companyId: S.matrizCompanyId,
+    name: 'Consultório Particular',
+    address: { cidade: 'Florianópolis', uf: 'SC' },
+  })
+  // Profissional admin (a fisio autônoma)
+  await db.insert(authUser).values({
+    id: S.adminAuthUserId,
+    email: 'mariana+solo@logifit.test',
+    emailVerified: true,
+    name: 'Dra. Mariana Silva',
+  })
+  await db.insert(persons).values({
+    id: S.adminPersonId,
+    tenantId: S.tenantId,
+    kind: 'pf',
+    name: 'Dra. Mariana Silva',
+    document: '52998224725',
+    email: 'mariana+solo@logifit.test',
+  })
+  await db.insert(users).values({
+    id: S.adminUserId,
+    tenantId: S.tenantId,
+    personId: S.adminPersonId,
+    authUserId: sql`${S.adminAuthUserId}::uuid`,
+    username: 'mariana+solo@logifit.test',
+    mfaEnabled: false,
+  })
+  await db.insert(userTenants).values({
+    userId: S.adminUserId,
+    tenantId: S.tenantId,
+    isDefault: true,
+  })
+  // Solo NÃO ganha tenant_owner — ganha role 'fisio' (regra 43 — requires_mfa)
+  await db.insert(userRoles).values({
+    tenantId: S.tenantId,
+    userId: S.adminUserId,
+    roleId: tenantOwnerRoleId, // tenant_owner sempre (dono do solo é dono administrativo)
+  })
 }
 
 async function seedScenario4(db: ReturnType<typeof drizzle>, _tenantOwnerRoleId: string) {
@@ -553,4 +724,5 @@ export const SCENARIOS = {
   franquia: SCENARIO_2,
   redeMaisClinica: SCENARIO_3,
   mix: SCENARIO_4,
+  solo: SCENARIO_5,
 }

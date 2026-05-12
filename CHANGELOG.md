@@ -6,6 +6,54 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 01b 40%: núcleo RBAC v2 + passaporte cross-tenant + 5º cenário (solo) 2026-05-12
+
+Schemas extension Sprint 01a → Sprint 01b. 6 tabelas novas + 1 coluna + 1 check constraint + 9 Vitest tests. UI registros + has_permission() function adiados pra Sprint 02+ (que vai consumir em contexto real).
+
+**Adições:**
+
+- **[ADR 0019](docs/decisions/0019-rbac-com-grants-diretos-union.md)** — RBAC com grants diretos + union em policies RLS. Modelo híbrido (roles + grants) escolhido sobre Casbin/OPA/CASL. Função `has_permission(user_id, perm, scope_type, scope_id)` centraliza (implementação Sprint 02+).
+- **Faixa A — 4 tabelas + 1 coluna**:
+  - `tenants.mode` enum `('multi'|'solo')` + check constraint `NOT (mode='solo' AND cross_company_access=true)` — ADR 0069 Plano Solo
+  - `professional_registrations` (ADR 0055) — `council_body` enum CRM/CRN/CREFITO/CREF/CRF/CRP/COREN/CRO + situation enum + **constraint global unique cross-tenant** `(council_body, council_number, council_state)` detecta fraude. Trigger `kind=pf`.
+  - `franchise_agreements` (ADR 0007) — N:N franqueador↔franqueado com royalty% + termos. Unique parcial 1 acordo ativo.
+  - `consents` (LGPD art. 8) — 10 propósitos enum + 7 bases legais enum; revogação = INSERT nova row (preserva trilha).
+- **Faixa B — 3 tabelas passaporte cross-tenant (regra 42 + ADR 0077)**:
+  - `patient_company_links` — N:N paciente↔tenant com `passport_passport_id` global; status enum; creation_path
+  - `patient_link_modules` — 5 módulos canônicos enum + **constraint global** `(passport, module) WHERE deactivated_at IS NULL` UNIQUE em TODA a rede
+  - `patient_data_access_log` — append-only audit cross-tenant; INSERT exige `reader_tenant_id = app.tenant_id`; UPDATE/DELETE rejeitados
+- **Migrations**: `0004_cheerful_husk.sql` (Faixa A) + `0005_loud_nekra.sql` (Faixa B)
+- **Policies**: `0010_solo_mode_check.sql` + `0011_faixa_a_rls.sql` + `0012_passport_rls.sql` (16 policies novas + 1 trigger kind=pf)
+- **`packages/db/scripts/seed.ts`** estendido — **5 cenários canônicos completos**:
+  - Cenário 3 enriquecido com passaporte ativo (paciente Carlos linkado em Academia + Clínica; módulos academia + fisioterapia)
+  - **Cenário 5 NOVO** — Modo Solo (`tenants.mode='solo'`, MEI, 1 matriz + 0 filiais, fisio autônoma)
+  - Counts: 7 tenants + 11 companies + 11 units + 2 users + 2 patient_company_links + 2 patient_link_modules
+- **`packages/db/tests/passport.test.ts`** — **9 Vitest tests** cobrindo: isolamento per-tenant (3) + JOIN modules respeita RLS (2) + constraint global SQLSTATE 23505 (1) + append-only patient_data_access_log (1) + tenants.mode=solo check constraint SQLSTATE 23514 (2)
+
+**Validações end-to-end:**
+
+- typecheck `@repo/db` + `@app/web` ✅
+- migrations + policies aplicadas (idempotente)
+- `db:rls-check` 4 regras OK em **32 tabelas** (era 26 na Sprint 01a)
+- **59 Vitest tests verdes** (34 document + 8 rls-runtime + 8 trial-lifecycle + 9 passport)
+- 8 lints custom: **141 code + 2 css files clean**
+- Seed 5 cenários idempotente
+
+**Adiado pra próximas sprints (não-gate Sprint 01b deste commit):**
+
+- Função SQL `has_permission()` — Sprint 02+ (primeiros writes com permission gate)
+- UI `/app/pessoas/[id]/registros` — Sprint 02+ (member real ativa caso de uso)
+- UI `/app/settings/roles` — Sprint 02+
+- Schemas IA Comitê — Sprint 06
+- PAM `privileged_sessions` — Sprint 07
+- `data_subject_requests` + `/meu/privacidade` portal — Sprint 26
+- Contador externo + `/app/contador` — Sprint 04
+- Cron `mark-grants-expired` — Sprint 03+ daemon
+- System roles ampliadas (super_admin_rede etc) — Sprint 02+
+- `logCrossTenantAccess()` automático em camada `@repo/passport` — Sprint 02+
+
+**Sprint 01b a 40%** — núcleo crítico (schemas + RLS + seed + tests) entregue. UI + has_permission ativam progressivamente nas sprints donos.
+
 ### Build — 🎉 Sprint 01a FECHADO 100% — Faixa G: Trial lifecycle ADR 0066 2026-05-12
 
 Última faixa entrega LGPD art. 16 anonimização automática: trial 14d → trial_expired → +30d `anonymize_trial_data()` NULLifica PII preservando agregados estatísticos. **Sprint 01a (Identidade + Topology) DONE.**

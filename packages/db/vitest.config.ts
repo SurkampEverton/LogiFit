@@ -29,6 +29,7 @@ export default mergeConfig(
           'src/client.ts',
           'tests/rls-runtime.test.ts', // integration test (precisa Postgres+seed local)
           'tests/trial-lifecycle.test.ts', // integration test trial lifecycle (Faixa G)
+          'tests/passport.test.ts', // integration test passaporte cross-tenant (Sprint 01b)
         ],
       },
     },

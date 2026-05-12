@@ -26,3 +26,11 @@ export * from './rbac'
 
 // Sprint 01a Faixa F — audit_log + system_alerts (regras 5+34+39 + ADR 0071)
 export * from './audit'
+
+// Sprint 01b Faixa A — professional_registrations (ADR 0055) + franchise (ADR 0007) + consents (regra 29)
+export * from './professional-registrations'
+export * from './franchise'
+export * from './consents'
+
+// Sprint 01b Faixa B — passaporte cross-tenant (regra 42 + ADR 0077)
+export * from './passport'
