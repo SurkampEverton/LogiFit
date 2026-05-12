@@ -175,7 +175,39 @@ Em `apps/web/app/settings/users/actions.ts`:
 
 ## Log
 
-- —
+- **2026-05-12 — Faixa A (Schemas + RLS base) FECHADA 🟢: fundamento da hierarquia organizacional.**
+  - **Validador CPF/CNPJ** em `packages/db/src/persons/document.ts` — algoritmo módulo 11 (Receita Federal) zero-dep, com detecção automática PF/PJ pelo tamanho dos dígitos. API: `parseDocument(input)`, `isValidCpf`, `isValidCnpj`, `normalizeDocument`, `formatDocument`. **34/34 Vitest tests verdes** cobrindo CPFs/CNPJs canônicos válidos (incluindo Correios + Bradesco públicos), 5 razões de falha (`empty`, `invalid_length`, `all_same_digit`, `check_digit_mismatch`, formatação parcial).
+  - **Schemas Drizzle**: 9 tabelas em `packages/db/src/schema/`:
+    - `persons.ts` — cadastro central PF/PJ (ADR 0047) com unique index parcial `(tenant_id, document) WHERE document IS NOT NULL`.
+    - `cnpj-cache.ts` — cache GLOBAL Receita Federal (ADR 0048) + `tenant_cnpj_settings` por tenant.
+    - `identity.ts` — `groups` (agregado), `tenants` (+ topology/financial_mode/cross_company_access/subscription_status/trial_ends_at/shard_url/default_locale), `companies` (matriz/filial + person_id PJ), `units`, `users` (+ person_id PF + auth_user_id + mfa_enabled), `user_tenants` (N:N).
+    - Total: 5 enums Postgres + 9 tabelas + 15 índices + 6 FKs. Migration gerada: `migrations/0000_milky_dark_beast.sql` (162 linhas).
+  - **RLS policies em SQL puro** (regra 1 + soberania perpétua #1) — 4 arquivos em `packages/db/src/policies/`:
+    - `0001_persons_rls.sql` — 4 policies (SELECT/INSERT/UPDATE/DELETE) usando `current_setting('app.tenant_id', true)::uuid` + `ENABLE` + `FORCE` RLS.
+    - `0002_identity_rls.sql` — 16 policies cobrindo tenants/groups/companies/units/users/user_tenants; `user_tenants` tem policy especial pra `/select-tenant` (lê via `app.user_id` antes do tenant ser escolhido).
+    - `0003_cnpj_cache_rls.sql` — leitura LIVRE pra qualquer autenticado (cache global), WRITE só via Server Action.
+    - `0004_person_kind_check.sql` — 3 triggers comportamentais: `companies.person_id` kind=pj, `users.person_id` kind=pf, `companies.parent_company_id` aponta pra matriz mesmo tenant.
+  - **Role `logifit_app`** (`init/0001_roles.sql`) — non-superuser, sem BYPASSRLS; é o role das Server Actions/API Routes. `postgres` superuser bypassa RLS por design (não pode ser usado em queries de aplicação). Sem isso descoberto a tempo, smoke test ENGANARIA (Sprint 19+ teria surpresa em prod com RLS aparente mas não-aplicado).
+  - **`migrate.ts` runner refatorado em 3 fases**: init (extensions + roles) → drizzle (tabelas) → policies (RLS + triggers); idempotente via `DROP IF EXISTS` automático em policies + `DROP TRIGGER IF EXISTS` explícito nos SQLs + `CREATE OR REPLACE FUNCTION`. **Validado: 2 runs consecutivos sem erro.**
+  - **`db:rls-check` ESTENDIDO de 1 → 4 regras**:
+    1. `tenant-id-needs-rls`: tabela com `tenant_id` sem RLS habilitada
+    2. `rls-needs-force`: RLS sem FORCE (table owner bypassa)
+    3. `rls-needs-policy`: RLS sem nenhuma policy (DENY total silencioso)
+    4. `runtime-isolation` (opt-in via `RLS_CHECK_RUNTIME=1`): cria 2 tenants fictícios + INSERT em cada, valida que role `logifit_app` com `app.tenant_id`=A só vê dado de A; ROLLBACK no final. Resultado: **isolamento real comprovado em transação automatizada**.
+  - **Smoke test em prod local (4/4 passou):**
+    - Tentativa 1 (company com PF) → trigger bloqueia ✅
+    - Tentativa 2 (matriz com PJ) → passa ✅
+    - Tentativa 3 (2ª matriz mesmo tenant) → unique parcial bloqueia ✅
+    - Tentativa 4 (filial sem parent) → trigger bloqueia ✅
+    - Tentativa 5 (filial com matriz parent) → passa ✅
+  - **Lições documentadas:**
+    1. **`postgres` superuser bypassa RLS por design** — `FORCE ROW LEVEL SECURITY` força só pra table owner, não pra superuser global. App MUST usar role dedicado (`logifit_app` aqui) — descoberto durante primeiro smoke test que enganosamente passou sem o role.
+    2. **`drizzle-kit` é CJS, não aceita `.js` extension em imports TypeScript** — usar imports sem extensão (`./persons` em vez de `./persons.js` ou `./persons.ts`).
+    3. **`noUncheckedIndexedAccess: true`** força `?? defaultValue` em acessos `array[i]` mesmo quando length é provadamente conhecido — vale o cost por catch bugs reais de off-by-one.
+    4. **Policies SQL precisam de `DROP IF EXISTS` antes de CREATE** (não há `CREATE OR REPLACE POLICY`); regex no migrator extrai nomes de `CREATE POLICY ... ON ...` automaticamente, mas triggers ficam com DROP explícito no SQL (regex multi-linha era frágil).
+    5. **`relforcerowsecurity` é coluna separada** de `relrowsecurity` em `pg_class` — checar AMBAS no lint estático.
+
+  **Próxima faixa:** B — Auth + sessões (BetterAuth/Lucia + cookie httpOnly + middleware + `auth_attempts` + lockout + Turnstile).
 
 ## Definition of Done
 

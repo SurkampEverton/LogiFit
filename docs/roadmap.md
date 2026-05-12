@@ -10,9 +10,9 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 
 | # | Sprint | Funcionalidade | Status | Início | Fim | % | Bloqueios | PR |
 |---|---|---|---|---|---|---|---|---|
-| 1 | [00](sprints/00-setup-infra.md) | Setup de infra (monorepo, CI, observabilidade, componentes base responsivos) | **doing** | 2026-04-27 | — | 97 | — | — |
+| 1 | [00](sprints/00-setup-infra.md) | Setup de infra (monorepo, CI, observabilidade, componentes base responsivos) | **done***  | 2026-04-27 | 2026-05-12 | 97 | — | — |
 | 1b | [00b](sprints/00b-menu-lateral.md) | **Menu lateral (SideMenu hamburger overlay + registry por módulo + filtro permission/vertical/consent)** | todo | — | — | 0 | depende #1 + parcialmente #3 (permissions) | — |
-| 2 | [01a](sprints/01a-identidade-e-topology.md) | Identidade + Topology (groups/tenants/companies/units + RLS raiz) | todo | — | — | 0 | depende #1 | — |
+| 2 | [01a](sprints/01a-identidade-e-topology.md) | Identidade + Topology (groups/tenants/companies/units + RLS raiz) | **doing** | 2026-05-12 | — | 12 | — | — |
 | 3 | [01b](sprints/01b-rbac-e-consent.md) | RBAC com scope + grants diretos + Consent LGPD | todo | — | — | 0 | depende #2 | — |
 | 4 | [02](sprints/02-geral-crm-pessoas.md) | CRM unificado (members + timeline + dashboard do member) | todo | — | — | 0 | depende #3 | — |
 | 5 | [03](sprints/03-geral-agenda-universal.md) | Agenda universal + modalidades Academia | todo | — | — | 0 | depende #3, #4 | — |
@@ -35,6 +35,8 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 | ~~22~~ | ~~19b~~ | ~~Migração hospedagem Vercel+Supabase → Oracle (ADR 0078)~~ | **deletado** | — | — | — | **superseded por [ADR 0091](decisions/0091-self-host-total-oracle-sp.md)** — self-host total desde Sprint 00; não há migração futura | — |
 
 **MVP fecha no Sprint 19.** 21 sprints. ~6-8 meses de dev solo. Sprint 19b foi **deletado** após [ADR 0091](decisions/0091-self-host-total-oracle-sp.md) (2026-04-27) que pula a fase Vercel+Supabase inteira — desde Sprint 00 a infra é self-host total Oracle Cloud SP + Coolify + Postgres + Caddy + GlitchTip + Loki/Grafana + MinIO. Sprint 00 ganha ~1 semana extra (passa de 4 → 5 semanas) pra absorver o bootstrap Oracle + Coolify + observabilidade self-host.
+
+**\*Sprint 00 status "done\*"** — Camada 2 do backup R2 off-site (regra 40 completa) ficou em standby até fundador fornecer credentials Cloudflare/GPG; Camada 1 local cobre ~80% dos cenários de DR. Reabrir como hot-fix quando ativar.
 
 ---
 

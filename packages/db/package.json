@@ -8,10 +8,13 @@
     ".": "./src/index.ts",
     "./client": "./src/client.ts",
     "./schema": "./src/schema/index.ts",
-    "./policies": "./src/policies/index.ts"
+    "./policies": "./src/policies/index.ts",
+    "./persons": "./src/persons/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:generate": "drizzle-kit generate",
     "db:rls-check": "tsx tests/rls-check.ts"
@@ -25,6 +28,7 @@
     "@types/pg": "^8.11.10",
     "drizzle-kit": "^0.28.1",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.5"
   }
 }

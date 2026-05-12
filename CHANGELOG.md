@@ -6,6 +6,52 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 01a Faixa A: schemas + RLS base + validador CPF/CNPJ 2026-05-12
+
+Primeira faixa do Sprint 01a (Identidade + Topology). Schemas Drizzle das 9 tabelas fundacionais + RLS policies em SQL puro + role `logifit_app` non-superuser + validador documento brasileiro + db:rls-check 4× mais robusto. **Isolamento RLS comprovado em transação automatizada** (`RLS_CHECK_RUNTIME=1`).
+
+**Adições:**
+
+- **`packages/db/src/persons/document.ts`** — validador CPF/CNPJ canônico zero-dep (módulo 11 Receita Federal), detecção automática PF/PJ pelo tamanho dos dígitos, 5 razões de falha tipadas (`empty`, `invalid_length`, `all_same_digit`, `check_digit_mismatch`). API: `parseDocument`, `isValidCpf`, `isValidCnpj`, `normalizeDocument`, `formatDocument`. **34 Vitest tests verdes** com CPFs/CNPJs públicos canônicos.
+- **`packages/db/src/schema/persons.ts`** — cadastro central PF/PJ (ADR 0047) com unique parcial `(tenant_id, document) WHERE document IS NOT NULL`.
+- **`packages/db/src/schema/cnpj-cache.ts`** — cache GLOBAL Receita Federal (ADR 0048) sem tenant_id + `tenant_cnpj_settings` por tenant (provider primário/fallback + credentials).
+- **`packages/db/src/schema/identity.ts`** — `groups`, `tenants` (topology + financial_mode + cross_company_access + subscription_status + trial_ends_at + shard_url + default_locale), `companies` (matriz/filial + person_id PJ + IE/IM/regime_tributario/CNES), `units`, `users` (+ person_id PF + auth_user_id + mfa_enabled), `user_tenants` N:N. **5 enums + 9 tabelas + 15 índices + 6 FKs.**
+- **`packages/db/src/policies/0001-0004_*.sql`** — 4 arquivos de RLS em SQL puro versionado: persons (4 policies) + identity (16 policies) + cnpj-cache (4 policies) + person_kind_check (3 triggers comportamentais: companies.person_id kind=pj, users.person_id kind=pf, filial→matriz mesmo tenant). Total: **24 policies + 3 triggers + 3 funções**.
+- **`packages/db/init/0001_roles.sql`** — role `logifit_app` (NON-superuser, NÃO BYPASSRLS) usado pelas Server Actions/API Routes. Postgres superuser bypassa RLS por design — sem role dedicado, isolamento aparenta funcionar mas falha silenciosamente em prod.
+- **`packages/db/vitest.config.ts`** + add devDep `vitest@^2.1.5` ao `@repo/db`. Coverage threshold 80% (mesmo piso de errors/security/storage).
+- **`migrations/0000_milky_dark_beast.sql`** — migration inicial gerada por `drizzle-kit generate` (162 linhas).
+
+**Atualizações:**
+
+- **`packages/db/scripts/migrate.ts`** — refatorado em 3 fases (init → drizzle → policies), idempotente via `DROP IF EXISTS` automático em policies + DROP TRIGGER inline + `CREATE OR REPLACE FUNCTION`. **Validado: 2 runs consecutivos sem erro.**
+- **`packages/db/tests/rls-check.ts`** — estendido de 1 → 4 regras: (1) `tenant-id-needs-rls`, (2) `rls-needs-force`, (3) `rls-needs-policy`, (4) `runtime-isolation` (opt-in `RLS_CHECK_RUNTIME=1` cria 2 tenants + valida que role `logifit_app` com `app.tenant_id`=A só vê dado de A; ROLLBACK no final). Allowlist explícita pra `cnpj_cache` + `groups` (globais por design).
+- **`packages/db/package.json`** — script `test` (vitest) + export `./persons` + dep `vitest`.
+
+**Smoke test em prod local (5/5 passou):**
+
+1. ❌ Company com PF → trigger bloqueia ✅
+2. ✅ Matriz com PJ → passa ✅
+3. ❌ 2ª matriz mesmo tenant → unique parcial bloqueia ✅
+4. ❌ Filial sem parent → trigger bloqueia ✅
+5. ✅ Filial com matriz parent → passa ✅
+
+**Validações end-to-end:**
+
+- `pnpm --filter @repo/db typecheck` ✅
+- `pnpm --filter @repo/db test` → 34/34 tests ✅
+- `pnpm --filter @repo/db db:migrate` (2× consecutivos) ✅ idempotente
+- `pnpm --filter @repo/db db:rls-check` → 3 regras estáticas OK
+- `RLS_CHECK_RUNTIME=1 pnpm db:rls-check` → 4 regras OK (isolamento real comprovado)
+- `node scripts/lint-custom.mjs` → 92 code + 2 css files clean (8 rules)
+
+**Lições documentadas (importantes pra Faixa B+):**
+
+1. **`postgres` superuser bypassa RLS por design** — `FORCE ROW LEVEL SECURITY` força só pra table owner, não pra superuser global. App MUST usar role dedicado (`logifit_app`). Descoberto via smoke test que enganosamente passou sem o role isolation real.
+2. **drizzle-kit é CJS** — não aceita `.js` extension em imports `.ts`; usar imports sem extensão.
+3. **Policies SQL precisam DROP IF EXISTS** antes de CREATE (não há `CREATE OR REPLACE POLICY`); regex no migrator extrai automaticamente, mas TRIGGER fica com DROP explícito no SQL.
+
+**Sprint 01a a ~12% — Faixa A de 8 fechada.**
+
 ### Build — Backup Camada 1 (local) ATIVA + DR drill validado 2026-05-12
 
 Cobre ~80% dos cenários reais de DR sem precisar de credentials externas. Camada 2 (R2 off-site) permanece pendente — aguarda 1 API token Cloudflare do fundador.
