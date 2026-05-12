@@ -99,3 +99,44 @@ export async function withSessionContext<T>(
     client.release()
   }
 }
+
+/**
+ * Executa `fn` numa transação com RLS bypass via SET LOCAL ROLE postgres.
+ *
+ * Uso RESTRITO ao onboarding (`/signup` wizard) onde o tenant ainda não
+ * existe — `app.tenant_id` não pode ser setado antes do INSERT do tenant.
+ *
+ * **Defesa em profundidade**: o `app.user_id` ainda é setado (BetterAuth
+ * já criou o auth_user antes); `app.tenant_id` é null (RLS via session
+ * context não filtra, mas estamos com role elevado).
+ *
+ * **Audit trail**: chamadas a esta função registram em `audit_log` com
+ * `action='onboarding.elevated'` (Sprint 01a Faixa F implementa audit_log
+ * com hash chain — por enquanto stub).
+ *
+ * **Lint custom `no-elevated-context-abuse`** (Sprint 02+): bloqueia uso
+ * fora de `apps/web/app/(auth)/signup/actions.ts`.
+ */
+export async function withElevatedContext<T>(
+  authUserId: string,
+  fn: (client: import('pg').PoolClient) => Promise<T>,
+): Promise<T> {
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    await client.query("SET LOCAL ROLE postgres")
+    await client.query("SELECT set_config('app.user_id', $1, true)", [authUserId])
+    const result = await fn(client)
+    await client.query('COMMIT')
+    return result
+  } catch (err) {
+    try {
+      await client.query('ROLLBACK')
+    } catch {
+      /* swallow rollback errors */
+    }
+    throw err
+  } finally {
+    client.release()
+  }
+}

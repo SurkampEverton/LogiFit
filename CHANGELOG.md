@@ -6,6 +6,45 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 01a Faixa E: Topology UI + `/signup` wizard atômico 2026-05-12
+
+`onboardTenant` Server Action cria 7 entidades atomicamente (transaction elevada com `SET LOCAL ROLE postgres`) + UI wizard 3 etapas com auto-fill CNPJ + settings empresas/users. Sprint 01a sobe de 55% pra 70%.
+
+**Adições:**
+
+- **`apps/web/app/(auth)/signup/actions.ts`** — `onboardTenant({ cnpj, empresa*, unit*, admin* })`:
+  - Cria 7 entidades em uma transaction: tenants + persons matriz PJ + companies + units + persons admin PF + users + user_tenants + user_roles (`tenant_owner` system role)
+  - `auth.api.signUpEmail()` cria `auth_user` BetterAuth com password random 32 chars
+  - `auth.api.signInMagicLink()` envia link mágico pra `/app`
+  - Erros mapeados: `SLUG_TAKEN`, `CNPJ_TAKEN`, `EMAIL_ALREADY_USED`, `INVALID_CNPJ`/`INVALID_CPF`
+- **`apps/web/app/lib/session.ts`**: `withElevatedContext(authUserId, fn)` — transaction com `SET LOCAL ROLE postgres` + ROLLBACK automático; uso restrito ao onboarding (Sprint 02+ adiciona lint `no-elevated-context-abuse`).
+- **`apps/web/app/app/settings/empresas/actions.ts`** — `listCompanies`, `listAvailablePjPersons`, `createFilial` (detect `PERSON_ALREADY_COMPANY` + `PERSON_NOT_PJ`).
+- **`apps/web/app/app/settings/users/actions.ts`** — `listUsers` (com roles agregadas), `listAvailablePfPersons`, `listAssignableRoles`, `createUser` (detect `USERNAME_TAKEN`, `PERSON_ALREADY_USER`, `PERSON_NOT_PF`).
+- **`apps/web/app/(auth)/signup/signup-wizard.tsx`** — Client Component 3-step wizard (Empresa → Unidade → Admin) com stepper visual + auto-fill CNPJ + slug auto-gerado a partir do nome.
+- **`apps/web/app/app/settings/empresas/page.tsx`** + **`new/page.tsx`** + **`new-filial-form.tsx`** — lista com badge matriz/filial; new com dropdown PJs disponíveis + campos IE/IM/regime tributário.
+- **`apps/web/app/app/settings/users/page.tsx`** + **`new/page.tsx`** + **`new-user-form.tsx`** — lista com flags "convite pendente" + "MFA"; new com dropdown PF + checkboxes roles + indicador "MFA obrigatório".
+
+**Atualizações:**
+
+- **`apps/web/package.json`** — deps `pg` + `@types/pg` (necessárias pro `withElevatedContext` que recebe `PoolClient` explícito).
+
+**Validações end-to-end:**
+
+- typecheck `@app/web` ✅
+- `pnpm --filter @app/web build` → **15 rotas** (4 novas + signup wizard 2.95KB) + middleware 34.7KB ✅
+- `db:rls-check` 4 regras OK em 23 tabelas ✅
+- 47 Vitest tests verdes
+- 8 lints custom: **130 code + 2 css files clean**
+
+**Lições documentadas:**
+
+1. `withElevatedContext` requer transaction explícita — `SET LOCAL ROLE` só dura até COMMIT/ROLLBACK. Sem transaction, o SET vazaria entre queries no pool.
+2. BetterAuth `signUpEmail` exige `password` mesmo quando user só vai usar magic link. Workaround: 32 chars aleatórios via `crypto.getRandomValues()`.
+3. `auth.api.*` exigem `headers: HeadersInit` — passar `await headers()` do `next/headers` mesmo em Server Action (Next.js 15 dá acesso).
+4. `signInMagicLink` falha NÃO reverte tenant — tenant já foi criado; UI mostra "tenta de novo na tela de login". Sprint 02+ adiciona `notification_queue` async com retry idempotente.
+
+**Sprint 01a a 70% — Faixa E de 8 fechada.** Próximo: Faixa F (audit + particionamento + `wrapAction` envelope automático).
+
 ### Build — Sprint 01a Faixa D: Persons CRUD + CNPJ lookup (BrasilAPI + ReceitaWS + cache 7d) 2026-05-12
 
 `@repo/cnpj` package + 4 Server Actions persons + UI `/app/pessoas` (lista + cadastro com auto-fill CNPJ) + API Route `/api/pessoas/cnpj/[cnpj]`. Sprint 01a sobe de 40% pra ~55%.

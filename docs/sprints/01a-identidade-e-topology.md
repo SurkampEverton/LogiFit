@@ -175,6 +175,47 @@ Em `apps/web/app/settings/users/actions.ts`:
 
 ## Log
 
+- **2026-05-12 (madrugada+) — Faixa E (Topology UI + Onboarding) FECHADA 🟢: `/signup` wizard atômico + settings empresas/users.**
+  - **`onboardTenant` Server Action atômica** em `apps/web/app/(auth)/signup/actions.ts` — cria 7 entidades numa transaction única (`withElevatedContext` faz `SET LOCAL ROLE postgres` pra bypass RLS porque tenant ainda não existe):
+    1. `tenants` (slug + topology=owned + trial_ends_at = now + 14d, ADR 0066)
+    2. `persons` matriz PJ (com auto-fill CNPJ via `lookupCnpj` se Receita responder)
+    3. `companies` matriz linkada ao person_id PJ
+    4. `units` inicial (nome + endereço; herda da Receita se vazio)
+    5. `persons` admin PF
+    6. `users` LogiFit linkado a `auth_user.id` BetterAuth + `person_id` PF
+    7. `user_tenants` (vínculo default=true)
+    8. `user_roles` → role `tenant_owner` (system) atribuída ao admin
+    - **Pré-criação**: `auth.api.signUpEmail()` cria `auth_user` no BetterAuth com senha aleatória de 32 chars (user só usa magic link).
+    - **Pós-criação**: `auth.api.signInMagicLink()` envia link mágico pra `/app`.
+    - **Erros mapeados**: `SLUG_TAKEN` (unique slug), `CNPJ_TAKEN` (CNPJ já em outro tenant), `EMAIL_ALREADY_USED` (multi-tenant em Sprint 02+), `INVALID_CNPJ`/`INVALID_CPF`, `INTERNAL`.
+  - **`withElevatedContext(authUserId, fn)`** em `apps/web/app/lib/session.ts` — wrapper de transaction com `SET LOCAL ROLE postgres` + `app.user_id` setado; ROLLBACK automático em erro. **Uso restrito** ao onboarding (Sprint 02+ adiciona lint `no-elevated-context-abuse`).
+  - **6 Server Actions companies/users** em `apps/web/app/app/settings/{empresas,users}/actions.ts`:
+    - `listCompanies()` — join companies + persons mostra nome + CNPJ + tipo
+    - `listAvailablePjPersons()` — PJs não-arquivadas que ainda não viraram company (pra dropdown new filial)
+    - `createFilial({ personId, ie, im, regimeTributario, cnesCode })` — busca matriz automaticamente se `parentCompanyId` omitido; detecta `companies_person_per_tenant_uq` → `PERSON_ALREADY_COMPANY` e `kind=pj` trigger → `PERSON_NOT_PJ`
+    - `listUsers()` — users com roles agregadas (Faixa F otimiza com lateral join)
+    - `listAvailablePfPersons()` — PFs não-arquivadas e sem `users` row ainda
+    - `listAssignableRoles()` — system + custom roles do tenant
+    - `createUser({ personId, username, roleIds, scopeCompanyId?, scopeUnitId? })` — INSERT users + user_tenants + user_roles (1 row por role); detecta `users_tenant_username_uq` → `USERNAME_TAKEN`, `users_tenant_person_uq` → `PERSON_ALREADY_USER`, `kind=pf` trigger → `PERSON_NOT_PF`
+  - **UI `/signup` wizard** em `signup-wizard.tsx` (substitui skeleton) — Client Component em 3 etapas: (1) Empresa (CNPJ → auto-fill onBlur 14 dígitos via `/api/pessoas/cnpj/[cnpj]`; gera slug subdomain a partir do nome fantasia), (2) Unidade (nome + endereço; herda da Receita), (3) Admin (email + nome + CPF opcional). Stepper visual com 3 círculos numerados. Submit final → `onboardTenant` → tela de sucesso "Confira seu email".
+  - **UI `/app/settings/empresas`** lista matriz + filiais com badge de tipo; UI `/empresas/new` Server+Client com dropdown de PJs disponíveis + campos IE/IM/regime tributário.
+  - **UI `/app/settings/users`** lista com flags "convite pendente" (auth_user_id null) e "MFA" (mfa_enabled); UI `/users/new` Server+Client com dropdown PF + checkboxes de roles + indicador "MFA obrigatório" pras roles que exigem.
+  - **Validações end-to-end:**
+    - Typecheck `@app/web` ✅
+    - `pnpm --filter @app/web build` → **15 rotas** (4 novas Faixa E + `/signup` agora 2.95KB com wizard) + middleware 34.7KB ✅
+    - `db:rls-check` 4 regras OK em 23 tabelas ✅
+    - 47 Vitest tests verdes ✅
+    - 8 lints custom: **130 code + 2 css files clean** ✅
+  - **Lições documentadas:**
+    1. **`withElevatedContext` requer transaction explícita** — `SET LOCAL ROLE` só dura até COMMIT/ROLLBACK. Sem transaction, o SET ficaria vazando pra próxima query no pool.
+    2. **BetterAuth `signUpEmail` exige `password`** mesmo quando user não vai usar (só magic link). Workaround: gerar 32 chars aleatórios via `crypto.getRandomValues()` — usuário nunca vê nem usa.
+    3. **`auth.api.*` exigem `headers` HeadersInit** — não bastam só `body`. Solução: passar `await headers()` do `next/headers` mesmo em Server Action (Next.js 15 dá acesso ao request mesmo fora de Server Component).
+    4. **`signInMagicLink` falha não reverte tenant** — se email der down, tenant já foi criado; UI mostra "tenta de novo na tela de login". Sprint 02+ adiciona `notification_queue` async pra retry idempotente.
+    5. **Slug auto-gerado normaliza acentos via NFD + remove diacríticos** — "Academia Equilíbrio Vital" → "academia-equilibrio-vital". Regex `/[̀-ͯ]/g` é a unicode combining marks range.
+    6. **Multi-tenant signup adiado** — `EMAIL_ALREADY_USED` retorna erro instrutivo apontando pra `/select-tenant` (Sprint 02+ entrega).
+
+  **Próxima faixa:** F — Audit + particionamento + anchor + `wrapAction` (envelope automático regra 33 + audit_log hash chain regra 39).
+
 - **2026-05-12 (madrugada) — Faixa D (Persons CRUD + CNPJ lookup) FECHADA 🟢: provider abstrato BrasilAPI/ReceitaWS + cache 7d + UI cadastro com auto-fill.**
   - **`@repo/cnpj` package criado** (ADR 0048) — provider abstrato com 3 entry points:
     - `types.ts` — interface `CnpjProvider`, Zod schemas `cnpjDataSchema`/`cnpjAddressSchema`/`cnpjSituacaoSchema`, erros discriminados (`CNPJ_INVALID`/`CNPJ_NOT_FOUND`/`CNPJ_PROVIDER_DOWN`/`CNPJ_RATE_LIMITED`/`CNPJ_INTERNAL`)
