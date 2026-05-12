@@ -162,6 +162,9 @@ export const userPermissionGrants = pgTable(
     grantedAt: timestamp('granted_at', { withTimezone: true }).notNull().defaultNow(),
     grantedBy: uuid('granted_by').references(() => users.id),
     expiresAt: timestamp('expires_at', { withTimezone: true }),
+    // ADR 0019 — revogação manual (Sprint 01b adiciona em retro do D.1)
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    revokedReason: text('revoked_reason'),
   },
   (t) => [
     uniqueIndex('user_permission_grants_uq').on(

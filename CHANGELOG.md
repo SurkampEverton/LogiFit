@@ -6,6 +6,42 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 01b 70%: has_permission() + UI registros profissionais 2026-05-12
+
+Faixa D do Sprint 01b. SQL function central de autorização + UI completa de profissional registrations + 11 Vitest tests novos. Sprint 01b sobe de 40% pra 70%.
+
+**Adições:**
+
+- **`packages/db/src/policies/0013_has_permission.sql`** — função SQL `has_permission(user_id, perm, scope_type?, scope_id?)` (ADR 0019). `SECURITY DEFINER` + `STABLE` + `SET search_path = public`. Union de `user_roles` + `user_permission_grants` ativos respeitando `expires_at` + `revoked_at`. `p_scope_type IS NULL` permite "consulta global". Comentário canônico na função.
+- **`user_permission_grants.revoked_at` + `revoked_reason`** via migration `0006_busy_ben_parker.sql` (ADR 0019 previa; coluna faltou no schema Faixa C 01a).
+- **`apps/web/app/app/pessoas/[id]/registros/actions.ts`** — 4 Server Actions com `wrapServerAction()`: `listRegistrations`, `createRegistration` (detecta global UQ violation → "possível fraude"), `attestRegistration` (pending → active + verified_by), `updateRegistrationSituation` (transições enum).
+- **`apps/web/app/app/pessoas/[id]/page.tsx`** — Server Component detail (mini-perfil) com link condicional `/registros` (só PF) + dados básicos + endereço formatado.
+- **`apps/web/app/app/pessoas/[id]/registros/`** — `page.tsx` (Server Component lista) + `registros-client.tsx` (Client Component com badge colorido por situação + ações inline atestar/suspender/reativar + form add com 8 conselhos enum + UF + valid_until).
+- **`packages/db/tests/has-permission.test.ts`** — **11 Vitest tests**: via role (4: admin tem permissions tenant scope, em qualquer company, sem scope global, permission inexistente → false); user sem role (2: user fictício → false, UUID inexistente → false); via grant direto (5: tenant-wide grant, scope_company_id específico, expires_at passado/futuro, revoked_at).
+
+**Atualizações:**
+
+- **`packages/db/vitest.config.ts`** — exclui `has-permission.test.ts` do coverage gate (integration test).
+
+**Validações end-to-end:**
+
+- typecheck `@repo/db` + `@app/web` ✅
+- migration 0006 + policy 0013 aplicadas (idempotente)
+- `db:rls-check` 4 regras OK em 32 tabelas
+- **70 Vitest tests verdes** (era 59 — +11 has-permission)
+- 8 lints custom: **146 code + 2 css files clean** (era 141)
+- `pnpm --filter @app/web build` ✓ (15 rotas existentes + 2 novas `/app/pessoas/[id]` e `/app/pessoas/[id]/registros`)
+
+**Lições documentadas:**
+
+1. `STABLE` em SQL function permite Postgres cachear dentro do mesmo statement (2× chamada → 1 lookup).
+2. `SECURITY DEFINER` + `SET search_path = public` previne privilege escalation via function shadowing (atacante com CREATE no schema).
+3. `p_scope_type IS NULL` no OR da policy permite "consulta global" — útil em Server Actions que querem "user tem essa permission em qualquer scope?".
+4. Constraint global cross-tenant detecta fraude: `professional_registrations_global_uq` viola SQLSTATE 23505; UI mapeia pra "possível fraude — contate suporte".
+5. `wrapServerAction()` + `setAuditResource(id, { council: 'CREFITO-SP/12345' })` registra em audit_log automaticamente; forensics retroativo via `payload` jsonb.
+
+**Sprint 01b a 70%.** Restantes 30% adiados pra próximas sprints (custom roles UI / cron grants / Comitê IA / PAM / contador / data_subject_requests).
+
 ### Build — Sprint 01b 40%: núcleo RBAC v2 + passaporte cross-tenant + 5º cenário (solo) 2026-05-12
 
 Schemas extension Sprint 01a → Sprint 01b. 6 tabelas novas + 1 coluna + 1 check constraint + 9 Vitest tests. UI registros + has_permission() function adiados pra Sprint 02+ (que vai consumir em contexto real).

@@ -133,6 +133,37 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 
 ## Log
 
+- **2026-05-12 (manhã) — Faixa D entregue 🟢: `has_permission()` + UI profissional registrations. Sprint 01b a 70%.**
+  - **`has_permission(user_id, perm, scope_type?, scope_id?)` SQL function** (ADR 0019) — `SECURITY DEFINER` + `STABLE` + `SET search_path = public`. Union de `user_roles` + `user_permission_grants` ativos respeitando scope. Smoke test: admin Rede (`tenant_owner`) → `true`; user sem role → `false`; permission inexistente → `false`.
+  - **`user_permission_grants.revoked_at` + `revoked_reason`** adicionados via migration `0006_busy_ben_parker.sql` (ADR 0019 previa; coluna faltou no schema da Faixa C 01a).
+  - **`apps/web/app/app/pessoas/[id]/registros/actions.ts`** — 4 Server Actions com `wrapServerAction()`:
+    - `listRegistrations({ personId })` — lista ordenada por conselho
+    - `createRegistration({...})` — INSERT com `situation='pending_verification'`; detecta `professional_registrations_global_uq` violation → `CONFLICT` ("possível fraude") + trigger `kind=pf` violation → `VALIDATION_ERROR`
+    - `attestRegistration({ registrationId })` — admin transiciona `pending_verification` → `active` + grava `verified_at`
+    - `updateRegistrationSituation({ registrationId, newSituation, reason? })` — transições active ↔ suspended/expired/cassated com audit
+  - **`apps/web/app/app/pessoas/[id]/page.tsx`** — Server Component detail (mini-perfil) com link condicional pra `/registros` (só PF).
+  - **`apps/web/app/app/pessoas/[id]/registros/page.tsx` + `registros-client.tsx`** — Server + Client Components:
+    - Lista de registros + badge de situação colorido por enum
+    - Ações inline: "Atestar como ativo", "Marcar suspenso", "Reativar"
+    - Form add com 8 conselhos (CRM/CRN/CREFITO/CREF/CRF/CRP/COREN/CRO) + número + UF + especialidade + valid_until
+  - **`packages/db/tests/has-permission.test.ts`** — **11 Vitest tests**: via role (4), user sem role (2), via grant direto (5: tenant-wide, scope_company_id específico, expires_at passado/futuro, revoked_at).
+  - **Validações end-to-end:**
+    - Typecheck `@repo/db` + `@app/web` ✅
+    - migration 0006 + policy 0013 aplicadas (idempotente)
+    - `db:rls-check` 4 regras OK em 32 tabelas
+    - **70 Vitest tests verdes** (era 59 — +11 has-permission)
+    - 8 lints custom: **146 code + 2 css files clean** (era 141)
+  - **Lições documentadas:**
+    1. `STABLE` em SQL function permite Postgres cachear dentro do mesmo statement.
+    2. `SECURITY DEFINER` + `SET search_path = public` previne privilege escalation via function shadowing.
+    3. `p_scope_type IS NULL` no OR da policy permite "consulta global" (sem scope específico).
+    4. Constraint global cross-tenant detecta fraude — `professional_registrations_global_uq` viola SQLSTATE 23505; UI mapeia pra "possível fraude — contate suporte".
+    5. `wrapServerAction()` + `setAuditResource(id, { council: 'CREFITO-SP/12345' })` registra em audit_log automaticamente pra forensics.
+
+  **Sprint 01b a 70%**. Restantes 30% adiados pra próximas sprints: UI custom roles (Sprint 02+); cron mark-grants-expired (Sprint 03+); Comitê IA (Sprint 06); PAM (Sprint 07); contador externo UI (Sprint 04); data_subject_requests + portal (Sprint 26).
+
+  **Próximo:** Sprint 02 (CRM unificado) consome infra Sprint 01a + 01b.
+
 - **2026-05-12 (madrugada+) — Núcleo Sprint 01b entregue 🟢: schemas + passaporte cross-tenant + 5º cenário (solo).**
   - **[ADR 0019](../decisions/0019-rbac-com-grants-diretos-union.md)** publicado — RBAC com grants diretos + union em policies RLS. Função `has_permission(user_id, perm, scope_type, scope_id)` centraliza. Roles canônicas (Sprint 01a Faixa C) + custom roles por tenant + grants diretos com `expires_at` obrigatório. Modelo híbrido escolhido sobre Casbin/OPA/CASL puro.
   - **Schemas Faixa A (4 novas tabelas + 1 coluna + 1 check constraint)**:
