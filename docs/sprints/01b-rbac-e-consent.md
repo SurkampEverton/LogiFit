@@ -133,6 +133,15 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 
 ## Log
 
+- **2026-05-12 (final do dia) — D.6 cron mark-grants-expired entregue 🟢. Sprint 01b a 75%.**
+  - **`process_grants_expired()` SQL function** (`policies/0015_grants_expired.sql`) — marca `user_permission_grants` com `expires_at < now() AND revoked_at IS NULL` como `revoked_at = now()`, `revoked_reason = 'expired'`. `SECURITY DEFINER` + `SET search_path = public`. Idempotente. Retorna `jsonb {processed_at, newly_revoked, revoked_grant_ids[]}`.
+  - **`POST /api/jobs/process-grants-expired`** — endpoint cron seguindo padrão `process-trial-lifecycle` (Sprint 01a Faixa G): `CRON_SECRET` bearer + `timingSafeEqual` + envelope ADR 0071. Cron 03:15 UTC (offset 15min do trial-lifecycle pra evitar contenção de pool). Daemon `node-cron`/`ofelia` orquestra a partir de Sprint 03+.
+  - **`packages/db/tests/grants-expired.test.ts`** — **6 Vitest tests**: vencido → revoked; futuro → ignored; sem expires_at → ignored; idempotência (2× rodada não duplica); batch múltiplos; payload shape canônico.
+  - **Validações:** policy 0015 aplicada (idempotente); **83 Vitest tests verdes** (era 77 — +6 grants-expired); build `@app/web` OK (rota cron nova).
+  - **Lição:** SQL function com `RETURNING id` dentro de CTE coletado via `array_agg` é o padrão LogiFit para audit-de-batch — function reporta o que ela mudou pro caller persistir em log estruturado (`pino → stdout → Loki`).
+
+  **Sprint 01b a 75%**. Restantes 25% adiados: UI custom roles (Sprint 02+); Comitê IA (Sprint 06); PAM (Sprint 07); contador externo UI (Sprint 04); data_subject_requests + portal (Sprint 26).
+
 - **2026-05-12 (manhã) — Faixa D entregue 🟢: `has_permission()` + UI profissional registrations. Sprint 01b a 70%.**
   - **`has_permission(user_id, perm, scope_type?, scope_id?)` SQL function** (ADR 0019) — `SECURITY DEFINER` + `STABLE` + `SET search_path = public`. Union de `user_roles` + `user_permission_grants` ativos respeitando scope. Smoke test: admin Rede (`tenant_owner`) → `true`; user sem role → `false`; permission inexistente → `false`.
   - **`user_permission_grants.revoked_at` + `revoked_reason`** adicionados via migration `0006_busy_ben_parker.sql` (ADR 0019 previa; coluna faltou no schema da Faixa C 01a).

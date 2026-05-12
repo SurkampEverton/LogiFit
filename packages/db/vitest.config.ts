@@ -36,6 +36,7 @@ export default mergeConfig(
           'tests/passport.test.ts', // integration test passaporte cross-tenant (Sprint 01b)
           'tests/has-permission.test.ts', // integration test has_permission() (Sprint 01b D.1)
           'tests/members-rls.test.ts', // integration test members RLS (Sprint 02 Faixa A)
+          'tests/grants-expired.test.ts', // integration test process_grants_expired() (Sprint 01b D.6)
         ],
       },
     },

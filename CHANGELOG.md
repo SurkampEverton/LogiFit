@@ -6,6 +6,30 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 01b 75%: cron mark-grants-expired (D.6) 2026-05-12
+
+D.6 do Sprint 01b. SQL function `process_grants_expired()` + endpoint cron + 6 Vitest tests. Sprint 01b sobe de 70% pra 75%.
+
+**Adições:**
+
+- **`packages/db/src/policies/0015_grants_expired.sql`** — function `process_grants_expired() RETURNS jsonb` (ADR 0019). `SECURITY DEFINER` + `SET search_path = public` + `LANGUAGE plpgsql`. Marca `user_permission_grants` com `expires_at < now() AND revoked_at IS NULL` como `revoked_at = now()`, `revoked_reason = 'expired'`. CTE com `RETURNING id` agregado via `array_agg` retorna `{processed_at, newly_revoked, revoked_grant_ids[]}`.
+- **`apps/web/app/api/jobs/process-grants-expired/route.ts`** — endpoint cron POST seguindo padrão `process-trial-lifecycle` (Sprint 01a Faixa G): bearer `CRON_SECRET` + `timingSafeEqual` + envelope ADR 0071. `dynamic = 'force-dynamic'` + `runtime = 'nodejs'`. Cron diário 03:15 UTC (offset 15min do trial-lifecycle pra evitar contenção de pool).
+- **`packages/db/tests/grants-expired.test.ts`** — **6 Vitest tests novos**: vencido → revoked + revoked_reason='expired'; futuro → ignored; sem `expires_at` → ignored; idempotência (2× rodada → segunda `newly_revoked=0`); batch (múltiplos grants) → `revoked_grant_ids.length=N`; payload shape canônico.
+
+**Atualizações:**
+
+- **`packages/db/vitest.config.ts`** — exclui `grants-expired.test.ts` do coverage gate (integration test).
+
+**Validações end-to-end:**
+
+- migration policy 0015 aplicada (idempotente)
+- **83 Vitest tests verdes** (era 77 — +6 grants-expired)
+- `pnpm --filter @app/web build` ✓ rota nova `/api/jobs/process-grants-expired`
+
+**Lição documentada:** SQL function com `RETURNING id` dentro de CTE coletado via `array_agg(id)` é o padrão LogiFit para audit-de-batch — function reporta o que ela mudou pro caller persistir em log estruturado (`pino → stdout → Loki`). Pattern reaproveitável em futuros crons de housekeeping (anonimização, cleanup, etc).
+
+**Sprint 01b a 75%.** Restantes 25% adiados conscientemente: UI custom roles (Sprint 02+), Comitê IA (Sprint 06), PAM (Sprint 07), contador externo UI (Sprint 04), data_subject_requests + portal LGPD (Sprint 26).
+
 ### Build — Sprint 02 70%: CRM members (schema + RLS + Server Actions + UI) 2026-05-12
 
 Faixas A+B+C do Sprint 02 entregues. Núcleo CRM aterrissado — `members` (1 row por person×tenant), `member_events` (append-only), `member_notes` (Nível 5 nunca cruza tenant), `member_tags` (PK composta tenant_id+member_id+tag) + 12 RLS policies + 10 Server Actions wrapped + UI completa. Sprint 02 sobe de 0% para 70%.
