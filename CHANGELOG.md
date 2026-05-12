@@ -6,6 +6,42 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Backup Camada 1 (local) ATIVA + DR drill validado 2026-05-12
+
+Cobre ~80% dos cenários reais de DR sem precisar de credentials externas. Camada 2 (R2 off-site) permanece pendente — aguarda 1 API token Cloudflare do fundador.
+
+**Adições:**
+
+- **`infra/backup-local.sh`** — script idempotente que faz `pg_dump -Fc` das DBs `logifit` e `glitchtip` → gzip → `/data/backups/postgres/` (chmod 700 root-only). Retention 30 dias (`find -mtime +30 -delete`). Sem GPG (backup local fica no mesmo trust boundary que o DB — GPG fica reservado pra Camada 2 off-site). Instalado em `/usr/local/bin/logifit-backup-local.sh` no VPS.
+- **`/etc/cron.d/logifit-backup-local`** — entry agendada 02:30 UTC diário (23:30 BRT, fora do pico). Logs via `journalctl -t logifit-backup-local`.
+
+**Atualizações:**
+
+- **`docs/runbooks/backup-r2.md`** — refatorado pra cobrir 2 camadas: Camada 1 (local, ATIVA) + Camada 2 (R2 off-site, pendente). Tabela de cobertura por camada + script de restore Camada 1 documentado.
+- **VPS** — instalado `cron` daemon (Ubuntu 22.04 Minimal não vem com cron por default); `systemctl enable --now cron`.
+
+**Validação end-to-end (smoke test + DR drill):**
+
+- Roda manual produziu `logifit-2026-05-12_170745.pgdump.gz` (794 bytes) + `glitchtip-...gz` (377 bytes) — DBs vazios ainda mas dumps válidos.
+- Header `PGDMP` confirmado via `zcat | head -c 5 | xxd` (PostgreSQL Dump Custom Format magic).
+- **DR drill completo**: restore num DB shadow `logifit_restore_test`; 5/5 extensions preservadas (pg_trgm, pgcrypto, plpgsql, unaccent, vector). Pipeline backup → restore funcional ANTES do primeiro byte de dado real.
+
+**Cobertura desta camada:**
+
+| Cenário | Camada 1 (local) |
+|---|---|
+| DB corruption (UPDATE acidental, schema migration ruim) | ✅ |
+| Query errada / rollback de feature | ✅ |
+| DR drill rápido (~10min restore vs ~4h pra R2) | ✅ |
+| VPS perdido | ❌ |
+| Disco corrompido | ❌ |
+| Conta Oracle suspensa | ❌ |
+| Ransomware no filesystem | ❌ |
+
+**Sprint 00 sobe de 95% pra 97%.** Regra 40 só fecha 100% quando Camada 2 (R2 + GPG) ativar.
+
+**Por que importa:** o gate de DR primeira camada está pronto desde antes do primeiro dado real chegar (Sprint 01a). Restore num DB shadow já foi testado e funciona; Sprint 01a pode confiar em rollback rápido se schema migration der ruim.
+
 ### Build — Sprint 00 Faixa 4 FECHADA 🟢: qualidade + compliance preparados 2026-05-11
 
 Sprint 00 sobe de 90% pra 95%. 10 smoke + 12 critical esqueletos · 8 lints custom rodando limpo em 87 arquivos · 18 RIPDs em estado skeleton com hash SHA-256 validável via `pnpm compliance:check`. Resta apenas: ativação R2 backup (dependente user) pra fechar 100%.

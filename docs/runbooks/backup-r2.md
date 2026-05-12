@@ -1,8 +1,15 @@
-# Runbook — Backup off-site Cloudflare R2
+# Runbook — Backup em camadas (local + off-site R2)
 
-> Backup + restore via [`infra/backup-r2.sh`](../../infra/backup-r2.sh) e [`infra/restore-r2.sh`](../../infra/restore-r2.sh). Implementa regra 40 + [ADR 0091](../decisions/0091-self-host-total-oracle-sp.md) §"Backup off-site".
+> 2 camadas independentes implementando regra 40 + [ADR 0091](../decisions/0091-self-host-total-oracle-sp.md):
+>
+> | Camada | Script | Onde | Cobertura | Status |
+> |---|---|---|---|---|
+> | **1 — local** | [`infra/backup-local.sh`](../../infra/backup-local.sh) | `/data/backups/` no próprio VPS | DB corruption · query errada · rollback de feature · DR drill rápido (10min) | **🟢 ATIVA** desde 2026-05-12 (cron 02:30 UTC) |
+> | **2 — off-site R2** | [`infra/backup-r2.sh`](../../infra/backup-r2.sh) + [`restore-r2.sh`](../../infra/restore-r2.sh) | Cloudflare R2 (cifrado GPG) | VPS perdido · disco corrompido · conta Oracle suspensa · ransomware | **🟡 PENDENTE** — aguarda fundador fornecer R2 token + par GPG |
+>
+> **Camada 1 sozinha NÃO atende regra 40** (não é off-site). Camada 2 fecha conformidade.
 
-- **Quando usar:** primeira configuração (ativação) · drift do ambiente (rotação de credentials, troca de bucket) · DR drill trimestral · recovery real
+- **Quando usar:** primeira configuração (ativação Camada 2) · drift do ambiente (rotação de credentials, troca de bucket) · DR drill trimestral · recovery real
 - **Severidade típica:** ativação P3 / drill P3 / recovery real P0
 - **Tempo estimado:** ativação 20 min · drill 2-4h · recovery 1-4h (depende do volume)
 - **Quem executa:** fundador (acesso Cloudflare account)
@@ -15,7 +22,56 @@
 - [ ] Pen drive físico com par GPG (chave pública + privada armored) — chave canônica `backup@logifit.com.br`
 - [ ] MFA recente (<15min) na conta Cloudflare — gate regra 43
 
-## Visão geral do que é guardado
+## Camada 1 — backup local (ATIVA)
+
+**Por que existe:** cobre ~80% dos cenários reais de DR (DB corruption, rollback, query errada) com latência baixa (restore em ~10min vs ~4h pra R2). Não substitui Camada 2 — complementa.
+
+**Onde está:**
+- Script: `/usr/local/bin/logifit-backup-local.sh` (instalado via `infra/backup-local.sh`)
+- Cron: `/etc/cron.d/logifit-backup-local` (02:30 UTC diário)
+- Dumps: `/data/backups/postgres/` (chmod 700 root-only)
+- Logs: `journalctl -t logifit-backup-local`
+
+**O que faz:**
+1. `pg_dump -Fc` da DB `logifit` → gzip → `/data/backups/postgres/logifit-YYYY-MM-DD_HHMMSS.pgdump.gz`
+2. `pg_dump -Fc` da DB `glitchtip` → gzip → `glitchtip-YYYY-MM-DD_HHMMSS.pgdump.gz`
+3. Retention 30 dias (`find -mtime +30 -delete`)
+
+**Validar agora:**
+```bash
+ssh -i ~/.ssh/ssh-key-2026-05-06.key ubuntu@157.151.31.227 \
+  'sudo ls -lh /data/backups/postgres/ && sudo du -sh /data/backups/'
+```
+
+**Restore (camada 1):**
+```bash
+# 1. Listar dumps disponíveis
+sudo ls -t /data/backups/postgres/
+
+# 2. Restaurar dump específico num DB shadow (não destrutivo)
+PG_CONTAINER=$(sudo docker ps --filter "ancestor=pgvector/pgvector:pg17" --format "{{.Names}}" | head -1)
+DUMP_FILE=/data/backups/postgres/logifit-YYYY-MM-DD_HHMMSS.pgdump.gz
+
+sudo zcat "$DUMP_FILE" | sudo docker exec -i "$PG_CONTAINER" sh -c '
+  psql -U postgres -c "DROP DATABASE IF EXISTS logifit_restore;"
+  psql -U postgres -c "CREATE DATABASE logifit_restore;"
+  pg_restore -U postgres -d logifit_restore --no-owner --no-acl
+'
+
+# 3. Validar dados restaurados no shadow antes de promover
+sudo docker exec "$PG_CONTAINER" psql -U postgres -d logifit_restore -c "SELECT count(*) FROM ..."
+
+# 4. Promover (atômico)
+sudo docker exec "$PG_CONTAINER" psql -U postgres -c "ALTER DATABASE logifit RENAME TO logifit_old;"
+sudo docker exec "$PG_CONTAINER" psql -U postgres -c "ALTER DATABASE logifit_restore RENAME TO logifit;"
+
+# 5. Restart containers que conectam
+sudo docker restart wxff14za4mgyr0w5i3uqsq6q-* pgbouncer-sbd28p5y*
+```
+
+## Camada 2 — backup off-site R2 (visão geral)
+
+## Visão geral do que é guardado (Camada 2 — R2)
 
 | Componente | O que vai | Por que | Tamanho estimado MVP | Tamanho estimado Sprint 06+ |
 |---|---|---|---|---|
