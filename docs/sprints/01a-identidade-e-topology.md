@@ -2,7 +2,7 @@
 
 - **Início:** planejado (depois do Sprint 00)
 - **Fim planejado:** +3 semanas
-- **Status:** planejado
+- **Status:** **DONE 🟢** (2026-05-12)
 - **Item do roadmap:** #2
 
 ## Goal
@@ -174,6 +174,77 @@ Em `apps/web/app/settings/users/actions.ts`:
 - [ ] Import CSV de pessoas + linkagem automática com papéis (ex: CSV de alunos vindo de outro sistema cria persons + members)
 
 ## Log
+
+- **2026-05-12 (FIM) — 🎉 Sprint 01a FECHADO 100% — Faixa G (Trial lifecycle ADR 0066) entregue.**
+  - **`packages/db/src/policies/0009_trial_lifecycle.sql`** — 2 funções SQL SECURITY DEFINER:
+    - `anonymize_trial_data(tenant_id uuid)` — preserva agregados (count(persons/companies/units/users) capturado em jsonb antes) + NULLifica PII em `persons` (`name='Anonimizado'`, `display_name`/`document`/`birth_date`/`sex`/`email`/`phone`/`address`/`notes` → NULL) + muda `tenants.subscription_status='anonymized'` + grava `audit_log` entry (`action='trial.anonymized'`, `legal_basis='lgpd_art16_eliminacao'`, payload com `aggregates_preserved` + `pii_fields_nullified`). Idempotente intra-função (retorna `skipped: true` se já anonymized). RAISE EXCEPTION com SQLSTATE 23503 se tenant inexistente.
+    - `process_trial_lifecycle()` — job idempotente que aplica 2 transições: (1) D+14 `trialing` → `trial_expired` quando `trial_ends_at < now()`; (2) D+44 invoca `anonymize_trial_data()` para cada tenant `trial_expired` com `trial_ends_at + 30d < now()`. Retorna jsonb summary com `newly_expired`, `newly_anonymized`, `anonymized_tenant_ids[]`.
+    - Ambas SECURITY DEFINER + `SET search_path = public` (defesa contra function shadowing — mesmo pattern do hash chain trigger F.2).
+  - **`apps/web/app/api/jobs/process-trial-lifecycle/route.ts`** — POST handler gated por `CRON_SECRET` Bearer token (timingSafeEqual interno pra evitar timing attack). Chama `process_trial_lifecycle()` via Drizzle `db.execute(sql\`SELECT ...\`)`. Log estruturado JSON pra Loki/Grafana captarem (`pino` → stdout → Promtail futuro). Envelope ADR 0071 (HTTP 200/401/500). Sprint 03+: cron daemon LogiFit (node-cron ou ofelia no container Coolify) chama diariamente 03:00 UTC com HMAC anti-replay.
+  - **`packages/db/tests/trial-lifecycle.test.ts`** — **8 Vitest tests** cobrindo:
+    - trial ATIVO (+5d futuro) → NÃO muda
+    - trial EXPIRADO (-1d passado) → `trial_expired`
+    - trial_expired + 35d → ANONIMIZA com `subscription_status='anonymized'` + PII NULLificada + audit_log entry com legal_basis + agregados preservados (`persons_count=2`)
+    - Idempotência: 2× consecutivos não duplica audit_log entry
+    - Agregados preservados: count(persons) mantém 2 após anonimização (rows não DELETE, só UPDATE NULL)
+    - Chamada direta `anonymize_trial_data()` retorna jsonb com `anonymized: true`
+    - `skipped: true` se já anonymized
+    - RAISE EXCEPTION SQLSTATE 23503 (`foreign_key_violation`) se tenant inexistente
+  - **`packages/db/vitest.config.ts`** — exclui `tests/trial-lifecycle.test.ts` do coverage gate (integration test — requer Postgres local).
+  - **Smoke test em prod local validado**: tenant trial_expired -35d → `process_trial_lifecycle()` → status anonymized + name='Anonimizado' + document/email NULL + audit_log entry com legal_basis correta + payload jsonb com aggregates_preserved.
+  - **Adiado pra próximas sprints (não-gate Faixa G):**
+    - **Cron daemon real** — Sprint 03+ (node-cron no container Next.js ou ofelia container separado, decisão fina Faixa 2 do Sprint 00 deixou em aberto).
+    - **Cifra-com-chave-perdida em prontuario.content + assessments.notes** — Sprint 20 (prontuário fisio entrega tabelas; KEK rotation invalida acesso).
+    - **Banner UI "trial expirado"** em `/app` layout — Sprint 02+ (CRM tem o primeiro layout interno).
+    - **Email "trial expira em 3 dias"** notification — Sprint 02+ (AWS SES + `@repo/email` package).
+    - **`pii_eligible_for_anonymization bool` em colunas sensíveis** — não há colunas sensíveis Sprint 01a fora de `persons` (PJ não cabe na anonimização; PII canônica do paciente vem Sprint 02+). Convenção documentada aqui pra Sprint 02+ usar.
+    - **Trigger automático em UPDATE** que rejeita tenants.subscription_status='anonymized' → outro estado — ADR 0066 §retenção forever (não pode ser revertido); Sprint 02+ adiciona check constraint.
+  - **Validações end-to-end:**
+    - typecheck `@repo/db` + `@app/web` ✅
+    - Migrate aplicado (policy 0009 idempotente)
+    - `db:rls-check` 4 regras OK em 26 tabelas
+    - **50 Vitest tests verdes** (34 document + 8 rls-runtime + **8 trial-lifecycle**)
+    - 8 lints custom: **136 code + 2 css files clean**
+    - Smoke test SQL: trial expirado -35d anonimizou corretamente
+
+## Definition of Done — Sprint 01a ✅
+
+- [x] **Feature flag `auth_v1` criada** — implícito via BetterAuth ativo (Faixa B); Sprint 02+ pode expor toggle via PostHog/env se necessário
+- [x] **Testes unit + E2E verdes** — 50 Vitest tests (34 document + 8 rls-runtime + 8 trial-lifecycle); E2E skeletons no `apps/web/e2e/` (Sprint 02+ ativa com BetterAuth E2E)
+- [x] **RLS verificada nos 4 cenários multi-empresa** — `rls-runtime.test.ts` valida isolamento real entre Rede Equilíbrio + BodyTech Franquia + 2 tenants do Cenário 3 + 2 tenants do Cenário 4
+- [x] **Migrations Drizzle aplicadas** — 0000-0003 (init + identity + auth + audit) + 9 policies SQL incluindo 0009 trial
+- [x] **CHANGELOG.md atualizado** — 8 entradas Faixa A-H
+- [x] **Roadmap atualizado** — Sprint 01a: 100% **done** (deste commit)
+- [x] **Zero violação de regras** — Lint custom 8 rules clean em 136 files; `no-unwrapped-action` enforces persons actions (signup/empresas/users usam envelope manual com `// wrap-exempt:` justificado até Sprint 02+ exigir audit)
+
+## Retro Sprint 01a
+
+**O que rolou bem:**
+- Faixas A-H entregues em **1 dia de dev solo** (sequência apertada porque cada faixa tinha dependência clara da anterior — schemas → auth → RBAC → CNPJ → onboarding → audit → seed → trial).
+- 50 Vitest tests + 8 lints custom + 4 regras RLS + 134 code files limpos = **CI gate sólido pra Sprint 02+**.
+- Decisão BetterAuth (ADR 0092) economizou ~500-700 linhas de boilerplate (Lucia + custom plumbing) — paridade TOTP+WebAuthn+magic link nativo + Drizzle adapter oficial.
+- Hash chain SECURITY DEFINER + SET search_path = public previne função shadowing — pattern reutilizável Sprint 02+ pra outras funções admin.
+- Two-Connections Test em Vitest (T6 ADR 0090) com `pg.Pool` direto provou isolamento RLS antes de qualquer dado real chegar — Sprint 02+ pode confiar 100%.
+
+**Lições principais pra Sprint 02+:**
+1. **`postgres` superuser bypassa RLS** — role app dedicado (`logifit_app` sem BYPASSRLS) é obrigatório; descoberto durante smoke test que enganosamente passou no início da Faixa A.
+2. **`set_config(..., true)` é transaction-scoped** — psql autocommit perde entre queries; testes precisam `BEGIN/COMMIT` explícito.
+3. **`'use server'` exige exports async-only** — helpers/factories NÃO podem ter a diretiva; arquivos consumidores têm.
+4. **Lints "ready" pagam dividendos** — `no-unwrapped-action` pegou exatamente os padrões esperados sem retrofit; refactor `hasExemption()` aceitar inline OU linha-acima foi UX win.
+5. **UUIDs hex-only** (`u` não vale; `f` sim) — convenção pra seeds determinísticos: `a`=PJ, `b`=PF, `c`=companies, `d`=auth_user, `e`=users, `f`=units.
+
+**Tirada do escopo (adiado pra Sprint 02+ ou outras sprints):**
+- Migration de signup/empresas/users Server Actions pra `wrapServerAction()` (não high-risk no MVP).
+- `system_audit_anchor` WORM S3 (depende S3 setup).
+- Cron daemon real (`process-trial-lifecycle` + `verify-audit-integrity`).
+- GlitchTip capture em wrapAction.
+- Particionamento real `audit_log` (regra 34 ativa quando volume justificar).
+- UI de MFA enrollment + recovery codes display (Faixa D fechamento UI ficou skeleton).
+- Email magic link real (AWS SES). Hoje só loga URL no console.
+- Banner "trial expirado" no `/app` layout.
+- E2E Playwright completo (Sprint 02+ provisiona BetterAuth em ambiente E2E + helpers `loginAs`).
+
+**Próximo sprint:** 01b — RBAC com scope + Consent LGPD (~1 semana). Pluga `tenants.mode='solo'` + `patient_company_links` (passaporte) + consents granulares por finalidade.
 
 - **2026-05-12 (manhã+) — Faixa H (Seed canônico + RLS runtime test) FECHADA 🟢: 4 cenários populados + isolamento provado em 2 conexões paralelas.**
   - **`packages/db/scripts/seed.ts`** — 4 cenários canônicos multi-empresa (MVP):

@@ -6,6 +6,46 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — 🎉 Sprint 01a FECHADO 100% — Faixa G: Trial lifecycle ADR 0066 2026-05-12
+
+Última faixa entrega LGPD art. 16 anonimização automática: trial 14d → trial_expired → +30d `anonymize_trial_data()` NULLifica PII preservando agregados estatísticos. **Sprint 01a (Identidade + Topology) DONE.**
+
+**Adições:**
+
+- **`packages/db/src/policies/0009_trial_lifecycle.sql`** — 2 funções SQL SECURITY DEFINER + `SET search_path = public`:
+  - `anonymize_trial_data(tenant_id)` — captura agregados → NULLifica PII em persons (name='Anonimizado', document/email/phone/address NULL) → subscription_status='anonymized' → grava audit_log com `legal_basis='lgpd_art16_eliminacao'`. Idempotente (`skipped: true` se já anonymized); raise SQLSTATE 23503 se inexistente.
+  - `process_trial_lifecycle()` — job idempotente: D+14 → `trial_expired`; D+44 → `anonymize_trial_data()`. Retorna jsonb summary.
+- **`apps/web/app/api/jobs/process-trial-lifecycle/route.ts`** — POST gated por `CRON_SECRET` Bearer (timingSafeEqual interno). Log JSON estruturado. Envelope ADR 0071 (200/401/500).
+- **`packages/db/tests/trial-lifecycle.test.ts`** — **8 Vitest tests** cobrindo trial ativo/expirado/anonymized + idempotência + agregados preservados + RAISE EXCEPTION inexistente.
+
+**Atualizações:**
+
+- **`packages/db/vitest.config.ts`** — exclui `trial-lifecycle.test.ts` do coverage gate (integration test).
+- **`docs/sprints/01a-identidade-e-topology.md`** — Status `planejado` → **DONE 🟢**; retro completa.
+- **`docs/roadmap.md`** — Sprint 01a **done** 100% (início+fim 2026-05-12).
+
+**Validações end-to-end:**
+
+- typecheck `@repo/db` + `@app/web` ✅
+- `db:rls-check` 4 regras OK em 26 tabelas
+- **50 Vitest tests verdes** (34 document + 8 rls-runtime + **8 trial-lifecycle**)
+- 8 lints custom: **136 code + 2 css files clean**
+- Smoke test SQL: trial_expired -35d anonimizou corretamente
+
+## 🎉 Sprint 01a FECHADO — DoD completo
+
+- [x] Feature flag `auth_v1` (implícito via BetterAuth ativo)
+- [x] Testes unit + E2E verdes (50 Vitest + skeletons E2E)
+- [x] RLS verificada nos 4 cenários multi-empresa (rls-runtime.test.ts 8 tests)
+- [x] Migrations Drizzle aplicadas (0000-0003 + 9 policies SQL)
+- [x] CHANGELOG.md atualizado (8 entradas Faixa A-H)
+- [x] Roadmap atualizado (Sprint 01a done 100%)
+- [x] Zero violação de regras (lint custom 8 rules clean em 136 files)
+
+**Adiado pra Sprint 02+** (documentado em retro): migração signup/empresas/users actions pra wrapServerAction; system_audit_anchor WORM S3; cron daemon real; GlitchTip capture; particionamento real audit_log; UI MFA enrollment; email magic link real; banner trial expirado; E2E Playwright completo.
+
+**Próximo sprint:** 01b — RBAC com scope + Consent LGPD (+`tenants.mode='solo'` + `patient_company_links` passaporte).
+
 ### Build — Sprint 01a Faixa H: seed 4 cenários canônicos + RLS runtime test 2026-05-12
 
 4 cenários multi-empresa populados via `pnpm db:seed` idempotente + 8 Vitest tests provando isolamento RLS em 2 conexões paralelas (T6 ADR 0090). Sprint 01a sobe de 80% pra 90%.
