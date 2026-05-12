@@ -21,7 +21,14 @@ export default mergeConfig(
           statements: 80,
         },
         // Schema-only dirs (sem lógica) ficam fora do gate de coverage
-        exclude: ['scripts/**', 'src/index.ts', 'src/schema/**', 'src/policies/**', 'src/client.ts'],
+        exclude: [
+          'scripts/**',
+          'src/index.ts',
+          'src/schema/**',
+          'src/policies/**',
+          'src/client.ts',
+          'tests/rls-runtime.test.ts', // integration test (precisa Postgres+seed local)
+        ],
       },
     },
   }),

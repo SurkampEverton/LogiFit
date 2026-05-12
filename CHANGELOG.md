@@ -6,6 +6,37 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 01a Faixa H: seed 4 cenários canônicos + RLS runtime test 2026-05-12
+
+4 cenários multi-empresa populados via `pnpm db:seed` idempotente + 8 Vitest tests provando isolamento RLS em 2 conexões paralelas (T6 ADR 0090). Sprint 01a sobe de 80% pra 90%.
+
+**Adições:**
+
+- **`packages/db/scripts/seed.ts`** — 4 cenários canônicos com UUIDs hardcoded determinísticos (rede própria, franquia clássica, rede+clínica, mix loja+rede). 5º cenário (modo solo) adiado pra Sprint 01b. Idempotente via TRUNCATE; counts: 6 tenants + 10 companies + 10 units + 1 user.
+- **`packages/db/tests/rls-runtime.test.ts`** — T6 Two-Connections Test: 8 Vitest tests provam isolamento persons/companies/units via 2 connections paralelas + INSERT cross-tenant rejeitado por WITH CHECK + system roles cross-tenant visíveis.
+
+**Atualizações:**
+
+- **`packages/db/package.json`** + **`package.json` root** — script `db:seed`.
+- **`packages/db/vitest.config.ts`** — exclui `rls-runtime.test.ts` do coverage gate (integration test).
+- **`apps/web/e2e/critical/cross-tenant-rls.spec.ts`** — documenta cobertura SQL via Vitest desde Faixa H; E2E completo aguarda Sprint 02+.
+
+**Validações end-to-end:**
+
+- typecheck `@repo/db` ✅
+- `db:seed` idempotente 2× consecutivos ✅
+- `db:rls-check` 4 regras OK em 26 tabelas ✅
+- **42 Vitest tests verdes** (34 document + 8 rls-runtime)
+- 8 lints custom: **134 code + 2 css files clean**
+
+**Lições documentadas:**
+
+1. `ANY(array)` Drizzle 0.45 não infere tipo via raw sql — usar `inArray()` helper.
+2. UUIDs só aceitam hex (0-9, a-f) — `u` inválido (units → trocar pra `f`).
+3. INSERT cross-tenant gera "new row violates row-level security policy" (não "permission denied") — útil pra distinguir RLS de privilege errors.
+
+**Sprint 01a a 90% — Faixa H de 8 fechada.** Resta apenas Faixa G (trial 14d + anonymize 30d, ADR 0066).
+
 ### Build — Sprint 01a Faixa F: audit_log + hash chain + wrapServerAction 2026-05-12
 
 audit_log append-only (regra 5) com hash chain SHA-256 trigger (regra 39) + system_alerts dedup (ADR 0071) + `wrapServerAction()` envelope automático compose session + MFA gate + audit fire-and-forget + sanitização PII. Sprint 01a sobe de 70% pra 80%.

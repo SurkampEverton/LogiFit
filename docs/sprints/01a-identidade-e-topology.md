@@ -175,6 +175,41 @@ Em `apps/web/app/settings/users/actions.ts`:
 
 ## Log
 
+- **2026-05-12 (manhã+) — Faixa H (Seed canônico + RLS runtime test) FECHADA 🟢: 4 cenários populados + isolamento provado em 2 conexões paralelas.**
+  - **`packages/db/scripts/seed.ts`** — 4 cenários canônicos multi-empresa (MVP):
+    1. **Rede própria** (Academia Equilíbrio) — 1 group + 1 tenant (`topology=owned`, `crossCompanyAccess=true`) + 1 matriz + 2 filiais (Sul, Norte) + 3 units + 1 auth_user + 1 admin user com role `tenant_owner`. **Cenário "feliz" do MVP** — Sprint 02+ pluga members aqui.
+    2. **Franquia clássica** (BodyTech) — 1 group + 1 tenant (`topology=franchise`, `financialMode=distributed`) + 1 franqueador (matriz) + 2 franqueados (filiais) + 3 units. Cobertura: regra 25 (clínico não cruza company em franchise — Sprint 02+ adiciona prontuário).
+    3. **Rede + Clínica Fisio** — 1 group + 2 tenants distintos no mesmo group (`movimento-academia` + `movimento-fisio`). **Passaporte cross-tenant completo** (`patient_company_links`) vem Sprint 01b ADR 0077.
+    4. **Mix loja avulsa + rede** — 1 group + 2 tenants distintos (`loja-bem-estar` + `rede-multiunidades`). Caso "group como camada agregada sem operação clínica/financeira" (ADR 0008).
+    - **5º cenário (modo solo)** adiado pra Sprint 01b (`tenants.mode='solo'` enum precisa ser adicionado — ADR 0069).
+    - **UUIDs hardcoded determinísticos** (`00000001-0001-0000-0000-0000000000xx`) permitem assertion `SELECT WHERE id = '...'` em testes sem capturar RETURNING. Convenção: primeiro segmento = cenário (1-4), hex chars `a-f` em campos finais (`u` substituído por `f` — não é hex válido).
+    - **Idempotente** via TRUNCATE no início (ordem respeita FKs: userRoles → userTenants → users → units → companies → persons → tenants → groups → authUser). `--keep-existing` flag preserva.
+    - **Smoke counts (após seed)**: 6 tenants + 10 companies + 10 units + 1 user admin (cenário 1 inclui user real; demais ficam com tenant + companies + units pra cobertura de RLS).
+  - **`packages/db/tests/rls-runtime.test.ts`** — **T6 ADR 0090** Two-Connections Test em Vitest:
+    - 5 grupos de tests (8 specs total), cada um abre 2 conexões pg distintas via `pool.connect()` + `SET ROLE logifit_app` + `set_config('app.tenant_id', ...)` em paralelo
+    - **Provam isolamento**:
+      - persons: Rede vê 4, Franquia vê 3, tenant inexistente vê 0
+      - companies: Rede vê 3 (1 matriz + 2 filiais), Franquia vê 3, SELECT pelo ID da Franquia com contexto Rede retorna 0 rows
+      - units: cada tenant vê só as próprias; intersection vazia
+      - **INSERT cross-tenant rejeitado** — `INSERT INTO persons (tenant_id=Franquia, ...)` com `app.tenant_id=Rede` lança "new row violates row-level security policy"
+      - **system roles cross-tenant**: ambos os tenants veem mesmos 12 roles (tenant_id NULL); contém `tenant_owner` + `medico`
+  - **`pnpm db:seed`** no root + `pnpm --filter @repo/db db:seed`. `vitest.config.ts` exclui `rls-runtime.test.ts` do coverage gate (integration test — requer Postgres + seed local pra rodar; CI roda separado via job dedicado Sprint 02+).
+  - **`apps/web/e2e/critical/cross-tenant-rls.spec.ts`** atualizado — explica que Sprint 01a Faixa H entrega cobertura SQL-level via Vitest (`packages/db/tests/rls-runtime.test.ts` 8 tests); E2E Playwright completo aguarda Sprint 02+ (BetterAuth provisionado em ambiente E2E + seed members + `helpers/auth.ts loginAs(persona, scenario)`).
+  - **Validações end-to-end:**
+    - typecheck `@repo/db` ✅
+    - `db:seed` 2× consecutivos (idempotente) ✅
+    - `db:rls-check` 4 regras OK em 26 tabelas ✅
+    - **42 Vitest tests verdes** (34 document + 8 rls-runtime; era 47 contando security/mfa = 55 total no monorepo)
+    - 8 lints custom: **134 code + 2 css files clean**
+  - **Lições documentadas:**
+    1. **`ANY(array)` no SQL puro** com Drizzle 0.45 não infere tipo — precisa `inArray()` helper. Workaround `sql\`= ANY(${arr})\`` resulta em "op ANY/ALL (array) requires array on right side" porque Drizzle serializa como tupla.
+    2. **UUIDs só aceitam chars hex (0-9, a-f)** — `u` (units), `g` (groups) etc são inválidos. Convenção LogiFit: `a`=persons PJ, `b`=persons PF, `c`=companies, `d`=auth_user, `e`=users, `f`=units (não `u`).
+    3. **Two-connections test em Vitest** funciona bem com `pg.Pool` direto (sem Drizzle no test) — mais ergonômico pra raw queries com `set_config` controlado.
+    4. **`INSERT ... VALUES (tenant_id=X)`** com `app.tenant_id=Y` é rejeitado pela WITH CHECK clause, não pela USING clause — mensagem do Postgres é `"new row violates row-level security policy"` (não "permission denied"), útil pra distinguir RLS de privilege errors.
+    5. **System roles têm `tenant_id=NULL`** mas a policy `roles_select` permite `WHERE tenant_id IS NULL OR tenant_id = current_setting(...)`. Test confirma que isso É a intenção (regra 43 — system roles compartilhados; custom roles isoladas).
+
+  **Próxima faixa:** G — Trial 14d + anonymize 30d (ADR 0066). Sprint 01a fecha quando G entrar — restam 10% (último item técnico).
+
 - **2026-05-12 (manhã seguinte) — Faixa F (Audit + `wrapServerAction`) FECHADA 🟢: hash chain comprovado + envelope automático + audit fire-and-forget.**
   - **3 tabelas novas em `@repo/db/schema/audit.ts`**:
     - `audit_log` — append-only (regra 5 via RLS sem UPDATE/DELETE policy), 15 colunas (id, tenant_id, at, actor_*, action, resource_*, payload jsonb, current_hash, previous_hash, request_id, legal_basis), 3 índices canônicos (tenant+at desc, tenant+actor+at, tenant+resource); **comentário `@volume_estimate_yearly: 5M+`** documenta particionamento adiado pra Sprint 04+ (regra 34 exige `>5M/ano OU >50k/dia`; MVP <50k até primeiro member real).

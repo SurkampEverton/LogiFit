@@ -17,6 +17,7 @@
     "test:watch": "vitest",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:generate": "drizzle-kit generate",
+    "db:seed": "tsx scripts/seed.ts",
     "db:rls-check": "tsx tests/rls-check.ts"
   },
   "dependencies": {

@@ -23,6 +23,7 @@
     "hash:ripd": "node scripts/hash-ripd.mjs",
     "db:migrate": "pnpm --filter @repo/db db:migrate",
     "db:generate": "pnpm --filter @repo/db db:generate",
+    "db:seed": "pnpm --filter @repo/db db:seed",
     "db:rls-check": "pnpm --filter @repo/db db:rls-check",
     "storage:bootstrap": "pnpm --filter @repo/storage bootstrap",
     "test:smoke": "pnpm --filter @app/web exec playwright test e2e/smoke",
