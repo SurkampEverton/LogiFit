@@ -38,6 +38,7 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   transpilePackages: [
     '@repo/ai',
+    '@repo/auth',
     '@repo/db',
     '@repo/errors',
     '@repo/i18n',

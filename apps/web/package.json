@@ -12,6 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@repo/auth": "workspace:*",
+    "@repo/db": "workspace:*",
     "@repo/errors": "workspace:*",
     "@repo/i18n": "workspace:*",
     "@repo/ui": "workspace:*",

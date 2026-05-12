@@ -175,6 +175,37 @@ Em `apps/web/app/settings/users/actions.ts`:
 
 ## Log
 
+- **2026-05-12 (tarde) — Faixa B (Auth + sessões) FECHADA 🟢: BetterAuth integrado, login funcional, middleware guard ativo.**
+  - **[ADR 0092](../decisions/0092-betterauth-vs-lucia.md)** publicado — **BetterAuth** escolhido sobre Lucia. Justificativa: TOTP + WebAuthn + magic link + recovery codes nativos out-of-the-box; Lucia exigiria ~500-700 linhas de boilerplate pra paridade. Lock-in mitigado via cookie httpOnly + JWT padrão (migrar é DB migration + ~200 linhas wrapper).
+  - **`packages/auth/`** criado com 3 entry points: `@repo/auth/server` (instância `auth` + `nextJsHandler`), `@repo/auth/client` (Client Components, `signIn`/`signOut`/`useSession`), `@repo/auth` (placeholder forçando import explícito do subpath correto pra evitar shipar server-only no bundle).
+  - **8 tabelas novas em `@repo/db/schema/`** (resolveu dep circular `@repo/db ↔ @repo/auth` movendo schemas pra `@repo/db`):
+    - `better-auth.ts` — `auth_user`, `auth_session`, `auth_account`, `auth_verification`, `auth_two_factor`, `auth_passkey` (6 tabelas BetterAuth com prefixo `auth_` coexistindo com nossa `users` table via FK `users.auth_user_id`)
+    - `auth-attempts.ts` — `auth_attempts` + `auth_lockouts` LogiFit-owned (ADR 0073 camada 2 lockout 5/15min → 30min cooldown). Particionamento + retention 30d ficam pra Faixa F.
+  - **`packages/db/src/policies/0005_auth_rls.sql`** — 8 policies (`FOR ALL TO logifit_app`) com FORCE RLS bloqueando acesso direto via `postgres` superuser; allow tudo pro role app (BetterAuth precisa). Sprint 02+ avaliará role `auth_internal` separado pra isolar.
+  - **Migration `0001_flawless_hannibal_king.sql`** gerada via `drizzle-kit generate` — 8 tabelas + FKs + 11 índices.
+  - **drizzle-orm 0.36 → 0.45 + drizzle-kit 0.28 → 0.30** — BetterAuth 1.6.11 exige peer 0.45+. Schemas existentes da Faixa A continuam funcionando (typecheck + 34 tests verdes pós-bump).
+  - **Config BetterAuth** (`@repo/auth/server`) — pool dedicado `authPool` (separado do principal pra facilitar rotação); cookie prefix `logifit` (override do default `better-auth`); plugins: `magicLink` (15min expiry, sendMagicLink stub que loga URL no console em dev) + `twoFactor` (TOTP + backup codes nativos); `emailAndPassword: { enabled: false }` (MVP só magic link); rate limit in-memory 10/60s.
+  - **`apps/web/app/api/auth/[...all]/route.ts`** — catch-all Next.js 15 delegando pro BetterAuth via `nextJsHandler()` (helper exportado por `@repo/auth/server`, encapsula `toNextJsHandler` do BetterAuth — apps/web não precisa declarar `better-auth` como direct dep).
+  - **`apps/web/middleware.ts` estendido** — adiciona guard de sessão (LEVE — só presença do cookie `logifit.session_token`) pra rotas `/app/*`. Validação real (DB lookup) acontece em Server Component layout via `auth.api.getSession({ headers })`. Edge runtime sem `pg` impede validação full no middleware; ainda assim, defense in depth: cookie ausente = redirect imediato com `returnTo` query param.
+  - **`/login` page** — Server Component renderiza `<LoginForm>` Client Component. Form input email + button "Enviar link mágico" → `authClient.signIn.magicLink({ email, callbackURL })`. UX states: `idle` / `sending` / `sent` (mostra "Confira seu email") / `error`. Token `// toast-exempt:` em mensagem do BetterAuth (Faixa B fechamento mapeia pra catálogo i18n). `aria-describedby` + `aria-invalid` + `role="alert"` (a11y regra 45).
+  - **`/signup` page skeleton** — "Onboarding completo entra na Sprint 01a Faixa E" (depende de Faixa D persons CRUD + lookup CNPJ).
+  - **Validações end-to-end:**
+    - Typecheck `@repo/auth` ✅ (precisou `declaration: false` no tsconfig — BetterAuth gera inferência de tipo massiva via zod 4 que ultrapassa o limite TS)
+    - Typecheck `@repo/db` + `@app/web` ✅
+    - `pnpm --filter @app/web build` → 6 rotas geradas (`/`, `/login`, `/signup`, `/seguranca`, `/api/auth/[...all]`, middleware 34.7KB) ✅
+    - Migration aplicada idempotente (2× consecutivos) ✅
+    - `db:rls-check` (4 regras com 17 tabelas) ✅
+    - 34 Vitest tests verdes ainda ✅
+    - 8 lints custom limpos em **102 code + 2 css files** ✅
+  - **Lições documentadas:**
+    1. **Dependência `@repo/db ↔ @repo/auth` é circular se schemas auth ficam no @repo/auth** (que precisa importar db client). Solução: schemas (SQL state) ficam em `@repo/db`; helpers/config (`@repo/auth`) consomem schemas via import e `@repo/db` declara `@repo/auth` como peer apenas pra re-export em `schema/index.ts`. Sprint 01a optou por simplicidade: schemas em `@repo/db`.
+    2. **BetterAuth tem TS inference massiva** — vários `cannot be named without reference to zod/v4/core`. Workaround: `declaration: false` + `declarationMap: false` no tsconfig de `@repo/auth` (não precisamos shipar .d.ts pra packages internos do workspace).
+    3. **BetterAuth `next-js` subpath** não é direct dep do `apps/web` — encapsulamos via `nextJsHandler` helper no `@repo/auth/server`. Mantém apps/web livre de import quirk do better-auth.
+    4. **Cookie name padrão BetterAuth é `better-auth.session_token`** — override via `advanced.cookiePrefix: 'logifit'` produz `logifit.session_token`. Middleware lê esse nome.
+    5. **Edge runtime no middleware impede pg DB lookup** — guard é "presença do cookie" (não validade); validação real fica em Server Component layout. Defense in depth: cookie ausente = redirect, cookie inválido = layout retorna 401/redirect.
+
+  **Próxima faixa:** C — RBAC + JWT custom claims + MFA (TOTP enrollment + recovery codes + `/settings/mfa`).
+
 - **2026-05-12 — Faixa A (Schemas + RLS base) FECHADA 🟢: fundamento da hierarquia organizacional.**
   - **Validador CPF/CNPJ** em `packages/db/src/persons/document.ts` — algoritmo módulo 11 (Receita Federal) zero-dep, com detecção automática PF/PJ pelo tamanho dos dígitos. API: `parseDocument(input)`, `isValidCpf`, `isValidCnpj`, `normalizeDocument`, `formatDocument`. **34/34 Vitest tests verdes** cobrindo CPFs/CNPJs canônicos válidos (incluindo Correios + Bradesco públicos), 5 razões de falha (`empty`, `invalid_length`, `all_same_digit`, `check_digit_mismatch`, formatação parcial).
   - **Schemas Drizzle**: 9 tabelas em `packages/db/src/schema/`:

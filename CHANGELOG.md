@@ -6,6 +6,48 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 01a Faixa B: BetterAuth integrado + login funcional 2026-05-12
+
+Auth layer completa pra magic link + TOTP (futuro Faixa C ativa enrollment). 6 rotas Next.js geradas em build, middleware guard de sessão ativo pra `/app/*`, 8 tabelas auth no DB. Sprint 01a sobe de 12% pra ~25%.
+
+**Adições:**
+
+- **[ADR 0092](docs/decisions/0092-betterauth-vs-lucia.md)** — escolha BetterAuth sobre Lucia. Decisão fundamentada em paridade de features (TOTP/WebAuthn/recovery codes nativos vs ~500 linhas de boilerplate). Migração futura é trivial (cookie httpOnly + JWT padrão).
+- **`packages/auth/`** novo package com 3 entry points: `@repo/auth/server` (instância `auth` + `nextJsHandler`), `@repo/auth/client` (Client Components), `@repo/auth` (forçando subpath explícito).
+- **`@repo/db/schema/better-auth.ts`** — 6 tabelas BetterAuth (`auth_user`, `auth_session`, `auth_account`, `auth_verification`, `auth_two_factor`, `auth_passkey`) com prefixo `auth_` coexistindo com nossa `users` via FK `users.auth_user_id`.
+- **`@repo/db/schema/auth-attempts.ts`** — `auth_attempts` + `auth_lockouts` LogiFit-owned (ADR 0073 camada 2 lockout 5/15min → 30min). Particionamento + retention 30d ficam pra Faixa F.
+- **`@repo/db/src/policies/0005_auth_rls.sql`** — 8 policies `FOR ALL TO logifit_app` com FORCE RLS bloqueando acesso direto via superuser.
+- **Migration `0001_flawless_hannibal_king.sql`** — 8 tabelas + FKs + 11 índices.
+- **`apps/web/app/api/auth/[...all]/route.ts`** — catch-all delegando pro BetterAuth via `nextJsHandler()` helper de `@repo/auth/server`.
+- **`apps/web/app/(auth)/login/`** — page Server Component + `<LoginForm>` Client Component com magic link signin. UX 4 states: idle / sending / sent / error. a11y completo (aria-describedby, role=alert).
+- **`apps/web/app/(auth)/signup/`** — skeleton apontando pra Faixa E (onboarding completo).
+
+**Atualizações:**
+
+- **`apps/web/middleware.ts`** — guard LEVE de sessão pra `/app/*` (cookie `logifit.session_token` presente; validação full no Server Component layout via Edge runtime sem pg).
+- **`apps/web/next.config.ts`** — adiciona `@repo/auth` em `transpilePackages`.
+- **`apps/web/package.json`** — deps `@repo/auth` + `@repo/db` (workspace).
+- **drizzle-orm 0.36 → 0.45** + **drizzle-kit 0.28 → 0.30** — BetterAuth 1.6.11 exige peer 0.45+. Schemas Faixa A continuam OK (34 tests + db:rls-check verdes pós-bump).
+
+**Validações end-to-end:**
+
+- Typecheck `@repo/auth` + `@repo/db` + `@app/web` ✅
+- `pnpm --filter @app/web build` → **6 rotas** (`/`, `/login`, `/signup`, `/seguranca`, `/api/auth/[...all]`, middleware 34.7KB) ✅
+- Migration aplicada (2× idempotente) ✅
+- `db:rls-check` 4 regras OK em **17 tabelas** ✅
+- 34 Vitest tests ✅
+- 8 lints custom: **102 code + 2 css files clean** ✅
+
+**Lições documentadas:**
+
+1. **Dep circular `@repo/db ↔ @repo/auth`** se schemas vão em `@repo/auth` (que importa db client). Solução: schemas (SQL state) ficam em `@repo/db`; helpers de auth em `@repo/auth`.
+2. **BetterAuth tem TS inference massiva** (via zod 4) que estoura `TS7056: type exceeds the maximum length the compiler will serialize`. Workaround: `declaration: false` no tsconfig (packages internos do workspace não shipam .d.ts).
+3. **`better-auth/next-js` subpath** ficou encapsulado via `nextJsHandler()` helper em `@repo/auth/server` — apps/web não declara `better-auth` como direct dep.
+4. **Cookie name** override via `advanced.cookiePrefix: 'logifit'` → `logifit.session_token` (padrão é `better-auth.session_token`).
+5. **Edge runtime do middleware** impede pg DB lookup; guard é "cookie presente" (defense in depth — validação full no Server Component).
+
+**Sprint 01a a 25% — Faixa B de 8 fechada.** Próximo: Faixa C (RBAC + JWT claims + MFA TOTP enrollment).
+
 ### Build — Sprint 01a Faixa A: schemas + RLS base + validador CPF/CNPJ 2026-05-12
 
 Primeira faixa do Sprint 01a (Identidade + Topology). Schemas Drizzle das 9 tabelas fundacionais + RLS policies em SQL puro + role `logifit_app` non-superuser + validador documento brasileiro + db:rls-check 4× mais robusto. **Isolamento RLS comprovado em transação automatizada** (`RLS_CHECK_RUNTIME=1`).
