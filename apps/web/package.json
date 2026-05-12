@@ -13,14 +13,18 @@
   },
   "dependencies": {
     "@repo/auth": "workspace:*",
+    "@repo/cnpj": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/errors": "workspace:*",
     "@repo/i18n": "workspace:*",
+    "@repo/security": "workspace:*",
     "@repo/ui": "workspace:*",
+    "drizzle-orm": "^0.45.2",
     "next": "^15.1.0",
     "next-intl": "^4.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.0",

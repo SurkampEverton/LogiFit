@@ -39,6 +39,7 @@ const nextConfig: NextConfig = {
   transpilePackages: [
     '@repo/ai',
     '@repo/auth',
+    '@repo/cnpj',
     '@repo/db',
     '@repo/errors',
     '@repo/i18n',

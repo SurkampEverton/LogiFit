@@ -1,0 +1,28 @@
+{
+  "name": "@repo/cnpj",
+  "version": "0.0.0",
+  "private": true,
+  "description": "CNPJ lookup provider abstrato — BrasilAPI default + ReceitaWS fallback + CNPJá! opcional. Cache global 7d em cnpj_cache (ADR 0048).",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@repo/db": "workspace:*",
+    "@repo/security": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "pg": "^8.13.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@repo/config": "workspace:*",
+    "@types/pg": "^8.11.10",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.5"
+  }
+}

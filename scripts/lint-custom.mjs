@@ -67,6 +67,31 @@ function isCommentLine(line) {
   return trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*')
 }
 
+/**
+ * Detecta exempção em comentário inline OU na linha imediatamente acima.
+ * Padrão canônico LogiFit pra suppressions — duas formas válidas:
+ *
+ *   1. inline (linha curta):
+ *      foo() // safe-fetch-exempt: motivo
+ *
+ *   2. linha acima (legibilidade):
+ *      // safe-fetch-exempt: motivo
+ *      foo()
+ */
+function hasExemption(lines, idx, tag) {
+  const current = lines[idx] ?? ''
+  if (current.includes(tag)) return true
+  const above = lines[idx - 1] ?? ''
+  const aboveTrimmed = above.trim()
+  if (
+    (aboveTrimmed.startsWith('//') || aboveTrimmed.startsWith('*')) &&
+    above.includes(tag)
+  ) {
+    return true
+  }
+  return false
+}
+
 const violations = []
 
 function report(rule, file, line, snippet) {
@@ -82,7 +107,7 @@ function checkNoWindowAlert(file, lines) {
     const line = lines[i]
     if (isCommentLine(line)) continue
     if (!RE_WINDOW_DIALOG.test(line)) continue
-    if (line.includes('// alert-exempt:')) continue
+    if (hasExemption(lines, i, '// alert-exempt:')) continue
     report('no-window-alert', file, i + 1, line)
   }
 }
@@ -101,7 +126,7 @@ function checkNoRawFetch(file, lines) {
     if (isCommentLine(line)) continue
     if (!RE_FETCH.test(line)) continue
     if (line.includes('safeFetch')) continue
-    if (line.includes('// safe-fetch-exempt:')) continue
+    if (hasExemption(lines, i, '// safe-fetch-exempt:')) continue
     report('no-raw-fetch', file, i + 1, line)
   }
 }
@@ -119,7 +144,7 @@ function checkNoHardcodedDesignToken(file, lines) {
     const line = lines[i]
     const trimmed = line.trim()
     if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*')) continue
-    if (line.includes('// design-token-exempt:')) continue
+    if (hasExemption(lines, i, '// design-token-exempt:')) continue
     if (!RE_HEX.test(line)) continue
     report('no-hardcoded-design-token', file, i + 1, line)
   }
@@ -164,7 +189,7 @@ function checkNoHardcodedToastMessage(file, lines) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
     if (!RE_TOAST_LITERAL.test(line)) continue
-    if (line.includes('// toast-exempt:')) continue
+    if (hasExemption(lines, i, '// toast-exempt:')) continue
     report('no-hardcoded-toast-message', file, i + 1, line)
   }
 }
@@ -193,8 +218,8 @@ function checkNoUnwrappedAction(file, lines) {
     const line = lines[i]
     if (isCommentLine(line)) continue
     if (!RE_EXPORTED_ASYNC.test(line)) continue
-    if (line.includes('// ai-blocked:')) continue
-    if (line.includes('// wrap-exempt:')) continue
+    if (hasExemption(lines, i, '// ai-blocked:')) continue
+    if (hasExemption(lines, i, '// wrap-exempt:')) continue
     report('no-unwrapped-action', file, i + 1, line)
   }
 }

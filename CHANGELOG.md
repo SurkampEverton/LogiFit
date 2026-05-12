@@ -6,6 +6,47 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 01a Faixa D: Persons CRUD + CNPJ lookup (BrasilAPI + ReceitaWS + cache 7d) 2026-05-12
+
+`@repo/cnpj` package + 4 Server Actions persons + UI `/app/pessoas` (lista + cadastro com auto-fill CNPJ) + API Route `/api/pessoas/cnpj/[cnpj]`. Sprint 01a sobe de 40% pra ~55%.
+
+**Adições:**
+
+- **`packages/cnpj/`** novo package — provider abstrato (ADR 0048):
+  - `types.ts` — interface `CnpjProvider` + Zod schemas + erros discriminados (`CNPJ_INVALID`/`NOT_FOUND`/`PROVIDER_DOWN`/`RATE_LIMITED`/`INTERNAL`)
+  - `brasilapi.ts` — default LogiFit; rate-limit free 3 req/min; timeout 30s via AbortController
+  - `receitaws.ts` — fallback; status=ERROR + parseAbertura DD/MM/YYYY → ISO
+  - `cache.ts` — `cnpj_cache` GLOBAL (sem tenant_id) com TTL 7 dias; UPSERT idempotente; Zod safeParse defesa contra cache corrompido
+  - `orchestrator.ts` — `lookupCnpj()`: valida → cache → primary → fallback (só se PROVIDER_DOWN/RATE_LIMITED; NOT_FOUND/INVALID retornam imediato) → escreve cache
+- **`apps/web/app/lib/session.ts`** — `getServerSession`/`requireSession`/`requireFullSession`/`withSessionContext` (seta `app.user_id`+`app.tenant_id` via `set_config` antes de queries → RLS aplica)
+- **`apps/web/app/app/pessoas/actions.ts`** — 4 Server Actions: `searchPersons`, `lookupCnpjAction`, `createPerson` (com auto-fill CNPJ + detect `persons_tenant_document_uq` → `DOCUMENT_TAKEN`), `archivePerson`
+- **`apps/web/app/api/pessoas/cnpj/[cnpj]/route.ts`** — GET REST endpoint; HTTP status mapping (404/400/429/502)
+- **`apps/web/app/app/pessoas/page.tsx`** — Server Component lista com busca + filtro PF/PJ; empty state com CTA
+- **`apps/web/app/app/pessoas/new/{page,new-person-form}.tsx`** — Server + Client Component; detect PF/PJ pelo dígito; auto-fill onBlur 14 dígitos; banner se situação ≠ ativa
+
+**Atualizações:**
+
+- **`scripts/lint-custom.mjs`** — `hasExemption(lines, idx, tag)` helper aceita exempção **inline OU na linha imediatamente acima** (mais legível pra `fetch()` com URL longa). Aplicado a todos os 8 lints.
+- **`apps/web/next.config.ts`** — `@repo/cnpj` em transpilePackages
+- **`apps/web/package.json`** — deps `@repo/cnpj` + `@repo/db` + `@repo/security` + `drizzle-orm` + `zod`
+
+**Validações end-to-end:**
+
+- typecheck `@repo/cnpj` + `@app/web` ✅
+- `pnpm --filter @app/web build` → **11 rotas** (3 novas) + middleware 34.7KB ✅
+- `db:rls-check` 4 regras OK em **23 tabelas** ✅
+- **47 Vitest tests** verdes
+- 8 lints custom: **120 code + 2 css files clean** ✅
+
+**Lições documentadas:**
+
+1. **Lint inline-only era engessado** — `// safe-fetch-exempt:` agora aceita inline OU linha acima (`hasExemption()` helper). Mais legível em chamadas `fetch()` longas.
+2. **BetterAuth user.id (text) vs users.auth_user_id (uuid)** continua exigindo `sql\`current_setting(...)::uuid\`` em INSERT/JOIN — pattern recorrente desde Faixa C.
+3. **Auto-fill CNPJ via REST** (Server Action força form submit/transition; Client Component prefere fetch nativo no `onBlur` pra loading state granular).
+4. **Provider order matters** — fallback APENAS se primary falhar com `PROVIDER_DOWN`/`RATE_LIMITED`. `NOT_FOUND`/`INVALID` retornam imediato — fallback não vai descobrir CNPJ válido se Receita já disse que não existe.
+
+**Sprint 01a a 55% — Faixa D de 8 fechada.** Próximo: Faixa E (Topology UI + onboarding wizard `/signup` atômico).
+
 ### Build — Sprint 01a Faixa C: RBAC + JWT claims + MFA helpers 2026-05-12
 
 12 system roles + 25 permissions seeded; plugin `customSession` injetando `tenantId`/`topology`/`roles[]`/`requiresMfa`/`mfaAt` no token BetterAuth; `requireRecentMfa()` helper pronto pra Sprint 04+ ativações. Sprint 01a sobe de 25% pra ~40%.

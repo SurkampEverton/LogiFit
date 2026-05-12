@@ -175,6 +175,43 @@ Em `apps/web/app/settings/users/actions.ts`:
 
 ## Log
 
+- **2026-05-12 (madrugada) — Faixa D (Persons CRUD + CNPJ lookup) FECHADA 🟢: provider abstrato BrasilAPI/ReceitaWS + cache 7d + UI cadastro com auto-fill.**
+  - **`@repo/cnpj` package criado** (ADR 0048) — provider abstrato com 3 entry points:
+    - `types.ts` — interface `CnpjProvider`, Zod schemas `cnpjDataSchema`/`cnpjAddressSchema`/`cnpjSituacaoSchema`, erros discriminados (`CNPJ_INVALID`/`CNPJ_NOT_FOUND`/`CNPJ_PROVIDER_DOWN`/`CNPJ_RATE_LIMITED`/`CNPJ_INTERNAL`)
+    - `brasilapi.ts` — `BrasilApiCnpjProvider` (default; endpoint público `brasilapi.com.br/api/cnpj/v1`; rate-limit 3 req/min free; timeout 30s; AbortController; mapeia 404 → `CNPJ_NOT_FOUND`, 429 → `CNPJ_RATE_LIMITED`)
+    - `receitaws.ts` — `ReceitaWsCnpjProvider` (fallback; endpoint `receitaws.com.br/v1/cnpj`; status=ERROR maps pra NOT_FOUND ou RATE_LIMITED por message; parseAbertura DD/MM/YYYY → ISO)
+    - `cache.ts` — `readCache`/`writeCache`/`invalidateCache`/`purgeExpiredCache` em `cnpj_cache` global (sem tenant_id — dado público); TTL fixo 7 dias; UPSERT idempotente; Zod safeParse defesa contra cache corrompido
+    - `orchestrator.ts` — `lookupCnpj(cnpj, opts)`: valida formato → lê cache → primary → fallback se PROVIDER_DOWN/RATE_LIMITED (NOT_FOUND/INVALID NÃO faz fallback) → escreve cache no sucesso. `refreshCnpj()` força skip cache. Sprint 02+ vai ler `tenant_cnpj_settings` pra escolher provider primary/fallback por tenant.
+  - **`apps/web/app/lib/session.ts`** — helpers de sessão: `getServerSession()` (null se anônimo), `requireSession(returnTo)` (redirect /login), `requireFullSession(returnTo)` (garante `logifit` claims; redirect /signup/complete se faltar), `withSessionContext()` que seta `app.user_id` + `app.tenant_id` via `set_config` antes de queries (RLS aplica). Sprint 01a Faixa F refatora pra wrapAction automatizando.
+  - **`apps/web/app/app/pessoas/actions.ts`** — 4 Server Actions com envelope manual (Faixa F migra pra wrapAction):
+    - `searchPersons({ query, kind, includeArchived, limit })` — busca por nome/displayName/document (ilike); filtros opcionais por kind PF/PJ e archived
+    - `lookupCnpjAction({ cnpj, skipCache })` — wrapper sobre `lookupCnpj` retornando envelope LogiFit
+    - `createPerson({ document, name, autoFillCnpj, ... })` — valida CPF/CNPJ via `parseDocument`; se PJ + autoFillCnpj=true, consulta Receita e merge dos campos vazios; tenant_id vem de `current_setting('app.tenant_id')` no INSERT (RLS); detecta `persons_tenant_document_uq` violation → `DOCUMENT_TAKEN`; warning no console se situação ≠ ativa (Faixa D fechamento adiciona PromptDialog de confirmação)
+    - `archivePerson({ id })` — soft-delete via `archivedAt = now()`
+  - **`apps/web/app/api/pessoas/cnpj/[cnpj]/route.ts`** — GET endpoint REST (mesma lógica do Server Action mas exposto via REST com debounce-friendly Client Component fetch); mapeia erros pra HTTP status (`CNPJ_NOT_FOUND` → 404, `CNPJ_INVALID` → 400, `CNPJ_RATE_LIMITED` → 429, demais → 502); guard `getServerSession()` → 401 se anônimo.
+  - **`apps/web/app/app/pessoas/page.tsx`** — Server Component lista pessoas com form de busca (query + filtro PF/PJ); query string `/app/pessoas?q=joao&kind=pf`; estados empty/erro/lista; cada item mostra `kind PF|PJ` + document + email + flag arquivada. CSS tokens Equilíbrio Vital aplicados (var(--ev-*)). Mobile-first (regra 31).
+  - **`apps/web/app/app/pessoas/new/page.tsx`** + **`new-person-form.tsx`** — page Server Component + Client Component com auto-fill CNPJ:
+    - Detecta PF/PJ pelo tamanho dos dígitos digitados
+    - onBlur do documento (14 dígitos) → fetch `/api/pessoas/cnpj/{cnpj}` com debounce natural do blur event
+    - Preenche `name`/`email`/`phone`/`address` se campos vazios (não sobrescreve digitação manual)
+    - Banner amarelo se situação cadastral ≠ ativa
+    - Submit → `createPerson` Server Action → redirect `/app/pessoas?q=<name>` + `router.refresh()`
+  - **8 lints custom refatorados** — `hasExemption(lines, idx, tag)` helper permite exempção **inline OU na linha imediatamente acima** (mais legível em casos como `fetch()` com URL longa). Aplica pros 8 lints (window-alert, raw-fetch, hardcoded-design-token, hardcoded-toast-message, unwrapped-action). 4 exemptions justificadas: `// safe-fetch-exempt:` (3 fetch externos — brasilapi/receitaws/api interno) + `// wrap-exempt:` (4 Server Actions persons — Sprint 01a Faixa D usa envelope manual).
+  - **Validações end-to-end:**
+    - Typecheck `@repo/cnpj` + `@app/web` ✅
+    - `pnpm --filter @app/web build` → **11 rotas** (3 novas: `/api/pessoas/cnpj/[cnpj]`, `/app/pessoas`, `/app/pessoas/new` com 2.18KB bundle pelo Client Component) + middleware 34.7KB ✅
+    - `db:rls-check` 4 regras OK em **23 tabelas** ✅
+    - 47 Vitest tests (34 db/document + 13 security/mfa) ✅
+    - 8 lints custom: **120 code + 2 css files clean** ✅
+  - **Lições documentadas:**
+    1. **Lint inline-only era engessado** — `// safe-fetch-exempt:` precisava estar na mesma linha do `fetch()` (não dava pra colocar na linha acima por legibilidade). Refactor `hasExemption(lines, idx, tag)` aceita ambos os formatos; mantém compat com inline e adiciona padrão "linha acima" usado em todos os lints simultaneamente.
+    2. **BetterAuth + Drizzle CAST `text → uuid`** já tinha aparecido na Faixa C; reaparece em Server Action `createPerson` que precisa setar `tenantId: sql\`current_setting('app.tenant_id')::uuid\`` no INSERT pra contornar a RLS sem perder type-safety.
+    3. **Auto-fill CNPJ via REST (não Server Action)** — Server Action força form submit/transition; Client Component prefere fetch nativo no `onBlur` pra ter loading state granular e cache-control: 'no-store' explícito. API Route `/api/pessoas/cnpj/[cnpj]` complementa Server Action `lookupCnpjAction`.
+    4. **Provider order matters** — `lookupCnpj` faz fallback APENAS se primary falhar com PROVIDER_DOWN ou RATE_LIMITED. `NOT_FOUND` e `INVALID` retornam imediatamente — fallback não vai descobrir CNPJ válido se Receita já disse que não existe.
+    5. **`safe-fetch-exempt:` em endpoints públicos fixos** (brasilapi/receitaws) é justificado por allowlist canônica (ADR 0048); Sprint 02+ migra pra safeFetch quando lista de hosts externos for finalizada.
+
+  **Próxima faixa:** E — Topology UI + onboarding (`/signup` wizard atômico criando tenant + persons matriz + company + unit + user admin + magic link).
+
 - **2026-05-12 (noite) — Faixa C (RBAC + JWT claims + MFA helpers) FECHADA 🟢: 12 system roles + 25 permissions seeded, customSession injetando claims, gate MFA pronto.**
   - **Schema RBAC** em `packages/db/src/schema/rbac.ts` — 6 tabelas: `roles` (system + tenant-scoped), `permissions` (catálogo global), `role_permissions` (N:N), `user_roles` (com scope_company_id + scope_unit_id opcional), `user_permission_grants` (override direto), `user_mfa_recovery_codes` (10 codes one-time hash bcrypt).
   - **Migration `0002_brown_talon.sql`** — 6 tabelas + 12 índices + 13 FKs.
