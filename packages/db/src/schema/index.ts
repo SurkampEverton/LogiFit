@@ -52,3 +52,6 @@ export * from './ai'
 
 // Sprint 07 — Cross-alert dispatcher (esqueleto): alert_subscribers (vazio MVP, popula Fase 2)
 export * from './alerts'
+
+// Sprint 08 Faixa A — Academia controle de acesso: devices + secrets + events + blocks (ADR 0017+0018 esperados)
+export * from './acesso'
