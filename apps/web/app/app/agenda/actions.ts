@@ -365,6 +365,48 @@ export const checkInAppointment = wrapServerAction(
   },
 )
 
+// ─── getAppointment ────────────────────────────────────────────────────
+
+const GetAppointmentInputSchema = z.object({ appointmentId: z.string().uuid() })
+
+export const getAppointment = wrapServerAction(
+  { module: 'agenda', action: 'appointment.read' },
+  async (input: z.infer<typeof GetAppointmentInputSchema>, { session }) => {
+    const parsed = GetAppointmentInputSchema.parse(input)
+    const [row] = await db
+      .select({
+        id: appointments.id,
+        resourceId: appointments.resourceId,
+        memberId: appointments.memberId,
+        recurringSlotId: appointments.recurringSlotId,
+        startsAt: appointments.startsAt,
+        endsAt: appointments.endsAt,
+        status: appointments.status,
+        cancelledAt: appointments.cancelledAt,
+        cancelledReason: appointments.cancelledReason,
+        cancelledByUserId: appointments.cancelledByUserId,
+        checkedInAt: appointments.checkedInAt,
+        createdByUserId: appointments.createdByUserId,
+        createdAt: appointments.createdAt,
+      })
+      .from(appointments)
+      .where(
+        and(
+          eq(appointments.id, parsed.appointmentId),
+          eq(appointments.tenantId, session.logifit.tenantId),
+        ),
+      )
+      .limit(1)
+    if (!row)
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Agendamento não encontrado',
+        request_id: '',
+      })
+    return row
+  },
+)
+
 // ─── listAppointments ──────────────────────────────────────────────────
 
 export const listAppointments = wrapServerAction(

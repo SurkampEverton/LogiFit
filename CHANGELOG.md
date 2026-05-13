@@ -6,6 +6,55 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 03 75%: UI Faixa C completa — 4 rotas + getAppointment 2026-05-13
+
+Sprint 03 sobe de 50% → 75% com 4 rotas UI novas + 8ª Server Action `getAppointment`.
+
+**Adições:**
+
+- **`getAppointment`** Server Action — wrapped, lookup por id no tenant scope, `ApiException NOT_FOUND` se não encontrar.
+- **`/app/agenda/new`** — wizard booking ad-hoc:
+  - Server Component carrega `listResources` + `listMembers` em paralelo
+  - Form Client com 5 inputs: select recurso + select member + date + 2× time (Início/Fim)
+  - Helper `combineToIso(date, time)` converte wall-clock → ISO UTC (Zod `z.string().datetime()`)
+  - Empty state se não há recurso ou member cadastrado, CTA pra cadastrar primeiro
+  - Erros via `<div role="alert">` — inclui CONFLICT do EXCLUDE constraint catched no Server Action
+- **`/app/agenda/[id]`** — detail page:
+  - Carrega via `getAppointment` + lookup nome do recurso via `listResources(includeArchived: true)`
+  - Badge de status colorido + grid 2-col com Início/Fim/Recurso/Member + condicional Check-in/Cancelamento details
+  - Link pra `/app/members/[id]`
+  - `<AppointmentActions>` Client component (só pra status `booked|checked_in`):
+    - Botão "Fazer check-in" (verde, status booked apenas) → `checkInAppointment`
+    - Botão "Cancelar agendamento" abre form inline com input motivo opcional → `cancelAppointment` (que faz transação cancel + promote waitlist em 1 round-trip)
+- **`/app/agenda/resources`** — lista recursos:
+  - Table com Tipo (emoji+label) / Nome / Modalidade / Status
+  - Toggle "Mostrar arquivados" via querystring `?archived=1`
+  - Empty state com CTA
+- **`/app/agenda/resources/new`** — wizard novo recurso:
+  - Lookup companies do tenant via `pool.connect()` + `set_config('app.tenant_id')` direto (sem listCompanies Server Action — adia pra Sprint 04+)
+  - Form Client com select Empresa + select Tipo + input Nome + select Modalidade (visible só para `kind=instrutor`)
+  - Placeholder dinâmico no input Name conforme tipo
+
+**Validações:**
+
+- typecheck `@app/web` ✅
+- build prod ✓ — **5 rotas agenda** materializadas:
+  - `/app/agenda` (186 B)
+  - `/app/agenda/[id]` (1.37 kB)
+  - `/app/agenda/new` (1.72 kB)
+  - `/app/agenda/resources` (186 B)
+  - `/app/agenda/resources/new` (1.7 kB)
+- 90 Vitest tests verdes (sem novos tests — UI work)
+
+**Lições documentadas:**
+
+1. **`combineToIso(date, time)`** é o padrão limpo pra UX BR: input HTML5 `type="date"` + `type="time"` (wall-clock local), Server Action espera ISO UTC. Helper de 3 linhas resolve sem libs de timezone.
+2. **Server Component fazendo lookup direto via `pool.connect()` + `set_config`** é OK como atalho quando não há Server Action específica pra listar (companies do tenant aqui). Reverter pra `listCompanies` ação quando essa precisar de filtros/scope mais complexos.
+3. **`<AppointmentActions>` separado em Client** isola o `useRouter()` + estado de form de cancel sem poluir o detail page Server Component. Pattern reusável: Server Component renderiza detail + lookup de relacionados; Client Component encapsula ações com side-effects.
+4. **Empty state em wizard com CTA pra prerequisite** (ex: "Cadastrar primeiro recurso →") é UX-first contra dead-end — em vez de mostrar form sem options, redireciona pro fluxo dependente.
+
+**Sprint 03 a 75%.** Faixa C avançada (canvas semanal + drag&drop, ~1 semana de trabalho dedicado) e **Faixa D** (Realtime LISTEN/NOTIFY + `expandRecurring(rrule)` via rrule.js + widget agenda em `/app/members/[id]` Sprint 02 slot + ADR 0012 publicado) restantes.
+
 ### Build — Sprint 03 50%: Server Actions + UI lista 7 dias (Faixas B + C inicial) 2026-05-13
 
 Sprint 03 sobe pra 50% com 7 Server Actions wrapped + página `/app/agenda` listando próximos 7 dias.

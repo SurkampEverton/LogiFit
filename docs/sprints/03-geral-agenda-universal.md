@@ -120,6 +120,36 @@ Consumidor no MVP: UI via Realtime. Financeiro (Sprint 04) consome `appointment.
 
 ## Log
 
+- **2026-05-13 (final) — Faixa C UI completa entregue 🟢 (Sprint 03 a 75%).** 4 rotas UI novas + getAppointment:
+  - **`apps/web/app/app/agenda/new/page.tsx` + `new-appointment-form.tsx`** — Wizard de booking ad-hoc:
+    - Server Component carrega `listResources` + `listMembers` em paralelo
+    - Form Client com selects (resource + member) + inputs `date`/`time`/`time` (Início/Fim)
+    - Helper `combineToIso(date, time)` converte wall-clock pra ISO UTC esperado pelo `createAppointment` (Zod `z.string().datetime()`)
+    - Default sugere próxima hora cheia (60 min duração)
+    - Empty state se não há recurso ou member cadastrado, com CTA pra cadastrar primeiro
+    - Erros do Server Action (incluindo CONFLICT de horário do EXCLUDE constraint) renderizados via `<div role="alert">`
+  - **`apps/web/app/app/agenda/[id]/page.tsx` + `appointment-actions.tsx`** — Detail page + ações:
+    - Server Component carrega via novo `getAppointment` (8ª Server Action)
+    - Lookup nome do recurso via `listResources(includeArchived: true)` em paralelo
+    - Renderiza badge de status colorido + grid 2-col com Início/Fim/Recurso/Member + condicional Check-in/Cancelamento details
+    - Link pra `/app/members/[id]` (perfil do member)
+    - `<AppointmentActions>` Client component aparece só pra status `booked|checked_in`. Botões: "Fazer check-in" (verde, status booked) + "Cancelar agendamento" (vermelho, ambos status). Cancel abre form inline com input motivo opcional + confirm
+  - **`apps/web/app/app/agenda/resources/page.tsx`** — Lista de recursos do tenant. Table com colunas Tipo (emoji+label), Nome, Modalidade, Status. Toggle "Mostrar arquivados" via querystring `?archived=1`. Empty state com CTA.
+  - **`apps/web/app/app/agenda/resources/new/page.tsx` + `new-resource-form.tsx`** — Wizard de cadastro de recurso:
+    - Server Component lookup direto via `pool.connect()` + `set_config('app.tenant_id', ...)` (sem listCompanies action ainda — Sprint 04+) pra trazer companies do tenant
+    - Form Client com select Empresa + select Tipo (instrutor/sala/equipamento) + input Nome + select Modalidade (só visível para `kind=instrutor`, valores musculacao/coletiva/personal)
+    - Placeholder dinâmico no input Name muda conforme tipo
+  - **`apps/web/app/app/agenda/actions.ts`** ganhou **8ª Server Action `getAppointment`** — lookup por id no tenant scope, ApiException `NOT_FOUND` se não encontrar.
+
+  **Validações:** typecheck OK; build prod ✓ — **5 rotas agenda materializadas**:
+  - `/app/agenda` (186 B) — lista 7 dias
+  - `/app/agenda/[id]` (1.37 kB) — detail
+  - `/app/agenda/new` (1.72 kB) — novo
+  - `/app/agenda/resources` (186 B) — lista recursos
+  - `/app/agenda/resources/new` (1.7 kB) — novo recurso
+
+  **Sprint 03 a 75%.** Faixa C avançada (canvas semanal canvas + drag&drop) e **Faixa D** (Realtime PG LISTEN/NOTIFY + `expandRecurring(rrule)` helper via rrule.js + widget agenda em `/app/members/[id]` slot Sprint 02 + ADR 0012 publicado) restantes.
+
 - **2026-05-13 — Faixas B + C inicial entregues 🟢 (Sprint 03 a 50%).** Server Actions + UI básica:
   - **`apps/web/app/app/agenda/actions.ts`** — **7 Server Actions wrapped** com `wrapServerAction()` (regra 33 + audit_log):
     - `createResource(input)` — INSERT instrutor/sala/equipamento; valida via Zod
