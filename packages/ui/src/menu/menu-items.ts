@@ -57,14 +57,23 @@ export const MENU_MODULES: MenuModule[] = [
     ],
   },
 
-  // ─── Agenda ──────────────────────────────────────────────────────────
-  // TODO Sprint 03 — habilitar items quando rotas existirem
+  // ─── Agenda (Sprint 03 Faixa B/C) ────────────────────────────────────
   {
     id: 'agenda',
     labelKey: 'nav.modules.agenda',
     icon: '📅',
     order: 30,
-    items: [],
+    items: [
+      {
+        id: 'agenda-week',
+        labelKey: 'nav.agenda.week',
+        url: '/app/agenda',
+        icon: '·',
+        // Sprint 03 ainda não tem permission 'appointment.read' no seed;
+        // tenant_owner com 25 permissions já vê (regra de filtro: requiredPermission
+        // omitido = visível pra todos autenticados; Sprint 04+ adiciona perm específica).
+      },
+    ],
   },
 
   // ─── Acesso (Academia) ───────────────────────────────────────────────

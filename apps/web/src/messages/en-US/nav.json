@@ -34,6 +34,9 @@
     "members": "Members",
     "persons": "Persons (individuals/orgs)"
   },
+  "agenda": {
+    "week": "Next 7 days"
+  },
   "configuracoes": {
     "users": "Users",
     "security": "Account security",

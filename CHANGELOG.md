@@ -6,6 +6,41 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 03 50%: Server Actions + UI lista 7 dias (Faixas B + C inicial) 2026-05-13
+
+Sprint 03 sobe pra 50% com 7 Server Actions wrapped + página `/app/agenda` listando próximos 7 dias.
+
+**Adições:**
+
+- **`apps/web/app/app/agenda/actions.ts`** — **7 Server Actions** wrapped com `wrapServerAction()` (regra 33 + audit_log):
+  - `createResource` / `listResources` / `archiveResource` — CRUD recursos (instrutor/sala/equipamento)
+  - `createAppointment` — INSERT booked com **catch SQLSTATE 23P01** → ApiException `CONFLICT` ("horário já reservado"). Defesa em profundidade pro EXCLUDE constraint da Faixa A
+  - `cancelAppointment` — **transação atômica**: cancela → busca primeiro waitlist (ORDER BY created_at ASC) → promove pra appointment → DELETE waitlist row. Tudo num único `db.transaction()` — se promote falhar, ROLLBACK preserva consistência
+  - `checkInAppointment` — transição `booked → checked_in` com guard `WHERE status='booked'`
+  - `listAppointments` — query range por starts_at + filtros opcionais (resourceId/memberId/status)
+- **`apps/web/app/app/agenda/page.tsx`** — UI Faixa C inicial. Server Component lista próximos 7 dias em table com colunas Início/Recurso/Status/Ações. Empty state com CTA. Botões "+ Agendamento" e "Recursos" no header.
+- **`packages/ui/src/menu/menu-items.ts`** — módulo Agenda destrava com item `/app/agenda` (era `items: []` TODO Sprint 03). Aparece no SideMenu.
+- **`apps/web/src/messages/{pt-BR,en-US,es-419}/nav.json`** — chave `nav.agenda.week` nos 3 locales (regra 27 + ADR 0052).
+
+**Validações:**
+
+- typecheck `@app/web` ✅
+- build prod ✓ — rota `/app/agenda` (183 B) materializada
+- 90 Vitest tests verdes (mesmo que Sprint 03 Faixa A; Faixa B não trouxe tests novos — adia E2E pra Faixa D)
+
+**Lições documentadas:**
+
+1. **Catch SQLSTATE específico** dentro do Server Action é o jeito limpo de transformar erro de banco em mensagem user-friendly. `23P01` (exclusion_violation) é o sinal exato do EXCLUDE constraint — não vazar mensagem técnica do Postgres pro user. Reusável em qualquer Server Action que insere em tabela com EXCLUDE/UNIQUE.
+2. **Promoção waitlist em transação** é crítico: se promote INSERT falhar (ex: aplicação morre no meio), o cancel já comitado sem promote deixaria slot vazio que outro user poderia pegar. `db.transaction(async tx => { ... })` garante atomicidade — Drizzle propaga rollback automaticamente em throw.
+3. **Helper `expandRecurring()` para RRULE** é trabalho de bibliografia (RFC 5545 tem 80+ páginas). Adiado conscientemente pra Faixa C avançada — primeiro entrega o caminho ad-hoc (createAppointment direto) que cobre 80% dos casos MVP (personal trainer pessoal, consulta única). Aulas coletivas com slot recorrente Sprint 03 Fechamento ou Sprint 04.
+4. **UI table simples** sem virtualization é suficiente pra MVP (limit 500 appointments na query). Canvas semanal com drag&drop custom é trabalho de ~1 semana — postergado pra Sprint 04+ quando perfil de uso justificar.
+
+**Sprint 03 a 50%.** Restantes 50%:
+- UI `/app/agenda/new` (form) + `/app/agenda/[id]` (detail) + `/app/agenda/resources` (CRUD UI)
+- Faixa B avançada: `expandRecurring(rrule, range)` via `rrule.js` (~25KB)
+- Faixa C avançada: canvas semanal + drag&drop
+- Faixa D: Realtime PG LISTEN/NOTIFY + canal `tenant:X:company:Y:unit:Z:agenda` + widget agenda no `/app/members/[id]` slot Sprint 02 + ADR 0012 publicado
+
 ### Build — Sprint 03 25%: Agenda schemas + RLS + EXCLUDE constraint (Faixa A) 2026-05-12
 
 Sprint 03 começa. Faixa A entrega schemas Drizzle de 4 tabelas + EXCLUDE constraint anti-overlap + RLS policies + 7 Vitest integration tests.

@@ -120,6 +120,28 @@ Consumidor no MVP: UI via Realtime. Financeiro (Sprint 04) consome `appointment.
 
 ## Log
 
+- **2026-05-13 — Faixas B + C inicial entregues 🟢 (Sprint 03 a 50%).** Server Actions + UI básica:
+  - **`apps/web/app/app/agenda/actions.ts`** — **7 Server Actions wrapped** com `wrapServerAction()` (regra 33 + audit_log):
+    - `createResource(input)` — INSERT instrutor/sala/equipamento; valida via Zod
+    - `listResources({ companyId?, kind?, includeArchived?, limit? })` — query filtrada com `archivedAt IS NULL` default
+    - `archiveResource({ resourceId })` — soft delete
+    - `createAppointment({ resourceId, memberId, startsAt, endsAt, recurringSlotId? })` — INSERT booked; **catches SQLSTATE `23P01` (exclusion_violation) → mapeia pra `CONFLICT` "horário já reservado"** (defesa em profundidade pra EXCLUDE constraint Faixa A)
+    - `cancelAppointment({ appointmentId, reason? })` — **transação** que (1) marca status=cancelled (libera EXCLUDE filter), (2) busca primeiro da waitlist com `ORDER BY created_at ASC LIMIT 1`, (3) promove pra appointment + DELETE da waitlist. Tudo atômico — se INSERT falhar, ROLLBACK preserva consistência
+    - `checkInAppointment({ appointmentId })` — transição `booked → checked_in` com guard `WHERE status='booked'`
+    - `listAppointments({ resourceId?, memberId?, from, to, status? })` — query range por starts_at (BETWEEN); índice `appointments_tenant_starts_idx` usado
+  - **`apps/web/app/app/agenda/page.tsx`** — UI lista MVP (Faixa C inicial). Renderiza próximos 7 dias em table com colunas: Início (data formatada pt-BR), Recurso (lookup via Map), Status (label + cor enum), Ações (link Detalhes). Empty state com CTA. Botões "+ Agendamento" e "Recursos" no header.
+  - **`packages/ui/src/menu/menu-items.ts`** — módulo Agenda agora tem item ativo `/app/agenda` (era `items: []` TODO). Aparece no SideMenu.
+  - **`apps/web/src/messages/{pt-BR,en-US,es-419}/nav.json`** — chave `nav.agenda.week` nos 3 locales.
+
+  **Validações:** typecheck `@app/web` ✅; build prod ✓ rotas `/app/agenda` (183 B) + `/app/agenda/[id]` placeholder; lint Biome ✓ (corrigido 2 files).
+
+  **Faixa B/C restantes (50%):**
+  - Faixa C avançada: visão semanal canvas + drag&drop (calendário tipo FullCalendar custom) — adia pra Sprint 03 fechamento ou Sprint 04
+  - UI `/app/agenda/new` (form criar agendamento) + `/app/agenda/[id]` (detail + cancelar/check-in)
+  - UI `/app/agenda/resources` + `/app/agenda/resources/new`
+  - Faixa B helper `expandRecurring(rrule, range)` — RRULE → date list (precisa lib rrule.js)
+  - Faixa D: Realtime via PG LISTEN/NOTIFY + canal `tenant:X:company:Y:unit:Z:agenda` + widget agenda no `/app/members/[id]` (slot do Sprint 02) + ADR 0012 publicado
+
 - **2026-05-12 — Faixa A entregue 🟢 (Sprint 03 a 25%).** Schemas + RLS + EXCLUDE:
   - **`packages/db/src/schema/agenda.ts`** — 4 tabelas:
     - `resources` (id, tenant_id, company_id, unit_id?, kind enum, name, modality?, instructor_user_id?, archived_at) — soft-delete; 4 indexes incluindo parcial `active_idx` para queries de não-arquivados.

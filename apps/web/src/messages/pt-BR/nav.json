@@ -34,6 +34,9 @@
     "members": "Alunos/Pacientes",
     "persons": "Pessoas (PF/PJ)"
   },
+  "agenda": {
+    "week": "Próximos 7 dias"
+  },
   "configuracoes": {
     "users": "Usuários",
     "security": "Segurança da conta",
