@@ -1,6 +1,10 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { listMemberAgenda } from '../../agenda/actions'
+import {
+  listMemberAchievements,
+  listMemberGoals,
+} from '../../engajamento/actions'
 import { listMemberFinanceiro } from '../../financeiro/actions'
 import { listMemberCredits } from '../../financeiro/ofertas/actions'
 import { getMember, listTimeline } from '../actions'
@@ -44,6 +48,12 @@ export default async function MemberDetailPage({
   // Widget créditos — Sprint 05 Faixa C
   const creditsResult = await listMemberCredits({ memberId: id })
   const credits = creditsResult.ok ? creditsResult.data.credits : []
+
+  // Widgets engajamento — Sprint 09 Faixa C
+  const achResult = await listMemberAchievements({ memberId: id, limit: 5 })
+  const earnedAchievements = achResult.ok ? achResult.data.earnedAchievements : []
+  const goalsResult = await listMemberGoals({ memberId: id, limit: 5 })
+  const activeGoals = goalsResult.ok ? goalsResult.data.activeGoals : []
 
   const address = (person.address as Record<string, string | null> | null) ?? null
 
@@ -327,11 +337,89 @@ export default async function MemberDetailPage({
         </section>
       )}
 
-      {/* Slots futuros — Sprint 06/08/09 */}
-      <section className="rounded-md border border-dashed border-[color:var(--ev-border)] p-6 text-center text-sm text-[color:var(--ev-text-muted)]">
+      {/* Widget Conquistas — Sprint 09 Faixa C */}
+      {earnedAchievements.length > 0 && (
+        <section className="rounded-md border border-[color:var(--ev-border)] p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold flex items-center gap-2">🏆 Conquistas</h2>
+            <Link
+              href="/app/engajamento/conquistas"
+              className="text-sm font-medium text-[color:var(--ev-primary)] hover:underline"
+            >
+              catálogo →
+            </Link>
+          </div>
+          <ul className="space-y-2 text-sm">
+            {earnedAchievements.map((a) => (
+              <li key={a.id} className="flex items-center gap-3 py-1">
+                <span className="text-2xl">🏅</span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{a.achievementName}</div>
+                  <div className="text-xs text-[color:var(--ev-text-muted)] tabular-nums">
+                    {new Date(a.earnedAt).toLocaleDateString('pt-BR')}
+                  </div>
+                </div>
+                {Number(a.points) > 0 && (
+                  <span className="text-xs font-semibold tabular-nums text-[color:var(--ev-primary)]">
+                    +{a.points} pts
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Widget Metas — Sprint 09 Faixa C */}
+      {activeGoals.length > 0 && (
+        <section className="rounded-md border border-[color:var(--ev-border)] p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold flex items-center gap-2">🎯 Metas ativas</h2>
+            <Link
+              href="/app/engajamento/metas"
+              className="text-sm font-medium text-[color:var(--ev-primary)] hover:underline"
+            >
+              modelos →
+            </Link>
+          </div>
+          <ul className="space-y-3 text-sm">
+            {activeGoals.map((g) => {
+              const current = Number(g.currentValue)
+              const target = Number(g.targetValue)
+              const percent =
+                target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0
+              return (
+                <li key={g.id} className="space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium truncate">{g.title}</span>
+                    <span className="text-xs text-[color:var(--ev-text-muted)] tabular-nums">
+                      {current} / {target} {g.targetUnit}
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-[color:var(--ev-surface-muted)] overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${percent}%`,
+                        backgroundColor: 'var(--ev-primary)',
+                      }}
+                    />
+                  </div>
+                  <div className="text-xs text-[color:var(--ev-text-muted)] tabular-nums flex justify-between">
+                    <span>{percent}%</span>
+                    <span>até {new Date(g.targetDate).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
+
+      {/* Slot futuro restante — Sprint 06 (IA Copilot já estará Sprint 06 done) */}
+      <section className="rounded-md border border-dashed border-[color:var(--ev-border)] p-6 text-center text-xs text-[color:var(--ev-text-muted)]">
         <p>
-          Widgets futuros: <strong>IA Copilot</strong> (Sprint 06) · <strong>Acessos</strong>{' '}
-          (Sprint 08) · <strong>Conquistas</strong> (Sprint 09)
+          Widget futuro: <strong>IA Copilot</strong> contextualizado ao member (Sprint 06 Faixa D pendente)
         </p>
       </section>
     </main>

@@ -10,7 +10,8 @@
     "./schema": "./src/schema/index.ts",
     "./policies": "./src/policies/index.ts",
     "./persons": "./src/persons/index.ts",
-    "./agenda": "./src/agenda/index.ts"
+    "./agenda": "./src/agenda/index.ts",
+    "./engajamento": "./src/engajamento/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -24,7 +25,8 @@
   "dependencies": {
     "drizzle-orm": "^0.45.2",
     "pg": "^8.13.1",
-    "rrule": "^2.8.1"
+    "rrule": "^2.8.1",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@repo/config": "workspace:*",
