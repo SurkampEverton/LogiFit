@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { listMemberAgenda } from '../../agenda/actions'
 import { listMemberFinanceiro } from '../../financeiro/actions'
+import { listMemberCredits } from '../../financeiro/ofertas/actions'
 import { getMember, listTimeline } from '../actions'
 
 export const dynamic = 'force-dynamic'
@@ -39,6 +40,10 @@ export default async function MemberDetailPage({
   const financResult = await listMemberFinanceiro({ memberId: id })
   const activeContract = financResult.ok ? financResult.data.activeContract : null
   const recentInvoices = financResult.ok ? financResult.data.recentInvoices : []
+
+  // Widget créditos — Sprint 05 Faixa C
+  const creditsResult = await listMemberCredits({ memberId: id })
+  const credits = creditsResult.ok ? creditsResult.data.credits : []
 
   const address = (person.address as Record<string, string | null> | null) ?? null
 
@@ -283,6 +288,44 @@ export default async function MemberDetailPage({
           </div>
         )}
       </section>
+
+      {/* Widget Créditos — Sprint 05 Faixa C */}
+      {credits.length > 0 && (
+        <section className="rounded-md border border-[color:var(--ev-border)] p-5 space-y-3">
+          <h2 className="font-semibold flex items-center gap-2">🎟️ Créditos ativos</h2>
+          <ul className="space-y-2 text-sm">
+            {credits.map((c) => (
+              <li
+                key={c.id}
+                className="flex items-center justify-between gap-3 py-1"
+              >
+                <div className="space-y-0.5 flex-1 min-w-0">
+                  <div className="font-medium">
+                    {c.serviceType.replace(/_/g, ' ')}
+                  </div>
+                  <div className="text-xs text-[color:var(--ev-text-muted)]">
+                    {c.source === 'bundle' && 'do pacote'}
+                    {c.source === 'purchase' && 'comprado'}
+                    {c.source === 'referral_reward' && 'recompensa indicação'}
+                    {c.source === 'manual_grant' && 'crédito manual'}
+                    {c.expiresAt &&
+                      ` · expira ${new Date(c.expiresAt).toLocaleDateString('pt-BR')}`}
+                  </div>
+                </div>
+                <div
+                  className="tabular-nums text-lg font-semibold"
+                  style={{ color: 'var(--ev-primary)' }}
+                >
+                  {c.balance}
+                  <span className="text-xs text-[color:var(--ev-text-muted)]">
+                    /{c.initialQuantity}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Slots futuros — Sprint 06/08/09 */}
       <section className="rounded-md border border-dashed border-[color:var(--ev-border)] p-6 text-center text-sm text-[color:var(--ev-text-muted)]">
