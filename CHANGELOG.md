@@ -6,6 +6,42 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 10 Faixa A (25%): Funil de vendas schemas + RLS + tests 2026-05-13
+
+Sprint 10 abre em **25%** com Faixa A entregue: 5 tabelas do funil de vendas (lead_stages, leads, lead_events, trial_classes, proposals) + 4 enums + RLS tenant-scoped + 8 tests verdes. Faltam Faixas B/C/D: Server Actions (createLead/moveLeadToStage/convertLeadToMember atomic), UI kanban board, UI tabular lista, UI conversão wizard, ADR 0022 publicado.
+
+**Adições:**
+
+- **`packages/db/src/schema/vendas.ts`** — 5 tabelas:
+  - `lead_stages` — configurável por tenant; default 6 estágios (novo/contato_feito/aula_experimental/proposta/matriculado/perdido). Enum `lead_stage_kind` (open/won/lost). Unique `(tenant_id, slug)`.
+  - `leads` — `person_id` nullable (FK persons ADR 0047) + `quick_name/quick_phone/quick_email` para captura inicial sem CPF confirmado; FK `stage_id` (restrict on delete), `assigned_to_user_id`, `source` enum (9 valores incluindo gympass/totalpass/outdoor); `converted_to_member_id` preserva histórico do funil; soft-delete via `archived_at`. Check constraint `leads_min_contact_or_person` (person OU quick_*).
+  - `lead_events` — audit append-only de movimentações funil (kind text livre + fromStageId/toStageId).
+  - `trial_classes` — link `lead_id` ↔ `appointment_id` (FK lógica para Sprint 03 evitando dependência circular); enum `trial_outcome` (booked/attended/no_show/cancelled).
+  - `proposals` — versionada (status enum draft/sent/accepted/rejected/expired/cancelled), `plan_id` XOR `bundle_plan_id`, `converted_contract_id` FK lógica Sprint 04. Check constraints `proposals_price_non_negative`, `proposals_discount_lt_price`, `proposals_one_plan_xor_bundle`.
+- **`packages/db/src/policies/0029_vendas_rls.sql`** — RLS tenant-scoped (`current_setting('app.tenant_id')`) + GRANTs ao role `logifit_app`. `lead_events` append-only (sem UPDATE/DELETE policy). `lead_stages` sem DELETE (soft via `active=false`); `leads` sem DELETE (soft via `archived_at`).
+- **`packages/db/tests/vendas-rls.test.ts`** — 8 tests:
+  - Isolation Rede vs Franquia em `leads`
+  - `leads_min_contact_or_person` rejeita lead sem person_id NEM quick_*; aceita quick_phone só
+  - `lead_stages` slug unique por tenant (duplicada no mesmo tenant rejeitada, mesma em outro tenant coexiste)
+  - `proposals` price negativo rejeitado, discount>=price rejeitado, proposal mínima aceita
+  - `lead_events` UPDATE bloqueado pelo RLS (rowCount 0 ou erro)
+- Migration `0016_worried_wonder_man.sql` aplicada via `pnpm --filter @repo/db db:migrate`.
+
+**Testes:** 137 verdes (`pnpm --filter @repo/db test`).
+
+**Pendências adiadas pra Faixas B/C/D:**
+
+- Scope vendedor-vê-só-seus via permission `vendas.read_all` (regra 24 + RBAC Sprint 01a)
+- Trigger validando `person_id` obrigatório quando lead avança para estágio `proposta` ou `matriculado` (kind='won')
+- Constraint apenas 1 stage `kind='won'` ativo por tenant
+- Zod schemas em `packages/types/vendas.ts`
+- Server Actions: `createLead`, `upgradeLeadToPerson`, `moveLeadToStage`, `scheduleTrialClass`, `createProposal`, `acceptProposal`, `convertLeadToMember` (atomic)
+- UI: `/app/vendas` kanban board com drag-and-drop, `/app/vendas/leads` tabular, `/app/vendas/leads/[id]/converter` wizard
+- Seed: 10 leads por tenant em estágios variados
+- Testes E2E
+- Feature flag `vendas_v1`
+- ADR 0022 publicado
+
 ### Build — Sprint 06 100%: IA arquitetura fechamento (LLM real + BYOK write + RAG + STRIDE + RIPD v1.0) 2026-05-13
 
 Sprint 06 fecha em **100%**. Completa os 25% restantes: LLM real via Vercel AI SDK, BYOK UI write, white-label editável, cota daily real, anti-abuse, lint `ai-block-respected`, job RAG seed, threat model STRIDE v1.0, RIPD v1.0.

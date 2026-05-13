@@ -1,9 +1,9 @@
 # Sprint 10 — Geral · Funil de Vendas (CRM de leads)
 
 - **Área:** geral
-- **Início:** planejado (depois do Sprint 09)
+- **Início:** 2026-05-13 (após Sprint 09 done)
 - **Fim planejado:** +3 semanas
-- **Status:** planejado
+- **Status:** doing (~25% — Faixa A schema/RLS/tests done)
 - **Item do roadmap:** #12
 
 ## Goal
@@ -91,8 +91,9 @@ Em `packages/db/schema/vendas.ts`:
 
 ## Commit (checklist)
 
-- [ ] Schema Drizzle: `lead_stages`, `leads`, `lead_events`, `trial_classes`, `proposals`
-- [ ] RLS + testes (vendedor vê só seus; gerente vê todos)
+- [x] Schema Drizzle: `lead_stages`, `leads`, `lead_events`, `trial_classes`, `proposals` (Faixa A 2026-05-13)
+- [x] RLS tenant-scoped + 8 tests (isolation, check constraints, lead_events append-only) — `0029_vendas_rls.sql` + `tests/vendas-rls.test.ts` (Faixa A 2026-05-13)
+- [ ] Scope vendedor-vê-só-seus via permission `vendas.read_all` (Faixa B)
 - [ ] Zod schemas em `packages/types/vendas.ts`
 - [ ] Server Actions de lead, proposta, conversão
 - [ ] Conversão cria member + contrato draft atomicamente em transação
@@ -114,7 +115,15 @@ Em `packages/db/schema/vendas.ts`:
 
 ## Log
 
-- —
+- **2026-05-13 — Faixa A: schemas + RLS + tests (Sprint 10 → doing 25%)**
+  - Criado `packages/db/src/schema/vendas.ts` com 5 tabelas (lead_stages, leads, lead_events, trial_classes, proposals) + 4 enums (lead_stage_kind, lead_source, proposal_status, trial_outcome).
+  - Modelo ADR 0022 esperado: `leads.person_id` nullable + `quick_name/quick_phone/quick_email` pra captura inicial; conversão `lead → member` reusa mesmo `person_id` (zero duplicação de identidade).
+  - Check constraints: `leads_min_contact_or_person` (person OU quick_*), `proposals_price_non_negative`, `proposals_discount_lt_price`, `proposals_one_plan_xor_bundle`.
+  - `trial_classes.appointment_id` é FK lógica (sem `references()`) pra evitar dependência circular vendas ↔ agenda.
+  - RLS policy `packages/db/src/policies/0029_vendas_rls.sql` tenant-scoped via `current_setting('app.tenant_id')`. `lead_events` append-only (sem UPDATE/DELETE).
+  - Migration `0016_worried_wonder_man.sql` aplicada.
+  - 8 tests em `tests/vendas-rls.test.ts`: isolation (Rede vs Franquia), check constraints (price negativo, discount >= price, min contact), lead_stages unique por tenant, lead_events append-only via RLS sem policy UPDATE.
+  - Total: 137 tests verdes.
 
 ## Definition of Done
 

@@ -67,3 +67,6 @@ export * from './compliance'
 
 // Sprint 09 Faixa A — Engajamento: achievements + rewards_catalog + goals (ADR 0021 esperado)
 export * from './engajamento'
+
+// Sprint 10 Faixa A — Funil de vendas: lead_stages + leads + lead_events + trial_classes + proposals (ADR 0022 esperado)
+export * from './vendas'
