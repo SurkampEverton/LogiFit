@@ -49,3 +49,6 @@ export * from './ofertas'
 
 // Sprint 06 Faixa A — IA arquitetura: providers + models + task_routing + tenant_usage + audit_log + assistant_sessions/messages + action_proposals + tools_registry (ADR 0064 + 0075)
 export * from './ai'
+
+// Sprint 07 — Cross-alert dispatcher (esqueleto): alert_subscribers (vazio MVP, popula Fase 2)
+export * from './alerts'

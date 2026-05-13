@@ -1,118 +1,260 @@
-import { db } from '@repo/db/client'
-import { members } from '@repo/db/schema'
-import { and, count, eq, isNull } from 'drizzle-orm'
 /**
- * `/app` — landing autenticada (Sprint 00b Faixa A).
+ * `/app` — Dashboard "Equilíbrio Vital" (Sprint 07).
  *
- * Sprint 07 vai reescrever esta página pro **Dashboard "Equilíbrio Vital"**
- * completo com widgets cross-module, alertas, KPIs por persona. Aqui é só
- * um shell pra existir uma rota de destino pós-login com cards de atalho
- * para áreas funcionais já entregues.
+ * KPIs tenant-wide via aggregate queries em paralelo + atalhos contextuais.
+ * Sprint 07+ Faixa B (não no escopo): role-aware dashboards
+ * (recepção/gerente/diretor/group_owner) em `/app/dashboard/{role}`.
  *
- * Cards estáticos (não consultam DB) — preservam <1s LCP enquanto Sprint 07
- * não chega.
+ * Cross-alert dispatcher: tabela `alert_subscribers` criada (vazia MVP).
+ * Sprint 13+ régua de comunicação popula.
  */
+import { db } from '@repo/db/client'
+import {
+  appointments,
+  contracts,
+  invoices,
+  members,
+} from '@repo/db/schema'
+import { and, count, eq, gte, isNull, lte, sql } from 'drizzle-orm'
 import Link from 'next/link'
 import { requireFullSession } from '../lib/session'
 
 export const dynamic = 'force-dynamic'
 
-interface DashCardProps {
-  href: string
-  emoji: string
-  title: string
-  desc: string
-  badge?: string
+function formatBRL(cents: number): string {
+  return (cents / 100).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  })
 }
 
-function DashCard({ href, emoji, title, desc, badge }: DashCardProps) {
-  return (
-    <Link
-      href={href}
-      className="block rounded-xl border border-[color:var(--ev-border)] p-5 transition-colors hover:bg-[color:var(--ev-surface)]"
-      style={{ minHeight: 'var(--ev-touch-min, 44px)' }}
+interface KpiCardProps {
+  label: string
+  value: string
+  hint?: string
+  danger?: boolean
+  href?: string
+}
+
+function KpiCard({ label, value, hint, danger, href }: KpiCardProps) {
+  const content = (
+    <div
+      className="rounded-xl border p-5 space-y-1 transition-colors hover:bg-[color:var(--ev-surface)]"
+      style={{
+        borderColor: danger ? 'var(--ev-danger)' : 'var(--ev-border)',
+        minHeight: 'var(--ev-touch-min, 44px)',
+      }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1">
-          <div className="text-2xl">{emoji}</div>
-          <div className="font-semibold">{title}</div>
-          <div className="text-sm text-[color:var(--ev-text-muted)]">{desc}</div>
-        </div>
-        {badge && (
-          <span className="rounded-full bg-[color:var(--ev-primary)] px-2 py-0.5 text-xs text-[color:var(--ev-primary-foreground)]">
-            {badge}
-          </span>
-        )}
+      <div className="text-xs text-[color:var(--ev-text-muted)] uppercase tracking-wide">
+        {label}
       </div>
-    </Link>
+      <div
+        className="text-2xl font-semibold tabular-nums"
+        style={{ color: danger ? 'var(--ev-danger)' : undefined }}
+      >
+        {value}
+      </div>
+      {hint && <div className="text-xs text-[color:var(--ev-text-muted)]">{hint}</div>}
+    </div>
   )
+  return href ? <Link href={href}>{content}</Link> : content
 }
 
 export default async function AppHomePage() {
   const session = await requireFullSession('/app')
+  const tenantId = session.logifit.tenantId
   const claims = session.logifit
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const last30d = new Date(now)
+  last30d.setDate(now.getDate() - 30)
+  const startOfDay = new Date(now)
+  startOfDay.setHours(0, 0, 0, 0)
+  const endOfDay = new Date(startOfDay)
+  endOfDay.setDate(startOfDay.getDate() + 1)
+  const next7d = new Date(now)
+  next7d.setDate(now.getDate() + 7)
 
-  // Contagem de members ativos (não-arquivados) — single COUNT, leve
-  const [memberCount] = await db
-    .select({ n: count() })
-    .from(members)
-    .where(and(eq(members.tenantId, claims.tenantId), isNull(members.archivedAt)))
+  // KPIs cross-module em paralelo
+  const [
+    memberCount,
+    activeContracts,
+    mrr,
+    overdue,
+    revenue30d,
+    appointmentsToday,
+    appointments7d,
+  ] = await Promise.all([
+    db
+      .select({ n: count() })
+      .from(members)
+      .where(and(eq(members.tenantId, tenantId), isNull(members.archivedAt))),
+    db
+      .select({ n: count() })
+      .from(contracts)
+      .where(and(eq(contracts.tenantId, tenantId), eq(contracts.status, 'active'))),
+    db
+      .select({ sum: sql<number>`coalesce(sum(${invoices.amountCents}), 0)::int` })
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.tenantId, tenantId),
+          eq(invoices.status, 'paid'),
+          gte(invoices.paidAt, startOfMonth),
+        ),
+      ),
+    db
+      .select({
+        sum: sql<number>`coalesce(sum(${invoices.amountCents}), 0)::int`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(invoices)
+      .where(and(eq(invoices.tenantId, tenantId), eq(invoices.status, 'overdue'))),
+    db
+      .select({ sum: sql<number>`coalesce(sum(${invoices.amountCents}), 0)::int` })
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.tenantId, tenantId),
+          eq(invoices.status, 'paid'),
+          gte(invoices.paidAt, last30d),
+        ),
+      ),
+    db
+      .select({ n: count() })
+      .from(appointments)
+      .where(
+        and(
+          eq(appointments.tenantId, tenantId),
+          gte(appointments.startsAt, startOfDay),
+          lte(appointments.startsAt, endOfDay),
+        ),
+      ),
+    db
+      .select({ n: count() })
+      .from(appointments)
+      .where(
+        and(
+          eq(appointments.tenantId, tenantId),
+          gte(appointments.startsAt, now),
+          lte(appointments.startsAt, next7d),
+        ),
+      ),
+  ])
+
+  const overdueCount = overdue[0]?.count ?? 0
+  const overdueSum = overdue[0]?.sum ?? 0
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8 space-y-8">
+    <div className="mx-auto max-w-7xl px-6 py-8 space-y-8">
       <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Bem-vindo ao LogiFit</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          Olá, {claims.username}
+        </h1>
         <p className="text-[color:var(--ev-text-muted)]">
-          Sprint 07 vai trazer o dashboard completo (KPIs, alertas cross-module, widgets por
-          persona). Por enquanto, atalhos para o que já está aterrissado.
+          Dashboard "Equilíbrio Vital" — KPIs do tenant em tempo (quase) real.
         </p>
       </header>
 
+      {/* KPIs principais */}
       <section
         className="grid gap-4"
-        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}
+        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}
       >
-        <DashCard
+        <KpiCard
+          label="Alunos ativos"
+          value={String(memberCount[0]?.n ?? 0)}
+          hint="Members não-arquivados"
           href="/app/members"
-          emoji="👥"
-          title="Alunos / Pacientes"
-          desc="CRM unificado — Sprint 02"
-          badge={`${memberCount?.n ?? 0}`}
         />
-        <DashCard
-          href="/app/pessoas"
-          emoji="📇"
-          title="Pessoas (PF/PJ)"
-          desc="Cadastro central — Sprint 01a/01b"
+        <KpiCard
+          label="Contratos ativos"
+          value={String(activeContracts[0]?.n ?? 0)}
+          hint="Status active"
+          href="/app/financeiro/contratos"
         />
-        <DashCard
-          href="/app/settings/users"
-          emoji="⚙️"
-          title="Usuários e roles"
-          desc="RBAC + permissões — Sprint 01a"
+        <KpiCard
+          label="Receita do mês"
+          value={formatBRL(mrr[0]?.sum ?? 0)}
+          hint="Invoices pagas neste mês"
+          href="/app/financeiro/cobrancas?status=paid"
         />
-        <DashCard
-          href="/seguranca"
-          emoji="🔐"
-          title="Segurança da conta"
-          desc="Senha, MFA, sessões"
+        <KpiCard
+          label="Em atraso"
+          value={formatBRL(overdueSum)}
+          hint={`${overdueCount} invoice(s) overdue`}
+          danger={overdueCount > 0}
+          href="/app/financeiro/cobrancas?status=overdue"
         />
-        <DashCard
-          href="/meu/sessoes"
-          emoji="💻"
-          title="Minhas sessões"
-          desc="Dispositivos ativos"
+        <KpiCard
+          label="Receita 30d"
+          value={formatBRL(revenue30d[0]?.sum ?? 0)}
+          hint="Pagas últimos 30 dias"
+          href="/app/financeiro/cobrancas?status=paid"
+        />
+        <KpiCard
+          label="Agenda hoje"
+          value={String(appointmentsToday[0]?.n ?? 0)}
+          hint="Agendamentos do dia"
+          href="/app/agenda/week"
+        />
+        <KpiCard
+          label="Agenda 7 dias"
+          value={String(appointments7d[0]?.n ?? 0)}
+          hint="Próximos 7 dias"
+          href="/app/agenda"
         />
       </section>
 
+      {/* Atalhos */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-[color:var(--ev-text-muted)]">
+          Atalhos rápidos
+        </h2>
+        <div
+          className="grid gap-3"
+          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}
+        >
+          <Link
+            href="/app/members/new"
+            className="rounded-md border border-[color:var(--ev-border)] p-3 text-sm hover:bg-[color:var(--ev-surface)]"
+            style={{ minHeight: 'var(--ev-touch-min, 44px)' }}
+          >
+            👤 Novo member
+          </Link>
+          <Link
+            href="/app/agenda/new"
+            className="rounded-md border border-[color:var(--ev-border)] p-3 text-sm hover:bg-[color:var(--ev-surface)]"
+            style={{ minHeight: 'var(--ev-touch-min, 44px)' }}
+          >
+            📅 Novo agendamento
+          </Link>
+          <Link
+            href="/app/financeiro/planos/new"
+            className="rounded-md border border-[color:var(--ev-border)] p-3 text-sm hover:bg-[color:var(--ev-surface)]"
+            style={{ minHeight: 'var(--ev-touch-min, 44px)' }}
+          >
+            💼 Novo plano
+          </Link>
+          <Link
+            href="/app/financeiro/promocoes/new"
+            className="rounded-md border border-[color:var(--ev-border)] p-3 text-sm hover:bg-[color:var(--ev-surface)]"
+            style={{ minHeight: 'var(--ev-touch-min, 44px)' }}
+          >
+            🎟️ Nova promoção
+          </Link>
+        </div>
+      </section>
+
+      {/* Roadmap restante */}
       <section className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-6 text-sm">
-        <div className="font-semibold mb-2">Em breve</div>
+        <div className="font-semibold mb-2">Em desenvolvimento</div>
         <ul className="space-y-1 text-[color:var(--ev-text-muted)] list-disc pl-6">
-          <li>📅 Agenda universal (Sprint 03)</li>
-          <li>💰 Financeiro Asaas (Sprint 04)</li>
-          <li>🤖 Assistente IA (Sprint 06)</li>
+          <li>🤖 Assistente IA universal (Sprint 06 — 10% schemas done)</li>
           <li>🚪 Controle de acesso Academia (Sprint 08)</li>
-          <li>📊 Dashboard "Equilíbrio Vital" completo (Sprint 07)</li>
+          <li>🏆 Engajamento (Sprint 09)</li>
+          <li>📊 Dashboards role-aware /app/dashboard/recepcao|gerente|diretor (Sprint 07 Faixa B+)</li>
+          <li>🔍 Command Palette Ctrl+K (Sprint 07 Faixa C)</li>
         </ul>
       </section>
     </div>
