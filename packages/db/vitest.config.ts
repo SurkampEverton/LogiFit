@@ -38,6 +38,7 @@ export default mergeConfig(
           'tests/members-rls.test.ts', // integration test members RLS (Sprint 02 Faixa A)
           'tests/grants-expired.test.ts', // integration test process_grants_expired() (Sprint 01b D.6)
           'tests/agenda-rls.test.ts', // integration test agenda RLS + EXCLUDE constraint (Sprint 03 Faixa A)
+          'tests/financeiro-rls.test.ts', // integration test financeiro Asaas RLS (Sprint 04 Faixa A)
         ],
       },
     },

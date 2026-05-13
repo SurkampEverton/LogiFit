@@ -158,7 +158,25 @@ Em `packages/db/schema/financeiro.ts`:
 
 ## Log
 
-- —
+- **2026-05-13 — Faixa A entregue 🟢 (Sprint 04 a 25%).** Schemas + RLS + tests:
+  - **`packages/db/src/schema/financeiro.ts`** — 6 tabelas:
+    - `plans` (id, tenant_id, company_id, name, price_cents, billing_cycle enum monthly/quarterly/yearly, trial_days, cancel_notice_days, active, archived_at). Check `price_cents >= 0`.
+    - `contracts` (id, tenant_id, company_id, member_id, plan_id, started_at, ends_at?, status enum active/paused/cancelled/expired, billing_day int 1-28, pause fields, auto_pause_rule jsonb, cancelled fields). Check `billing_day BETWEEN 1 AND 28`.
+    - `invoices` (id, tenant_id, company_id, contract_id, member_id, amount_cents, due_at, status enum, asaas_id text, external_url, **breakdown jsonb** ADR 0068, paid_at?, cancelled_at?). **Partial UNIQUE asaas_id WHERE NOT NULL** (múltiplas invoices pre-sync coexistem).
+    - `payments` (id, tenant_id, invoice_id, amount_cents, method enum boleto/pix/credit_card, paid_at, asaas_id UNIQUE, raw_payload jsonb).
+    - `asaas_keys` (id, tenant_id, company_id?, api_key, sandbox, active). Unique parcial `(tenant, company) WHERE active`.
+    - `webhook_events` (id, source, external_id, received_at, processed_at?, payload jsonb). **Unique `(source, external_id)`** = idempotência Asaas reenvia.
+  - **4 enums Postgres novos**: `billing_cycle`, `contract_status`, `invoice_status`, `payment_method`.
+  - **migration `0009_lumpy_moira_mactaggert.sql`** gerada via Drizzle.
+  - **`packages/db/src/policies/0019_financeiro_rls.sql`**:
+    - 14 RLS policies (CRUD em plans/contracts/invoices + INSERT-only em payments + CRUD em asaas_keys)
+    - `webhook_events` SEM RLS — tabela técnica (sem tenant_id obrigatório; processor resolve via payload)
+    - GRANTs explícitos pra `logifit_app`
+  - **`packages/db/tests/financeiro-rls.test.ts`** — **9 Vitest integration tests**: RLS isolamento, check constraints (priceCents/billingDay), asaas_id UNIQUE com partial index, breakdown jsonb persiste, payments append-only, webhook_events idempotência.
+
+  **Validações:** typecheck 11/11 ✅; db:rls-check 3 regras OK em 42 tabelas (era 36, +6); **105 Vitest tests** (era 96 — +9).
+
+  **Sprint 04 a 25%.** Faixas restantes: B (Server Actions + webhook handler + envelope encryption), C (UI + widget financeiro), D (job D-5 + ADRs 0013+0014).
 
 ## Definition of Done
 

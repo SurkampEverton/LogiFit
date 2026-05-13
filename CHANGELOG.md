@@ -6,6 +6,57 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 04 25%: Financeiro Asaas schemas + RLS + check constraints (Faixa A) 2026-05-13
+
+Sprint 04 começa. Faixa A entrega 6 tabelas Drizzle + 14 RLS policies + 9 Vitest integration tests.
+
+**Adições:**
+
+- **`packages/db/src/schema/financeiro.ts`** — 6 tabelas (ADR 0013 + 0014 esperados):
+  - `plans` (catálogo): id, tenant_id, company_id, name, price_cents, billing_cycle enum, trial_days, cancel_notice_days. Partial active_idx + check `price_cents >= 0`.
+  - `contracts` (member↔plano): status enum active/paused/cancelled/expired, billing_day 1-28, pause fields (trancamento academia), auto_pause_rule jsonb, cancelled fields.
+  - `invoices`: amount_cents, due_at, status enum 5 valores, asaas_id text, **breakdown jsonb** (ADR 0068 — base/overage/discounts/surcharges/taxes_withheld). **Partial UNIQUE `asaas_id WHERE NOT NULL`** (múltiplas invoices pre-sync com Asaas coexistem).
+  - `payments`: method enum boleto/pix/credit_card, asaas_id UNIQUE global, raw_payload jsonb.
+  - `asaas_keys`: api_key (TODO Sprint 04+ envelope encryption), sandbox bool, active bool. Unique parcial `(tenant, company) WHERE active`.
+  - `webhook_events` (idempotência): source + **external_id UNIQUE** garante que Asaas reenviando mesmo event não duplica. 3 indexes incluindo partial `WHERE processed_at IS NULL` pra job consumer.
+- **4 enums Postgres novos**: `billing_cycle`, `contract_status`, `invoice_status`, `payment_method`.
+- **migration `0009_lumpy_moira_mactaggert.sql`** via `drizzle-kit generate` (6 tables + indexes + FKs + check constraints + enums).
+- **`packages/db/src/policies/0019_financeiro_rls.sql`**:
+  - 14 RLS policies: `plans` (S/I/U sem D — soft-delete), `contracts` (S/I/U sem D — cancelled=status), `invoices` (S/I/U sem D — auditoria fiscal), `payments` (S/I sem U/D — append-only), `asaas_keys` (S/I/U sem D)
+  - **`webhook_events` SEM RLS** — tabela técnica recebe webhooks sem tenant_id; processor scoped resolve via payload
+  - GRANTs explícitos pra `logifit_app`
+- **`packages/db/tests/financeiro-rls.test.ts`** — **9 Vitest integration tests**:
+  - RLS isolamento per-tenant (plans Rede vs Franquia)
+  - Check `price_cents < 0` → SQLSTATE 23514
+  - Check `billing_day = 30` → 23514
+  - INSERT contract permitido + visible via withTenantContext
+  - `asaas_id` UNIQUE 2º INSERT → 23505
+  - Múltiplas invoices `asaas_id NULL` coexistem (partial index)
+  - `breakdown jsonb` round-trip preservado
+  - `payments` UPDATE retorna 0 rows (append-only via policies)
+  - `webhook_events` UNIQUE `(source, external_id)` → 23505 em duplicate (Asaas reenvia)
+
+**Atualizações:**
+
+- **`packages/db/src/schema/index.ts`** — re-exporta `./financeiro`.
+- **`packages/db/vitest.config.ts`** — exclui `financeiro-rls.test.ts` do coverage gate.
+
+**Validações:**
+
+- typecheck 11/11 ✅
+- `db:rls-check` 3 regras OK em **42 tabelas** (era 36, +6 financeiro)
+- **105 Vitest tests verdes** (era 96 — +9 financeiro-rls)
+
+**Lições documentadas:**
+
+1. **Partial UNIQUE index `WHERE asaas_id IS NOT NULL`** é o pattern correto pra evitar conflito entre invoices recém-criadas (asaas_id ainda null pré-sync com Asaas) e regra de unicidade global (uma única invoice por asaas_id após sync).
+2. **Check constraints em colunas críticas** (`price_cents >= 0`, `billing_day BETWEEN 1 AND 28`) capturam regras de negócio no banco — defesa em profundidade contra bugs de validação aplicação.
+3. **`webhook_events` SEM RLS** é a decisão certa: webhook chega no endpoint público sem cookie/auth, tenant é descoberto via payload. RLS aqui seria fricção inútil (processor tem que bypass). View scoped `tenant_webhook_events` resolve UI debug do tenant (Sprint 04+ Faixa B).
+4. **Idempotência via `UNIQUE (source, external_id)`** + `processed_at` partial index é o padrão LogiFit canônico pra todos webhooks externos (Asaas, Focus NFe Sprint 36, WhatsApp Sprint 13).
+5. **`enabled` enum em vez de `is_default boolean`** em `asaas_keys.active` deixa schema preparado pra futuro suporte a chaves de teste/sandbox/prod alternantes sem migration.
+
+**Sprint 04 a 25%.** Faixas restantes: B (Server Actions + webhook handler + envelope encryption), C (UI), D (job D-5 + ADRs 0013+0014).
+
 ### Build — Sprint 03 100% (`done`): Canvas semanal + Realtime SSE PG LISTEN/NOTIFY 2026-05-13
 
 Sprint 03 completo. Última faixa entrega canvas semanal `/app/agenda/week` + Realtime via PG NOTIFY + SSE listener.

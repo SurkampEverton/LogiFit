@@ -40,3 +40,6 @@ export * from './members'
 
 // Sprint 03 Faixa A — Agenda universal: resources + recurring_slots + appointments + waitlist (ADR 0012 esperado)
 export * from './agenda'
+
+// Sprint 04 Faixa A — Financeiro Asaas: plans + contracts + invoices + payments + asaas_keys + webhook_events (ADR 0013 + 0014 esperados)
+export * from './financeiro'
