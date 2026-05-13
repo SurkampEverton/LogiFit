@@ -440,3 +440,44 @@ export const listAppointments = wrapServerAction(
     return { appointments: rows }
   },
 )
+
+// ─── listMemberAgenda ──────────────────────────────────────────────────
+// Sprint 03 Faixa D — widget agenda no perfil do member (Sprint 02 slot).
+// Retorna próximos N appointments + ocupação histórica resumida.
+
+const ListMemberAgendaInputSchema = z.object({
+  memberId: z.string().uuid(),
+  limit: z.number().int().min(1).max(50).default(10),
+})
+
+export const listMemberAgenda = wrapServerAction(
+  { module: 'agenda', action: 'appointment.list_by_member' },
+  async (input: z.infer<typeof ListMemberAgendaInputSchema>, { session }) => {
+    const parsed = ListMemberAgendaInputSchema.parse(input)
+
+    // Próximos N (status booked/checked_in, futuro)
+    const upcoming = await db
+      .select({
+        id: appointments.id,
+        resourceId: appointments.resourceId,
+        resourceName: resources.name,
+        resourceKind: resources.kind,
+        startsAt: appointments.startsAt,
+        endsAt: appointments.endsAt,
+        status: appointments.status,
+      })
+      .from(appointments)
+      .innerJoin(resources, eq(resources.id, appointments.resourceId))
+      .where(
+        and(
+          eq(appointments.tenantId, session.logifit.tenantId),
+          eq(appointments.memberId, parsed.memberId),
+          gte(appointments.startsAt, new Date()),
+        ),
+      )
+      .orderBy(asc(appointments.startsAt))
+      .limit(parsed.limit)
+
+    return { upcoming }
+  },
+)

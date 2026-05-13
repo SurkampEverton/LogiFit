@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { listMemberAgenda } from '../../agenda/actions'
 import { getMember, listTimeline } from '../actions'
 
 export const dynamic = 'force-dynamic'
@@ -28,6 +29,10 @@ export default async function MemberDetailPage({
   // Timeline resumida (últimos 10 eventos) — widget overview ADR 0011
   const timelineResult = await listTimeline({ memberId: id, limit: 10 })
   const timeline = timelineResult.ok ? timelineResult.data : []
+
+  // Widget agenda — Sprint 03 Faixa D (próximos 5 appointments)
+  const agendaResult = await listMemberAgenda({ memberId: id, limit: 5 })
+  const upcomingAppointments = agendaResult.ok ? agendaResult.data.upcoming : []
 
   const address = (person.address as Record<string, string | null> | null) ?? null
 
@@ -140,12 +145,70 @@ export default async function MemberDetailPage({
         )}
       </section>
 
-      {/* Slots futuros — Sprint 03/04/06/08/09 */}
+      {/* Widget Agenda — Sprint 03 Faixa D */}
+      <section className="rounded-md border border-[color:var(--ev-border)] p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold flex items-center gap-2">📅 Próximos agendamentos</h2>
+          <Link
+            href={`/app/agenda/new?memberId=${id}`}
+            className="text-sm font-medium text-[color:var(--ev-primary)] hover:underline"
+          >
+            + Agendar
+          </Link>
+        </div>
+        {upcomingAppointments.length === 0 ? (
+          <p className="text-sm text-[color:var(--ev-text-muted)] py-2">
+            Sem agendamentos futuros.{' '}
+            <Link
+              href={`/app/agenda/new?memberId=${id}`}
+              className="text-[color:var(--ev-primary)] hover:underline"
+            >
+              Criar primeiro →
+            </Link>
+          </p>
+        ) : (
+          <ul className="divide-y divide-[color:var(--ev-border)]">
+            {upcomingAppointments.map((a) => (
+              <li key={a.id} className="py-2 flex items-center justify-between gap-3">
+                <div className="space-y-0.5 min-w-0 flex-1">
+                  <div className="text-sm font-medium truncate">{a.resourceName}</div>
+                  <div className="text-xs text-[color:var(--ev-text-muted)] tabular-nums">
+                    {new Date(a.startsAt).toLocaleString('pt-BR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                    {' → '}
+                    {new Date(a.endsAt).toLocaleTimeString('pt-BR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </div>
+                </div>
+                {a.status === 'checked_in' && (
+                  <span className="text-xs text-[color:var(--ev-success,#10b981)] font-medium shrink-0">
+                    ✓ check-in
+                  </span>
+                )}
+                <Link
+                  href={`/app/agenda/${a.id}`}
+                  className="text-xs text-[color:var(--ev-primary)] hover:underline shrink-0"
+                >
+                  ver →
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Slots futuros — Sprint 04/06/08/09 */}
       <section className="rounded-md border border-dashed border-[color:var(--ev-border)] p-6 text-center text-sm text-[color:var(--ev-text-muted)]">
         <p>
-          Widgets futuros: <strong>Agenda</strong> (Sprint 03) · <strong>Financeiro</strong> (Sprint
-          04) · <strong>IA Copilot</strong> (Sprint 06) · <strong>Acessos</strong> (Sprint 08) ·{' '}
-          <strong>Conquistas</strong> (Sprint 09)
+          Widgets futuros: <strong>Financeiro</strong> (Sprint 04) · <strong>IA Copilot</strong>{' '}
+          (Sprint 06) · <strong>Acessos</strong> (Sprint 08) · <strong>Conquistas</strong> (Sprint
+          09)
         </p>
       </section>
     </main>

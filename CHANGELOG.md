@@ -6,6 +6,45 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 03 90%: ADR 0012 + expandRecurring + widget agenda em member detail (Faixa D parcial) 2026-05-13
+
+Sprint 03 sobe de 75% → 90% com ADR + helper RRULE + widget cross-module.
+
+**Adições:**
+
+- **[ADR 0012](docs/decisions/0012-agenda-recurso-slot-recorrente-exclude.md)** publicado — "Agenda como recurso + slot recorrente lazy + EXCLUDE constraint". Compara caminho A (materializar) vs. B (lazy + EXCLUDE) com volume estimado: 14.6M rows vs. ~200 rows, 73000× menos storage. Documenta filtro `WHERE status IN ('booked', 'checked_in')` + `tstzrange [)` inclusive/exclusive + alternativas rejeitadas (advisory lock, optimistic locking, big calendar libs).
+- **`packages/db/src/agenda/expand-recurring.ts`** — helper `expandRecurring({recurringSlotId, rrule, startTime, endTime, rangeStart, rangeEnd}): VirtualSlot[]` via **rrule.js** (`^2.8.1`):
+  - Normaliza RRULE com/sem prefix `'RRULE:'`
+  - Anchor DTSTART no início do range pedido (Sprint 04+ ajusta pra fuso real)
+  - `rule.between(start, end, inclusive=true)` retorna ocorrências
+  - Combina cada DATE com `startTime`/`endTime` (HH:MM:SS) em ISO UTC
+  - RRULE inválido → array vazio (não lança), pra UI degradar graciosamente
+- **`packages/db/src/agenda/expand-recurring.test.ts`** — **6 Vitest unit tests** (sem DB): FREQ=WEEKLY;BYDAY=MO retorna 2 segundas; FREQ=DAILY × 5d = 5 occurrences; FREQ=WEEKLY;BYDAY=TU,TH; RRULE inválido → vazio; range sem segunda → vazio; recurringSlotId no payload.
+- **`packages/db/package.json`** — `rrule@^2.8.1` dependency + `./agenda` export.
+- **`listMemberAgenda(memberId, limit)`** Server Action — JOIN appointments + resources, filtra `startsAt >= now()`, limit cap 50. Usada pelo widget no member detail.
+- **Widget agenda em `/app/members/[id]`** — header "📅 Próximos agendamentos" + CTA "+ Agendar" pré-fill `?memberId={id}`. Lista até 5 próximos com resourceName + janela horária + badge ✓ check-in + link ver. Empty state com CTA. Substitui placeholder "Agenda Sprint 03" do widget genérico.
+
+**Atualizações:**
+
+- **`packages/db/src/agenda/index.ts`** novo barrel — re-exporta `expand-recurring`.
+
+**Validações:**
+
+- **96 Vitest tests verdes** (era 90 — +6 expand-recurring)
+- typecheck 11/11 ✅
+- build `@app/web` ✓ `/app/members/[id]` consome `listMemberAgenda` (rota existente, sem nova route ID)
+- ADR 0012 cobre 5 alternativas rejeitadas com justificativa
+
+**Lições documentadas:**
+
+1. **Materialização lazy de RRULE** vs. eager: 14.6M rows pre-geradas → 200 rows + expand on-demand. Trade-off custo CPU (server-side) vs. custo I/O (DB). Cache 30s Redis em Sprint 04+ se virar pain.
+2. **`rrule.js`** é a referência implementação JS de RFC 5545 — ~12KB gzip server-side. Não usar lib competidora "later.js" (não tracking RFC 5545 fielmente).
+3. **`RRule.fromString(DTSTART:... \n RRULE:...)`** é o entry point limpo; **rrule.js** aceita sem prefix DTSTART mas resultados ficam dependentes do datetime atual — sempre anchor explícito.
+4. **Cross-module Server Action import** (`apps/web/.../members/[id]/page.tsx` importa `listMemberAgenda` de `.../agenda/actions.ts`) é OK e desejável — membros consomem dados de agenda; encapsulamento é via `wrapServerAction` + RLS, não via folder boundary.
+5. **`{a.endsAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`** vs. `toLocaleString` é a diferença que evita repetir "13/06" na hora final — só hora:minuto pra janela horária compacta no widget.
+
+**Sprint 03 a 90%.** Restantes 10%: Realtime via PG `LISTEN/NOTIFY` + WebSocket Next.js + canvas semanal drag&drop (Sprint 04 pode reabrir se prioridade comercial mudar).
+
 ### Build — Sprint 03 75%: UI Faixa C completa — 4 rotas + getAppointment 2026-05-13
 
 Sprint 03 sobe de 50% → 75% com 4 rotas UI novas + 8ª Server Action `getAppointment`.

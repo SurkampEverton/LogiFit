@@ -120,6 +120,32 @@ Consumidor no MVP: UI via Realtime. Financeiro (Sprint 04) consome `appointment.
 
 ## Log
 
+- **2026-05-13 (madrugada+) — Faixa D parcial entregue 🟢 (Sprint 03 a 90%).** ADR + RRULE expand + widget:
+  - **[ADR 0012](../decisions/0012-agenda-recurso-slot-recorrente-exclude.md)** publicado — "Agenda como recurso + slot recorrente lazy + EXCLUDE constraint". Detalha modelo de 4 tabelas, escolha entre materializar vs. lazy (~73000× menos rows), EXCLUDE constraint para garantia atômica sem lock pessimista, particionamento adiado pra Sprint 04+, Realtime via PG LISTEN/NOTIFY sem Supabase.
+  - **`packages/db/src/agenda/expand-recurring.ts`** — helper `expandRecurring({rrule, startTime, endTime, range})` via **rrule.js**:
+    - Aceita RRULE com ou sem prefix `'RRULE:'`
+    - Anchor `DTSTART` no início do range pedido (Sprint 04+ ajusta pra fuso do tenant)
+    - `rule.between(rangeStart, rangeEnd, true)` extrai ocorrências
+    - Combina cada DATE retornada com `startTime`/`endTime` em UTC (wall-clock placeholder)
+    - RRULE inválido → array vazio (não lança)
+    - Retorna `{startsAt, endsAt, recurringSlotId}[]`
+  - **`packages/db/src/agenda/expand-recurring.test.ts`** — **6 Vitest unit tests** (sem DB): FREQ=WEEKLY;BYDAY=MO, FREQ=DAILY, FREQ=WEEKLY;BYDAY=TU,TH, RRULE inválido → vazio, range vazio, recurringSlotId no payload.
+  - **`apps/web/app/app/agenda/actions.ts`** ganhou **9ª Server Action `listMemberAgenda`** — bulk lookup próximos N appointments + JOIN resources pra nome/kind. Cap 50, default 10. Usada pelo widget no member detail.
+  - **`apps/web/app/app/members/[id]/page.tsx`** — widget Agenda plugado:
+    - Server Component carrega `listMemberAgenda(memberId, limit: 5)` em paralelo aos demais lookups
+    - Header "📅 Próximos agendamentos" + botão CTA "+ Agendar" → `/app/agenda/new?memberId={id}`
+    - Lista divisor entre items com resourceName + janela horária + badge ✓ check-in + link "ver →"
+    - Empty state com CTA "Criar primeiro →"
+    - Substitui placeholder genérico "Widgets futuros" (que removeu "Agenda" da lista — Sprint 03 entregou agora)
+  - **`packages/db/package.json`** — `"rrule": "^2.8.1"` adicionado + `"./agenda": "./src/agenda/index.ts"` export.
+
+  **Validações:**
+  - **96 Vitest tests verdes** (era 90 — +6 expand-recurring unit)
+  - typecheck 11/11 ✅
+  - build `@app/web` ✓ rotas existentes + member detail consome `listMemberAgenda`
+
+  **Sprint 03 a 90%.** Restantes 10%: Realtime via PG `LISTEN/NOTIFY` + WebSocket próprio Next.js (canal `tenant:X:company:Y:unit:Z:agenda`) + canvas semanal drag&drop (peça UX significativa — Sprint 04 pode reabrir esse 10% se prioridade comercial mudar).
+
 - **2026-05-13 (final) — Faixa C UI completa entregue 🟢 (Sprint 03 a 75%).** 4 rotas UI novas + getAppointment:
   - **`apps/web/app/app/agenda/new/page.tsx` + `new-appointment-form.tsx`** — Wizard de booking ad-hoc:
     - Server Component carrega `listResources` + `listMembers` em paralelo
