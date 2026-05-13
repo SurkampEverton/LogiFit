@@ -61,3 +61,6 @@ export * from './acesso'
 
 // Sprint 01b fechamento — Compliance: ai_committees (CFM 2.454) + privileged_sessions (PAM) + data_subject_requests (LGPD art. 18)
 export * from './compliance'
+
+// Sprint 09 Faixa A — Engajamento: achievements + rewards_catalog + goals (ADR 0021 esperado)
+export * from './engajamento'
