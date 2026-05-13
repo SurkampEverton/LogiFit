@@ -129,7 +129,48 @@ Em `packages/db/schema/ofertas.ts`:
 
 ## Log
 
-- —
+- **2026-05-13 — Faixa A entregue 🟢 (Sprint 05 a 25%).** Schemas + RLS + tests:
+  - **`packages/db/src/schema/ofertas.ts`** — 7 tabelas + 1 enum:
+    - `promotions` (id, tenant_id, code text, name, kind enum percent/fixed/trial_days, value int, valid_from/to, max_uses int, uses_count, applicable, min_amount_cents, stackable bool, active, archived_at). Unique `(tenant_id, code)`. Checks: `value >= 0`, `uses_count >= 0`, `max_uses NULL OR > 0`.
+    - `promotion_uses` (audit append-only) — id, tenant_id, promotion_id, contract_id?, invoice_id?, member_id?, discount_cents, used_at, used_by_user_id.
+    - `plan_items` — PK composta `(bundle_plan_id, idx)`, service_type text, quantity int, credit_validity_days?, notes. Checks: quantity > 0, validity NULL OR > 0.
+    - `appointment_credits` — id, tenant_id, member_id, contract_id?, service_type, resource_modality?, balance int, initial_quantity int, source enum (bundle/purchase/referral_reward/manual_grant), earned_at, expires_at?. **Check critical: `balance <= initial_quantity`** + `balance >= 0` + `initial_quantity > 0`.
+    - `credit_consumptions` (audit append-only) — id, tenant_id, credit_id, appointment_id?, consumed_at, amount, consumed_by_user_id.
+    - `referrals` — id, tenant_id, referrer_member_id, code text, reward_promotion_id, uses_count, max_uses?, active. **Unique parcial `(tenant_id, referrer_member_id) WHERE active`** + `(tenant_id, code) UNIQUE`. Checks similares à promotions.
+    - `referral_uses` (audit) — id, tenant_id, referral_id, referred_member_id, contract_id?, converted_at, reward_granted_at?. **Unique `(tenant_id, referred_member_id)`** — member novo só converte 1 referral.
+  - **Enum novo**: `promotion_kind` (percent/fixed/trial_days), `credit_source` (bundle/purchase/referral_reward/manual_grant).
+  - **`plans.kind`** — coluna nova text + check `IN ('plan', 'bundle')`. Default `'plan'`. Não usei pgEnum pra evitar dependency cycle Drizzle entre `financeiro.ts` ↔ `ofertas.ts`.
+  - **migration `0010_freezing_mole_man.sql`** gerada via Drizzle (renomeada pra manter sequencial após cleanup).
+  - **`packages/db/src/policies/0021_ofertas_rls.sql`** — 20 RLS policies + GRANTs:
+    - `promotions` S/I/U sem D (soft via archivedAt)
+    - `promotion_uses` S/I sem U/D (audit append-only)
+    - `plan_items` CRUD (admin pode reorganizar bundle items)
+    - `appointment_credits` S/I/U sem D (créditos expiram via UPDATE balance=0)
+    - `credit_consumptions` S/I sem U/D (audit append-only)
+    - `referrals` S/I/U sem D
+    - `referral_uses` S/I/U (status update permitido após conversão)
+    - GRANTs explícitos pra `logifit_app`
+  - **`packages/db/tests/ofertas-rls.test.ts`** — **10 Vitest integration tests**:
+    - RLS isolation per-tenant (Rede vê promo dela; Franquia não)
+    - Check `value >= 0` em promotions → 23514
+    - `(tenant, code)` unique em promotions; mesma code em outro tenant coexiste
+    - `appointment_credits.balance > initial_quantity` → 23514
+    - balance < 0 → 23514
+    - balance == initial_quantity OK + UPDATE decrementa pra 3
+    - referrals: 2 ativos por (tenant, member) → 23505 (unique partial)
+    - referrals.code unique por tenant
+    - plans.kind = 'plan' e 'bundle' aceitos
+    - plans.kind = 'invalid' → 23514
+
+  **Validações:**
+  - typecheck 11/11 ✅
+  - `db:rls-check` 3 regras OK em **49 tabelas** (era 42, +7 ofertas)
+  - **115 Vitest tests verdes** (era 105 — +10 ofertas-rls)
+
+  **Sprint 05 a 25%.** Faixas restantes:
+  - **Faixa B** — Server Actions (createPromotion + applyPromotion + createBundle + subscribeBundle + consumeCredit + createReferralCode + applyReferral) + validador `canApply(promotion, ctx)` + integração com `createAppointment` pra consumir crédito automaticamente
+  - **Faixa C** — UI `/app/financeiro/promocoes` + `/pacotes` + `/referrals` + widget créditos em `/app/members/[id]`
+  - **Faixa D** — Job noturno expiração créditos + ADR 0020 publicado + Seed 3 promos + 2 bundles + 1 referral por tenant
 
 ## Definition of Done
 

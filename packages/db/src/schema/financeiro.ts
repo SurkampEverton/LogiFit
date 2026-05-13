@@ -70,6 +70,9 @@ export const plans = pgTable(
       .references(() => companies.id, { onDelete: 'restrict' }),
     name: text('name').notNull(),
     description: text('description'),
+    // Sprint 05 Faixa A — distingue plan simples vs. bundle composto de plan_items.
+    // text com check pra evitar dependency cycle com ofertas.ts enum.
+    kind: text('kind').notNull().default('plan'),
     priceCents: integer('price_cents').notNull(),
     billingCycle: billingCycleEnum('billing_cycle').notNull().default('monthly'),
     trialDays: integer('trial_days').notNull().default(0),
@@ -85,6 +88,7 @@ export const plans = pgTable(
       .on(t.tenantId, t.companyId)
       .where(sql`active = true AND archived_at IS NULL`),
     check('plans_price_non_negative', sql`${t.priceCents} >= 0`),
+    check('plans_kind_valid', sql`${t.kind} IN ('plan', 'bundle')`),
   ],
 )
 

@@ -43,3 +43,6 @@ export * from './agenda'
 
 // Sprint 04 Faixa A — Financeiro Asaas: plans + contracts + invoices + payments + asaas_keys + webhook_events (ADR 0013 + 0014 esperados)
 export * from './financeiro'
+
+// Sprint 05 Faixa A — Ofertas comerciais: promotions + plan_items + appointment_credits + referrals (ADR 0020 esperado)
+export * from './ofertas'

@@ -6,6 +6,65 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 05 25%: Ofertas comerciais schemas + RLS + tests (Faixa A) 2026-05-13
+
+Sprint 05 começa. Faixa A entrega 7 schemas + 20 RLS policies + 10 Vitest tests + check constraints completos.
+
+**Adições:**
+
+- **`packages/db/src/schema/ofertas.ts`** — 7 tabelas (ADR 0020 esperado):
+  - `promotions` (cupons): code/kind enum percent/fixed/trial_days/value/validity/max_uses/stackable. **`(tenant_id, code) UNIQUE`** + checks `value >= 0`, `max_uses > 0 OR NULL`.
+  - `promotion_uses` (audit): contract_id?/invoice_id?/discount_cents/used_at/used_by_user_id.
+  - `plan_items` (composição bundle): PK composta `(bundle_plan_id, idx)`. service_type text + quantity > 0 + credit_validity_days > 0 OR NULL.
+  - `appointment_credits` (saldo): member_id/contract_id?/service_type/resource_modality?/balance/initial_quantity/source enum/earned_at/expires_at?. **Check crítico `balance <= initial_quantity` + `balance >= 0`** + `initial_quantity > 0`. Partial index `WHERE balance > 0`.
+  - `credit_consumptions` (audit): credit_id/appointment_id?/consumed_at/amount > 0.
+  - `referrals` (códigos): tenant_id/referrer_member_id/code/reward_promotion_id. **2 unique parciais**: `(tenant_id, code) UNIQUE` + `(tenant_id, referrer_member_id) WHERE active = true` (1 ativo por member).
+  - `referral_uses` (conversões): referral_id/referred_member_id/contract_id?. **Unique `(tenant_id, referred_member_id)`** — member novo só converte 1.
+- **2 enums Postgres novos**: `promotion_kind` (percent/fixed/trial_days), `credit_source` (bundle/purchase/referral_reward/manual_grant).
+- **`plans.kind`** coluna nova — text + check `IN ('plan', 'bundle')`. Default `'plan'`. Sem pgEnum pra evitar dependency cycle Drizzle entre financeiro.ts ↔ ofertas.ts.
+- **migration `0010_freezing_mole_man.sql`** via drizzle-kit generate.
+- **`packages/db/src/policies/0021_ofertas_rls.sql`** — 20 RLS policies:
+  - `promotions` S/I/U (sem DELETE — soft via archivedAt)
+  - `promotion_uses` S/I (audit append-only)
+  - `plan_items` CRUD (admin reorganiza bundles)
+  - `appointment_credits` S/I/U (sem DELETE — créditos expiram via UPDATE balance=0)
+  - `credit_consumptions` S/I (audit append-only)
+  - `referrals` S/I/U
+  - `referral_uses` S/I/U
+  - GRANTs explícitos pra `logifit_app`
+- **`packages/db/tests/ofertas-rls.test.ts`** — **10 Vitest integration tests**:
+  - RLS isolation per-tenant
+  - check `value < 0` → SQLSTATE 23514
+  - `(tenant, code)` unique em promotions + mesma code em outro tenant coexiste
+  - `balance > initial_quantity` → 23514
+  - balance < 0 → 23514
+  - balance == initial + UPDATE decrementa OK
+  - referrals: 2 ativos por (tenant, member) → 23505 unique partial
+  - referrals.code unique por tenant
+  - plans.kind = 'plan'|'bundle' aceitos; 'invalid' → 23514
+
+**Atualizações:**
+
+- **`packages/db/src/schema/index.ts`** — re-exporta `./ofertas`.
+- **`packages/db/vitest.config.ts`** — exclui `ofertas-rls.test.ts` do coverage.
+
+**Validações:**
+
+- typecheck 11/11 ✅
+- `db:rls-check` 3 regras OK em **49 tabelas** (era 42, +7 ofertas)
+- **115 Vitest tests verdes** (era 105 — +10 ofertas-rls)
+- Migration aplicada local (idempotente)
+
+**Lições documentadas:**
+
+1. **Check constraint `balance <= initial_quantity`** é defesa em profundidade contra bug em consumeCredit que use UPDATE direto sem validar saldo. Banco rejeita; Server Action recebe SQLSTATE 23514 e mostra erro de UX claro.
+2. **Index parcial com `now()` rejeitado** — Postgres exige IMMUTABLE em index predicate. Solução: `WHERE balance > 0` apenas (filtra >50% dos rows); filtro de `expires_at` fica no SELECT.
+3. **Dependency cycle entre schemas Drizzle** evitado usando text + check em vez de pgEnum cross-arquivo. Trade-off: perde IntelliSense do tipo enum, mas mantém arquitetura clara.
+4. **`(tenant_id, referrer_member_id) WHERE active = true` unique partial** é o pattern pra "1 ativo por (tenant, member)". Histórico de referrals desativados coexistem.
+5. **PK composta `(bundle_plan_id, idx)`** em `plan_items` mantém ordem dos items no bundle sem precisar coluna `position int` separada nem trigger pra renumerar.
+
+**Sprint 05 a 25%.** Faixas restantes: B (Server Actions + canApply validator + integração consumeCredit no createAppointment), C (UI promoções/pacotes/referrals + widget créditos em member), D (job expiração créditos + ADR 0020 + seed 3 promos + 2 bundles + 1 referral por tenant).
+
 ### Build — Sprint 04 100% (`done`): UI completa + widget financeiro + job D-5 + ADRs 0013+0014 2026-05-13
 
 Sprint 04 completo. Faixas C+D entregam UI, widget cross-module, job de cobranças automáticas D-5 e os 2 ADRs.

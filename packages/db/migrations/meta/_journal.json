@@ -71,6 +71,13 @@
       "when": 1778678702940,
       "tag": "0009_lumpy_moira_mactaggert",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1778682941522,
+      "tag": "0010_freezing_mole_man",
+      "breakpoints": true
     }
   ]
 }
