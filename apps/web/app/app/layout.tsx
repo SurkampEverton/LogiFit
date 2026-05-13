@@ -1,6 +1,3 @@
-import { db } from '@repo/db/client'
-import { tenants, users } from '@repo/db/schema'
-import { AppShell, MENU_MODULES, type Vertical } from '@repo/ui'
 /**
  * Layout autenticado — Sprint 00b Faixa A.
  *
@@ -8,15 +5,17 @@ import { AppShell, MENU_MODULES, type Vertical } from '@repo/ui'
  *
  * Server Component:
  *   - `requireFullSession()` → redirect /login se não autenticado
- *   - Carrega user.username + tenant.name (Drizzle)
+ *   - Consome `session.logifit.username` + `session.logifit.tenantName`
+ *     (Sprint 00b Faixa A polish — vêm do customSession claims pra evitar
+ *     query extra via pool logifit_app + RLS bloqueada sem app.tenant_id)
  *   - Carrega permissões do user (Faixa C: real has_permission lookup;
  *     Faixa A: passa vazio = todas visíveis)
  *   - Achata catálogo `nav` next-intl pra Record<string, string> serializável
  *     pro `<AppShell>` Client Component consumir.
  */
-import { eq } from 'drizzle-orm'
-import { getMessages } from 'next-intl/server'
+import { AppShell, MENU_MODULES, type Vertical } from '@repo/ui'
 import { headers as nextHeaders } from 'next/headers'
+import { getMessages } from 'next-intl/server'
 import type { ReactNode } from 'react'
 import { requireFullSession } from '../lib/session'
 
@@ -44,24 +43,11 @@ export default async function AppAreaLayout({ children }: { children: ReactNode 
   const session = await requireFullSession('/app')
   const claims = session.logifit
 
-  // User + tenant metadata pro header
-  const [userRow] = await db
-    .select({ username: users.username })
-    .from(users)
-    .where(eq(users.id, claims.userId))
-    .limit(1)
-  const [tenantRow] = await db
-    .select({ name: tenants.name })
-    .from(tenants)
-    .where(eq(tenants.id, claims.tenantId))
-    .limit(1)
-
   // I18n: catálogo nav → Record<string,string> serializável
   const messages = (await getMessages()) as { nav: NavMessages }
   const labels = flattenLabels(messages.nav ?? {})
 
-  // Path atual para destacar item ativo (Sprint 00b Faixa A simplificado —
-  // header x-pathname enviado pelo middleware; fallback: vazio)
+  // Path atual para destacar item ativo — header `x-pathname` setado pelo middleware
   const h = await nextHeaders()
   const currentPath = h.get('x-pathname') ?? ''
 
@@ -77,9 +63,9 @@ export default async function AppAreaLayout({ children }: { children: ReactNode 
   return (
     <AppShell
       userId={claims.userId}
-      userName={userRow?.username ?? '—'}
+      userName={claims.username}
       tenantId={claims.tenantId}
-      tenantName={tenantRow?.name ?? '—'}
+      tenantName={claims.tenantName}
       activeVerticals={activeVerticals}
       permissionKeys={permissionKeys}
       modules={MENU_MODULES}

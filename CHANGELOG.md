@@ -6,6 +6,41 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fix — Sprint 00b polish: username + tenantName via customSession claims 2026-05-12
+
+Bug cosmético do Sprint 00b Faixa A validado via Chrome MCP: header `<AppShell>` e footer SideMenu mostravam `—` em tenant + username. Causa: layout.tsx fazia `db.select` em `users`/`tenants` via pool `logifit_app` que respeita RLS; sem `app.tenant_id` setado no Server Component, retorna 0 rows.
+
+**Adições:**
+
+- **`packages/auth/src/server.ts`** — `customSession` callback agrega:
+  - `users.username` no SELECT inicial de `users` (1 coluna extra na query já existente)
+  - `tenants.name` no SELECT de `tenants` (1 coluna extra na query já existente)
+  - Injeta como `username` + `tenantName` no payload `logifit` da sessão
+  - **Zero queries adicionais** — só amplia as 2 queries que já rodavam
+- **`apps/web/app/lib/session.ts`** — interface `LogifitSessionClaims` ganha `username: string` + `tenantName: string`.
+- **`AUTH_DATABASE_URL` env** (`apps/web/.env.local` + `packages/auth/src/server.ts`) — connection string opcional pro `authPool` bypassar RLS quando precisar fazer lookup cross-tenant pré-claim. Default = `DATABASE_URL` pra compat. Dev: aponta pra `postgres` superuser. Prod: pode reutilizar mesma string (já cai num PgBouncer que pode ter role bypass-RLS configurada).
+
+**Atualizações:**
+
+- **`apps/web/app/app/layout.tsx`** — consome `session.logifit.username` + `session.logifit.tenantName` direto; remove imports `db`/`tenants`/`users`/`eq` e as 2 queries `db.select`. Layout virou **zero-query** (todo dado vem da session memoizada).
+- **`.gitignore`** — adiciona `.magic-links.dev.log` + `.customSession.dev.log` (debug files para contornar Node stdout block-buffering em dev).
+- **`packages/auth/src/server.ts`** sendMagicLink — append síncrono em `.magic-links.dev.log` (fora prod) pra visibilidade imediata do URL gerado, já que Node block-buffera stdout quando pipeado (60s+ pra flush).
+
+**Validação end-to-end via Chrome MCP:**
+
+- Login magic link `admin+rede@logifit.test` → token gerado → verify 302 → cookie setado ✅
+- `/app` carrega com header populado: **Academia Equilíbrio** + **admin+rede@logifit.test** ✅
+- ☰ abre SideMenu overlay; footer mostra "Sessão de admin+rede@logifit.test / Academia Equilíbrio" ✅
+- Clique em "Alunos/Pacientes" navega pra `/app/members` ✅; menu permanece aberto (desktop)
+- 3 módulos visíveis (Início/Pessoas/Configurações); 14 escondidos por `items.length === 0` ✅
+
+**Lições documentadas:**
+
+1. Server Components em rota protegida devem consumir dado da **session memoizada** (`session.logifit.*`) em vez de re-querar via Drizzle — não só evita N+1 queries em todo navigation, como também bypassa o problema de RLS chicken-and-egg (precisa de `app.tenant_id` mas o tenant_id está exatamente no lookup que estou tentando fazer).
+2. `customSession` no BetterAuth roda **apenas no momento da sessão** (não a cada request). Adicionar campos é praticamente grátis se eles vêm de query já existente.
+3. Node em pipe (`pnpm dev | tee log`) block-buffera stdout em chunks de 64KB — em dev solo isso significa logs ficam invisíveis até processo encerrar. Append síncrono em arquivo de debug (`fs.appendFileSync`) é o workaround pragmático.
+4. ESM-only package (`"type": "module"`) **não pode usar `require()`** em runtime — só `await import()`. Bug que fiz manualmente travou o handler em silêncio até diagnosticar.
+
 ### Build — Sprint 00b 40%: Menu lateral foundation + /app landing (Faixa A) 2026-05-12
 
 Faixa A do Sprint 00b. Foundation completo do `<AppShell>` overlay + 17 módulos canônicos + i18n 3 locales + rota `/app` landing autenticada. Sprint 00b sobe de 0% para 40%.

@@ -16,6 +16,10 @@ import { pool } from '@repo/db/client'
 export interface LogifitSessionClaims {
   userId: string
   tenantId: string
+  /** `users.username` LogiFit. Sprint 00b Faixa A polish — evita query extra em layout. */
+  username: string
+  /** `tenants.name` ativo. Sprint 00b Faixa A polish — header do AppShell exibe. */
+  tenantName: string
   topology: 'owned' | 'franchise'
   roles: string[]
   requiresMfa: boolean

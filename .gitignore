@@ -54,3 +54,7 @@ packages/db/drizzle/meta/_journal.tmp.json
 
 # Chaves SSH/GPG locais — nunca versionar
 chaves/
+
+# Sprint 00b dev â€” debug logs (stdout buffering em Node + pipe)
+.magic-links.dev.log
+.customSession.dev.log
