@@ -6,6 +6,51 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 03 100% (`done`): Canvas semanal + Realtime SSE PG LISTEN/NOTIFY 2026-05-13
+
+Sprint 03 completo. Última faixa entrega canvas semanal `/app/agenda/week` + Realtime via PG NOTIFY + SSE listener.
+
+**Adições:**
+
+- **`apps/web/app/app/agenda/week/page.tsx`** — Canvas semanal visão grade:
+  - Layout 7 dias × 13 horas (8h→20h slot 1h)
+  - Server Component carrega `appointments` no range + `recurring_slots` ativos
+  - Aplica `expandRecurring()` em cada slot → `VirtualSlot[]`
+  - Monta `Cell[][]` 13×7 com 3 estados: **booked** (link `/[id]`, cor por status), **virtual livre** (border dashed, link new pre-fill), **vazia** (botão `+` opaco)
+  - Navegação `?start=YYYY-MM-DD` (prev/today/next semana)
+- **`packages/db/src/policies/0018_agenda_notify.sql`** — PG NOTIFY trigger:
+  - Function `agenda_notify_change()` em `AFTER INSERT/UPDATE/DELETE appointments`
+  - Emite `pg_notify('agenda:{tenant_id}', jsonb {event, appointment_id, tenant_id, resource_id, member_id, status, starts_at})`
+  - Events canônicos: `appointment.created`, `appointment.updated`, `appointment.status_changed`, `appointment.deleted`
+- **`apps/web/app/api/realtime/agenda/route.ts`** — endpoint SSE:
+  - `runtime: 'nodejs'` (pg requer não-Edge)
+  - `requireFullSession` → channel `agenda:{tenantId}` (cliente não escolhe canal)
+  - Acquire pg client + `LISTEN <channel>` + propaga `'notification'` events do pg pra ReadableStream
+  - Keep-alive ping 25s (HTTP/1.1 proxy timeout 30s)
+  - Cleanup completo no `request.signal abort` (UNLISTEN + release client)
+- **`apps/web/app/app/agenda/realtime-refresh.tsx`** — client component listener:
+  - `EventSource('/api/realtime/agenda')` + listener `'agenda'` → `router.refresh()`
+  - Plugado em `/app/agenda/page.tsx` + `/app/agenda/week/page.tsx`
+  - Browser auto-reconecta se SSE cai (~3s)
+- **Botão "Visão semanal"** na `/app/agenda` principal.
+
+**Validações:**
+
+- typecheck 11/11 ✅
+- build `@app/web` ✓ — **6 rotas agenda** (+ `/app/agenda/week` 1.7kB)
+- `db:rls-check` 3 regras OK em 36 tabelas
+- 96 Vitest tests verdes (sem novos — Realtime testável manual via 2 abas)
+
+**Lições documentadas:**
+
+1. **PG `LISTEN/NOTIFY` + SSE + `router.refresh()`** é o stack pragmático pra realtime em Next.js sem WebSocket server custom: 1 trigger + 1 route handler + 1 client hook. WebSocket vai entrar em Sprint 09+ se virar gargalo de overhead HTTP.
+2. **`router.refresh()` em vez de mergear delta** é OK pra Sprint 03 — Server Component re-fetch de página inteira custa ~150ms, ROI de otimizar não compensa. Re-revisar se canvas semanal com 200+ slots virar problema de perf.
+3. **`X-Accel-Buffering: no`** header é necessário pra Caddy/Cloudflare/nginx não bufferizarem o SSE stream e atrasarem eventos por minutos.
+4. **`request.signal.addEventListener('abort')`** é a forma idiomática Next.js 15 de detectar client disconnect e liberar recursos (pg client + UNLISTEN). Sem isso, conexões vazam até o pool esgotar.
+5. **Canvas 7×13 com fallback "+"** é UX limpa pré-drag&drop — operador pode criar appointment em qualquer slot vazio sem precisar do wizard. Drag&drop completo é trabalho de várias horas (drag preview + drop hover state + Server Action move) — Sprint 04+ avalia ROI.
+
+**Sprint 03 `done` ✅.** Drag&drop full + canvas mensal pendentes pra Sprint 04+ (não-bloqueante).
+
 ### Build — Sprint 03 90%: ADR 0012 + expandRecurring + widget agenda em member detail (Faixa D parcial) 2026-05-13
 
 Sprint 03 sobe de 75% → 90% com ADR + helper RRULE + widget cross-module.

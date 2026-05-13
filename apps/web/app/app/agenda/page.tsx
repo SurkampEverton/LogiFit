@@ -7,6 +7,7 @@
 import Link from 'next/link'
 import { requireFullSession } from '../../lib/session'
 import { listAppointments, listResources } from './actions'
+import { RealtimeRefresh } from './realtime-refresh'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,13 +57,20 @@ export default async function AgendaPage() {
             Próximos 7 dias — Sprint 03 Faixa C (visão semanal canvas + drag&drop em Faixa D).
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Link
             href="/app/agenda/new"
             className="rounded-md bg-[color:var(--ev-primary)] px-4 py-2 font-medium text-[color:var(--ev-primary-foreground)]"
             style={{ minHeight: 'var(--ev-touch-min, 44px)' }}
           >
             + Agendamento
+          </Link>
+          <Link
+            href="/app/agenda/week"
+            className="rounded-md border border-[color:var(--ev-border)] px-4 py-2"
+            style={{ minHeight: 'var(--ev-touch-min, 44px)' }}
+          >
+            Visão semanal
           </Link>
           <Link
             href="/app/agenda/resources"
@@ -73,6 +81,8 @@ export default async function AgendaPage() {
           </Link>
         </div>
       </header>
+
+      <RealtimeRefresh />
 
       {appointments.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-8 text-center">

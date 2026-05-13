@@ -120,6 +120,39 @@ Consumidor no MVP: UI via Realtime. Financeiro (Sprint 04) consome `appointment.
 
 ## Log
 
+- **2026-05-13 (manhã) — Sprint 03 100% `done` 🟢.** Canvas semanal + Realtime SSE:
+  - **`apps/web/app/app/agenda/week/page.tsx`** — Canvas semanal visão grade:
+    - Layout 7 dias × 13 horas (8h→20h slot 1h). Grid `<table>` responsive com header `Hora` + 7 colunas (Seg→Dom).
+    - Server Component carrega: `appointments` no range (booked/checked_in/cancelled/etc) + `recurring_slots` ativos do tenant
+    - Aplica **`expandRecurring()`** em cada slot recorrente para gerar `VirtualSlot[]` no range da semana
+    - Monta `Cell[][]` 13×7 com `{booked, virtual}` por célula
+    - Renderiza 3 estados de célula: **booked** (cor primary/success conforme status, link `/[id]`), **virtual livre** (border dashed, link new pre-fill startsAt), **vazia** (botão `+` opaco 30%)
+    - Navegação `?start=YYYY-MM-DD` (prev/today/next semana)
+    - `resourceNameById` Map pra exibir nome em cada célula
+    - Botão "Visão semanal" adicionado na header da `/app/agenda` principal
+  - **`packages/db/src/policies/0018_agenda_notify.sql`** — PG NOTIFY trigger:
+    - Function `agenda_notify_change()` em `AFTER INSERT/UPDATE/DELETE` de appointments
+    - Emite `pg_notify('agenda:{tenant_id}', jsonb {event, appointment_id, tenant_id, resource_id, member_id, status, starts_at})`
+    - Events: `appointment.created`, `appointment.updated`, `appointment.status_changed`, `appointment.deleted`
+  - **`apps/web/app/api/realtime/agenda/route.ts`** — endpoint SSE:
+    - `runtime: 'nodejs'` (pg requer não-Edge)
+    - `requireFullSession` → `channel = 'agenda:{tenantId}'` (cliente não escolhe canal — defesa em profundidade)
+    - Acquire pg client + `LISTEN <channel>` + propaga `'notification'` events do pg pra ReadableStream
+    - Keep-alive ping a cada 25s (HTTP/1.1 proxy timeout 30s)
+    - `request.signal.addEventListener('abort')` libera client + UNLISTEN no client disconnect
+    - Headers: `text/event-stream` + `Cache-Control: no-cache, no-transform` + `X-Accel-Buffering: no`
+  - **`apps/web/app/app/agenda/realtime-refresh.tsx`** — client component listener:
+    - `'use client'` + `useEffect` cria `EventSource('/api/realtime/agenda')`
+    - Listener `'agenda'` event → `router.refresh()` (re-renderiza RSC com dados atualizados)
+    - Plugado em `/app/agenda/page.tsx` + `/app/agenda/week/page.tsx`
+    - Browser auto-reconecta se SSE cai (~3s)
+  - **`apps/web/app/app/agenda/page.tsx`** — botão "Visão semanal" + `<RealtimeRefresh />` plugado.
+  - **policy 0018** aplicada local via `db:migrate` (idempotente).
+
+  **Validações:** typecheck ✅; build `@app/web` ✓ — **6 rotas agenda** (era 5, +`/app/agenda/week` 1.7kB); `db:rls-check` 3 regras OK em 36 tabelas.
+
+  **Sprint 03 a 100% `done` ✅.** Pendência única: drag&drop full canvas + dragover preview adiado pra Sprint 04+ (UX nice-to-have, sem dor real MVP). Realtime testável via 2 abas: criar appointment em tab A → tab B atualiza sem reload em <1s.
+
 - **2026-05-13 (madrugada+) — Faixa D parcial entregue 🟢 (Sprint 03 a 90%).** ADR + RRULE expand + widget:
   - **[ADR 0012](../decisions/0012-agenda-recurso-slot-recorrente-exclude.md)** publicado — "Agenda como recurso + slot recorrente lazy + EXCLUDE constraint". Detalha modelo de 4 tabelas, escolha entre materializar vs. lazy (~73000× menos rows), EXCLUDE constraint para garantia atômica sem lock pessimista, particionamento adiado pra Sprint 04+, Realtime via PG LISTEN/NOTIFY sem Supabase.
   - **`packages/db/src/agenda/expand-recurring.ts`** — helper `expandRecurring({rrule, startTime, endTime, range})` via **rrule.js**:
