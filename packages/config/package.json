@@ -6,16 +6,21 @@
   "type": "module",
   "exports": {
     "./tsconfig.base.json": "./tsconfig.base.json",
-    "./vitest.base": "./vitest.base.ts"
+    "./vitest.base": "./vitest.base.ts",
+    "./playwright-viewports": "./playwright-viewports.ts",
+    "./playwright-locales": "./playwright-locales.ts"
   },
   "files": [
     "tsconfig.base.json",
-    "vitest.base.ts"
+    "vitest.base.ts",
+    "playwright-viewports.ts",
+    "playwright-locales.ts"
   ],
   "peerDependencies": {
     "vitest": "^2.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "vitest": "^2.1.5"
   }
 }

@@ -6,6 +6,49 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 00b 100% (`done`): Faixas B + D — swipe mobile + footer expandido + logout 2026-05-12
+
+Faixas B (swipe gesture + tenant logo header) e D (footer expandido com avatar/email/logout + E2E Playwright spec) entregues. Sprint 00b sobe de 60% → **100% (`done`)**.
+
+**Adições:**
+
+- **`packages/ui/src/menu/app-shell.tsx`** — Faixa B:
+  - **Swipe gesture mobile** via `useEffect` com `touchstart`/`touchend`. Inicia rastreio se touch < 20px da borda esquerda (abrir) OU menu aberto (fechar). Threshold 50px horizontal + descarta se vertical > horizontal (anti-conflito com scroll). Bloqueado por `matchMedia('(max-width: 1024px)')` — desktop usa só ☰ + Ctrl/Cmd+B.
+  - **Tenant logo no header**: quadrado 32×32 com `--ev-primary` + inicial do tenantName. Substitui `userName` por `userEmail` na linha secundária do header.
+  - **Ellipsis em texto longo** (`overflow:hidden` + `textOverflow:ellipsis` + `whiteSpace:nowrap`) em ambos header + footer — tenants com nome longo não quebram layout.
+- **`packages/ui/src/menu/app-shell.tsx`** — Faixa D:
+  - **Footer expandido**: avatar circular 40×40 com inicial do user, email + tenant abaixo (ellipsis).
+  - **Botão Sair**: full-width + minHeight 44px (touch target regra 31). `handleSignOut` faz `fetch(signOutUrl, { method: 'POST', credentials: 'include' })` + `window.location.href = postSignOutUrl`. Estado `signingOut` desabilita durante request. Props customizáveis: `signOutUrl` default `/api/auth/sign-out`, `postSignOutUrl` default `/login`.
+- **`apps/web/e2e/smoke/sidemenu-responsive.spec.ts`** — **5 specs Playwright em 3 viewports** (mobile 390 / tablet 768 / desktop 1280, regra 31). Marcados `test.fixme()` até `loginAs()` auth helper aterrissar (Sprint 04+ custom roles UI traz). Cobre: trigger touch 44px, click abre menu, Esc fecha + restaura foco, footer com avatar/email/Sair, logout redirect /login.
+
+**Atualizações:**
+
+- **`apps/web/app/app/layout.tsx`** — passa `userEmail = session.user.email` ao `<AppShell>`.
+- **`apps/web/src/messages/{pt-BR,en-US,es-419}/nav.json`** — chaves `footer.sign_out` + `footer.signing_out` nos 3 locales.
+- **`packages/config/package.json`** — `playwright-viewports.ts` + `playwright-locales.ts` adicionados aos `exports` (era export interno, `@app/web` precisa pro spec novo).
+
+**Validação manual via Chrome MCP (commit ef5b4c7 + fd5b4e1 + este):**
+
+| Item | Resultado |
+|---|---|
+| Header: avatar "A" + tenant + email | ✅ |
+| Click ☰ abre overlay com translateX(0) | ✅ |
+| Esc fecha + restaura foco no trigger | ✅ (testado manualmente Faixa A) |
+| Footer: avatar circular + email + tenant + Sair | ✅ |
+| Click Sair → POST /api/auth/sign-out → redirect /login | ✅ (cookie limpo, form em branco) |
+| 25 permissions filtradas → 3 módulos visíveis no menu | ✅ (Faixa C) |
+| typecheck 11/11 ✅ | OK |
+
+**Lições documentadas:**
+
+1. **Swipe gesture** sem bibliotecas externas é trivial em ~30 linhas: `touchstart`/`touchend` no `window`, calcula `dx = endX - startX`, threshold 50px + descarte vertical-dominant. Reusável em Sprint 03+ para gestures de cards.
+2. **Botão de logout em componente UI cliente** não precisa Server Action — `fetch` ao endpoint BetterAuth com `credentials: 'include'` resolve em 1 round-trip. `window.location.href` evita race entre Next router cache e cookie invalidado.
+3. **Avatar circular com inicial** é placeholder respeitável até design system ter logos uploadáveis. Apoia regra 44 (Equilíbrio Vital) usando `--ev-primary` + contraste `--ev-primary-foreground`.
+4. **`test.fixme()` em Playwright** é honesto: marca o teste como reconhecido + pendente sem fazer skip silencioso. Sprint 04+ destrava removendo `.fixme`.
+5. **Ellipsis em CSS** com 3 propriedades (`overflow:hidden` + `text-overflow:ellipsis` + `white-space:nowrap`) é defesa contra dados de produção que estouram layouts (tenant `"Rede Equilíbrio Vital — Filial Centro Sul Paulista"` não quebra header).
+
+**Sprint 00b `done` ✅.** Único pendente é E2E rodar (auth helper Sprint 04+); specs já escritos.
+
 ### Build — Sprint 00b 60%: Filtragem RBAC viva via list_user_permissions (Faixa C) 2026-05-12
 
 Faixa C do Sprint 00b. SQL function `list_user_permissions()` + customSession agrega permissions + AppShell filtra real. Sprint 00b sobe de 40% para 60%.

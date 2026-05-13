@@ -11,7 +11,7 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 | # | Sprint | Funcionalidade | Status | Início | Fim | % | Bloqueios | PR |
 |---|---|---|---|---|---|---|---|---|
 | 1 | [00](sprints/00-setup-infra.md) | Setup de infra (monorepo, CI, observabilidade, componentes base responsivos) | **done***  | 2026-04-27 | 2026-05-12 | 97 | — | — |
-| 1b | [00b](sprints/00b-menu-lateral.md) | **Menu lateral (SideMenu hamburger overlay + registry por módulo + filtro permission/vertical/consent)** | **doing** | 2026-05-12 | — | 60 | Faixa A entregue (foundation completo); Faixa C entregue (has_permission RPC via list_user_permissions); Faixas B/D restantes (swipe mobile + tenant logo / footer expandido + E2E Playwright) | — |
+| 1b | [00b](sprints/00b-menu-lateral.md) | **Menu lateral (SideMenu hamburger overlay + registry por módulo + filtro permission/vertical/consent)** | **done** | 2026-05-12 | 2026-05-12 | 100 | Faixas A/B/C/D entregues; E2E Playwright spec ficou em `test.fixme` aguardando auth helper (Sprint 04+) | — |
 | 2 | [01a](sprints/01a-identidade-e-topology.md) | Identidade + Topology (groups/tenants/companies/units + RLS raiz) | **done** | 2026-05-12 | 2026-05-12 | 100 | — | — |
 | 3 | [01b](sprints/01b-rbac-e-consent.md) | RBAC com scope + grants diretos + Consent LGPD | **doing** | 2026-05-12 | — | 75 | restantes 25% ativam sprints futuros (custom roles UI, Comitê IA, PAM, contador, data_subject_requests) | — |
 | 4 | [02](sprints/02-geral-crm-pessoas.md) | CRM unificado (members + timeline + dashboard do member) | **doing** | 2026-05-12 | — | 70 | passaporte completo + portal /meu adiados pra Sprint 11/26; cadastro proativo + WhatsApp invite adiados pra Sprint 02 fechamento / Sprint 13 | — |

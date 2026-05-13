@@ -29,6 +29,8 @@ interface AppShellProps {
   userName: string
   tenantId: string
   tenantName: string
+  /** Sprint 00b Faixa B — Email do user (BetterAuth user.email). Footer expandido exibe. */
+  userEmail?: string
   activeVerticals: Vertical[]
   /**
    * Lista pré-computada de permission_key ativas do user (set lookup O(1)).
@@ -44,6 +46,10 @@ interface AppShellProps {
   currentPath: string
   /** I18n: ((key) => label). Server passa next-intl getTranslations resultado serializado. */
   labels: Record<string, string>
+  /** Sprint 00b Faixa D — URL pra signout (default /api/auth/sign-out, BetterAuth). */
+  signOutUrl?: string
+  /** Sprint 00b Faixa D — URL pra onde redirecionar após signout (default /login). */
+  postSignOutUrl?: string
   children: React.ReactNode
 }
 
@@ -53,12 +59,15 @@ export function AppShell({
   userId,
   userName,
   tenantName,
+  userEmail,
   activeVerticals,
   permissionKeys,
   featureFlags = [],
   modules,
   currentPath,
   labels,
+  signOutUrl = '/api/auth/sign-out',
+  postSignOutUrl = '/login',
   children,
 }: AppShellProps) {
   const [open, setOpen] = useState(false)
@@ -117,6 +126,49 @@ export function AppShell({
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // Sprint 00b Faixa B — Swipe gesture mobile.
+  // Abre: touchstart na borda esquerda (x < 20px), swipe direita ≥ 50px → setOpen(true)
+  // Fecha: touchstart com menu aberto, swipe esquerda ≥ 50px → setOpen(false)
+  // Desktop não usa swipe (matchMedia bloqueia). Threshold 50px evita falso positivo de scroll.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    let startX = 0
+    let startY = 0
+    let tracking = false
+
+    function onTouchStart(e: TouchEvent) {
+      const isMobile = window.matchMedia('(max-width: 1024px)').matches
+      if (!isMobile) return
+      const t = e.touches[0]
+      if (!t) return
+      // Só rastreia: borda esquerda (abrir) ou menu aberto (fechar)
+      const fromEdge = t.clientX < 20
+      if (fromEdge || open) {
+        startX = t.clientX
+        startY = t.clientY
+        tracking = true
+      }
+    }
+    function onTouchEnd(e: TouchEvent) {
+      if (!tracking) return
+      tracking = false
+      const t = e.changedTouches[0]
+      if (!t) return
+      const dx = t.clientX - startX
+      const dy = Math.abs(t.clientY - startY)
+      // Ignora gesto se mais vertical que horizontal (provavelmente scroll)
+      if (dy > Math.abs(dx)) return
+      if (dx > 50 && !open) setOpen(true)
+      else if (dx < -50 && open) setOpen(false)
+    }
+    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    window.addEventListener('touchend', onTouchEnd, { passive: true })
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [open])
+
   // Focus trap quando aberto
   useEffect(() => {
     if (!open || !menuRef.current) return
@@ -164,6 +216,32 @@ export function AppShell({
 
   const label = (key: string): string => labels[key] ?? key
 
+  // Sprint 00b Faixa B/D — Inicial pra avatar circular (placeholder até design system ter logo).
+  const initial = (text: string): string => {
+    const trim = text.trim()
+    if (!trim) return '?'
+    const ch = trim[0]
+    return ch ? ch.toUpperCase() : '?'
+  }
+
+  // Sprint 00b Faixa D — logout via BetterAuth POST /api/auth/sign-out.
+  const [signingOut, setSigningOut] = useState(false)
+  async function handleSignOut() {
+    if (signingOut) return
+    setSigningOut(true)
+    try {
+      await fetch(signOutUrl, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+    } catch {
+      /* swallow — redirect mesmo se request falhar */
+    }
+    window.location.href = postSignOutUrl
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* HEADER */}
@@ -200,15 +278,46 @@ export function AppShell({
         >
           {'☰'}
         </button>
+        {/* Sprint 00b Faixa B — Tenant avatar/logo placeholder (inicial). */}
+        <div
+          aria-hidden="true"
+          style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
+            backgroundColor: 'var(--ev-primary)',
+            color: 'var(--ev-primary-foreground, white)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 700,
+            fontSize: 'var(--ev-text-sm)',
+          }}
+        >
+          {initial(tenantName)}
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-          <span style={{ fontWeight: 600, fontSize: 'var(--ev-text-base)' }}>{tenantName}</span>
+          <span
+            style={{
+              fontWeight: 600,
+              fontSize: 'var(--ev-text-base)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {tenantName}
+          </span>
           <span
             style={{
               fontSize: 'var(--ev-text-xs)',
               color: 'var(--ev-text-muted)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
           >
-            {userName}
+            {userEmail ?? userName}
           </span>
         </div>
       </header>
@@ -351,18 +460,87 @@ export function AppShell({
           ))}
         </ul>
 
-        {/* Footer placeholder — Faixa D entrega avatar/tenant-switch/logout completos */}
+        {/* Sprint 00b Faixa D — Footer com avatar + email + logout. */}
         <div
           style={{
             padding: 'var(--ev-space-4)',
             borderTop: '1px solid var(--ev-border)',
-            fontSize: 'var(--ev-text-xs)',
-            color: 'var(--ev-text-muted)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--ev-space-3)',
           }}
         >
-          {label('nav.footer.session_for')} <strong>{userName}</strong>
-          <br />
-          {tenantName}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--ev-space-3)' }}>
+            <div
+              aria-hidden="true"
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--ev-primary)',
+                color: 'var(--ev-primary-foreground, white)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: 'var(--ev-text-base)',
+                flexShrink: 0,
+              }}
+            >
+              {initial(userName)}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                minWidth: 0,
+                flex: 1,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 'var(--ev-text-sm)',
+                  fontWeight: 600,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {userEmail ?? userName}
+              </span>
+              <span
+                style={{
+                  fontSize: 'var(--ev-text-xs)',
+                  color: 'var(--ev-text-muted)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {tenantName}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            style={{
+              width: '100%',
+              minHeight: 'var(--ev-touch-min, 44px)',
+              padding: 'var(--ev-space-2) var(--ev-space-3)',
+              borderRadius: 'var(--ev-radius-md, 6px)',
+              border: '1px solid var(--ev-border)',
+              backgroundColor: 'transparent',
+              color: 'var(--ev-text)',
+              cursor: signingOut ? 'wait' : 'pointer',
+              fontSize: 'var(--ev-text-sm)',
+              fontWeight: 500,
+              opacity: signingOut ? 0.6 : 1,
+            }}
+          >
+            {signingOut ? label('nav.footer.signing_out') : label('nav.footer.sign_out')}
+          </button>
         </div>
       </nav>
 

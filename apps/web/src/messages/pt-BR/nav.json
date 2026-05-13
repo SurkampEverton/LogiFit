@@ -5,7 +5,9 @@
     "label": "Navegação principal"
   },
   "footer": {
-    "session_for": "Sessão de"
+    "session_for": "Sessão de",
+    "sign_out": "Sair",
+    "signing_out": "Saindo…"
   },
   "modules": {
     "inicio": "Início",

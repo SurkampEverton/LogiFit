@@ -152,6 +152,22 @@ Telemetria PostHog:
 
 ## Log
 
+- **2026-05-12 (final do dia +) — Faixas B + D entregues 🟢 (Sprint 00b a 100% — `done`).** Polish + logout:
+  - **`packages/ui/src/menu/app-shell.tsx`** — adições:
+    - **Faixa B: swipe gesture mobile**. `useEffect` registra `touchstart`/`touchend` no `window`. Inicia rastreio se touch < 20px da borda esquerda (abrir) OU menu já aberto (fechar). Threshold 50px no eixo X + descarta se vertical > horizontal (evita conflito com scroll). Funciona via `matchMedia('(max-width: 1024px)')` — desktop ignora.
+    - **Faixa B: avatar do tenant no header**. Quadrado 32×32 com borderRadius 8, fundo `--ev-primary`, texto branco com inicial do `tenantName`. Header substitui exibição de `userName` por `userEmail` (passado novo prop `userEmail?`).
+    - **Faixa B: ellipsis em texto longo**. Header + footer com `overflow:hidden + textOverflow:ellipsis + whiteSpace:nowrap` em strings longas (tenant grande não quebra layout).
+    - **Faixa D: footer com avatar circular**. 40×40 borderRadius 50%, inicial do user, fundo primary. Email + tenant abaixo.
+    - **Faixa D: botão Sair**. Botão width 100% + minHeight 44px (touch target regra 31). Handler `handleSignOut` faz `fetch(signOutUrl, { method: 'POST', credentials: 'include' })` + redirect `window.location.href = postSignOutUrl`. Estado `signingOut` desabilita botão durante request. Props customizáveis (`signOutUrl` default `/api/auth/sign-out`, `postSignOutUrl` default `/login`).
+  - **`apps/web/app/app/layout.tsx`** — passa `userEmail = session.user.email` ao `<AppShell>`.
+  - **`apps/web/src/messages/{pt-BR,en-US,es-419}/nav.json`** — chaves `footer.sign_out` + `footer.signing_out` em 3 locales.
+  - **`apps/web/e2e/smoke/sidemenu-responsive.spec.ts`** — 5 specs Playwright em 3 viewports (390/768/1280) marcados `test.fixme()` até `loginAs()` auth helper aterrissar (Sprint 04+ custom roles UI traz). Cobre: trigger 44px touch, click abre menu, Esc fecha + restaura foco, footer com Sair, logout redirect /login.
+  - **`packages/config/package.json`** — `playwright-viewports.ts` + `playwright-locales.ts` adicionados aos exports do package (era export interno, `@app/web` precisa pra spec).
+
+  **Validação manual via Chrome MCP:** login admin+rede → header com avatar "A" + email + tenant ✅; ☰ abre overlay; footer com avatar circular "A" + email + tenant + botão Sair ✅; click Sair → fetch /api/auth/sign-out → redirect /login com form em branco (cookie limpo) ✅. typecheck 11/11 verde.
+
+  **Sprint 00b a 100% — `done`.** Único pendente é E2E rodar real (depende `loginAs()` helper Sprint 04+; specs já escritos com `test.fixme`).
+
 - **2026-05-12 (final do dia) — Faixa C entregue 🟢 (Sprint 00b a 60%).** Filtragem RBAC viva:
   - **`packages/db/src/policies/0016_list_user_permissions.sql`** — function SQL `list_user_permissions(user_id, tenant_id) RETURNS text[]`. `SECURITY DEFINER` + `STABLE`. Union DISTINCT de `user_roles → role_permissions` + `user_permission_grants` ativos (respeita `expires_at`/`revoked_at` de Sprint 01b D.6). Resolve N+1 do `has_permission()` quando UI precisa de lista completa. Smoke test: admin Rede tenant_owner retorna 25 permissions canônicas em 1 round-trip.
   - **`packages/auth/src/server.ts`** — `customSession` callback agrega `permissions: text[]` via `authDb.execute(SELECT list_user_permissions(...))`. Memoizado no claim de sessão até logout → admin que mexer em role/grant precisa user fazer reauth (Sprint 04+ refresh via Redis pub/sub se virar dor).

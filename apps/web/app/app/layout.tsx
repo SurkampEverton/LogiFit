@@ -60,10 +60,14 @@ export default async function AppAreaLayout({ children }: { children: ReactNode 
   // session.logifit.permissions. AppShell filtra items por `has(key)`.
   const permissionKeys = claims.permissions
 
+  // Sprint 00b Faixa D — Email do BetterAuth user (header avatar + footer)
+  const userEmail = session.user.email ?? undefined
+
   return (
     <AppShell
       userId={claims.userId}
       userName={claims.username}
+      userEmail={userEmail}
       tenantId={claims.tenantId}
       tenantName={claims.tenantName}
       activeVerticals={activeVerticals}

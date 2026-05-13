@@ -5,7 +5,9 @@
     "label": "Main navigation"
   },
   "footer": {
-    "session_for": "Signed in as"
+    "session_for": "Signed in as",
+    "sign_out": "Sign out",
+    "signing_out": "Signing out…"
   },
   "modules": {
     "inicio": "Home",
