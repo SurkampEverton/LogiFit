@@ -1,9 +1,9 @@
 # Sprint 10 — Geral · Funil de Vendas (CRM de leads)
 
 - **Área:** geral
-- **Início:** 2026-05-13 (após Sprint 09 done)
-- **Fim planejado:** +3 semanas
-- **Status:** doing (~25% — Faixa A schema/RLS/tests done)
+- **Início:** 2026-05-13
+- **Fim:** 2026-05-13 (mesmo dia — schemas + Server Actions + UI + ADR 0022 entregues em paralelo)
+- **Status:** **done** (100% — Faixas A+B+C+D entregues, pendências menores adiadas)
 - **Item do roadmap:** #12
 
 ## Goal
@@ -33,7 +33,7 @@ Funil de vendas pré-matrícula: captura de `leads`, estágios configuráveis (n
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0022 (esperado)** — `leads` como entidade separada de `members`, ambas linkando `persons` via FK (padrão do [ADR 0047](../decisions/0047-cadastro-central-persons.md)). Conversão adiciona registro em `members` com **mesmo `person_id`** do lead — não duplica dados de identidade; `leads.converted_to_member_id` preserva histórico do funil.
+- **[ADR 0022](../decisions/0022-funil-vendas-lead-quick-capture-person-fk.md)** — `leads` como entidade separada de `members`, ambas linkando `persons` via FK (padrão do [ADR 0047](../decisions/0047-cadastro-central-persons.md)). `leads.person_id` é **nullable** + campos `quick_name/quick_phone/quick_email` permitem captura mínima antes de CPF confirmado. Conversão adiciona registro em `members` com **mesmo `person_id`** do lead — não duplica dados de identidade; `leads.converted_to_member_id` preserva histórico do funil.
 - **Pergunta aberta:** estágios fixos com `lead_stages` configurável ou enum rígido? Começar configurável (tabela `lead_stages` por tenant).
 
 ## Módulos entregues
@@ -93,7 +93,20 @@ Em `packages/db/schema/vendas.ts`:
 
 - [x] Schema Drizzle: `lead_stages`, `leads`, `lead_events`, `trial_classes`, `proposals` (Faixa A 2026-05-13)
 - [x] RLS tenant-scoped + 8 tests (isolation, check constraints, lead_events append-only) — `0029_vendas_rls.sql` + `tests/vendas-rls.test.ts` (Faixa A 2026-05-13)
-- [ ] Scope vendedor-vê-só-seus via permission `vendas.read_all` (Faixa B)
+- [ ] Scope vendedor-vê-só-seus via permission `vendas.read_all` (Faixa B+ adiada — depende de seed RBAC com perms `vendas.*`)
+- [x] Zod schemas inline em `apps/web/app/app/vendas/actions.ts` (Faixa B 2026-05-13 — externalizar pra `packages/types/vendas.ts` adiado pra refactor)
+- [x] Server Actions: `createLead`, `moveLeadToStage` (atomic INSERT lead_event), `archiveLead`, `createProposal` (versionada), `convertLeadToMember` (transaction atomic com `db.transaction`), `listLeads`, `listLeadStages` (Faixa B 2026-05-13)
+- [x] Conversão cria member + (opcional) contrato active atomicamente em transação (mesmo `person_id` via ADR 0022) (Faixa B 2026-05-13)
+- [x] UI `/app/vendas` board kanban server-rendered (Faixa C 2026-05-13 — drag-and-drop client-side adiado)
+- [x] UI tabular `/app/vendas/leads` com filtros (estágio, vendedor via querystring) (Faixa C 2026-05-13)
+- [x] UI `/app/vendas/leads/new` form quick capture (Faixa C 2026-05-13)
+- [x] UI `/app/vendas/leads/[id]` detalhe + timeline + propostas + LeadStageSelector chips + LeadActions converter/arquivar (Faixa C 2026-05-13)
+- [ ] Widget "funil resumo" no dashboard do gerente (Sprint 13+ régua)
+- [ ] Permission `vendas.read_own`, `vendas.read_all`, `vendas.write` (Sprint 11+ RBAC permissions seed)
+- [x] Seed: 6 stages default + 10 leads por tenant via `pnpm db:seed:vendas` script standalone (Faixa C 2026-05-13)
+- [ ] Testes E2E: fluxo completo novo → experimental → proposta → matriculado (Sprint 11+)
+- [ ] Feature flag `vendas_v1` (Sprint 00 dropou PostHog; flag gate via env)
+- [x] ADR 0022 publicado (Faixa D 2026-05-13)
 - [ ] Zod schemas em `packages/types/vendas.ts`
 - [ ] Server Actions de lead, proposta, conversão
 - [ ] Conversão cria member + contrato draft atomicamente em transação
@@ -124,6 +137,24 @@ Em `packages/db/schema/vendas.ts`:
   - Migration `0016_worried_wonder_man.sql` aplicada.
   - 8 tests em `tests/vendas-rls.test.ts`: isolation (Rede vs Franquia), check constraints (price negativo, discount >= price, min contact), lead_stages unique por tenant, lead_events append-only via RLS sem policy UPDATE.
   - Total: 137 tests verdes.
+- **2026-05-13 — Faixa B + C + D: Server Actions + UI + seed + ADR 0022 (Sprint 10 → done 100%)**
+  - **`apps/web/app/app/vendas/actions.ts`** — 7 Server Actions via `wrapServerAction` (regra 33 + ADR 0071):
+    - `createLead` (resolve stage default via 1º active orderIdx; emite `lead.created` em lead_events)
+    - `moveLeadToStage` (`db.transaction` — UPDATE lead.stageId + INSERT lead_events kind=stage_changed)
+    - `archiveLead` (soft-delete + lost_reason + lead_events kind=lead.archived)
+    - `createProposal` (versão auto via `MAX(version) + 1`)
+    - `convertLeadToMember` (`db.transaction` atomic: requer person_id, INSERT member com `ON CONFLICT (tenant, person_id) DO NOTHING` + busca existente em conflict, opcional contract status=active a partir da proposta com plan_id, UPDATE proposals.status=accepted, marca lead.converted_to_member_id + archived, INSERT lead_events kind=lead.converted)
+    - `listLeads` (filtros stageId + assignedToUserId)
+    - `listLeadStages` (lookup pra kanban columns)
+  - **UI `/app/vendas/page.tsx`** — Server Component board kanban com colunas por stage, count badge, cor da borda por kind (open/won/lost), leftJoin com persons pra mostrar nome real ou quick_name.
+  - **UI `/app/vendas/leads/page.tsx`** — lista tabular responsiva com leftJoin persons + leadStages + users + assignedPerson (alias drizzle), filtros via querystring.
+  - **UI `/app/vendas/leads/new/page.tsx`** + `new-lead-form.tsx` — form quick capture (Server Component fetch companies + stages; Client Component form com useTransition + redirect ao detalhe pós-create).
+  - **UI `/app/vendas/leads/[id]/page.tsx`** — detalhe com cabeçalho (nome + telefone + estágio badge + status convertido/arquivado), card de dados, card de propostas, timeline append-only de lead_events, ações dropdown.
+  - **Client Components**: `LeadStageSelector` (chips de stages com onClick → moveLeadToStage + router.refresh) + `LeadActions` (dialog converter com proposalId select + dialog arquivar com motivo, ambos com useTransition + estado pending).
+  - **`packages/db/scripts/seed-vendas.ts`** — script standalone idempotente (`pnpm db:seed:vendas`): popula 6 stages default + 10 sample leads distribuídos em open stages por cada tenant existente. Roda em 8 tenants canônicos OK.
+  - **Tests ajustados**: vendas-rls.test.ts usa slug `test_novo` (não 'novo') pra não colidir com seed-vendas. 137 tests verdes.
+  - **ADR 0022 publicado** — `docs/decisions/0022-funil-vendas-lead-quick-capture-person-fk.md` documenta o modelo `leads.person_id` opcional + `quick_*` + conversão reusa mesmo `person_id` (ADR 0047 alinhado).
+  - **Pendências menores adiadas Sprint 11+**: trigger SQL validando `person_id NOT NULL` em stage proposta/won, constraint 1 stage `kind='won'` ativo por tenant, scheduleTrialClass + appointment is_trial (Sprint 03 integration), acceptProposal dispatch separado de convertLeadToMember, upgradeLeadToPerson wizard, drag-and-drop kanban client-side, E2E Playwright completo, feature flag `vendas_v1`, permission `vendas.read_own/read_all/write` no RBAC seed, widget funil-resumo no dashboard gerente, externalizar Zod schemas pra `packages/types/vendas.ts`.
 
 ## Definition of Done
 

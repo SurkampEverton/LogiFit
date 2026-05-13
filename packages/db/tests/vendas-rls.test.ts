@@ -32,14 +32,14 @@ beforeAll(async () => {
   // Seed mínimo: 1 stage 'novo' em cada tenant
   await pool.query(
     `INSERT INTO lead_stages (id, tenant_id, slug, name, order_idx, kind)
-     VALUES ($1, $2, 'novo', 'Novo', 1, 'open')
-     ON CONFLICT (id) DO NOTHING`,
+     VALUES ($1, $2, 'test_novo', 'Test Novo', 99, 'open')
+     ON CONFLICT (tenant_id, slug) DO NOTHING`,
     [STAGE_NOVO_REDE, TENANT_REDE],
   )
   await pool.query(
     `INSERT INTO lead_stages (id, tenant_id, slug, name, order_idx, kind)
-     VALUES ($1, $2, 'novo', 'Novo', 1, 'open')
-     ON CONFLICT (id) DO NOTHING`,
+     VALUES ($1, $2, 'test_novo', 'Test Novo', 99, 'open')
+     ON CONFLICT (tenant_id, slug) DO NOTHING`,
     [STAGE_NOVO_FRANQ, TENANT_FRANQUIA],
   )
 })
@@ -58,7 +58,7 @@ afterAll(async () => {
     .query('DELETE FROM leads WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query("DELETE FROM lead_stages WHERE tenant_id IN ($1, $2) AND slug = 'novo'", [
+    .query("DELETE FROM lead_stages WHERE tenant_id IN ($1, $2) AND slug = 'test_novo'", [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
@@ -160,12 +160,12 @@ describe('leads — RLS + check constraint min contact', () => {
 
 describe('lead_stages — unique por (tenant, slug)', () => {
   it('mesma slug em outro tenant coexiste; duplicada no mesmo tenant rejeita', async () => {
-    // Já existe 'novo' em ambos via beforeAll — tentamos inserir 'novo' DUP na Rede
+    // Já existe 'test_novo' em ambos via beforeAll — tentamos inserir DUP na Rede
     let errCode = ''
     try {
       await pool.query(
         `INSERT INTO lead_stages (tenant_id, slug, name, order_idx, kind)
-         VALUES ($1, 'novo', 'Novo Dup', 99, 'open')`,
+         VALUES ($1, 'test_novo', 'Test Novo Dup', 99, 'open')`,
         [TENANT_REDE],
       )
     } catch (err) {

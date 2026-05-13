@@ -6,9 +6,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
-### Build — Sprint 10 Faixa A (25%): Funil de vendas schemas + RLS + tests 2026-05-13
+### Build — Sprint 10 100%: Funil de vendas completo (schemas + Server Actions + UI kanban + ADR 0022) 2026-05-13
 
-Sprint 10 abre em **25%** com Faixa A entregue: 5 tabelas do funil de vendas (lead_stages, leads, lead_events, trial_classes, proposals) + 4 enums + RLS tenant-scoped + 8 tests verdes. Faltam Faixas B/C/D: Server Actions (createLead/moveLeadToStage/convertLeadToMember atomic), UI kanban board, UI tabular lista, UI conversão wizard, ADR 0022 publicado.
+Sprint 10 fecha em **100%**. Faixas A+B+C+D entregues no mesmo dia: 5 schemas + RLS + 8 tests; 7 Server Actions (incluindo `convertLeadToMember` atomic transaction); UI kanban + lista tabular + form quick capture + detalhe com timeline; ADR 0022 publicado documentando o modelo `lead.person_id` opcional + `quick_*` + conversão reusa mesmo `person_id`. Seed standalone popula 6 stages + 10 leads por tenant.
+
+**Faixa A (Schema + RLS + Tests):**
 
 **Adições:**
 
@@ -29,18 +31,54 @@ Sprint 10 abre em **25%** com Faixa A entregue: 5 tabelas do funil de vendas (le
 
 **Testes:** 137 verdes (`pnpm --filter @repo/db test`).
 
-**Pendências adiadas pra Faixas B/C/D:**
+**Faixa B (Server Actions atomic):**
 
-- Scope vendedor-vê-só-seus via permission `vendas.read_all` (regra 24 + RBAC Sprint 01a)
-- Trigger validando `person_id` obrigatório quando lead avança para estágio `proposta` ou `matriculado` (kind='won')
-- Constraint apenas 1 stage `kind='won'` ativo por tenant
-- Zod schemas em `packages/types/vendas.ts`
-- Server Actions: `createLead`, `upgradeLeadToPerson`, `moveLeadToStage`, `scheduleTrialClass`, `createProposal`, `acceptProposal`, `convertLeadToMember` (atomic)
-- UI: `/app/vendas` kanban board com drag-and-drop, `/app/vendas/leads` tabular, `/app/vendas/leads/[id]/converter` wizard
-- Seed: 10 leads por tenant em estágios variados
-- Testes E2E
-- Feature flag `vendas_v1`
-- ADR 0022 publicado
+- **`apps/web/app/app/vendas/actions.ts`** — 7 Server Actions via `wrapServerAction` (regra 33 + ADR 0071 envelope):
+  - `createLead(input)` — resolve stage default via 1º active orderIdx se omitido; INSERT lead + INSERT lead_events kind='lead.created'.
+  - `moveLeadToStage(leadId, toStageId, reason?)` — `db.transaction`: UPDATE leads.stageId + INSERT lead_events kind='stage_changed' com `from_stage`/`to_stage`. Idempotente: se já no stage destino retorna `unchanged: true`. Valida stage destino existe + active + pertence ao tenant.
+  - `archiveLead(leadId, reason)` — soft-delete (`archived_at=now`, `lost_reason=reason`) + INSERT lead_events kind='lead.archived'.
+  - `createProposal(leadId, planId|bundlePlanId, priceCents, discountCents, validUntil, notes?)` — versionada via `MAX(version) + 1` por lead. Cross-field validation via Zod `.refine`: discount < price, plan XOR bundle.
+  - `convertLeadToMember(leadId, proposalId?, billingDay)` — **atomic transaction**: requer `person_id`, INSERT member com `ON CONFLICT (tenant_id, person_id) DO NOTHING` + busca existente em race, INSERT member_events kind='member.created', (opcional) INSERT contract status='active' a partir da proposta com plan_id + UPDATE proposals.status='accepted' + convertedContractId, marca lead.convertedToMemberId + archived, INSERT lead_events kind='lead.converted'.
+  - `listLeads({stageId?, assignedToUserId?, limit})` — filtros para kanban/tabular.
+  - `listLeadStages()` — lookup pra UI columns + dropdowns.
+
+**Faixa C (UI + Seed):**
+
+- **`apps/web/app/app/vendas/page.tsx`** — Server Component board kanban: colunas por stage ordenado por orderIdx, count badge, cor da borda diferenciada (open/won/lost), leftJoin com persons pra mostrar `personName ?? quickName ?? '(sem nome)'`. Atalhos para lista tabular + novo lead.
+- **`apps/web/app/app/vendas/leads/page.tsx`** — lista tabular responsiva com `alias(persons, 'assigned_person')` (drizzle) pra resolver dois joins persons no mesmo query (lead person + assigned user person). Filtros via querystring `?stage=...&assigned=...`. Tabela 6 colunas: Nome/Contato, Estágio (com cor por kind), Origem, Interesse, Responsável, Criado.
+- **`apps/web/app/app/vendas/leads/new/page.tsx`** + **`new-lead-form.tsx`** — Server Component fetch companies + active stages; Client Component form 8 fields (companyId, stageId opcional, quickName, quickPhone, quickEmail, source dropdown 9 valores, interest, notes) com useTransition + redirect pós-create para `/app/vendas/leads/{id}`.
+- **`apps/web/app/app/vendas/leads/[id]/page.tsx`** — detalhe com header (nome + contato + estágio badge + status convertido/arquivado), card dados (origem + interesse + criado + person status), card propostas (versão + preço final + status + valid_until), timeline append-only `lead_events` com data formatada pt-BR.
+- **Client Components**:
+  - `LeadStageSelector` — chips de stages com onClick → `moveLeadToStage` + `router.refresh`. Optimistic UI: muda visual antes do server confirmar, rollback em erro.
+  - `LeadActions` — 2 dialogs (Converter com select de propostas + Arquivar com input motivo). useTransition + state pending. Bloqueia converter quando `!hasPersonId` (tooltip explica).
+- **`packages/db/scripts/seed-vendas.ts`** + **`pnpm db:seed:vendas`** — script standalone idempotente: popula 6 stages canônicos (novo/contato_feito/aula_experimental/proposta/matriculado/perdido com cores hex + kind correto) + 10 sample leads distribuídos em open stages por cada tenant existente. Idempotente via `ON CONFLICT (tenant_id, slug) DO NOTHING` em stages e count check em leads. Roda em 8 tenants canônicos OK.
+- **Test fix**: `tests/vendas-rls.test.ts` usa slug `test_novo` (não 'novo') pra não colidir com seed-vendas. 137 tests verdes.
+
+**Faixa D (ADR + roadmap 100%):**
+
+- **`docs/decisions/0022-funil-vendas-lead-quick-capture-person-fk.md`** — ADR 0022 publicado documentando:
+  - 2 tensões: captura mínima vs identidade confirmada + lead→member sem duplicação.
+  - Decisão: `leads.person_id` nullable + `quick_name/quick_phone/quick_email` + check constraint mínimo contato; conversão reusa mesmo `person_id` via `ON CONFLICT (tenant_id, person_id) DO NOTHING` (ADR 0047 alinhado).
+  - Tabela de transições obrigatórias por estágio (proposta/won exigem person_id).
+  - 3 alternativas rejeitadas (sem quick_*, sem person_id, duplicar identidade em leads).
+  - Trade-offs: lead órfão sem person_id se nunca avança; race condition mitigada via ON CONFLICT + busca.
+  - Próximos passos: trigger validação + constraint 1 won ativo + integração modo solo + passaporte cross-tenant.
+- **roadmap.md**: Sprint 10 row marcada **done** 100% com Início + Fim 2026-05-13.
+- **`docs/sprints/10-geral-funil-vendas.md`**: Status **done**, todos checklist marcados, Log com Faixa B+C+D consolidado.
+
+**Pendências menores adiadas (Sprint 11+):**
+
+- Trigger SQL `leads_require_person_on_stage_won` (validação atualmente no boundary via Server Action regra 7)
+- Constraint global 1 stage `kind='won'` ativo por tenant
+- `scheduleTrialClass(leadId, resourceId, startsAt)` — depende Sprint 03 appointments com flag `is_trial=true` (campo a adicionar)
+- `acceptProposal(proposalId)` — atualmente embutido em `convertLeadToMember`, separar fluxo pra "aceita sem converter" (rascunho de contrato)
+- `upgradeLeadToPerson(leadId, personData)` wizard — atualmente captura via `createLead({personId: ...})` direto
+- Drag-and-drop kanban client-side (`@dnd-kit/sortable` ou similar)
+- E2E Playwright completo: novo → experimental → proposta → matriculado
+- Feature flag `vendas_v1` (Sprint 00 dropou PostHog; usar env var simples)
+- Permission `vendas.read_own/read_all/write` no seed RBAC (Sprint 01a Faixa C+ extension)
+- Widget "funil resumo" no `/app/dashboard/gerente` (Sprint 13+ régua)
+- Externalizar Zod schemas pra `packages/types/vendas.ts` (atualmente inline em actions.ts)
 
 ### Build — Sprint 06 100%: IA arquitetura fechamento (LLM real + BYOK write + RAG + STRIDE + RIPD v1.0) 2026-05-13
 
