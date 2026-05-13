@@ -50,8 +50,14 @@ export * from './ofertas'
 // Sprint 06 Faixa A — IA arquitetura: providers + models + task_routing + tenant_usage + audit_log + assistant_sessions/messages + action_proposals + tools_registry (ADR 0064 + 0075)
 export * from './ai'
 
+// Sprint 06 Faixa B — RAG (documents/chunks) + cache semântico + member_insights + support_tickets (ADR 0064 + ADR 0070 esqueleto)
+export * from './ai-rag'
+
 // Sprint 07 — Cross-alert dispatcher (esqueleto): alert_subscribers (vazio MVP, popula Fase 2)
 export * from './alerts'
 
 // Sprint 08 Faixa A — Academia controle de acesso: devices + secrets + events + blocks (ADR 0017+0018 esperados)
 export * from './acesso'
+
+// Sprint 01b fechamento — Compliance: ai_committees (CFM 2.454) + privileged_sessions (PAM) + data_subject_requests (LGPD art. 18)
+export * from './compliance'
