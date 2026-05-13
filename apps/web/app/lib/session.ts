@@ -22,6 +22,12 @@ export interface LogifitSessionClaims {
   tenantName: string
   topology: 'owned' | 'franchise'
   roles: string[]
+  /**
+   * Lista DISTINCT de permission_key ativas (via role atribuída + grant direto).
+   * Populada por SQL function `list_user_permissions()` na sessão.
+   * Sprint 00b Faixa C — consumida pelo SideMenu pra filtrar items.
+   */
+  permissions: string[]
   requiresMfa: boolean
   mfaAt: Date | null
 }

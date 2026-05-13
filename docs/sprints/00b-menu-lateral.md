@@ -152,6 +152,17 @@ Telemetria PostHog:
 
 ## Log
 
+- **2026-05-12 (final do dia) — Faixa C entregue 🟢 (Sprint 00b a 60%).** Filtragem RBAC viva:
+  - **`packages/db/src/policies/0016_list_user_permissions.sql`** — function SQL `list_user_permissions(user_id, tenant_id) RETURNS text[]`. `SECURITY DEFINER` + `STABLE`. Union DISTINCT de `user_roles → role_permissions` + `user_permission_grants` ativos (respeita `expires_at`/`revoked_at` de Sprint 01b D.6). Resolve N+1 do `has_permission()` quando UI precisa de lista completa. Smoke test: admin Rede tenant_owner retorna 25 permissions canônicas em 1 round-trip.
+  - **`packages/auth/src/server.ts`** — `customSession` callback agrega `permissions: text[]` via `authDb.execute(SELECT list_user_permissions(...))`. Memoizado no claim de sessão até logout → admin que mexer em role/grant precisa user fazer reauth (Sprint 04+ refresh via Redis pub/sub se virar dor).
+  - **`apps/web/app/lib/session.ts`** — `LogifitSessionClaims.permissions: string[]` adicionado.
+  - **`apps/web/app/app/layout.tsx`** — passa `claims.permissions` direto pra `<AppShell>` props (era array vazio na Faixa A).
+  - **`packages/ui/src/menu/app-shell.tsx`** — removeu fallback `size === 0 || has(k)` (Faixa A "permitir tudo se vazio"). Agora é `permissionSet.has(k)` puro: user sem permissions → menu vazio (correto, era o esperado pra user pré-onboarding).
+
+  **Validação:** typecheck 11/11 ✅. Chrome MCP login admin+rede → menu mostra 3 módulos visíveis (Início + Pessoas + Configurações) com 6 items que matcham permissões reais (`member.read`, `person.read`, `user.read`). Restantes 14 módulos seguem escondidos por `items.length === 0` (TODO até sprints owners).
+
+  **Faixas restantes:** B (swipe gesture mobile + tenant logo header); D (footer com avatar/tenant-switch/logout + E2E Playwright 3 viewports). Sprint 00b a 60%.
+
 - **2026-05-12 — Faixa A entregue 🟢 (Sprint 00b a 40%).** Foundation completo:
   - **`packages/ui/src/menu/types.ts`** — interfaces canônicas `MenuItem`, `MenuModule`, `MenuFilterContext` + tipo `Vertical`. Comentado: `registerMenuItem()` runtime API ficou adiada (dev solo → file edit já resolve; overhead de registry runtime injustificado).
   - **`packages/ui/src/menu/menu-items.ts`** — registry estático com **17 módulos canônicos** (Início, Pessoas, Agenda, Acesso, Comercial, Financeiro, Fiscal, Clínico, Vigilância, Relacionamento, Estoque, Engajamento, RH, Compliance, Integrações, Configurações). Apenas items cujas rotas EXISTEM hoje têm `url`; demais ficam comentados como TODO até feature aterrissar.

@@ -195,6 +195,18 @@ export const auth = betterAuth({
       const roleKeys = roleRows.map((r) => r.key)
       const requiresMfa = roleRows.some((r) => r.requiresMfa)
 
+      // 4. Permissions ativas (Sprint 00b Faixa C — bulk lookup via SQL function
+      //    list_user_permissions). SECURITY DEFINER bypassa RLS interna.
+      //    Resultado memoizado no claim de sessão até reauth — admin que mexe
+      //    em role/grant precisa user fazer logout/login. Sprint 04+ refresh
+      //    via Redis pub/sub se virar dor.
+      const permsResult = await authDb.execute<{ list_user_permissions: string[] }>(
+        drizzleSql`SELECT list_user_permissions(${userRow.userId}::uuid, ${userRow.tenantId}::uuid) AS list_user_permissions`,
+      )
+      const permissions =
+        (permsResult.rows[0] as { list_user_permissions: string[] } | undefined)
+          ?.list_user_permissions ?? []
+
       return {
         user,
         session,
@@ -205,6 +217,7 @@ export const auth = betterAuth({
           tenantName,
           topology,
           roles: roleKeys,
+          permissions,
           requiresMfa,
           // mfaAt vem da sessão BetterAuth — quando user completa TOTP, plugin
           // twoFactor atualiza session.twoFactorVerifiedAt. Sprint 01a Faixa C

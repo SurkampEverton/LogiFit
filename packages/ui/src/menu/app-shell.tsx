@@ -30,7 +30,12 @@ interface AppShellProps {
   tenantId: string
   tenantName: string
   activeVerticals: Vertical[]
-  /** Lista pré-computada de permissions do user (set lookup O(1)). Faixa A passa vazio = todas visíveis. */
+  /**
+   * Lista pré-computada de permission_key ativas do user (set lookup O(1)).
+   * Sprint 00b Faixa C: lookup real via `list_user_permissions()` SQL function
+   * memoizado na session.logifit.permissions. Array vazio = user sem permissions
+   * → menu fica vazio (esperado pra user recém-criado sem role atribuída).
+   */
   permissionKeys: string[]
   /** Conjunto de feature flags ativas. Faixa A passa vazio. */
   featureFlags?: string[]
@@ -146,7 +151,7 @@ export function AppShell({
     userId,
     tenantId: '',
     activeVerticals,
-    hasPermission: (k) => permissionSet.size === 0 || permissionSet.has(k),
+    hasPermission: (k) => permissionSet.has(k),
     hasConsent: () => true, // Sprint 11+ plugga
     featureFlags: featureFlagSet,
   }

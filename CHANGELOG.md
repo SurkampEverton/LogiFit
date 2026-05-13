@@ -6,6 +6,38 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 00b 60%: Filtragem RBAC viva via list_user_permissions (Faixa C) 2026-05-12
+
+Faixa C do Sprint 00b. SQL function `list_user_permissions()` + customSession agrega permissions + AppShell filtra real. Sprint 00b sobe de 40% para 60%.
+
+**Adições:**
+
+- **`packages/db/src/policies/0016_list_user_permissions.sql`** — `list_user_permissions(p_user_id uuid, p_tenant_id uuid) RETURNS text[]`. `SECURITY DEFINER STABLE`. Union DISTINCT entre `user_roles → role_permissions` (filtra `expires_at`) e `user_permission_grants` ativos (filtra `revoked_at` + `expires_at`). Sprint 01b D.1 (`has_permission()`) ainda existe pra "1 pergunta" — `list_user_permissions()` é o bulk-equivalent pra UI.
+- **`session.logifit.permissions: string[]`** — claim novo populado em `customSession` via `authDb.execute(...)` na sessão. Memoizado até reauth.
+
+**Atualizações:**
+
+- **`packages/auth/src/server.ts`** — `customSession` callback ganha 4ª query SQL function. `permissions[]` injetado no payload.
+- **`apps/web/app/lib/session.ts`** — `LogifitSessionClaims.permissions: string[]`.
+- **`apps/web/app/app/layout.tsx`** — `permissionKeys = claims.permissions` (era `[]` fallback Faixa A).
+- **`packages/ui/src/menu/app-shell.tsx`** — `hasPermission` agora é `permissionSet.has(k)` puro (removido fallback `size === 0 || has(k)`). User sem permissions vê menu vazio.
+
+**Validação end-to-end via Chrome MCP:**
+
+- Login `admin+rede@logifit.test` → SQL function retorna 25 permissions (role `tenant_owner` tem todas as 25 do catálogo Sprint 01a Faixa C) ✅
+- Menu SideMenu mostra 3 módulos com items reais (Início + Pessoas + Configurações) ✅
+- typecheck 11/11 ✅
+- Cookie sessão preserva `permissions[]` entre navegações (não re-querar a cada request) ✅
+
+**Lições documentadas:**
+
+1. SQL function `SECURITY DEFINER STABLE` retornando `text[]` é o padrão LogiFit pra bulk lookup memoizável — 1 round-trip em vez de N. Reusa o mesmo pool (`authPool`) que customSession já tem aberto.
+2. Permissions em session claim = trade-off: query única em vez de N + cache implícito vs. staleness até reauth. Para Sprint 00b é OK (admin que muda role espera comunicar user a relogar). Sprint 04+ Redis pub/sub se virar pain.
+3. Remover o fallback `permissionSet.size === 0 → permite tudo` é **crítico de segurança**: deixar fallback abre brecha onde user com claim ausente vê tudo (defense-in-depth alinhada à regra 33+35).
+4. Pra demonstrar filtragem REAL precisaria de user com role limitada (ex: recepcionista sem `member.read`). Os 2 seeded users (admin+rede e mariana+solo) são `tenant_owner` — vêm todos os módulos. Adicionar usuário "recepção" é seed work do Sprint 04+ (quando role custom UI aterriçar).
+
+**Sprint 00b a 60%.** Faixas restantes: B (swipe gesture + tenant logo) · D (footer expandido avatar/tenant-switch/logout + E2E Playwright 3 viewports).
+
 ### Fix — Sprint 00b polish: username + tenantName via customSession claims 2026-05-12
 
 Bug cosmético do Sprint 00b Faixa A validado via Chrome MCP: header `<AppShell>` e footer SideMenu mostravam `—` em tenant + username. Causa: layout.tsx fazia `db.select` em `users`/`tenants` via pool `logifit_app` que respeita RLS; sem `app.tenant_id` setado no Server Component, retorna 0 rows.

@@ -55,10 +55,10 @@ export default async function AppAreaLayout({ children }: { children: ReactNode 
   // coluna `tenants.verticals_active` real
   const activeVerticals: Vertical[] = ['academia']
 
-  // Sprint 00b Faixa A: permissionKeys vazio = "todas visíveis"
-  // (AppShell logic: size === 0 || has(k)).
-  // Faixa C: lookup async via has_permission RPC para popular set real.
-  const permissionKeys: string[] = []
+  // Sprint 00b Faixa C — permissions reais via SQL function
+  // `list_user_permissions()` (Sprint 01b D.6 infra) populadas em
+  // session.logifit.permissions. AppShell filtra items por `has(key)`.
+  const permissionKeys = claims.permissions
 
   return (
     <AppShell
