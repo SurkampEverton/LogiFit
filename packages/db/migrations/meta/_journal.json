@@ -78,6 +78,13 @@
       "when": 1778682941522,
       "tag": "0010_freezing_mole_man",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1778684185860,
+      "tag": "0011_bored_mysterio",
+      "breakpoints": true
     }
   ]
 }

@@ -61,7 +61,7 @@ beforeEach(async () => {
   await pool.query('DELETE FROM referral_uses WHERE tenant_id = $1', [TENANT_REDE]).catch(() => {})
   await pool.query('DELETE FROM referrals WHERE tenant_id = $1', [TENANT_REDE]).catch(() => {})
   await pool.query('DELETE FROM promotion_uses WHERE tenant_id = $1', [TENANT_REDE]).catch(() => {})
-  await pool.query('DELETE FROM promotions WHERE id IN ($1, $2)', [TEST_PROMO_REDE_ID, TEST_PROMO_FRANQ_ID]).catch(() => {})
+  await pool.query('DELETE FROM promotions WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA]).catch(() => {})
 })
 
 async function withTenantContext<T>(

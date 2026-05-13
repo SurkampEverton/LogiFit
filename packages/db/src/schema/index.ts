@@ -46,3 +46,6 @@ export * from './financeiro'
 
 // Sprint 05 Faixa A — Ofertas comerciais: promotions + plan_items + appointment_credits + referrals (ADR 0020 esperado)
 export * from './ofertas'
+
+// Sprint 06 Faixa A — IA arquitetura: providers + models + task_routing + tenant_usage + audit_log + assistant_sessions/messages + action_proposals + tools_registry (ADR 0064 + 0075)
+export * from './ai'
