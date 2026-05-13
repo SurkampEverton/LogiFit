@@ -18,6 +18,7 @@ import { headers as nextHeaders } from 'next/headers'
 import { getMessages } from 'next-intl/server'
 import type { ReactNode } from 'react'
 import { requireFullSession } from '../lib/session'
+import { CommandPalette } from './command-palette'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,6 +78,7 @@ export default async function AppAreaLayout({ children }: { children: ReactNode 
       labels={labels}
     >
       {children}
+      <CommandPalette />
     </AppShell>
   )
 }
