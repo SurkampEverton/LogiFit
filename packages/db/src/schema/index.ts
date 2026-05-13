@@ -37,3 +37,6 @@ export * from './passport'
 
 // Sprint 02 Faixa A — CRM unificado: members + member_events + member_notes + member_tags (ADR 0011 esperado)
 export * from './members'
+
+// Sprint 03 Faixa A — Agenda universal: resources + recurring_slots + appointments + waitlist (ADR 0012 esperado)
+export * from './agenda'

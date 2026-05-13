@@ -120,7 +120,36 @@ Consumidor no MVP: UI via Realtime. Financeiro (Sprint 04) consome `appointment.
 
 ## Log
 
-- —
+- **2026-05-12 — Faixa A entregue 🟢 (Sprint 03 a 25%).** Schemas + RLS + EXCLUDE:
+  - **`packages/db/src/schema/agenda.ts`** — 4 tabelas:
+    - `resources` (id, tenant_id, company_id, unit_id?, kind enum, name, modality?, instructor_user_id?, archived_at) — soft-delete; 4 indexes incluindo parcial `active_idx` para queries de não-arquivados.
+    - `recurring_slots` (id, tenant_id, resource_id, rrule text, start_time, end_time, capacity int default 1, active boolean) — RFC 5545 RRULE armazenado como text; materialização lazy (Sprint 03 Faixa B helper `expandRecurring()`).
+    - `appointments` (id, tenant_id, resource_id, member_id, recurring_slot_id?, starts_at tstz, ends_at tstz, status enum, cancelled_at?, cancelled_reason?, cancelled_by_user_id?, checked_in_at?, created_by_user_id?) — auditoria mínima inline; 4 indexes para queries comuns.
+    - `appointment_waitlist` (id, tenant_id, recurring_slot_id, starts_at, member_id, created_at) — unique index `(recurring_slot_id, starts_at, member_id)`.
+  - **2 enums Postgres**: `resource_kind` (instrutor/sala/equipamento), `appointment_status` (booked/checked_in/cancelled/no_show/completed).
+  - **`packages/db/src/policies/0017_agenda_rls.sql`** — extensão `btree_gist` + **EXCLUDE constraint anti-overlap** em appointments:
+    ```sql
+    EXCLUDE USING gist (resource_id WITH =, tstzrange(starts_at, ends_at, '[)') WITH &&)
+      WHERE (status IN ('booked', 'checked_in'))
+    ```
+    Postgres rejeita dois booking ativos sobrepostos no mesmo resource — não dependemos de transação aplicação para concorrência. Status `cancelled/no_show/completed` (history) coexistem.
+  - **12 RLS policies** (`resources`/`recurring_slots`/`appointments` CRUD + waitlist INSERT/DELETE only). Soft-delete via `archived_at` (resources) e `active=false` (recurring_slots). DELETE em appointments permitido para cleanup admin (audit em member_events Sprint 04+).
+  - **GRANTs explícitos** pra role `logifit_app`: SELECT/INSERT/UPDATE/DELETE conforme política.
+  - **migration `0008_unusual_christian_walker.sql`** gerada via Drizzle (4 tabelas + indexes + FKs + enums).
+  - **`packages/db/tests/agenda-rls.test.ts`** — **7 Vitest integration tests**:
+    - RLS isolamento per-tenant (Rede vê seu resource; Franquia vê 0; INSERT cross-tenant rejected)
+    - EXCLUDE constraint anti-overlap (2 booked overlap → SQLSTATE 23P01; cancelled+booked coexistem; resources diferentes coexistem)
+    - waitlist UPDATE retorna 0 rows (sem policy update — INSERT/DELETE only)
+
+  **Validações:**
+  - `db:rls-check` 3 regras OK em todas as tabelas (era 32, agora 36 com agenda)
+  - **90 Vitest tests verdes** (era 83 — +7 agenda-rls)
+  - typecheck 11/11 verde
+
+  **Sprint 03 a 25%.** Faixas restantes:
+  - **Faixa B** — Server Actions (createResource, createRecurringSlot, createAppointment, cancelAppointment, rescheduleAppointment, joinWaitlist/leaveWaitlist, checkInAppointment) + helper `expandRecurring(range)` (RRULE → date list).
+  - **Faixa C** — UI `/app/agenda` visão semanal/mensal + filtros + `/app/resources` CRUD + slot wizard.
+  - **Faixa D** — Realtime via PG LISTEN/NOTIFY + WS Next.js (canal `tenant:X:company:Y:unit:Z:agenda`) + widget agenda no member detail (Sprint 02 slot) + ADR 0012 publicado.
 
 ## Definition of Done
 

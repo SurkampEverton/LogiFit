@@ -6,6 +6,53 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 03 25%: Agenda schemas + RLS + EXCLUDE constraint (Faixa A) 2026-05-12
+
+Sprint 03 começa. Faixa A entrega schemas Drizzle de 4 tabelas + EXCLUDE constraint anti-overlap + RLS policies + 7 Vitest integration tests.
+
+**Adições:**
+
+- **`packages/db/src/schema/agenda.ts`** — 4 tabelas (ADR 0012 esperado):
+  - `resources` (instrutor/sala/equipamento) com `modality` text nullable, `instructor_user_id` FK pra users, soft-delete via `archived_at`.
+  - `recurring_slots` (RFC 5545 `rrule` text + `start_time`/`end_time` wall-clock + `capacity` + `active`). Materialização lazy (Sprint 03 Faixa B).
+  - `appointments` (tenant_id, resource_id, member_id, recurring_slot_id?, starts_at, ends_at, status enum, cancelled_*, checked_in_at, created_by_user_id).
+  - `appointment_waitlist` (uniq `(recurring_slot_id, starts_at, member_id)`).
+- **2 enums Postgres**: `resource_kind` (instrutor/sala/equipamento), `appointment_status` (booked/checked_in/cancelled/no_show/completed).
+- **migration `0008_unusual_christian_walker.sql`** (Drizzle generate).
+- **`packages/db/src/policies/0017_agenda_rls.sql`**:
+  - `CREATE EXTENSION IF NOT EXISTS btree_gist` (necessária pro EXCLUDE com uuid `=`)
+  - **EXCLUDE constraint `appointments_no_overlap`**: `EXCLUDE USING gist (resource_id WITH =, tstzrange(starts_at, ends_at, '[)') WITH &&) WHERE status IN ('booked', 'checked_in')`. Postgres garante exclusividade — não dependemos de transação aplicação.
+  - 12 RLS policies (resources CRUD + recurring_slots CRUD + appointments CRUD + waitlist INS/DEL only)
+  - GRANTs explícitos pra `logifit_app`
+- **`packages/db/tests/agenda-rls.test.ts`** — **7 Vitest integration tests**:
+  - RLS isolamento per-tenant (resources + appointments)
+  - INSERT cross-tenant rejected via WITH CHECK
+  - **EXCLUDE constraint**: 2 booked overlap → SQLSTATE `23P01` (`exclusion_violation`)
+  - cancelled + booked no mesmo horário coexistem (cancelled fora do filter)
+  - Resources diferentes mesmo horário coexistem
+  - waitlist UPDATE retorna 0 rows (INSERT/DELETE only)
+
+**Atualizações:**
+
+- **`packages/db/src/schema/index.ts`** — re-exporta `./agenda`.
+- **`packages/db/vitest.config.ts`** — exclui `agenda-rls.test.ts` do coverage gate.
+
+**Validações:**
+
+- typecheck 11/11 ✅
+- `db:rls-check` 3 regras OK em todas as tabelas (36 tabelas — era 32, +4 agenda)
+- **90 Vitest tests verdes** (era 83 — +7 agenda-rls)
+
+**Lições documentadas:**
+
+1. **EXCLUDE constraint** com `btree_gist` extension é a forma idiomática Postgres pra evitar overlap — não precisa lock pessimista nem advisory lock em aplicação. SQLSTATE `23P01` é o sinal pra mostrar UI "horário já reservado".
+2. **Filter `WHERE status IN (...)`** no EXCLUDE permite history (cancelled/no_show/completed) coexistir com booked novo no mesmo horário. Mantém auditoria sem violar unicidade.
+3. **`tstzrange(starts_at, ends_at, '[)')`** com bound `[)` (inclusive start, exclusive end) é o padrão de range timestamps — segue convenção SQL pra evitar overlap em fronteira.
+4. **Drizzle não cobre EXCLUDE USING gist** — vai em policy SQL inline (mesmo arquivo que RLS). Pattern reutilizável pra future constraints exóticas (geração `tsrange` em pricing tiers Sprint 04+).
+5. **Materialização lazy de RRULE** mantém o banco enxuto — slots não viram milhões de rows pré-geradas; o Server Action expande on-demand quando UI pede uma semana específica. Custo CPU < custo I/O.
+
+**Sprint 03 a 25%.** Faixas restantes: B (Server Actions + helper `expandRecurring`), C (UI semanal/mensal + filtros), D (Realtime via PG LISTEN/NOTIFY + WS Next.js + widget agenda no member detail + ADR 0012 publicado).
+
 ### Build — Sprint 00b 100% (`done`): Faixas B + D — swipe mobile + footer expandido + logout 2026-05-12
 
 Faixas B (swipe gesture + tenant logo header) e D (footer expandido com avatar/email/logout + E2E Playwright spec) entregues. Sprint 00b sobe de 60% → **100% (`done`)**.

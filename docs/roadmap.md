@@ -15,7 +15,7 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 | 2 | [01a](sprints/01a-identidade-e-topology.md) | Identidade + Topology (groups/tenants/companies/units + RLS raiz) | **done** | 2026-05-12 | 2026-05-12 | 100 | — | — |
 | 3 | [01b](sprints/01b-rbac-e-consent.md) | RBAC com scope + grants diretos + Consent LGPD | **doing** | 2026-05-12 | — | 75 | restantes 25% ativam sprints futuros (custom roles UI, Comitê IA, PAM, contador, data_subject_requests) | — |
 | 4 | [02](sprints/02-geral-crm-pessoas.md) | CRM unificado (members + timeline + dashboard do member) | **doing** | 2026-05-12 | — | 70 | passaporte completo + portal /meu adiados pra Sprint 11/26; cadastro proativo + WhatsApp invite adiados pra Sprint 02 fechamento / Sprint 13 | — |
-| 5 | [03](sprints/03-geral-agenda-universal.md) | Agenda universal + modalidades Academia | todo | — | — | 0 | depende #3, #4 | — |
+| 5 | [03](sprints/03-geral-agenda-universal.md) | Agenda universal + modalidades Academia | **doing** | 2026-05-12 | — | 25 | Faixa A entregue (schemas + RLS + EXCLUDE constraint + 7 Vitest tests); Faixas B/C/D restantes (Server Actions + UI + Realtime) | — |
 | 6 | [04](sprints/04-geral-financeiro-asaas.md) | Financeiro Asaas (planos, contratos, cobranças, trancamento, DRE básico) | todo | — | — | 0 | depende #3, #4 | — |
 | 7 | [05](sprints/05-geral-ofertas-comerciais.md) | Ofertas comerciais (promoções, pacotes, referrals, cashback) | todo | — | — | 0 | depende #6 | — |
 | 8 | [06](sprints/06-geral-copilot-base.md) | **Assistente IA universal base (3 camadas Help/Insight/Action + tool registry distribuído + 7 personas + FAB global + cotas alinhadas a planos — ADR 0064 + 0075)** | todo | — | — | 0 | depende #3, #4 | — |
