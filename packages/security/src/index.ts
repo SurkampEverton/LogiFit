@@ -1,3 +1,4 @@
+export * from './envelope-crypto'
 export * from './high-risk-actions'
 export * from './rate-limits'
 export * from './require-recent-mfa'

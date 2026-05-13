@@ -158,6 +158,52 @@ Em `packages/db/schema/financeiro.ts`:
 
 ## Log
 
+- **2026-05-13 — Faixa B entregue 🟢 (Sprint 04 a 50%).** Server Actions + webhook + envelope:
+  - **`packages/security/src/envelope-crypto.ts`** — helper AES-256-GCM:
+    - `encryptSecret(plaintext) → 'enc:v1:{iv}:{ciphertext+tag}'` (random IV 12 bytes)
+    - `decryptSecret(encrypted)` — tolera plain text legado (sem prefix `enc:`)
+    - Chave-mestre via `LOGIFIT_DATA_KEY` env (32 bytes base64). Sprint 04+ Faixa C: per-tenant em KMS externo.
+    - Throw em tampering (tag mismatch), formato inválido, chave errada
+    - Função `generateMasterKey()` pra setup local
+  - **`packages/security/src/envelope-crypto.test.ts`** — **9 Vitest unit tests** (puros, sem DB):
+    - round-trip básico encrypt→decrypt
+    - mesmo plain → ciphertext diferente (random IV)
+    - texto vazio idempotente
+    - aceita plain text legado (sem prefix)
+    - tampering → throws
+    - formato malformado → throws
+    - chave errada → throws decrypt failed
+    - texto longo 1KB preserva
+    - UTF-8 special chars preservam (açúcar 🔑 中文)
+  - **`apps/web/app/app/financeiro/actions.ts`** — **6 Server Actions** wrapped:
+    - `createPlan({companyId, name, priceCents, billingCycle, trialDays, cancelNoticeDays})` → id
+    - `updatePlan({planId, ...partial})` → id (NOT_FOUND se não pertence ao tenant)
+    - `archivePlan({planId})` — soft-delete via `archivedAt` + `active=false`
+    - `subscribeMember({memberId, planId, startedAt?, billingDay})` → `{contractId, invoiceId}`. Transação: cria contract `active` + 1ª invoice `pending` com `due_at = startedAt + 5d` + breakdown jsonb populado
+    - `cancelContract({contractId, reason, effectiveAt?})` → id. Atualiza status `cancelled` + `cancelledAt` + `cancelledReason` + `endsAt`. CONFLICT se já cancelled.
+    - `applyDiscount({invoiceId, amountCents, reason})` → `{id, newAmountCents}`. Append no `breakdown.discounts[]` com `applied_by user_id` (audit trail obrigatório). Valida invoice `pending` + desconto < total.
+    - `listPlans({includeArchived?, companyId?, limit})` — list scoped tenant.
+  - **`apps/web/app/api/webhooks/asaas/route.ts`** — webhook handler POST:
+    - Auth via `asaas-access-token` header vs env `ASAAS_WEBHOOK_TOKEN` (timingSafeEqual). Sem token → 200 sem processar (não bloqueia config error).
+    - Idempotência: `INSERT INTO webhook_events ... ON CONFLICT (source, external_id) DO NOTHING RETURNING id` — segunda chamada com mesmo event id retorna 200 `duplicate:true` sem reprocessar.
+    - **Eventos tratados**:
+      - `PAYMENT_RECEIVED|CONFIRMED|RECEIVED_IN_CASH` → marca invoice `paid` + `paidAt` + cria payment row (transação atômica)
+      - `PAYMENT_OVERDUE` → invoice `overdue`
+      - `PAYMENT_REFUNDED` → invoice `refunded`
+      - `PAYMENT_DELETED` → invoice `cancelled` + `cancelledAt`
+      - Outros → log info `unhandled_event` (não erro)
+    - Helper `asaasMethodToInternal()` mapeia BOLETO/PIX/CREDIT_CARD → enum interno
+    - `webhook_events.processed_at` marcado no fim + `error` opcional
+    - Sempre retorna 200 mesmo em erro de processamento (Asaas não deve retry se nosso bug)
+    - Log estruturado pino-style (level/module/stage/event_id)
+
+  **Validações:**
+  - typecheck 11/11 ✅
+  - build `@app/web` ✓ — **2 rotas novas**: `/api/webhooks/asaas` + endpoints financeiro consumindo actions
+  - **114 Vitest tests verdes** (era 105 — +9 envelope-crypto)
+
+  **Sprint 04 a 50%.** Faixas restantes: C (UI `/app/financeiro` lista + planos + contratos + cobranças + widget em member detail), D (job D-5 cobranças automáticas + envelope encryption integration em asaas_keys + ADRs 0013+0014 publicados).
+
 - **2026-05-13 — Faixa A entregue 🟢 (Sprint 04 a 25%).** Schemas + RLS + tests:
   - **`packages/db/src/schema/financeiro.ts`** — 6 tabelas:
     - `plans` (id, tenant_id, company_id, name, price_cents, billing_cycle enum monthly/quarterly/yearly, trial_days, cancel_notice_days, active, archived_at). Check `price_cents >= 0`.

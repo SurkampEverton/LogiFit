@@ -6,6 +6,52 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 04 50%: Server Actions + webhook handler + envelope encryption (Faixa B) 2026-05-13
+
+Sprint 04 sobe de 25% → 50%. Faixa B entrega 6 Server Actions + endpoint webhook idempotente + helper envelope encryption AES-256-GCM.
+
+**Adições:**
+
+- **`packages/security/src/envelope-crypto.ts`** — AES-256-GCM envelope encryption:
+  - `encryptSecret(plain) → enc:v1:{iv b64}:{ciphertext+tag b64}` (random IV 12 bytes)
+  - `decryptSecret(enc)` — tolera plain text legado (sem prefix `enc:`); throw em tampering, formato inválido, chave errada
+  - Chave-mestre `LOGIFIT_DATA_KEY` (32 bytes base64); Sprint 04+ Faixa C migra pra per-tenant em KMS externo
+  - Helper `generateMasterKey()` pra setup local
+- **`packages/security/src/envelope-crypto.test.ts`** — **9 Vitest unit tests** (sem DB): round-trip, IV random produz ciphertext diferente, vazio idempotente, plain text legado, tampering throws, formato malformado throws, chave errada throws, 1KB preserva, UTF-8 special chars preservam.
+- **`apps/web/app/app/financeiro/actions.ts`** — **6 Server Actions** wrapped:
+  - `createPlan` / `updatePlan` / `archivePlan` (soft-delete via `archivedAt`)
+  - `subscribeMember` em transação atômica: cria contract `active` + 1ª invoice `pending` com `due_at = startedAt + 5d` + breakdown jsonb canônico
+  - `cancelContract` com `effectiveAt` configurável + `cancelledReason` audit
+  - `applyDiscount` apêndice no `breakdown.discounts[]` com `applied_by user_id` (audit trail obrigatório); valida invoice `pending` + desconto < total
+  - `listPlans` scoped tenant
+- **`apps/web/app/api/webhooks/asaas/route.ts`** — endpoint POST:
+  - Auth `asaas-access-token` header vs `ASAAS_WEBHOOK_TOKEN` env (timingSafeEqual)
+  - Idempotência via `INSERT ... ON CONFLICT (source, external_id) DO NOTHING RETURNING id` — duplicate retorna 200 `duplicate:true`
+  - Trata 4 famílias de eventos: PAYMENT_RECEIVED/CONFIRMED/CASH → paid (+ payment row em transação), PAYMENT_OVERDUE → overdue, PAYMENT_REFUNDED → refunded, PAYMENT_DELETED → cancelled
+  - Sempre retorna 200 mesmo em erro de processamento (Asaas não deve retry de bug nosso)
+  - Log estruturado pino-style (level/module/stage/event_id)
+  - `processed_at` + `error` opcional atualizado em webhook_events
+
+**Atualizações:**
+
+- **`packages/security/src/index.ts`** — re-exporta `./envelope-crypto`.
+
+**Validações:**
+
+- typecheck 11/11 ✅
+- build `@app/web` ✓ — **2 endpoints novos**: `/api/webhooks/asaas` (POST) + Server Actions financeiro consumidas via Client (Faixa C UI usa)
+- **114 Vitest tests verdes** (era 105 — +9 envelope-crypto)
+
+**Lições documentadas:**
+
+1. **Envelope encryption com prefix `enc:v1:`** permite tolerar legado (rows pre-encryption) + migração progressiva — `decryptSecret` retorna plain se sem prefix. Sprint 04+ rotação `v2` (trocar algoritmo) é compatível: aceita ambos prefixes durante deploy.
+2. **Webhook idempotência via SQL `ON CONFLICT DO NOTHING RETURNING id`** vence approach com SELECT-then-INSERT pra eliminar race: 2 webhooks paralelos com mesmo event_id, um cria, outro recebe 0 rows e retorna 200 duplicate.
+3. **Sempre retornar 200 em webhook** mesmo com erro de processamento é UX correta: Asaas vai retry se 5xx, mas se 5xx for nosso bug, ele entra em loop. Erros vão pro `webhook_events.error` + system_alerts (Sprint 04+ Faixa C).
+4. **Transaction em subscribeMember** (contract + 1ª invoice atomically) evita estado inconsistente — contract criado sem invoice = orphan que jamais cobra. Drizzle `db.transaction(async tx => ...)` é o padrão limpo.
+5. **`applyDiscount` apêndice no `breakdown.discounts[]`** com `applied_by user_id` + `applied_at` cria audit trail sem precisar tabela `invoice_discounts` separada. Sprint 04+ Faixa C pode normalizar se virar pain.
+
+**Sprint 04 a 50%.** Faixas restantes: C (UI `/app/financeiro` + widget em member), D (job D-5 + integração envelope em asaas_keys + ADRs 0013+0014).
+
 ### Build — Sprint 04 25%: Financeiro Asaas schemas + RLS + check constraints (Faixa A) 2026-05-13
 
 Sprint 04 começa. Faixa A entrega 6 tabelas Drizzle + 14 RLS policies + 9 Vitest integration tests.
