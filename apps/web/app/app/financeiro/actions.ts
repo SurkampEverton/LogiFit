@@ -341,6 +341,64 @@ export const applyDiscount = wrapServerAction(
   },
 )
 
+// ─── listMemberFinanceiro ─────────────────────────────────────────────────
+// Sprint 04 Faixa C — widget financeiro no perfil do member.
+// Retorna contrato ativo + próximas 3 invoices + total overdue.
+
+const ListMemberFinanceiroInputSchema = z.object({ memberId: z.string().uuid() })
+
+export const listMemberFinanceiro = wrapServerAction(
+  { module: 'financeiro', action: 'member.financial_summary' },
+  async (input: z.infer<typeof ListMemberFinanceiroInputSchema>, { session }) => {
+    const parsed = ListMemberFinanceiroInputSchema.parse(input)
+
+    const activeContractRows = await db
+      .select({
+        id: contracts.id,
+        planId: contracts.planId,
+        startedAt: contracts.startedAt,
+        billingDay: contracts.billingDay,
+        status: contracts.status,
+        planName: plans.name,
+        planPriceCents: plans.priceCents,
+        planBillingCycle: plans.billingCycle,
+      })
+      .from(contracts)
+      .innerJoin(plans, eq(plans.id, contracts.planId))
+      .where(
+        and(
+          eq(contracts.tenantId, session.logifit.tenantId),
+          eq(contracts.memberId, parsed.memberId),
+          eq(contracts.status, 'active'),
+        ),
+      )
+      .limit(1)
+
+    const recentInvoices = await db
+      .select({
+        id: invoices.id,
+        amountCents: invoices.amountCents,
+        dueAt: invoices.dueAt,
+        paidAt: invoices.paidAt,
+        status: invoices.status,
+      })
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.tenantId, session.logifit.tenantId),
+          eq(invoices.memberId, parsed.memberId),
+        ),
+      )
+      .orderBy(invoices.dueAt)
+      .limit(5)
+
+    return {
+      activeContract: activeContractRows[0] ?? null,
+      recentInvoices,
+    }
+  },
+)
+
 // ─── listPlans ────────────────────────────────────────────────────────────
 
 export const listPlans = wrapServerAction(

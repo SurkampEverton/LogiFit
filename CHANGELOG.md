@@ -6,6 +6,63 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 04 100% (`done`): UI completa + widget financeiro + job D-5 + ADRs 0013+0014 2026-05-13
+
+Sprint 04 completo. Faixas C+D entregam UI, widget cross-module, job de cobranças automáticas D-5 e os 2 ADRs.
+
+**Adições:**
+
+- **[ADR 0013](docs/decisions/0013-plano-contrato-cobranca-entidades-separadas.md)** — "Plano + Contrato + Cobrança como 3 entidades separadas". Compara modelo LogiFit (4 tabelas) vs. tabela única `subscriptions` (rejeitado) vs. Stripe-style (rejeitado por confundir contract com subscription). Documenta preço congelado por contrato, audit fiscal completo, múltiplos payments por invoice (chargeback parcial).
+- **[ADR 0014](docs/decisions/0014-asaas-keys-distributed-vs-centralized.md)** — "Chaves Asaas por company (distributed) vs tenant (centralized)". `company_id` nullable + unique parcial WHERE active. Lookup com fallback central. Envelope encryption + migração futura per-tenant KMS Enterprise.
+- **`packages/db/src/policies/0020_create_recurring_invoices.sql`** — SQL function `create_recurring_invoices() RETURNS jsonb`:
+  - SECURITY DEFINER (admin op cross-tenant)
+  - target_billing_day = day(now + 5d); INSERT pra contracts active matching
+  - NOT EXISTS pra idempotência (re-rodar não duplica)
+  - due_at calcula próximo billing_day correto (este mês se ainda não passou; senão próximo)
+  - breakdown jsonb canonical + generated_by: cron
+  - Retorna `{processed_at, target_billing_day, newly_created, invoice_ids[]}`
+- **`apps/web/app/api/jobs/billing-daily/route.ts`** — cron 03:30 UTC. Bearer CRON_SECRET + timingSafeEqual. Log estruturado.
+- **5 rotas UI `/app/financeiro/*`**:
+  - `/app/financeiro` — visão geral 4 KPIs (contratos ativos, receita mês, em atraso com cor danger, receita 30d) via aggregate Drizzle em paralelo
+  - `/app/financeiro/planos` — lista + toggle arquivados
+  - `/app/financeiro/planos/new` + `new-plan-form.tsx` — input price BRL parsing cents + preview formatado
+  - `/app/financeiro/contratos` — filtros status (active/paused/cancelled/expired) + JOIN plan+member+person
+  - `/app/financeiro/cobrancas` — filtros status (pending/paid/overdue/cancelled/refunded) + JOIN contract→plan→member
+- **9ª Server Action `listMemberFinanceiro({memberId})`** — contrato ativo + invoices recentes pra widget.
+- **Widget financeiro em `/app/members/[id]`**:
+  - Plano ativo com preço/ciclo formatado + data início + dia vencimento
+  - Lista 3 cobranças recentes com data/valor/status colorido (✓ paga, ⚠ atraso, pendente)
+  - CTA "ver tudo →" pra `/app/financeiro/contratos`
+
+**Atualizações:**
+
+- **`apps/web/app/app/members/[id]/page.tsx`** — Server Component agora paralela `getMember + listTimeline + listMemberAgenda + listMemberFinanceiro`. Widget agenda + widget financeiro substituem placeholder genérico "Sprint 04 financeiro".
+- **policy 0020 aplicada local via `db:migrate`** (idempotente).
+
+**Validações:**
+
+- typecheck 11/11 ✅
+- build `@app/web` ✓ — **8 rotas novas/atualizadas**:
+  - `/app/financeiro` (203 B)
+  - `/app/financeiro/planos` (203 B)
+  - `/app/financeiro/planos/new` (1.96 kB)
+  - `/app/financeiro/contratos` (203 B)
+  - `/app/financeiro/cobrancas` (203 B)
+  - `/api/jobs/billing-daily` (158 B)
+  - `/api/webhooks/asaas` (Faixa B)
+  - `/app/members/[id]` updated (widget financeiro agora)
+- 114 Vitest tests verdes (sem novos — UI work + cron SQL function testável manual)
+
+**Lições documentadas:**
+
+1. **`due_at` calc com CASE inline** evita criar 2 SQL functions separadas para "billing_day ainda não passou" vs. "billing_day já passou" — uma expressão `date_trunc('month', now) + (billing_day - 1) days + (1 month se já passou)` resolve.
+2. **Aggregate queries paralelas** com `Promise.all([...4 db.select agg])` pra visão geral é mais rápido que SUBSELECT+CASE na mesma query, e mais legível.
+3. **Input BRL livre com parsing cents** (`value.replace(/\D/g, '')`) é UX melhor que `type="number"` em form de preço — operador digita "9990" → preview "R$ 99,90" sem precisar separador decimal.
+4. **Widget em `/app/members/[id]` cross-module** (`agenda` + `financeiro`) é o padrão MVP: cada feature module exporta 1 Server Action `listMember{Feature}({memberId})` que retorna shape minimal. Member detail importa N. Sprint 06+ widget IA, Sprint 09+ widget engajamento.
+5. **Filtros via querystring (`?status=`)** em vez de Client Component state — Server Component re-renderiza a tabela em <100ms, sem JS no client, URL é shareável + linkável. Pattern reusável em todas as listas LogiFit.
+
+**Sprint 04 `done` ✅.** Pendências menores (sync API Asaas real, UI gestão chaves, detail pages com ações inline) adiadas pra Sprint 05+.
+
 ### Build — Sprint 04 50%: Server Actions + webhook handler + envelope encryption (Faixa B) 2026-05-13
 
 Sprint 04 sobe de 25% → 50%. Faixa B entrega 6 Server Actions + endpoint webhook idempotente + helper envelope encryption AES-256-GCM.

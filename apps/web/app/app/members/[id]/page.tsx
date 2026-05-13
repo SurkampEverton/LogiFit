@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { listMemberAgenda } from '../../agenda/actions'
+import { listMemberFinanceiro } from '../../financeiro/actions'
 import { getMember, listTimeline } from '../actions'
 
 export const dynamic = 'force-dynamic'
@@ -33,6 +34,11 @@ export default async function MemberDetailPage({
   // Widget agenda — Sprint 03 Faixa D (próximos 5 appointments)
   const agendaResult = await listMemberAgenda({ memberId: id, limit: 5 })
   const upcomingAppointments = agendaResult.ok ? agendaResult.data.upcoming : []
+
+  // Widget financeiro — Sprint 04 Faixa C (contrato ativo + invoices recentes)
+  const financResult = await listMemberFinanceiro({ memberId: id })
+  const activeContract = financResult.ok ? financResult.data.activeContract : null
+  const recentInvoices = financResult.ok ? financResult.data.recentInvoices : []
 
   const address = (person.address as Record<string, string | null> | null) ?? null
 
@@ -203,12 +209,86 @@ export default async function MemberDetailPage({
         )}
       </section>
 
-      {/* Slots futuros — Sprint 04/06/08/09 */}
+      {/* Widget Financeiro — Sprint 04 Faixa C */}
+      <section className="rounded-md border border-[color:var(--ev-border)] p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold flex items-center gap-2">💰 Financeiro</h2>
+          <Link
+            href="/app/financeiro/contratos"
+            className="text-sm font-medium text-[color:var(--ev-primary)] hover:underline"
+          >
+            ver tudo →
+          </Link>
+        </div>
+        {activeContract ? (
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-[color:var(--ev-text-muted)]">Plano ativo</span>
+              <span className="font-medium tabular-nums">
+                {activeContract.planName} —{' '}
+                {(activeContract.planPriceCents / 100).toLocaleString('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL',
+                })}
+                /{activeContract.planBillingCycle === 'monthly' ? 'mês' : activeContract.planBillingCycle}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-[color:var(--ev-text-muted)]">
+              <span>Desde {new Date(activeContract.startedAt).toLocaleDateString('pt-BR')}</span>
+              <span>Vencimento dia {activeContract.billingDay}</span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-[color:var(--ev-text-muted)] py-2">Sem contrato ativo.</p>
+        )}
+        {recentInvoices.length > 0 && (
+          <div className="pt-2 border-t border-[color:var(--ev-border)] space-y-1">
+            <div className="text-xs text-[color:var(--ev-text-muted)] uppercase tracking-wide">
+              Cobranças recentes
+            </div>
+            <ul className="space-y-1 text-xs">
+              {recentInvoices.slice(0, 3).map((inv) => (
+                <li key={inv.id} className="flex items-center justify-between gap-3">
+                  <span className="text-[color:var(--ev-text-muted)] tabular-nums">
+                    {new Date(inv.dueAt).toLocaleDateString('pt-BR')}
+                  </span>
+                  <span className="tabular-nums">
+                    {(inv.amountCents / 100).toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}
+                  </span>
+                  <span
+                    className="font-medium"
+                    style={{
+                      color:
+                        inv.status === 'paid'
+                          ? 'var(--ev-success, #10b981)'
+                          : inv.status === 'overdue'
+                            ? 'var(--ev-danger, #ef4444)'
+                            : 'var(--ev-text-muted)',
+                    }}
+                  >
+                    {inv.status === 'paid'
+                      ? '✓ paga'
+                      : inv.status === 'overdue'
+                        ? '⚠ atraso'
+                        : inv.status === 'pending'
+                          ? 'pendente'
+                          : inv.status}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
+      {/* Slots futuros — Sprint 06/08/09 */}
       <section className="rounded-md border border-dashed border-[color:var(--ev-border)] p-6 text-center text-sm text-[color:var(--ev-text-muted)]">
         <p>
-          Widgets futuros: <strong>Financeiro</strong> (Sprint 04) · <strong>IA Copilot</strong>{' '}
-          (Sprint 06) · <strong>Acessos</strong> (Sprint 08) · <strong>Conquistas</strong> (Sprint
-          09)
+          Widgets futuros: <strong>IA Copilot</strong> (Sprint 06) · <strong>Acessos</strong>{' '}
+          (Sprint 08) · <strong>Conquistas</strong> (Sprint 09)
         </p>
       </section>
     </main>

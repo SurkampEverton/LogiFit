@@ -158,6 +158,39 @@ Em `packages/db/schema/financeiro.ts`:
 
 ## Log
 
+- **2026-05-13 (final) — Sprint 04 100% `done` 🟢.** Faixas C+D entregues:
+  - **[ADR 0013](../decisions/0013-plano-contrato-cobranca-entidades-separadas.md)** publicado — "Plano + Contrato + Cobrança como 3 entidades separadas". Justifica 4 tabelas vs. tabela única `subscriptions` (preço congelado por contrato, pausa/trancamento limpo, audit fiscal completo, múltiplos métodos por invoice).
+  - **[ADR 0014](../decisions/0014-asaas-keys-distributed-vs-centralized.md)** publicado — "Chaves Asaas por company vs tenant". Detalha unique parcial WHERE active + lookup com fallback central + envelope encryption + migração futura per-tenant KMS.
+  - **`packages/db/src/policies/0020_create_recurring_invoices.sql`** — SQL function `create_recurring_invoices()` SECURITY DEFINER:
+    - Calcula `target_billing_day = day(now + 5d)`
+    - INSERT em invoices pra contracts active cujo billing_day = target
+    - NOT EXISTS pra idempotência (re-rodar mesmo dia não duplica)
+    - `due_at` calcula 1º dia do próximo mês com billing_day se já passou hoje, senão neste mês
+    - breakdown jsonb canonical + `generated_by: 'cron:billing.daily'`
+    - Retorna jsonb `{processed_at, target_billing_day, newly_created, invoice_ids[]}`
+  - **`apps/web/app/api/jobs/billing-daily/route.ts`** — cron 03:30 UTC + bearer CRON_SECRET + timingSafeEqual (mesmo padrão process-trial-lifecycle + process-grants-expired).
+  - **5 rotas UI `/app/financeiro/*`**:
+    - `/app/financeiro` — visão geral com 4 KPIs (contratos ativos, receita mês, em atraso com cor danger se >0, receita 30d) via Drizzle agg queries em paralelo
+    - `/app/financeiro/planos` — lista catálogo + toggle arquivados + tabela com nome/preço/ciclo/status
+    - `/app/financeiro/planos/new` + `new-plan-form.tsx` — wizard com input price BRL livre (parsing cents) + preview formatado + select ciclo + trial/cancel notice days
+    - `/app/financeiro/contratos` — lista com filtros `?status=` (todos/active/paused/cancelled/expired) + JOIN plan+member+person
+    - `/app/financeiro/cobrancas` — lista com filtros `?status=` (todos/pending/paid/overdue/cancelled/refunded) + JOIN contract→plan+member
+  - **9ª Server Action `listMemberFinanceiro({memberId})`** — retorna contrato ativo (com JOIN plan) + 5 invoices recentes.
+  - **Widget financeiro em `/app/members/[id]`** — Server Component carrega em paralelo aos demais lookups. Renderiza:
+    - Plano ativo com preço/ciclo + data de início + dia de vencimento
+    - Empty state "Sem contrato ativo" se null
+    - Lista 3 cobranças recentes com data/valor/status colorido (✓ paga / ⚠ atraso / pendente)
+    - CTA "ver tudo →" pra `/app/financeiro/contratos`
+    - Substitui placeholder "Financeiro Sprint 04" do widget genérico
+
+  **Validações:** typecheck 11/11 ✅; build prod ✓ — **8 rotas financeiro/job/webhook** (`/app/financeiro` + 4 sub + `/api/jobs/billing-daily` + `/api/webhooks/asaas`).
+
+  **Sprint 04 `done` ✅.** Pendências menores adiadas pra sprints futuros:
+  - Sync API Asaas (cria cobrança real + setar `invoices.asaas_id`) — Sprint 05+
+  - UI gestão chaves Asaas + integração envelope encryption em `asaas_keys.api_key` write — Sprint 05+
+  - Detail page `/app/financeiro/contratos/[id]` + `/app/financeiro/cobrancas/[id]` com ações cancel/applyDiscount inline — Sprint 05+
+  - Vitest E2E flow contratar→pagar via webhook→ver invoice paga — Sprint 05+ quando loginAs helper aterrissar
+
 - **2026-05-13 — Faixa B entregue 🟢 (Sprint 04 a 50%).** Server Actions + webhook + envelope:
   - **`packages/security/src/envelope-crypto.ts`** — helper AES-256-GCM:
     - `encryptSecret(plaintext) → 'enc:v1:{iv}:{ciphertext+tag}'` (random IV 12 bytes)
