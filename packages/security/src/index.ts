@@ -1,3 +1,4 @@
+export * from './access-qr'
 export * from './envelope-crypto'
 export * from './high-risk-actions'
 export * from './rate-limits'
