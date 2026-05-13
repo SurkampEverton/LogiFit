@@ -2,7 +2,19 @@ import { DEFAULT_LOCALE, type Locale, isLocale } from '@repo/i18n/config'
 import { getRequestConfig } from 'next-intl/server'
 import { cookies, headers } from 'next/headers'
 
-const NAMESPACES = ['common', 'auth', 'errors', 'security', 'messages', 'nav'] as const
+const NAMESPACES = [
+  'common',
+  'auth',
+  'errors',
+  'security',
+  'messages',
+  'nav',
+  // Sprint 06 — IA / assistente / suporte / dashboard super-admin
+  'assistant',
+  'suporte',
+  'ia',
+  'ai_usage',
+] as const
 
 async function resolveLocale(): Promise<Locale> {
   const cookieStore = await cookies()

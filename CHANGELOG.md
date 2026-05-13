@@ -6,6 +6,110 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 06 100%: IA arquitetura fechamento (LLM real + BYOK write + RAG + STRIDE + RIPD v1.0) 2026-05-13
+
+Sprint 06 fecha em **100%**. Completa os 25% restantes: LLM real via Vercel AI SDK, BYOK UI write, white-label editável, cota daily real, anti-abuse, lint `ai-block-respected`, job RAG seed, threat model STRIDE v1.0, RIPD v1.0.
+
+**Adições:**
+
+- **Vercel AI SDK instalado** em `@repo/ai` (`ai@6.0`, `@ai-sdk/google@3.0`, `@ai-sdk/anthropic@3.0`, `@ai-sdk/openai@3.0`).
+- **`packages/ai/src/chat.ts`** — `chatComplete()` wrapper canônico de chat completion:
+  - Pipeline: classifyInput → redactBeforeLLM → buildSystemPrompt → resolveModel → callProvider (Gemini Vertex AI / Anthropic / OpenAI via lazy import) → classifyOutput → retorna `{text, modelSlug, providerSlug, tokens, latencyMs, guardrailBlocked, stubUsed}`
+  - Fallback gracioso pra stub quando provider 5xx ou sem credentials
+  - `resolveModelOrStubFromEnv()` atalho lê `GEMINI_API_KEY` ENV
+- **`apps/web/app/app/assistente/actions.ts`** atualizado: `sendMessage` migra de stub local para `chatComplete()`; usa `getAvailableTools()` filtrado por persona/permission/vertical antes da chamada LLM.
+- **Cota daily real**: `getCurrentUsage` agora roda `count(ai_audit_log) WHERE created_at >= today 00:00 UTC AND guardrail_blocked=false` (regra 34 indexes existentes cobrem).
+- **Anti-abuse 10× média 7d** (`checkAbusePattern` + `raiseAbuseAlert`): se `dailyUsed ≥ 50` e `dailyUsed ≥ 10 × avg7d`, INSERT/UPDATE em `system_alerts` com `fingerprint=ai_abuse_10x:{tenant}` severity=warning category=ai retenção 90d.
+- **`packages/db/src/schema/ai-settings.ts`** — schema `tenant_assistant_settings` (PK tenantId): `assistant_name`, `default_persona`, `enabled_personas` jsonb, `classifier_strictness`. Migration `0028_ai_settings_rls.sql` RLS + GRANTs.
+- **`apps/web/app/app/settings/ia/actions.ts`** — 4 Server Actions:
+  - `saveByokKey({providerSlug, apiKey})` — upsert `ai_provider_configs` com `encryptSecret()` AES-256-GCM
+  - `testByokKey({providerSlug})` — decrypt + smoke check + persist `last_tested_at`/`last_test_result`
+  - `revokeByokKey({providerSlug})` — `enabled=false`
+  - `saveAssistantName({assistantName})` — upsert `tenant_assistant_settings`
+- **`apps/web/app/app/settings/ia/settings-form.tsx`** — `<AssistantNameForm>` (white-label editor) + `<ByokForm>` (select provider + input password masked + lista status com botões Testar/Revogar por provider). Usa `useTransition` + consome envelope `{ok, data | error}`.
+- **`apps/web/app/app/settings/ia/page.tsx`** atualizado: read de `tenant_assistant_settings` + `ai_provider_configs` per-provider status; embed forms.
+- **`apps/web/app/app/layout.tsx`** lê `tenant_assistant_settings.assistant_name` real do DB → passa para `<AssistantFAB>` (white-label ativo).
+- **`scripts/lint-custom.mjs`** — 9º checker **`ai-block-respected`**: detecta `registerAITool({handler: X})` apontando para função com `// ai-blocked:` no mesmo arquivo + exige `blocked: { reason }`. CI `pnpm lint:custom` clean nas tools do MVP.
+- **`scripts/seed-rag-system-docs.mjs`** + **`pnpm rag:seed`/`pnpm rag:seed:dry`** — enumera **127 documentos** (`docs/decisions/`, `docs/sprints/`, `docs/runbooks/`, `docs/rules.md`, `docs/arquitetura.md`, `docs/modulos.md`, `docs/compliance/dpo.md`), chunka ~500 tokens overlap 50, calcula `sha256` content hash, gera `.rag-seed-manifest.json` consumível por job runtime. Embeddings via `text-embedding-004` quando `GEMINI_API_KEY` definida; NULL caso contrário.
+- **`docs/threat-models/assistente-ia-tools.md`** — STRIDE v1.0 substituindo stub: 6 categorias × 6+ cenários cada + 12 riscos residuais identificados.
+- **`docs/compliance/ripd/v1.0-ia-copilot-clinico.md`** — RIPD v1.0 com fluxo entregue, base legal LGPD art. 11/7º, retenção (1a quente + 5a cold), direitos do titular art. 18+20, matriz de risco × mitigação.
+
+**Atualizações:**
+
+- **`packages/ai/package.json`** — deps `ai@6.0.180`, `@ai-sdk/google@3.0.73`, `@ai-sdk/anthropic@3.0.77`, `@ai-sdk/openai@3.0.63`.
+- **`packages/ai/src/index.ts`** — re-exporta `./chat`.
+- **`packages/db/src/schema/index.ts`** — re-exporta `./ai-settings`.
+- **`package.json`** raiz — scripts `rag:seed` + `rag:seed:dry`.
+- **`packages/ui/src/assistant/{assistant-sheet,action-confirm-dialog}.tsx`** — anotação `// safe-fetch-exempt: same-origin client fetch to local /api/*` (regra 37 é pra outbound externo, não cliente → /api).
+- **`pnpm dedupe`** executado pra resolver duplicação `drizzle-orm@0.45.2` trazida pelos `@ai-sdk/*` (era 2 instâncias com hashes diferentes).
+
+**Sprint 06 status:** `doing` → **done** (100%).
+
+**Verificações:**
+
+- `pnpm -r typecheck` verde (12 packages)
+- `pnpm --filter @repo/ai test` verde (61 unit tests)
+- `pnpm i18n:check` verde
+- `pnpm lint:custom` clean nas mudanças (sem nova violação de `ai-block-respected`)
+- `pnpm rag:seed:dry` lista 127 docs
+
+---
+
+### Build — Sprint 06 75%: IA arquitetura (Faixas B+C+D parciais) 2026-05-13
+
+Sprint 06 avança de 10% (Faixa A schemas) para 75% (Faixas B+C+D entregues, exceto LLM real + RAG seed + BYOK UI write). ADR 0015 publicado.
+
+**Adições:**
+
+- **`docs/decisions/0015-copilot-safety-vocabulario-proibido-classificador-output.md`** — ADR 0015 accepted: 4 conjuntos de patterns regex (prescrição/diagnóstico/proibidos/injection), classifier I/O obrigatório, audit `guardrail_blocked`, mensagens fallback persona-aware.
+- **`packages/db/src/schema/ai-rag.ts`** — 5 schemas novos (custom type `vector(768)` pgvector):
+  - `ai_documents` (global quando tenant_id IS NULL — seed ADRs/sprints; tenant-scoped quando upload via `/app/settings/ia/knowledge`)
+  - `ai_document_chunks` (~500 tokens com `embedding vector(768)` HNSW indexado)
+  - `ai_semantic_cache` (TTL 30d + LRU eviction; similarity threshold 0.93)
+  - `member_insights` (cache cross-module 6-24h TTL — ADR 0070 esqueleto)
+  - `support_tickets` + 2 enums (category/status); tool `report_issue` abre tickets com contexto.
+- **`packages/db/src/policies/0026_ai_rag.sql`** — RLS read global+tenant em documents/chunks; tenant-scoped em cache/insights/tickets; HNSW indexes `vector_cosine_ops` (m=16, ef_construction=64); pgvector extension idempotent.
+- **`packages/db/src/policies/0027_ai_models_seed.sql`** — Seed 8 models (Gemini 2.5 Flash/Pro, text-embedding-004, Claude Opus 4.7/Sonnet 4.6, GPT-4 Turbo, Whisper Large v3 Turbo, Sabiá-3) + task_routing default em 7 tasks (chat/embedding/classification/extraction/vision/transcription/reasoning) com priority cascade 100/200/300.
+- **`packages/ai/`** — 11 arquivos novos + 5 test suites (**61 unit tests verdes**):
+  - `types.ts` — tipos canônicos (AITask, AssistantLayer, AssistantPersona, ResolvedModel, AIToolDefinition, TenantContext)
+  - `resolver.ts` — `resolveModelForTask()` + `resolveAllForTask()` com priority cascade + BYOK lookup + envelope decrypt
+  - `cache.ts` — `lookupSemanticCache()` + `writeSemanticCache()` (deps-injectable, threshold default 0.93)
+  - `redact.ts` — `redactBeforeLLM()` máscara PII parcial (CPF/CNPJ/RG/email/phone/cartão/PIX/CEP) preservando dígitos úteis; 12 tests
+  - `classifier.ts` — `classifyInput()` (anti-injection 5 patterns) + `classifyOutput()` (3 conjuntos) + `getBlockedOutputMessage()`; 18 tests
+  - `system-prompt.ts` — `buildSystemPrompt({persona,tools,rag,tenantCtx})` composer com GLOBAL_HARD_RULES por locale
+  - `personas/{member,professional-clinical,professional-coach,admin,recepcao,super-admin,contador-externo,dpo}.ts` — 7 personas com prompts pt-BR/en-US/es-419
+  - `personas/index.ts` — `inferPersona({roles, isMember})` + `getPersonaPrompt(persona, locale)`; 14 tests
+  - `registry.ts` — `registerAITool()` + `getAvailableTools()` + filtro persona/permission/vertical/whenAvailable + proteção `ai-blocked`; 8 tests
+  - `quotas.ts` — `AI_PLAN_LIMITS` (Solo/Combo/Starter/Pro/Business/Enterprise) + `checkQuota()` + `getPlanLimits()`; 9 tests
+  - `ratelimit.ts` — `checkAIRateLimit({kind, tenantId, userId})` delegando ao `@repo/security` (stub Sprint 00 sliding window Redis Faixa C real)
+- **`apps/web/app/app/assistente/actions.ts`** — Server Actions: `newSession`/`sendMessage`/`proposeAction`/`confirmProposal`/`rejectProposal`/`switchPersona`/`archiveSession` (com cota check + classifier I/O + PII redact + audit log persona-aware).
+- **`apps/web/app/app/suporte/actions.ts`** — `openTicket`/`updateTicketStatus` Server Actions.
+- **`apps/web/app/api/ai/{chat,session}/route.ts`** + **`apps/web/app/api/ai/proposals/[id]/{confirm,reject}/route.ts`** — REST wrappers das Server Actions com HTTP status code mapping.
+- **`apps/web/app/lib/ai-tools.ts`** — Whitelist inicial de **9 tools** registradas (searchHelp/report_issue universais + getMyAppointments/cancelMyAppointment/getMyInvoices/requestSecondCopy/findMember/scheduleAppointmentForMember/getOverdueInvoices) + **3 tools bloqueadas** explicitamente (members.delete, fisio.signEvolution, financeiro.chargeBatch).
+- **`packages/ui/src/assistant/`** — 3 componentes:
+  - `<AssistantFAB>` (56/64px touch + Ctrl/Cmd+/ atalho + Esc fecha)
+  - `<AssistantSheet>` (side panel 420px com header persona chip + bubbles + quota indicator + disclaimer fixo regra 28)
+  - `<ActionConfirmDialog>` (alertdialog Camada 3 + título/descrição/impacto/affectedEntities/affected entities)
+- **`apps/web/app/app/assistente/page.tsx`** — Lista conversas + sessão ativa.
+- **`apps/web/app/app/settings/ia/page.tsx`** — Cota visual (% barra) + lista providers + placeholder BYOK.
+- **`apps/web/app/app/suporte/page.tsx`** — Lista tickets (badge status + opened_by_assistant).
+- **`apps/web/app/app/super-admin/ai-usage/page.tsx`** — Dashboard KPIs (total calls / cache rate / guardrail blocks / tools registered) + top tenants + tools registry snapshot.
+- **i18n 12 arquivos novos**: `assistant.json`/`suporte.json`/`ia.json`/`ai_usage.json` em pt-BR + en-US + es-419.
+- **`docs/compliance/ripd/v0.2-ia-copilot-clinico.md`** — RIPD v0.2 atualizado com fluxos reais Sprint 06.
+
+**Atualizações:**
+
+- **`packages/db/src/schema/index.ts`** — re-exporta `./ai-rag` após `./ai` Faixa A.
+- **`apps/web/app/app/layout.tsx`** — integra `<AssistantFAB>` com `inferPersona(roles)` + `assistantLabels` i18n + white-label name 'Copilot' (Sprint 06+ Faixa D real lê `tenant_settings`).
+- **`apps/web/src/i18n/request.ts`** — namespaces `assistant`, `suporte`, `ia`, `ai_usage` adicionados.
+- **`apps/web/package.json`** — `@repo/ai` workspace dep adicionada.
+- **`packages/ai/package.json`** — `@repo/security` workspace dep + vitest devDep.
+- **`packages/ui/src/index.ts`** — re-exporta `./assistant`.
+
+**Sprint 06 status:** `doing` → **75%** (Faixa A já entregue antes; Faixas B+C+D entregues nesta sessão exceto LLM real + RAG seed job + BYOK UI write + lint ai-block-respected + threat model + parecer DPO formal).
+
+---
+
 ### Build — Sprint 05 25%: Ofertas comerciais schemas + RLS + tests (Faixa A) 2026-05-13
 
 Sprint 05 começa. Faixa A entrega 7 schemas + 20 RLS policies + 10 Vitest tests + check constraints completos.

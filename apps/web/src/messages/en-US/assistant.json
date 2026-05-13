@@ -1,0 +1,39 @@
+{
+  "fab": {
+    "open": "Open assistant"
+  },
+  "close": "Close",
+  "send": "Send",
+  "thinking": "Thinking…",
+  "empty": "How can I help?",
+  "speaking_as": "Speaking as",
+  "disclaimer": "Auxiliary suggestion — humans decide. Never prescribes nor diagnoses.",
+  "guardrail_notice": "Response blocked by clinical safety policy (rule 28).",
+  "input": {
+    "placeholder": "Ask something… (Enter to send, Shift+Enter for newline)"
+  },
+  "quota": {
+    "used": "Monthly quota"
+  },
+  "persona": {
+    "member": "Student/Patient",
+    "professional_clinical": "Clinical professional",
+    "professional_coach": "Personal/Coach",
+    "admin": "Admin",
+    "recepcao": "Reception",
+    "super_admin": "Network",
+    "contador_externo": "Accountant",
+    "dpo": "DPO"
+  },
+  "confirm": {
+    "ok": "Confirm",
+    "cancel": "Cancel",
+    "impact": "Impact",
+    "affected": "Affected"
+  },
+  "page": {
+    "title": "AI Assistant",
+    "subtitle": "Conversations with the tenant assistant",
+    "empty": "You don't have conversations yet. Open the assistant via the ✦ button bottom-right."
+  }
+}

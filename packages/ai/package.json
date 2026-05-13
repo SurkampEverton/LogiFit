@@ -2,16 +2,25 @@
   "name": "@repo/ai",
   "version": "0.0.0",
   "private": true,
-  "description": "AI SDK wrappers, model resolver, semantic cache and audit logging (ADR 0064)",
+  "description": "AI SDK wrappers, model resolver, semantic cache and audit logging (ADR 0064 + ADR 0075)",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.77",
+    "@ai-sdk/google": "^3.0.73",
+    "@ai-sdk/openai": "^3.0.63",
+    "@repo/security": "workspace:*",
+    "ai": "^6.0.180"
   },
   "devDependencies": {
     "@repo/config": "workspace:*",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.4"
   }
 }

@@ -1,0 +1,19 @@
+{
+  "title": "Soporte",
+  "subtitle": "Tickets abiertos por el tenant",
+  "empty": "Ningún ticket abierto.",
+  "opened_by_assistant": "abierto por el asistente",
+  "status": {
+    "open": "Abierto",
+    "in_progress": "En proceso",
+    "resolved": "Resuelto",
+    "cancelled": "Cancelado"
+  },
+  "category": {
+    "bug": "Bug",
+    "question": "Duda",
+    "feature_request": "Sugerencia",
+    "billing": "Facturación",
+    "other": "Otro"
+  }
+}

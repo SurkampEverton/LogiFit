@@ -21,6 +21,8 @@
     "lint:custom": "node scripts/lint-custom.mjs",
     "compliance:check": "node scripts/compliance-check.mjs",
     "hash:ripd": "node scripts/hash-ripd.mjs",
+    "rag:seed": "node scripts/seed-rag-system-docs.mjs",
+    "rag:seed:dry": "node scripts/seed-rag-system-docs.mjs --dry-run",
     "db:migrate": "pnpm --filter @repo/db db:migrate",
     "db:generate": "pnpm --filter @repo/db db:generate",
     "db:seed": "pnpm --filter @repo/db db:seed",

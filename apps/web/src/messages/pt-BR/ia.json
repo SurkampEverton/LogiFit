@@ -1,0 +1,23 @@
+{
+  "title": "Inteligência Artificial",
+  "subtitle": "Cota, BYOK e personalização do assistente",
+  "quota": {
+    "title": "Cota mensal",
+    "plan_label": "Plano: {plan}",
+    "used": "Usado: {used} de {limit}",
+    "cache_hits": "Cache hits: {hits}",
+    "tokens_in": "Tokens entrada: {tokens}",
+    "tokens_out": "Tokens saída: {tokens}"
+  },
+  "byok": {
+    "title": "BYOK (Bring Your Own Key)",
+    "description": "Configure chaves próprias para bypassar a cota LogiFit (Gemini, OpenAI, Anthropic, Groq, Maritaca).",
+    "not_configured": "não configurado",
+    "coming_soon": "Edição de chaves chega no próximo PR (criptografia AES-256-GCM)."
+  },
+  "whitelabel": {
+    "title": "Nome do assistente",
+    "description": "Personalize o nome do assistente para o seu tenant (default: 'Copilot').",
+    "coming_soon": "Edição de nome chega no próximo PR."
+  }
+}

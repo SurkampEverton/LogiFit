@@ -13,7 +13,11 @@
  *   - Achata catálogo `nav` next-intl pra Record<string, string> serializável
  *     pro `<AppShell>` Client Component consumir.
  */
-import { AppShell, MENU_MODULES, type Vertical } from '@repo/ui'
+import { inferPersona } from '@repo/ai'
+import { db } from '@repo/db/client'
+import { tenantAssistantSettings } from '@repo/db/schema'
+import { AppShell, AssistantFAB, MENU_MODULES, type Vertical } from '@repo/ui'
+import { eq } from 'drizzle-orm'
 import { headers as nextHeaders } from 'next/headers'
 import { getMessages } from 'next-intl/server'
 import type { ReactNode } from 'react'
@@ -40,13 +44,32 @@ function flattenLabels(obj: NavMessages, prefix = 'nav'): Record<string, string>
   return result
 }
 
+/** Achata `{ assistant: { fab: { open: 'X' } } }` em `{ 'assistant.fab.open': 'X' }`. */
+function flattenSection(obj: unknown, prefix: string): Record<string, string> {
+  const result: Record<string, string> = {}
+  if (!obj || typeof obj !== 'object') return result
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    const key = `${prefix}.${k}`
+    if (typeof v === 'string') {
+      result[key] = v
+    } else if (v && typeof v === 'object') {
+      Object.assign(result, flattenSection(v, key))
+    }
+  }
+  return result
+}
+
 export default async function AppAreaLayout({ children }: { children: ReactNode }) {
   const session = await requireFullSession('/app')
   const claims = session.logifit
 
-  // I18n: catálogo nav → Record<string,string> serializável
-  const messages = (await getMessages()) as { nav: NavMessages }
+  // I18n: catálogo nav + assistant → Record<string,string> serializável
+  const messages = (await getMessages()) as {
+    nav: NavMessages
+    assistant?: Record<string, unknown>
+  }
   const labels = flattenLabels(messages.nav ?? {})
+  const assistantLabels = flattenSection(messages.assistant ?? {}, 'assistant')
 
   // Path atual para destacar item ativo — header `x-pathname` setado pelo middleware
   const h = await nextHeaders()
@@ -64,6 +87,16 @@ export default async function AppAreaLayout({ children }: { children: ReactNode 
   // Sprint 00b Faixa D — Email do BetterAuth user (header avatar + footer)
   const userEmail = session.user.email ?? undefined
 
+  // Persona default — inferida; Sprint 06+ Faixa D persiste em cookie + chip switcher
+  const persona = inferPersona({ roles: claims.roles, isMember: false })
+  // White-label — lê `tenant_assistant_settings.assistant_name` real do DB; fallback 'Copilot'
+  const [settings] = await db
+    .select({ assistantName: tenantAssistantSettings.assistantName })
+    .from(tenantAssistantSettings)
+    .where(eq(tenantAssistantSettings.tenantId, claims.tenantId))
+    .limit(1)
+  const assistantName = settings?.assistantName ?? 'Copilot'
+
   return (
     <AppShell
       userId={claims.userId}
@@ -79,6 +112,11 @@ export default async function AppAreaLayout({ children }: { children: ReactNode 
     >
       {children}
       <CommandPalette />
+      <AssistantFAB
+        assistantName={assistantName}
+        labels={assistantLabels}
+        initialPersona={persona}
+      />
     </AppShell>
   )
 }

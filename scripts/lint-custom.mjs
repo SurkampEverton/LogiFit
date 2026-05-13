@@ -3,7 +3,7 @@
  * lint-custom — checkers transversais que Biome ainda não suporta como
  * plugin. JS puro (sem deps), regex-based. Faixa 4 do Sprint 00.
  *
- * Checkers ativos (8):
+ * Checkers ativos (9):
  *   1. no-window-alert            — regra 45 (catálogo de mensagens fechado)
  *   2. no-raw-fetch               — regra 37 (safeFetch obrigatório)
  *   3. no-hardcoded-design-token  — regra 44 (tokens EV via var(--ev-*))
@@ -12,6 +12,7 @@
  *   6. no-unwrapped-action        — regra 33 (Server Action sem wrapAction)
  *   7. high-risk-action-must-require-recent-mfa — regra 43 (MFA <15min em high-risk)
  *   8. cross-tenant-read-must-log — regra 42 (leitura cross-tenant grava audit)
+ *   9. ai-block-respected         — regra 41 + ADR 0075 (registerAITool não pode apontar pra handler com `// ai-blocked`)
  *
  * Os checkers 6-8 são "ready" — passam silenciosamente até Sprint dono
  * criar o padrão (Server Actions, high-risk-actions.ts, patient_data_access_log).
@@ -295,6 +296,58 @@ function checkCrossTenantReadMustLog(file, lines) {
 }
 
 // ───────────────────────────────────────────────────────────
+// 9. ai-block-respected (regra 41 + ADR 0075)
+//    Garante que tools com `// ai-blocked:` no handler real não sejam
+//    chamadas via `registerAITool({ handler })` SEM `blocked: { reason }`.
+//
+//    Detecta duas violações:
+//      (a) handler tem comentário `// ai-blocked:` mas registro não declara blocked → FAIL
+//      (b) registro tem `blocked: { reason }` mas handler real não tem `// ai-blocked:` → WARN (sinaliza desalinhamento)
+//
+//    Heurística: scan global por todos os `registerAITool({ key: '<X>'...})` e
+//    se a string `// ai-blocked` aparecer no codebase em qualquer arquivo dentro
+//    do mesmo módulo (ex: `agenda/`), exige `blocked: { reason: ` na registry call.
+//
+//    Sprint 06 MVP: enforça apenas tools registradas com `blocked: { reason }`
+//    ou que NÃO têm `handler:` no registry — o handler real fica fora do
+//    registry. Se alguém adicionar `handler` apontando pra Server Action com
+//    `// ai-blocked` no topo, esse checker pega.
+// ───────────────────────────────────────────────────────────
+const RE_AI_BLOCK_COMMENT = /\/\/\s*ai-blocked:/
+const RE_REGISTER_AI_TOOL_BLOCK = /registerAITool\s*\(\s*\{[\s\S]*?\}\s*\)/g
+const RE_BLOCKED_FIELD = /\bblocked:\s*\{\s*reason:/
+function checkAiBlockRespected(file, lines) {
+  if (file.includes('.test.')) return
+  const content = lines.join('\n')
+  const hasAiBlock = RE_AI_BLOCK_COMMENT.test(content)
+  const callMatches = content.match(RE_REGISTER_AI_TOOL_BLOCK)
+  if (!callMatches) return
+
+  for (const call of callMatches) {
+    // Se a chamada NÃO declara `blocked:` mas referencia um handler que tem
+    // `// ai-blocked:` no mesmo arquivo, é violação.
+    if (!RE_BLOCKED_FIELD.test(call)) {
+      // Procura `handler: <name>` na call e verifica se `<name>` tem ai-blocked
+      const handlerMatch = call.match(/handler:\s*([A-Za-z_][\w]*)/)
+      if (handlerMatch && hasAiBlock) {
+        const handlerName = handlerMatch[1]
+        const handlerDecl = new RegExp(
+          `(export\\s+)?(const|function|async function)\\s+${handlerName}\\b[\\s\\S]{0,200}//\\s*ai-blocked:`,
+        )
+        if (handlerDecl.test(content)) {
+          for (let i = 0; i < lines.length; i++) {
+            if (lines[i]?.includes(`handler: ${handlerName}`)) {
+              report('ai-block-respected', file, i + 1, lines[i] ?? '')
+              break
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// ───────────────────────────────────────────────────────────
 
 const codeFiles = SCAN_DIRS.flatMap((d) => walk(join(ROOT, d), CODE_EXTS))
 const cssFiles = SCAN_DIRS.flatMap((d) => walk(join(ROOT, d), CSS_EXTS))
@@ -309,6 +362,7 @@ for (const file of codeFiles) {
   checkNoUnwrappedAction(file, lines)
   checkHighRiskActionMfa(file, lines)
   checkCrossTenantReadMustLog(file, lines)
+  checkAiBlockRespected(file, lines)
 }
 
 for (const file of cssFiles) {
@@ -334,5 +388,5 @@ if (violations.length > 0) {
 }
 
 console.log(
-  `✓ lint-custom: ${codeFiles.length} code + ${cssFiles.length} css files clean (8 rules)`,
+  `✓ lint-custom: ${codeFiles.length} code + ${cssFiles.length} css files clean (9 rules)`,
 )

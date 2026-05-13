@@ -1,0 +1,23 @@
+{
+  "title": "Artificial Intelligence",
+  "subtitle": "Quota, BYOK and assistant customization",
+  "quota": {
+    "title": "Monthly quota",
+    "plan_label": "Plan: {plan}",
+    "used": "Used: {used} of {limit}",
+    "cache_hits": "Cache hits: {hits}",
+    "tokens_in": "Input tokens: {tokens}",
+    "tokens_out": "Output tokens: {tokens}"
+  },
+  "byok": {
+    "title": "BYOK (Bring Your Own Key)",
+    "description": "Configure your own keys to bypass LogiFit quota (Gemini, OpenAI, Anthropic, Groq, Maritaca).",
+    "not_configured": "not configured",
+    "coming_soon": "Key editing arrives in the next PR (AES-256-GCM encryption)."
+  },
+  "whitelabel": {
+    "title": "Assistant name",
+    "description": "Customize the assistant name for your tenant (default: 'Copilot').",
+    "coming_soon": "Name editing arrives in the next PR."
+  }
+}

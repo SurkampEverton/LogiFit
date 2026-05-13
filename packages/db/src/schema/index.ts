@@ -53,6 +53,9 @@ export * from './ai'
 // Sprint 06 Faixa B — RAG (documents/chunks) + cache semântico + member_insights + support_tickets (ADR 0064 + ADR 0070 esqueleto)
 export * from './ai-rag'
 
+// Sprint 06 Faixa C/D real — tenant_assistant_settings (white-label + persona overrides + classifier strictness)
+export * from './ai-settings'
+
 // Sprint 07 — Cross-alert dispatcher (esqueleto): alert_subscribers (vazio MVP, popula Fase 2)
 export * from './alerts'
 

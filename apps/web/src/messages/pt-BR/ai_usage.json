@@ -1,0 +1,25 @@
+{
+  "title": "Uso global de IA",
+  "subtitle": "Snapshot mensal — {month}",
+  "kpi": {
+    "total_calls": "Chamadas totais",
+    "cache_rate": "Taxa de cache",
+    "guardrail_blocked": "Guardrail bloqueios",
+    "tools_registered": "Tools registradas"
+  },
+  "top_tenants": {
+    "title": "Top tenants por uso",
+    "empty": "Sem uso registrado neste mês.",
+    "col": {
+      "tenant": "Tenant",
+      "calls": "Chamadas",
+      "cache": "Cache hits",
+      "tokens": "Tokens"
+    }
+  },
+  "tools": {
+    "title": "Tool registry",
+    "count": "{count} tools ativas",
+    "list_label": "Ver lista completa"
+  }
+}

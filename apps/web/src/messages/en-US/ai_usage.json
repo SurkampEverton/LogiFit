@@ -1,0 +1,25 @@
+{
+  "title": "Global AI usage",
+  "subtitle": "Monthly snapshot — {month}",
+  "kpi": {
+    "total_calls": "Total calls",
+    "cache_rate": "Cache rate",
+    "guardrail_blocked": "Guardrail blocks",
+    "tools_registered": "Tools registered"
+  },
+  "top_tenants": {
+    "title": "Top tenants by usage",
+    "empty": "No usage recorded this month.",
+    "col": {
+      "tenant": "Tenant",
+      "calls": "Calls",
+      "cache": "Cache hits",
+      "tokens": "Tokens"
+    }
+  },
+  "tools": {
+    "title": "Tool registry",
+    "count": "{count} active tools",
+    "list_label": "View full list"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "fab": {
+    "open": "Abrir asistente"
+  },
+  "close": "Cerrar",
+  "send": "Enviar",
+  "thinking": "Pensando…",
+  "empty": "¿Cómo puedo ayudar?",
+  "speaking_as": "Hablar como",
+  "disclaimer": "Sugerencia auxiliar — el humano decide. Nunca prescribe ni diagnostica.",
+  "guardrail_notice": "Respuesta bloqueada por política de seguridad clínica (regla 28).",
+  "input": {
+    "placeholder": "Pregunte algo… (Enter para enviar, Shift+Enter para nueva línea)"
+  },
+  "quota": {
+    "used": "Cuota mensual"
+  },
+  "persona": {
+    "member": "Alumno/Paciente",
+    "professional_clinical": "Profesional clínico",
+    "professional_coach": "Personal/Coach",
+    "admin": "Administración",
+    "recepcao": "Recepción",
+    "super_admin": "Red",
+    "contador_externo": "Contador",
+    "dpo": "DPO"
+  },
+  "confirm": {
+    "ok": "Confirmar",
+    "cancel": "Cancelar",
+    "impact": "Impacto",
+    "affected": "Afectados"
+  },
+  "page": {
+    "title": "Asistente IA",
+    "subtitle": "Conversaciones con el asistente del tenant",
+    "empty": "Aún no tienes conversaciones. Abre el asistente con el botón ✦ inferior derecho."
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "title": "Support",
+  "subtitle": "Tickets opened by tenant",
+  "empty": "No tickets opened.",
+  "opened_by_assistant": "opened by assistant",
+  "status": {
+    "open": "Open",
+    "in_progress": "In progress",
+    "resolved": "Resolved",
+    "cancelled": "Cancelled"
+  },
+  "category": {
+    "bug": "Bug",
+    "question": "Question",
+    "feature_request": "Feature request",
+    "billing": "Billing",
+    "other": "Other"
+  }
+}
