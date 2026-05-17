@@ -70,3 +70,27 @@ export * from './engajamento'
 
 // Sprint 10 Faixa A — Funil de vendas: lead_stages + leads + lead_events + trial_classes + proposals (ADR 0022 esperado)
 export * from './vendas'
+
+// Sprint 11 Faixa A — Treinos: exercises + workouts + workout_items + prescriptions (polimórfico) + workout_sessions + workout_session_items (ADR 0023 esperado)
+export * from './treinos'
+
+// Sprint 12 Faixa A — Avaliações físicas: assessment_types (com biblioteca global) + assessments + assessment_measurements + assessment_photos + assessment_calculations (ADR 0024 esperado)
+export * from './avaliacoes'
+
+// Sprint 13 Faixa A — Mensagens: message_providers + message_templates + reguas + regua_executions + messages_sent (ADR 0025 + 0026)
+export * from './mensagens'
+
+// Sprint 14 Faixa A — Custos operacionais + DRE: cost_categories + cost_entries + recurring_costs
+export * from './custos'
+
+// Sprint 15 Faixa A — ERP Financeiro Core: chart_of_accounts (hierárquico) + suppliers + approval_rules + accounts_payable + accounts_receivable + ap_ar_payments (ADR 0033 + 0034)
+export * from './erp-financeiro'
+
+// Sprint 16 Faixa A — Rateio entre filiais + Intercompany: allocation_rules + ap_allocations + intercompany_entries (ADR 0036). Regra 25 enforced via trigger (franchise bloqueia).
+export * from './rateio-ic'
+
+// Sprint 17 Faixa A — Bancos + Open Finance + Conciliação: bank_accounts + openfinance_connections + bank_transactions + reconciliation_rules (ADRs 0037 + 0038). bank_transactions @volume 6M+/ano (regra 34 + ADR 0072 — particionamento trimestral migration manual).
+export * from './bancos'
+
+// Sprint 17 Faixa A — Certificado digital A1 + NF-e SEFAZ cursors: company_certificates (PFX cifrado AES-256-GCM + senha separada) + nfe_sefaz_cursors.
+export * from './certificados'

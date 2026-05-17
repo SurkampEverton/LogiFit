@@ -11,7 +11,14 @@
     "./policies": "./src/policies/index.ts",
     "./persons": "./src/persons/index.ts",
     "./agenda": "./src/agenda/index.ts",
-    "./engajamento": "./src/engajamento/index.ts"
+    "./engajamento": "./src/engajamento/index.ts",
+    "./treinos": "./src/treinos/index.ts",
+    "./avaliacoes": "./src/avaliacoes/index.ts",
+    "./mensagens": "./src/mensagens/index.ts",
+    "./financeiro": "./src/financeiro/index.ts",
+    "./erp-financeiro": "./src/erp-financeiro/index.ts",
+    "./rateio": "./src/rateio/index.ts",
+    "./bancos": "./src/bancos/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -21,6 +28,14 @@
     "db:generate": "drizzle-kit generate",
     "db:seed": "tsx scripts/seed.ts",
     "db:seed:vendas": "tsx scripts/seed-vendas.ts",
+    "db:seed:treinos": "tsx scripts/seed-treinos.ts",
+    "db:seed:avaliacoes": "tsx scripts/seed-avaliacoes.ts",
+    "db:seed:mensagens": "tsx scripts/seed-mensagens.ts",
+    "db:seed:custos": "tsx scripts/seed-custos.ts",
+    "db:seed:plano-contas": "tsx scripts/seed-plano-contas.ts",
+    "db:seed:erp-financeiro": "tsx scripts/seed-erp-financeiro.ts",
+    "db:seed:rateio-ic": "tsx scripts/seed-rateio-ic.ts",
+    "db:seed:bancos": "tsx scripts/seed-bancos.ts",
     "db:rls-check": "tsx tests/rls-check.ts"
   },
   "dependencies": {

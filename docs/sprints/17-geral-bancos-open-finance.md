@@ -1,9 +1,9 @@
 # Sprint 17 — Geral · Bancos + Open Finance + Conciliação + Automação NF-e SEFAZ
 
 - **Área:** geral
-- **Início:** planejado (depois do Sprint 16)
-- **Fim planejado:** +3 semanas
-- **Status:** planejado
+- **Início:** 2026-05-15
+- **Fim:** 2026-05-15
+- **Status:** done (17a core; 17b OAuth/NF-e SEFAZ real/certificado/manifestação UI fica para POC com credenciais)
 - **Item do roadmap:** #19
 
 ## Goal
@@ -213,7 +213,71 @@ Em `packages/db/schema/nfe-recepcao.ts`:
 
 ## Log
 
-- —
+### 2026-05-15 — Sprint 17a core MVP done
+
+**Decisão de quebra 17a/17b:** sprint original cobria 9 features (bancos + OFX + conciliação + cashflow + cert A1 + NF-e SEFAZ + manifestação + devolução + NFs relacionadas). Sem credenciais de provider real (Pluggy/Belvo/Arquivei) e sem certificado A1 piloto, dividir em:
+- **17a (entregue agora)**: tudo que executa sem provider externo — bancos CRUD, OFX upload+parser, conciliação rules+heurística, cashflow forecast, schemas certificados + nfe_sefaz_cursors prontos, ADRs 0037 + 0038 Proposed documentando trade-offs
+- **17b (futuro)**: POCs OAuth Pluggy/Belvo, download SEFAZ Arquivei/Sieg/Focus, upload cert A1 cifrado, UI manifestação destinatário (ADR 0057), devolução de compra (ADR 0058), NFs relacionadas (ADR 0060)
+
+Schemas pré-cabeados garantem que 17b não exige nova migration.
+
+**Faixa A entregue (Schemas + RLS + 9 tests):**
+
+- **`packages/db/src/schema/bancos.ts`** — 4 tabelas: `bank_accounts` (kind enum + opening/current balance + openfinanceConnectionId nullable + unique per company); `openfinance_connections` (provider enum pluggy/belvo/direct + access_token_encrypted + status enum); `bank_transactions` (external_id unique quando NOT NULL + amount negativo=saída/positivo=entrada + reconciledWith ApId/ArId + raw_payload jsonb; `@volume_estimate_yearly: 6000000` particionamento por trimestre em migration futura — regra 34 + ADR 0072); `reconciliation_rules` (DSL jsonb condition + 4 actions + priority asc + hitsCount + unique tenant/name).
+- **`packages/db/src/schema/certificados.ts`** — 2 tabelas: `company_certificates` (kind a1 + bytea encrypted_pfx + text encrypted_password chave separada — defesa em profundidade ADR 0073 camada 4 + subjectCnpj + expiresAt + status enum + lastUsedAt) + `nfe_sefaz_cursors` (provider enum + last_nsu + consecutive_failures pra alerta + unique company/provider).
+- **`packages/db/src/policies/0036_bancos_certificados_rls.sql`** — RLS tenant-scoped + FORCE em 6 tabelas (4 bancos + 2 certificados).
+- Migration `0023_curved_ser_duncan.sql` gerada + aplicada (18 policy drops).
+- **`packages/db/tests/bancos-rls.test.ts`** — 9 tests verdes: bank_accounts unique per company + isolation; bank_transactions unique external_id quando NOT NULL (importação manual com NULL aceita N rows); reconciliation_rules unique name; nfe_sefaz_cursors unique (company, provider); bytea round-trip do PFX cifrado.
+- Bonus: corrigida idempotência de triggers do Sprint 16 (`DROP TRIGGER IF EXISTS` antes de `CREATE TRIGGER`).
+
+**Faixa B.1 entregue (Libs puras — 30 tests):**
+
+- **`packages/db/src/bancos/ofx-parser.ts`** — `parseOfx(content)` suporta OFX 2.x (XML) + 1.x (SGML); extrai bank_id/account/period/ledger_balance + transações STMTTRN com fitId/postedAt/amountCents/description/memo/type; rejeita tx sem FITID. **9 tests** cobrindo XML/SGML/edge cases (sem `<OFX>` retorna vazio; vírgula brasileira; data com hora; FITID ausente).
+- **`packages/db/src/bancos/reconcile.ts`** — `matchRules(tx, rules)` aplica priority asc + skip inativas; `conditionMatches(tx, conditionRaw)` valida DSL via Zod (descriptionContains/Regex + amountMin/MaxCents valor absoluto + amountSign + postedFrom/To); `suggestMatches(tx, candidates, options)` heurística top-N com score = valor 50% + data 30% + token overlap 20%; filtra por kind (tx negativa → AP, tx positiva → AR). **13 tests** cobrindo todos os predicates + priority + filtro kind + edge cases.
+- **`packages/db/src/bancos/cashflow.ts`** — `forecastCashflow({currentBalance, futureAps, futureArs, daysAhead, startDate})` projeta N dias (clamp 1-180); overdue absorvido dia 0; retorna pontos com openingBalance/inflow/outflow/closingBalance + apCount/arCount; `validateNfeKey(chave)` mod 11 nos 43 primeiros dígitos retorna `{ok, uf, aamm, cnpj}` ou `{ok: false, reason}`; limpa formatação (espaços/pontos) antes. **8 tests** cobrindo forecast + overdue + clamp + chave válida/inválida/DV errado/formatada.
+- **`packages/db/package.json`** novo export `./bancos`.
+
+**Faixa B.2 entregue (14 Server Actions):**
+
+- **`apps/web/app/app/financeiro/bancos/actions.ts`** — 7 actions: `createBankAccount` (captura código 23505 → VALIDATION_ERROR claro), `listBankAccounts` (filtro includeArchived/companyId), `archiveBankAccount`, `importOfx` (parseia OFX → INSERT idempotente por external_id; INSERT-conflict-ignore counta skipped; atualiza currentBalance via ledgerBalance OU agregação local), `listBankTransactions` (filtros reconciled/from/to), `confirmMatch(bankTxId, target ap|ar, targetId)` (valida AP/AR existe no tenant + marca reconciled), `suggestMatchesAction` (carrega AP/AR ±30d + chama heurística + resolve nomes via JOIN persons), `connectBankAccount` stub retorna INTERNAL_ERROR "Open Finance POC pendente (ADR 0037). Use OFX como fallback".
+- **`apps/web/app/app/financeiro/conciliacao/regras/actions.ts`** — 3 actions: `createReconciliationRule` (valida condition via RuleConditionSchema + captura unique 23505), `listReconciliationRules`, `archiveReconciliationRule`.
+- **`apps/web/app/app/financeiro/fluxo-caixa/actions.ts`** — 1 action: `forecastCashflowAction(companyId?, daysAhead)` agrega balance + APs pendentes + ARs pendentes + invoices Sprint 04 mensalidades, chama `forecastCashflow` pure e retorna pontos + summary (totalInflow/Outflow/min/max/finalBalance).
+
+**Faixa C entregue (7 rotas Next.js):**
+
+- **`/app/financeiro/bancos`** — cards por conta com saldo + última sync + badge Open Finance ✓ se aplicável; KPI saldo consolidado.
+- **`/app/financeiro/bancos/new`** — form com dropdown 13 bancos brasileiros comuns + auto-fill name ao selecionar code + opção "Outro…" pra customizado + kind (CC PJ/PF/Poupança/Caixa) + saldo inicial em BRL + nickname.
+- **`/app/financeiro/bancos/[id]/extrato`** — 4 KPIs (saldo/entradas/saídas/última sync) + `<OfxImportForm>` client component expansível com FileReader + filtro reconciled (yes/no/all) + tabela com badges source + status conciliação (✓ verde / Pendente amarelo).
+- **`/app/financeiro/bancos/[id]/conciliar`** — server lista pendentes + `<ConciliacaoList>` cliente: por transação botão "Buscar sugestões" chama `suggestMatchesAction` → renderiza top-3 com match% color-coded (>90 verde / >70 azul / >50 amarelo) + reasons (valor idêntico/próximo; mesma data; ±Nd; descrição match) + botão "Conciliar" chama `confirmMatch`.
+- **`/app/financeiro/conciliacao/regras`** — lista tabular sorted by priority asc + badges action + JSON condition truncado.
+- **`/app/financeiro/conciliacao/regras/new`** — form com 4 actions select + priority + condições agrupadas (descriptionContains + amountMin/Max em BRL + amountSign).
+- **`/app/financeiro/fluxo-caixa`** — server page + `<CashflowChart>` client: 4 botões 7/30/60/90d que chamam `forecastCashflowAction` em background; 5 KPIs (saldo atual / entradas previstas / saídas previstas / saldo projetado color-coded / saldo mínimo); alerta dramático se mínimo < 0; tabela diária dia/inicial/entradas/saídas/final com row vermelho quando closingBalance < 0; conta apCount/arCount em parênteses pra contextualizar.
+- Hub `/app/financeiro` atualizado: cards 🏦 Bancos + 💹 Fluxo de caixa.
+
+**Faixa D entregue (ADRs + seed):**
+
+- **`docs/decisions/0037-open-finance-provider-pluggy-belvo.md` Proposed** — interface abstrata `OpenFinanceProvider` (startConnection/exchangeCode/listAccounts/syncTransactions/refreshToken/revokeConnection) + Pluggy default (BR-focused, R$ 0,30/conexão, free tier dev) + Belvo alternativa LatAm + adapter mock pra testes + segurança regra 35/37/38 (allowlist + HMAC webhook + tokens cifrados envelope AES-256-GCM); alternativas rejeitadas (SEFAZ direto = 1000+h dev; Plaid sem cobertura BR; sem abstração viola regra 46). Promove pra Accepted quando POC Sprint 17b validar.
+- **`docs/decisions/0038-nfe-recepcao-provider-arquivei-sieg-focus.md` Proposed** — interface abstrata `NfeFetcher` (fetchByKey + fetchByCnpjCursor + sendManifestation com 4 eventos 210210/210200/210220/210240) + Focus default quando tenant já é cliente Sprint 36 emissor (reuse sem custo extra) + Arquivei alternativa free tier 50/mês + Sieg fallback + sefaz_direct futuro com cert A1; manifestação ciência automática default ON (Sprint 17b implementa handler `onNfeReceived` com retry exponential + cross-alert Sprint 07 D-7); segurança certificado AES-256-GCM com KEK por company + senha separada; alternativas rejeitadas (vendor lock-in único provider; só Focus força clientes recepção a também emitir; sem recepção automática = operador esquece NFs).
+- **`packages/db/scripts/seed-bancos.ts`** + `pnpm db:seed:bancos` — por tenant: 2 contas (1 Bradesco CC PJ matriz com saldo inicial R$ 15k + 1 caixa físico R$ 800) + 20 transações OFX-style realistas últimos 60 dias (aluguel, energia, internet, mensalidades, tarifas, PIX recebidos, suplementos, GCP, marketing) atualizando saldo conforme insere; 5 reconciliation_rules canônicas (auto-match aluguel/energia/mensalidades; auto-create tarifa; flag >R$ 50k). Idempotente via unique constraints + count check.
+
+**Pendências Sprint 17b (futuro):**
+
+- POC Pluggy sandbox + adapter real `pluggy.ts` + webhook callback HMAC
+- Adapter `arquivei.ts` com `fetchByKey` + `fetchByCnpjCursor` + `sendManifestation`
+- Server Action `fetchNfeByKey(chave, companyId)` habilitando botão "Por chave" inbox Sprint 15
+- Server Action `toggleNfeAutoDownload` real (placeholder hoje)
+- Job cron diário `/api/jobs/openfinance/sync-daily` + `/api/jobs/nfe/sefaz-sync`
+- Upload UI certificado A1 `/app/settings/certificados` com `scanUpload` magic bytes pfx + AES-256-GCM
+- UI `/app/settings/financeiro/nfe` toggle Download automático + escolha provider + credenciais cifradas
+- Handler `onNfeReceived` ciência automática (ADR 0057) com retry exponential
+- UI `/app/financeiro/nfe/[id]/manifestar` modal 4 botões (ADR 0057)
+- Job `nfe-manifestation-expiry` diário + alerta D-7 cross-alert Sprint 07
+- UI devolução compra `/app/financeiro/nfe/[id]/devolver` (ADR 0058)
+- NFs relacionadas inbound direction (ADR 0060): badges contextuais + filtro Tipo
+- Card "NFs a manifestar" + "Certificados expirando" no dashboard gerente
+- Feature flag `bancos_nfe_v1`
+- E2E completo (sandbox Pluggy + Arquivei)
+- RIPD bancos + NF-e
 
 ## Definition of Done
 

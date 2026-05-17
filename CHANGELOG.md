@@ -6,6 +6,456 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 17a 100% (Bancos + OFX + Conciliação + Cashflow + ADRs 0037/0038 Proposed) 2026-05-15
+
+Sprint 17 fecha o **core MVP (17a)** em **100%**. Sprint 17b (OAuth Pluggy/Belvo + NF-e SEFAZ real + certificado A1 + manifestação UI + devolução compra + NFs relacionadas) fica como sprint futuro pendente de credenciais de provider — schemas pré-cabeados em `certificados.ts`/`bancos.ts` garantem que 17b não exige nova migration.
+
+**Decisão de quebra 17a/17b (2026-05-15):** sem credenciais de provider real (Pluggy/Belvo/Arquivei) e sem certificado A1 piloto, focar 17a no que executa sem dependência externa. ADRs 0037 + 0038 documentam trade-offs para POC quando houver credenciais.
+
+**Faixa A entregue (Schemas + RLS + 9 tests):**
+
+- **`packages/db/src/schema/bancos.ts`** — 4 tabelas:
+  - `bank_accounts` — kind enum (checking/savings/business/cashbox) + opening + current balance + openfinanceConnectionId nullable + unique per (company, bank, agency, account).
+  - `openfinance_connections` — provider enum (pluggy/belvo/direct) + access_token_encrypted + status enum (pending/active/error/expired/revoked) + lastSyncError + metadata jsonb.
+  - `bank_transactions` — external_id unique quando NOT NULL + amountCents (negativo=saída, positivo=entrada) + reconciledWith ApId/ArId + raw_payload jsonb. `@volume_estimate_yearly: 6000000` particionamento por trimestre em migration manual futura (regra 34 + ADR 0072).
+  - `reconciliation_rules` — DSL jsonb condition + 4 actions (auto_match_ap/ar/auto_create_entry/flag_for_review) + priority asc + hitsCount + unique (tenant, name).
+- **`packages/db/src/schema/certificados.ts`** — 2 tabelas:
+  - `company_certificates` — kind a1 + `bytea encrypted_pfx` + `text encrypted_password` (chave KEK separada — defesa em profundidade ADR 0073 camada 4) + subjectCnpj + expiresAt + status enum (active/expired/revoked/replaced) + lastUsedAt.
+  - `nfe_sefaz_cursors` — provider enum (arquivei/sieg/focus/sefaz_direct) + last_nsu + consecutive_failures (alerta admin após 3) + unique (company, provider).
+- **`packages/db/src/policies/0036_bancos_certificados_rls.sql`** — RLS tenant-scoped + FORCE em 6 tabelas.
+- Migration `0023_curved_ser_duncan.sql` aplicada.
+- **`packages/db/tests/bancos-rls.test.ts`** — 9 tests verdes (bank_accounts unique + isolation; bank_transactions external_id unique quando NOT NULL; reconciliation_rules unique name; nfe_sefaz_cursors unique per provider; PFX bytea round-trip).
+- Bonus: triggers Sprint 16 ganharam `DROP TRIGGER IF EXISTS` antes de `CREATE TRIGGER` (idempotência do migrate.ts).
+
+**Faixa B.1 entregue (3 libs puras + 30 tests):**
+
+- **`packages/db/src/bancos/ofx-parser.ts`** — `parseOfx(content)` suporta OFX 2.x XML + 1.x SGML; extrai bank/account/period/ledger_balance + transações STMTTRN com fitId/postedAt/amountCents/description/memo/type; rejeita tx sem FITID. **9 tests** cobrindo XML/SGML/edge cases.
+- **`packages/db/src/bancos/reconcile.ts`** — `matchRules(tx, rules)` priority asc + skip inativas; `conditionMatches` valida DSL via Zod (descriptionContains/Regex + amountMin/Max + amountSign + postedFrom/To); `suggestMatches` heurística top-N com score = valor 50% + data 30% + token overlap 20%; filtra por kind (tx neg→AP, tx pos→AR). **13 tests** cobrindo predicates + priority + filtro + edge cases.
+- **`packages/db/src/bancos/cashflow.ts`** — `forecastCashflow({balance, futureAps, futureArs, daysAhead})` projeta N dias (clamp 1-180); overdue absorvido dia 0; retorna pontos com inflow/outflow/closingBalance + ap/arCount; `validateNfeKey(chave)` mod 11 retorna `{ok, uf, aamm, cnpj}` ou `{ok: false, reason}`; limpa formatação. **8 tests** cobrindo forecast + overdue + clamp + chave válida/inválida.
+- **`packages/db/package.json`** novo export `./bancos`.
+
+**Faixa B.2 entregue (14 Server Actions):**
+
+- **`apps/web/app/app/financeiro/bancos/actions.ts`** — 7 actions: `createBankAccount` (captura 23505 → VALIDATION_ERROR), `listBankAccounts`, `archiveBankAccount`, `importOfx` (idempotente via FITID; agrega skipped; atualiza currentBalance), `listBankTransactions`, `confirmMatch(bankTxId, target, targetId)`, `suggestMatchesAction` (carrega AP/AR ±30d + roda heurística + resolve nomes), `connectBankAccount` stub retorna INTERNAL_ERROR "Open Finance POC pendente (ADR 0037)".
+- **`apps/web/app/app/financeiro/conciliacao/regras/actions.ts`** — 3 actions: `createReconciliationRule` (valida condition Zod), `listReconciliationRules`, `archiveReconciliationRule`.
+- **`apps/web/app/app/financeiro/fluxo-caixa/actions.ts`** — 1 action: `forecastCashflowAction(companyId?, daysAhead)` agrega balance + APs + ARs + invoices Sprint 04 + chama lib pura.
+
+**Faixa C entregue (7 rotas Next.js):**
+
+- **`/app/financeiro/bancos`** — cards por conta com saldo/última sync/badge Open Finance + KPI saldo consolidado.
+- **`/app/financeiro/bancos/new`** — form com dropdown 13 bancos brasileiros + auto-fill name + kind + saldo inicial BRL + nickname; explica "Open Finance chega no Sprint 17b — use OFX como fallback".
+- **`/app/financeiro/bancos/[id]/extrato`** — 4 KPIs + `<OfxImportForm>` client expansível com FileReader + filtro reconciled + tabela com badges source/status.
+- **`/app/financeiro/bancos/[id]/conciliar`** — server lista pendentes + `<ConciliacaoList>` cliente: por tx botão "Buscar sugestões" → top-3 cards com match% color-coded (>90 verde / >70 azul / >50 amarelo) + reasons + botão "Conciliar".
+- **`/app/financeiro/conciliacao/regras`** — lista tabular ordered priority asc + badges action.
+- **`/app/financeiro/conciliacao/regras/new`** — form com 4 actions + priority + condições agrupadas (descriptionContains + amountMin/Max BRL + amountSign).
+- **`/app/financeiro/fluxo-caixa`** — server + `<CashflowChart>` client: 4 botões 7/30/60/90d que chamam forecastCashflowAction; 5 KPIs; alerta dramático saldo<0; tabela diária color-coded.
+- Hub `/app/financeiro` atualizado: 🏦 Bancos + 💹 Fluxo de caixa.
+
+**Faixa D entregue (ADRs + seed):**
+
+- **`docs/decisions/0037-open-finance-provider-pluggy-belvo.md` Proposed** — interface abstrata `OpenFinanceProvider` + Pluggy default (BR, R$ 0,30/conexão, free tier dev) + Belvo alternativa LatAm + adapter mock; segurança regra 35/37/38 (allowlist + HMAC + tokens cifrados AES-256-GCM); alternativas rejeitadas (SEFAZ direto 1000+h dev, Plaid sem cobertura BR, sem abstração viola regra 46). **Promove pra Accepted quando POC Sprint 17b validar.**
+- **`docs/decisions/0038-nfe-recepcao-provider-arquivei-sieg-focus.md` Proposed** — interface abstrata `NfeFetcher` + Focus default quando tenant é cliente Sprint 36 emissor (reuse sem custo) + Arquivei free tier 50/mês + Sieg fallback + sefaz_direct futuro com cert A1; manifestação ciência automática default ON; segurança certificado AES-256-GCM com KEK separada da senha; alternativas rejeitadas (vendor lock-in; só Focus força emissão; sem recepção automática). **Promove pra Accepted quando POC Sprint 17b validar.**
+- **`packages/db/scripts/seed-bancos.ts`** + `pnpm db:seed:bancos` — por tenant: 2 contas (Bradesco CC PJ matriz R$ 15k + caixa físico R$ 800) + 20 transações OFX realistas últimos 60d atualizando saldo + 5 reconciliation_rules canônicas (auto-match aluguel/energia/mensalidades; auto-create tarifa; flag >R$ 50k). Idempotente.
+
+**Sprint 17b futuro (pendências sem credenciais MVP):**
+
+- POC Pluggy sandbox + adapter `pluggy.ts` real + webhook HMAC
+- Adapter `arquivei.ts` + `sieg.ts` + `focus.ts` recepção NF-e SEFAZ
+- Server Actions reais `fetchNfeByKey`/`toggleNfeAutoDownload` (placeholders hoje)
+- Upload UI certificado A1 `/settings/certificados` com `scanUpload` magic bytes pfx + AES-256-GCM + KEK
+- UI manifestação destinatário (ADR 0057) modal 4 opções + handler ciência automática
+- UI devolução compra (ADR 0058) + reconciler total/parcial
+- NFs relacionadas (ADR 0060) badges contextuais + filtro Tipo
+- Jobs cron daily Open Finance + SEFAZ + manifestação expiry + alerta D-7
+- Feature flag `bancos_nfe_v1`
+- E2E sandbox + RIPD bancos/NF-e
+
+### Build — Sprint 16 100%: Rateio entre filiais + Intercompany com DSL declarativa + regra 25 enforced via trigger + ADR 0036 2026-05-15
+
+Sprint 16 fecha em **100%**. Faixas A+B+C+D entregues no mesmo dia. **329 → 327 tests verdes** (era 298 → +29 Sprint 16: 11 RLS + 18 calculator).
+
+**Faixa A (Schemas + RLS + triggers PL/pgSQL):**
+
+- **`packages/db/src/schema/rateio-ic.ts`** — 3 tabelas (ADR 0036):
+  - `allocation_rules` — DSL declarativa com 6 kinds (`fixed`/`proportional`/`per_unit`/`by_revenue`/`by_headcount`/`custom`); unique `(tenant, name)`; soft-delete via `archived_at`.
+  - `ap_allocations` — append-only via ausência de UPDATE/DELETE policy; PK `(ap_id, company_id)`; `percent_applied numeric(7,4)`; `context_snapshot jsonb` frozen no momento do lançamento (não recalcula retroativamente).
+  - `intercompany_entries` — 5 kinds (`payment`/`transfer`/`service`/`goods`/`adjustment`); `counter_entry_id` opcional pra espelhar; checks `amount > 0` + `from <> to`; campos `requires_nfe_transfer` + `nfe_transfer_emission_id` (FK Sprint 36 Focus NFe ADR 0059).
+- **`packages/db/src/policies/0035_rateio_ic_rls.sql`** — RLS tenant-scoped + FORCE; **2 triggers PL/pgSQL críticos**:
+  - `enforce_owned_topology_for_allocation` + `enforce_owned_topology_for_ic` — BEFORE INSERT lê `tenants.topology`, RAISE check_violation se != owned (regra 25). Server Action captura código 23514 → VALIDATION_ERROR claro.
+  - `compute_requires_nfe_transfer` — BEFORE INSERT em `intercompany_entries`: quando `kind='goods'` e CNPJs distintos (from.person_id ≠ to.person_id), seta `requires_nfe_transfer=true` automaticamente.
+- **`packages/db/tests/rateio-ic-rls.test.ts`** — **11 tests verdes**: insert owned aceito + franchise rejeitado + isolation; IC from==to rejeitado + amount=0 + trigger NF-e ativa em goods CNPJs distintos + NÃO ativa em payment; UPDATE settled_at aceito.
+- Migration `0022_deep_ender_wiggin.sql` aplicada.
+
+**Faixa B (Calculator + 11 Server Actions):**
+
+- **`packages/db/src/rateio/calc.ts`** — `distribute({amountCents, rule, context?})` cobrindo 6 kinds + `validateRuleDistribution(kind, distribution)`. **Garantia de soma exata**: rounding distribui resto pra última company em ordem do distribution — `sum(allocations.amountCents) === amountCents` sempre. Cap de 20 companies/rule.
+- **`packages/db/src/rateio/calc.test.ts`** — **18 tests verdes**: fixed 40/30/30 + 1/3+resto + custom alias; proportional 2:1:1 + weights zero; per_unit 3 vs 1 = 75/25; by_revenue 60/40; by_headcount 50/25/25; edge cases (amount=0, 1 cent, mais de 20 companies, soma!=100 rejeitada).
+- **`packages/db/package.json`** novo export `./rateio`.
+- **`apps/web/app/app/financeiro/rateio/regras/actions.ts`** — 6 actions: `createAllocationRule` (captura erro trigger regra 25 → VALIDATION_ERROR), `listAllocationRules`, `archiveAllocationRule`, `simulateAllocation` (preview com `buildContextFor` resolvendo invoices.paid mês anterior/users.count/units.count), `applyAllocation` (idempotente, DELETE existentes antes INSERT), `listApAllocations`.
+- **`apps/web/app/app/financeiro/intercompany/actions.ts`** — 5 actions: `createIntercompanyEntry` (retorna `requiresNfeTransfer` no resultado), `liquidateIntercompany` (UPDATE batch + nota concatenada), `listIntercompanyEntries`, `generateIcReport` (agrupa por par com totalCents/pendingCents/settledCents via FILTER WHERE), `getIntercompanyBalances`.
+
+**Faixa C (UI — 6 rotas):**
+
+- **`/app/financeiro/rateio/regras`** — lista em cards agrupados por kind; banner alerta quando topology != owned (regra 25 bloqueia "+ Nova regra"). Card linka pro simulador.
+- **`/app/financeiro/rateio/regras/new`** — form rico com 3 visualizações de distribuição (fixed/proportional/checkboxes simples) + soma em destaque verde/vermelho conforme bater 100% + preview de % em runtime para proportional.
+- **`/app/financeiro/rateio/regras/[id]/simular`** — simulador interativo: input de valor BRL → `simulateAllocation()` → tabela company × % × amount + total + contextSnapshot JSON expandível.
+- **`/app/financeiro/intercompany`** — dashboard com 3 KPIs (saldo pendente total / pares pendentes / NF-e transferência pendente vermelho); alerta destacado quando há `requires_nfe_transfer && !nfeTransferEmissionId`; tabela "Saldos por par" agregada + tabela "Lançamentos recentes" últimos 50 com badges color-coded por kind + ícone ⚠ pra NF-e.
+- **`/app/financeiro/intercompany/new`** — form com select from→to (filtra excluindo from) + 5 kinds dropdown com descrição + detecção em tempo real de "CNPJs distintos" mostrando alerta antecipado se kind=goods exige NF-e.
+- **`/app/financeiro/intercompany/fechamento`** — fechamento mensal: filtros from/to (default mês corrente) + 4 KPIs (Total/Liquidado/Pendente/Taxa de liquidação %); tabela por par com Total + Liquidado verde + Pendente amarelo.
+- Hub `/app/financeiro` atualizado: cards ⚖️ Rateio + 🔄 Intercompany.
+
+**Faixa D (ADR + Seed):**
+
+- **`docs/decisions/0036-rateio-intercompany-dsl-declarativo.md` Accepted** — DSL `allocation_rules` + `ap_allocations` frozen snapshot + `intercompany_entries` espelhado + regra 25 enforced via trigger SQL + trigger requires_nfe_transfer; alternativas rejeitadas (split inline em AP, rateio sem reuso, IC sem tipagem, view materializada, recálculo retroativo).
+- **`packages/db/scripts/seed-rateio-ic.ts`** + `pnpm db:seed:rateio-ic` — **apenas tenants owned** (skip franchise com mensagem). Por tenant: 2 allocation_rules canônicas (Aluguel matriz 40% + filiais 60% / Software por revenue dinâmico) + 3 IC entries (payment + service + goods triggering NF-e). Idempotente via unique + count check.
+
+**Pendências menores adiadas Sprint 16+ próximo PR:**
+
+- Geração automática de `counter_entry_id` espelho via job
+- Recálculo retroativo opcional (snapshot frozen é default)
+- UI no detalhe da AP (Sprint 15) com botão "Aplicar rateio" + visualizar `ap_allocations`
+- DRE Sprint 14 com dimensão `allocation_source` (filtro custos rateados vs diretos)
+- View materializada `intercompany_balances` quando volume >10k pendentes
+- Job cron lembrete NF-e transferência pendente (Sprint 13 régua dispara)
+- Botão "Emitir NF-e transferência via Focus" (depende Sprint 36 ADR 0059)
+- Permission gates `financeiro.allocation.*` / `financeiro.intercompany.*` enforcement
+- Eliminação automática IC em relatórios consolidados do tenant
+- Feature flag `rateio_ic_v1`
+- E2E completo
+
+### Build — Sprint 15a 100% (ERP Financeiro Core MVP): plano de contas hierárquico + suppliers + AP com workflow declarativo + AR avulso + aging + ADRs 0033/0034 2026-05-15
+
+Sprint 15 fecha o **core MVP (15a)** em **100%**. Sprint 15b (OCR multi-provider, inbox NF-e unificada, retenções tributárias, manifestação destinatário, self-issued NF-e entrada, fiscal_emissions preparação) **fica como sprint futuro ainda não aberto** — schemas pré-cabeados em `accounts_payable` (`taxNatureId/retentionTotalCents/netAmountCents/nfeReceivedId/noInvoice/source`) garantem que Faixa B/C/D de 15b não exigem nova migration.
+
+**Decisão de quebra 15a/15b (2026-05-14):** evita estouro de 3 semanas (regra 9) e permite priorizar Sprint 16 (rateio intercompany) imediatamente, deixando OCR/NF-e para Sprint 15b quando provider configurado em piloto real.
+
+**Faixa A (Schemas + RLS + Workflow Engine):**
+
+- **`packages/db/src/schema/erp-financeiro.ts`** — 6 tabelas (ADRs 0033 + 0034):
+  - `chart_of_accounts` — hierárquico via `parent_id` self-FK + `is_leaf bool` (lançamentos só apontam pra folhas) + `kind` enum (ativo/passivo/receita/despesa/custo); unique `(tenant, code)`; index parcial em folhas ativas; soft-delete via `archived_at`.
+  - `suppliers` — FK `persons` (ADR 0047 — identidade vem via JOIN, schema só adiciona dados comerciais); unique `(tenant, person)`; `bank_account jsonb` (PIX/banco/agência/conta) pré-cabeado para Sprint 17 Open Finance.
+  - `approval_rules` — DSL declarativa: `min/max_amount_cents` + `required_approvers jsonb` (mode series|parallel + approvers role|userId); check `max ≥ min`.
+  - `accounts_payable` — state machine 8 estados (draft → pending_approval → approved → scheduled → paid → reconciled + rejected + cancelled); `approval_trace jsonb` append-only; 4 checks (amount positive + net consistent + retention non-negative + due ≥ issue); unique global `doc_key` (NF-e chave cross-tenant); colunas pré-cabeadas 15b (`taxNatureId/retentionTotalCents/nfeReceivedId/noInvoice/source`).
+  - `accounts_receivable` — AR avulso separado de `invoices` Sprint 04; status enum 6 estados; `invoice_id nullable` link com contratos.
+  - `ap_ar_payments` — pagamentos parciais append-only (sem UPDATE/DELETE policy); `source_type ∈ {ap, ar}` discriminator.
+- **`packages/db/src/policies/0034_erp_financeiro_rls.sql`** — RLS tenant-scoped + FORCE em 6 tabelas; `ap_ar_payments` sem UPDATE/DELETE policy (append-only).
+- Migration `0021_woozy_nocturne.sql` aplicada.
+- **`packages/db/tests/erp-financeiro-rls.test.ts`** — **16 tests verdes**: unique code/person + isolation + checks AP/AR + doc_key cross-tenant + append-only payments.
+- **`packages/db/src/erp-financeiro/approval.ts`** — workflow engine puro (ADR 0034) com `pickApprovalRule`/`decideNextState`/`canUserApprove`; DSL Zod `ApproverSchema`/`RequiredApproversSchema`/`ApprovalTraceEntrySchema`.
+- **`packages/db/src/erp-financeiro/approval.test.ts`** — **21 tests verdes** cobrindo matrix de casos (pickRule menor max + company-specific; decideNextState 6 variantes; canUserApprove role/userId/estados).
+- **`packages/db/package.json`** — novo export `./erp-financeiro`.
+
+**Faixa B (Server Actions — 23 total):**
+
+- **`apps/web/app/app/financeiro/plano-contas/actions.ts`** — 5 actions: `createChartAccount` (valida parent+kind+marca pai não-folha), `listChartAccounts`, `listLeafAccounts`, `archiveChartAccount` (bloqueia se filhos ativos OU AP/AR vinculadas), `moveChartAccount` (valida kind + ciclo trivial).
+- **`apps/web/app/app/financeiro/fornecedores/actions.ts`** — 5 actions: `createSupplier` (valida persons existe), `updateSupplier` (só dados comerciais), `listSuppliers` (filtro + ILIKE), `getSupplier` (histórico AP), `archiveSupplier` (bloqueia se AP em aberto).
+- **`apps/web/app/app/financeiro/contas-pagar/actions.ts`** — 7 actions consumindo engine: `createAP` (chart é folha+ativa), `submitForApproval` (rule sem approvers → approved direto), `approveAP` (canUserApprove + adiciona trace + transiciona), `rejectAP` (min 5 chars), `cancelAP` (≤ scheduled), `registerManualPayment` (soma agregada → paid|scheduled), `listAP`, `getAP`.
+- **`apps/web/app/app/financeiro/contas-receber/actions.ts`** — 6 actions: `createAR`, `markARIssued`, `registerARReceived` (soma agregada), `cancelAR`, `listAR`, `getAR`.
+
+**Faixa C (UI — 9 rotas Next.js):**
+
+- **`/app/financeiro/plano-contas`** — tree view server-rendered agrupado por kind em 5 cards com dots coloridos e indentação por depth do code; badge "grupo" em não-folhas.
+- **`/app/financeiro/plano-contas/new`** — form com kind + pai cascading + code regex + isLeaf checkbox.
+- **`/app/financeiro/fornecedores`** — lista tabular com nome/doc formatado/contato/pgto/prazo.
+- **`/app/financeiro/fornecedores/new`** — busca persons existentes (exclui já vinculados) + dados bancários opcionais.
+- **`/app/financeiro/fornecedores/[id]`** — 3 KPIs (Total pago/Em aberto/Notas) + histórico AP últimas 30.
+- **`/app/financeiro/contas-pagar`** — lista filtrável (status/from/to) + 2 KPIs (A pagar/Em atraso vermelho) + row overdue em vermelho+bold.
+- **`/app/financeiro/contas-pagar/new`** — wizard com auto-fill dueDate via `defaultPaymentTermDays` do supplier + parsing BRL→centavos + opção "submeter imediatamente".
+- **`/app/financeiro/contas-pagar/[id]`** — 4 KPIs (Bruto/Líquido/Pago/A pagar) + timeline `approval_trace` color-coded + `<APActions>` client-side com dialogs inline (Aprovar/Rejeitar/Cancelar/Pagar) condicionais por status.
+- **`/app/financeiro/contas-receber`** — lista filtrável + 2 KPIs (A receber/Recebido verde).
+- **`/app/financeiro/contas-receber/new`** — payer search + leaf accounts receita/ativo + "marcar como emitida".
+- **`/app/financeiro/contas-receber/[id]`** — 3 KPIs + `<ARActions>` (Marcar emitida/Registrar recebimento/Cancelar).
+- **`/app/financeiro/aging`** — AP+AR distribuído em 5 buckets temporais (A vencer/1-30/31-60/61-90/90+) com bar charts color-coded.
+- **`/app/financeiro`** (hub) — 8 cards nav cobrindo Sprints 04/14/15.
+
+**Faixa D (ADRs + Seed canônico):**
+
+- **`docs/decisions/0033-plano-contas-hierarquico-erp-financeiro.md` Accepted** — plano hierárquico self-FK + is_leaf + kind herda do pai + seed brasileiro simplificado ~67 contas; alternativas rejeitadas (ltree, nested set model, achatado).
+- **`docs/decisions/0034-workflow-aprovacao-ap-declarativo.md` Accepted** — `approval_rules` DSL JSON + `approval_trace jsonb` + engine puro com 21 unit tests; alternativas rejeitadas (Temporal/Camunda, stored procs, hardcode).
+- **`packages/db/scripts/seed-plano-contas.ts`** + `pnpm db:seed:plano-contas` — popula ~67 contas brasileiras (12 agregadoras + 55 folhas) adaptadas a academia/clínica em cada tenant + 3 approval_rules canônicas (Auto até R$ 500 / Gerente até R$ 5.000 / Gerente+Diretor acima). Idempotente via `ON CONFLICT DO NOTHING` + Pass 2 resolve `parent_id` via lookup code.
+- **`packages/db/scripts/seed-erp-financeiro.ts`** + `pnpm db:seed:erp-financeiro` — popula em cada tenant: 20 fornecedores PJ típicos brasileiros com CNPJs algoritmicamente válidos + 10 APs em 7 estados variados com trace sintético + 5 ARs avulsos. **8 tenants total = 160 suppliers + 80 APs + 40 ARs**. Idempotente via count check.
+- **298 testes Vitest verdes** (era 261 → +37 Sprint 15).
+- Typecheck monorepo verde.
+
+**Sprint 15b (futuro, ainda não aberto) cobre:** OCR multi-provider (ADR 0035), inbox NF-e unificada (ADRs 0056/0058), manifestação destinatário NF-e (ADR 0057), self-issued NF-e entrada (ADR 0060), retenções tributárias (ADR 0061), `fiscal_emissions` preparação (ADR 0059), parser FEBRABAN/XML NF-e, UI `/app/financeiro/nfe` inbox + settings OCR/naturezas/aprovação, WhatsApp inbound boleto handler (Sprint 13 hub), E2E completo, RIPD, feature flag `erp_financeiro_v1`. **Schemas AP pré-cabeados** garantem que 15b não exige nova migration.
+
+**Pendências menores Sprint 15+ próximo PR:**
+
+- UI `/app/settings/financeiro/aprovacao` (editor visual de `approval_rules`) — backend pronto
+- `payViaAsaas` + pagamento em lote (gerente seleciona N APs approved)
+- Escalada por timeout AP pending (job cron + régua Sprint 13)
+- Recursive CTE para detecção de ciclo em `moveChartAccount`
+- Widget "Contas a pagar vencendo" no dashboard gerente
+- Permission gates `financeiro.ap.read/write/approve/pay` enforcement
+- Search index sync (ADR 0062) para AP/AR/suppliers
+- Particionamento `accounts_payable` por mês (regra 34)
+- Anexar PDF NF/boleto MinIO (depende scanUpload regra 38)
+
+### Build — Sprint 14 100%: DRE + Custos operacionais + Previsibilidade (schemas + calculator pure + forecast heurístico + UI completa) 2026-05-13
+
+Sprint 14 fecha em **100%**. Faixas A+B+C+D entregues no mesmo dia: 3 schemas (`cost_categories`/`cost_entries`/`recurring_costs`) + 10 RLS + 11 tests; `calculateDre` + `forecastRevenue` pure functions com 13 tests cobrindo edge cases; 10 Server Actions wrapped (`generateDre` audita leitura — DRE é dado administrativo sensível); UI completa (lista filtrável + categorias dual-column + wizard cost entry + DRE com 4 KPIs e breakdown por categoria com barras + previsão tabular com pessimista/projetado/otimista); seed canônico popula 6 categorias + 10 custos + 3 recorrências por tenant. **ADR não exigido** — categorias com type fixed/variable é estrutura trivial (Sprint 14 doc confirma).
+
+**Faixa A (Schemas + RLS + Tests):**
+
+- **`packages/db/src/schema/custos.ts`** — 3 tabelas:
+  - `cost_categories` — slug + name + enum `cost_category_type` (fixed/variable) + icon + soft-delete archived_at; unique `(tenant, slug)`; índice parcial por tipo ativo.
+  - `cost_entries` — `amount_cents int` (check positive) + `incurred_at date` (DRE agrupa por aqui, NÃO created_at — permite retroativo) + company_id FK + category_id FK + attachment_storage_path (Sprint 38 ClamAV) + recurring_cost_id FK lógica (NULL = entrada manual).
+  - `recurring_costs` — `day_of_month int` (check 1-28 evita problemas fevereiro) + `starts_at`/`ends_at` (check ends_after_starts) + `last_generated_at` pra idempotência cron + active toggle.
+- **`packages/db/src/policies/0033_custos_rls.sql`** — 10 policies tenant-scoped. cost_entries permite DELETE (correção de erro de lançamento, audit via wrap). Sem DELETE em categorias/recorrentes (soft via archived_at/active=false).
+- **`packages/db/tests/custos-rls.test.ts`** — 11 testes: unique slug per tenant + mesma slug em outro tenant coexiste + isolation per-tenant + check amount=0/negativo rejeitado + insert válido + isolation entries + check day_of_month 0/29 rejeitado + check ends_after_starts violado + recurring válido aceito + soft-delete archived_at preserva row.
+
+**Faixa B (DRE calculator + forecast + Server Actions):**
+
+- **`packages/db/src/financeiro/dre.ts`**:
+  - `calculateDre({period, invoices, costEntries})` — pure function retorna `{revenue: {gross, paid, pending, overdue, refunded}, costs: {byCategory ordenado descending, byType {fixed, variable}, total}, margins: {gross, percent}, counts}`. Agrupa receita por **status no período correto**: paid/refunded via `paid_at`, pending/overdue via `due_at`. Custos agrupados por `incurred_at`. Margem bruta = paid - costs.total. Não divide por zero se paid=0.
+  - `forecastRevenue({baselineMonthlyCents, monthlyChurnRate, monthsAhead})` — heurístico simples: `projection[m] = baseline × (1 - churn)^m` com intervalo low (-15%) / high (+10%); retorna estrutura vazia se inputs inválidos.
+- **`packages/db/src/financeiro/dre.test.ts`** — 13 unit tests cobrindo: receita paid via paid_at, separação pending/overdue/paid, refunded não conta gross, agrupamento por categoria + ordenação descending, exclusão fora do período, margens com paid=0, incurredAt string ISO aceito, forecast com churn 5%, low/high intervals, churn=0 mantém baseline, inputs inválidos retornam vazio, total bate com soma.
+- **`packages/db/package.json`** — novo export `./financeiro`.
+- **`apps/web/app/app/financeiro/custos/actions.ts`** — 10 Server Actions wrapped:
+  - `createCostCategory` + `listCostCategories` + `archiveCostCategory` (slug regex `[a-z0-9_]+`)
+  - `createCostEntry` + `listCostEntries` (filtros company/category/from/to) + `deleteCostEntry` (audit)
+  - `createRecurringCost` + `toggleRecurringCost` + `listRecurringCosts`
+  - `generateDre(from, to, companyId?)` — chama calculateDre com queries DB; action `dre.generate` grava `audit_log` (DRE = dado sensível administrativo per Sprint 14 doc)
+  - `forecastRevenueAction(monthsAhead, manualChurnRate?)` — apura baseline (sum plans.price × contracts.active) + churn histórico (cancelled últimos 6m / active base / 6) OU aceita override manual; chama forecastRevenue
+
+**Faixa C (UI):**
+
+- **`/app/financeiro/custos/page.tsx`** — lista filtrável com total agregado + badges fixed/variable color-coded (info-bg/warning-bg) + 4 nav buttons (Categorias/Recorrentes/DRE/Previsão).
+- **`/app/financeiro/custos/categorias/page.tsx`** + `new-category-form.tsx` — **dual-column layout**: catálogo agrupado por type à esquerda + form criação sidebar à direita; refresh inline após criar; slug regex validation.
+- **`/app/financeiro/custos/new/page.tsx`** + `new-cost-form.tsx` — wizard companyId + categoryId (com ícone + type label inline) + amount em BRL (parsing vírgula → centavos) + date picker + description.
+- **`/app/financeiro/dre/page.tsx`** — seletor de período (default = mês atual) + **4 KPI cards** (Receita paga verde, Pendente amarelo somando pending+overdue, Custos vermelho com breakdown fixo+variável inline, Margem com cor por sinal e percentual de margem bruta) + breakdown por categoria com **barras horizontais color-coded por type** (azul=fixed, amarelo=variable) + percentual relativo + count de lançamentos.
+- **`/app/financeiro/previsao/page.tsx`** — seletor 3/6/12 meses + override manual de churn % + **3 KPI cards** (Baseline mensal, Churn aplicado com label histórico/manual, Total projetado) + **tabela 4 colunas** (mês, pessimista -15%, projetado, otimista +10%) + nota explicando heurística + referência à substituição por modelo preditivo Sprint 19 ADR 0027.
+
+**Faixa D (Seed + fechamento):**
+
+- **`packages/db/scripts/seed-custos.ts`** + `pnpm db:seed:custos` — popula 6 categorias canônicas (Aluguel 🏢 fixed, Folha CLT 👥 fixed, Internet 📡 fixed, Marketing 📣 variable, Manutenção 🔧 variable, Energia ⚡ variable) + 10 cost_entries últimos 3 meses (3 aluguéis + 2 folhas + 2 marketing + 1 manutenção + 1 energia + 1 internet com valores realísticos R$ 3.500 aluguel / R$ 15.000 folha / etc) + 3 recurring_costs (aluguel D5 + folha D5 + internet D10) por tenant. 8 tenants = **48 categorias + 80 custos + 24 recorrências**.
+- **261 testes Vitest total verdes** (era 237 → +24 Sprint 14: 11 RLS + 13 DRE).
+- Typecheck clean.
+
+**Pendências menores adiadas Sprint 14+ próximo PR:**
+
+- **Lucratividade por procedimento via `service_type`** (depende `invoice_items.service_type`/`tuss_code` backfill Sprint 04+).
+- **Upload NF-e PDF MinIO** bucket privado `cost-attachments` + `scanUpload()` ClamAV regra 38 + URL assinada curta.
+- **Exportação DRE PDF** (`@react-pdf/renderer`) + CSV.
+- **Simulador interativo de sensibilidade** com sliders churn/baseline na página de previsão.
+- **Job cron diário `recurring-tick`** lendo `recurring_costs WHERE active=true AND day_of_month=now()` AND (`last_generated_at IS NULL OR last_generated_at < first_of_month`) + gerando `cost_entries` idempotentes.
+- **Permission** `custos.read`/`custos.write`/`dre.read` enforcement em Server Actions.
+- **Card "Custos do mês"** no dashboard gerente Sprint 07.
+- **RIPD `v1.0-custos.md`** se necessário (DRE é dado financeiro interno, não saúde — provável dispensa LGPD art. 11; consultar DPO).
+- **Feature flag `custos_v1`** (PostHog dropado MVP).
+- **Importação extrato OFX/CSV** + **conciliação bancária** (Sprint 17 Open Finance entrega completo).
+- **Centro de custos por unit** (granularidade além de category).
+- **Benchmark anonimizado** entre tenants do mesmo porte (Sprint 19+ analytics, respeitando regra 26).
+- **Particionamento `cost_entries`** por mês quando volume justificar (regra 34 + ADR 0072).
+
+**Bug pré-existente** (Server Components com `db` global retornam 0 rows porque RLS bloqueia — `app.tenant_id` não setado em conexão direta) afeta TODAS as páginas `/app/financeiro/custos` + `/categorias` + `/dre` + `/previsao`. **Server Actions também afetadas** (verificado no preview: `/app/financeiro/dre` retorna R$ 0,00 mesmo após seed) — `withSessionContext` abre conexão A pra setar app.tenant_id, mas queries Drizzle internas pegam conexão B do pool. Comentário canônico em `apps/web/app/lib/session.ts` confirma a limitação: "Drizzle global pool sempre pega novo. Sprint 02+ refatora pra Drizzle-com-SET via wrapAction." UI estrutural correta (KPI cards, seletor período, breakdown por categoria, tabela forecast) — dados aparecerão quando refactor RLS infra for resolvido. Sprint 14+ próximo PR de infra deve consertar `withSessionContext` pra usar `db.transaction` com `SET LOCAL` ou passar tx adiante.
+
+### Build — Sprint 13 100%: WhatsApp + Régua declarativa (schemas + DSL Zod + UI builder + ADRs 0025+0026 Accepted) 2026-05-13
+
+Sprint 13 fecha em **100%** (core MVP outbound + DSL). Faixas A+B+C+D entregues no mesmo dia: 5 schemas (`message_providers`/`message_templates`/`reguas`/`regua_executions`/`messages_sent`) + 15 RLS + 8 tests; DSL `ReguaDslSchema` Zod validando 10 eventos canônicos + 2 kinds ações + helpers `nextActionAtFromSteps`/`renderTemplate`/`isWithinHourWindow` GMT-3 com 23 tests; 8 Server Actions wrapped (`sendMessageManual` usa stub adapter — adapter real fica Sprint 13b); UI completa (hub + lista templates com auto-detecção de variáveis + builder visual de réguas + histórico com filtros + widget perfil); ADR 0025 (Provider WhatsApp) e ADR 0026 (Motor DSL) **promovidos pra Accepted**. Seed standalone popula 5 templates + 1 régua canônica "Cobrança D+1/+3/+7" desativada em 8 tenants (40 templates + 8 réguas total).
+
+**Faixa A (Schemas + RLS + Tests):**
+
+- **`packages/db/src/schema/mensagens.ts`** — 5 tabelas:
+  - `message_providers` — config por tenant (channel WhatsApp/Email/SMS + provider 'twilio'/'gupshup'/'zapi'/'resend'/'ses') + `credentials_encrypted jsonb` (envelope crypto AES-256-GCM reusada Sprint 04 asaas_keys) + `from_identifier` + `sandbox`/`active` + índice parcial active per channel.
+  - `message_templates` — approval flow `draft → pending → approved/rejected`; email pula direto pra approved; `variables text[]` auto-extraído; `provider_template_id` pra match após aprovação Meta; unique `(tenant, slug)`.
+  - `reguas` — DSL declarativo: `trigger jsonb` + `actions jsonb` + `stop_on jsonb` + `guards jsonb`; soft-delete via archived_at; `runs_count` contador.
+  - `regua_executions` — instâncias rodando per-member; state machine `running/completed/stopped_by_rule/stopped_by_consent/failed`; `next_action_at` indexado parcial pra cron tick eficiente; `trigger_payload jsonb` snapshot.
+  - `messages_sent` — audit-friendly append-only: `variables_resolved jsonb` snapshot pra debugging, `body_rendered text`, `provider_message_id` pra webhook match, `cost_cents` pra conciliação, check `cost_non_negative`.
+- **`packages/db/src/policies/0032_mensagens_rls.sql`** — 15 policies tenant-scoped. Sem DELETE em templates/reguas (soft via archived_at) e messages_sent (audit append-only). UPDATE em messages_sent permitido pra callbacks (delivered_at/read_at/failed_at) — trigger Sprint 13+ valida apenas colunas de callback alteradas.
+- **`packages/db/tests/mensagens-rls.test.ts`** — 8 testes cobrindo isolamento per-tenant em todas as 5 tabelas + unique `(tenant, slug)` + jsonb roundtrip (trigger/actions/stop_on/guards persistem) + index parcial pending + check cost_non_negative + soft-delete preserva via archived_at.
+
+**Faixa B (DSL régua + Server Actions):**
+
+- **`packages/db/src/mensagens/dsl.ts`** (ADR 0026): `ReguaDslSchema` Zod completo:
+  - **10 eventos canônicos**: `invoice.overdue/paid/cancelled`, `member.no_checkin_15d/30d`, `lead.no_response_3d`, `appointment.tomorrow/today`, `workout.session_completed`, `achievement.earned`
+  - **2 kinds de ação**: `send_message` (channel + template_slug + delay_days + fallback_channel) + `wait` (delay_days)
+  - **`StopOnSchema`** array de eventos canônicos
+  - **`GuardsSchema`**: consent (`marketing_messages`/`transactional`/`whatsapp_exchange`) + rate_limit_per_member_24h + hour_window HH:MM
+  - 3 helpers públicos: `nextActionAtFromSteps(startedAt, actions, idx)` calcula timestamp acumulativo; `renderTemplate(body, vars)` substitui `{{var.path}}` com edge cases (var faltante = string vazia, espaços tolerados, valor 0 renderiza "0"); `extractTemplateVariables(body)` retorna lista única ordenada; `isWithinHourWindow(now, window)` GMT-3 SP com suporte a janela cruzando meia-noite
+  - **23 unit tests Vitest** cobrindo: régua canônica válida, evento não-canônico rejeitado, action desconhecida rejeitada, actions vazias rejeitada, delay_days negativo rejeitado, hour_window formato inválido rejeitado, next_action_at acumulativo com wait, render template múltiplas vars + faltantes + espaços + zero numérico, extract dedup ordenado, window cruzando meia-noite
+- **`packages/db/package.json`** — novo export `./mensagens`.
+- **`apps/web/app/app/mensagens/actions.ts`** — 8 Server Actions wrapped:
+  - `createTemplate` — extrai variables automaticamente via `extractTemplateVariables(body)` + email pula direto pra approved + WhatsApp começa draft
+  - `approveTemplate` — atualiza `provider_template_id` após aprovação Meta
+  - `listTemplates`
+  - `createRegua` — valida `ReguaDslSchema` antes de gravar trigger/actions/stop_on/guards
+  - `activateRegua` / `pauseRegua` — toggle active flag
+  - `listReguas`
+  - `sendMessageManual` — resolve template + member.phone/email + renderiza body via `renderTemplate` + grava `messages_sent` com `status='queued'` + `provider='stub'` (envio real adapter Sprint 13b)
+  - `listMessages` (filtros canal/status) / `listMemberMessages` (widget perfil)
+
+**Faixa C (UI):**
+
+- **`/app/mensagens/page.tsx`** — hub com 4 cards (templates count + reguas count + histórico count + provider stub placeholder).
+- **`/app/mensagens/templates/page.tsx`** — lista com cards + badges approval color-coded (draft/pending/approved/rejected) + channel icons (🟢 📧 📱) + variables chips preview.
+- **`/app/mensagens/templates/new/page.tsx`** + form client — **auto-detecção de variáveis enquanto digita corpo** (regex `{{...}}` extract + dedup + ordenado, atualiza chips em tempo real) + slug validation `[a-z0-9_]+` + email exige subject + WhatsApp informa que template entra como draft pendente aprovação Meta.
+- **`/app/mensagens/reguas/page.tsx`** — lista com state badges (ativa/pausada) + trigger event chip + actions count + runs count + actions preview chips.
+- **`/app/mensagens/reguas/new/page.tsx`** + builder client — **trigger picker** com 6 eventos canônicos pre-listados, **add actions inline** com kind picker (send_message/wait) + canal + template_slug filtrado dinamicamente por canal escolhido + delay_days, **stop_on checkboxes** (invoice.paid/cancelled), guards default `consent: marketing_messages + rate_limit 3/24h`, régua nasce inativa por design (mensagem explica isso).
+- **`/app/mensagens/historico/page.tsx`** — filtros canal/status + cards com channel icon + member name + template name + body rendered (line-clamp-2 italic) + status badge color-coded + provider + timestamps delivered/read + failure_reason.
+- **`/app/members/[id]/page.tsx`** — adicionado widget "💬 Mensagens recentes" entre Avaliações e slot Copilot futuro com até 5 últimas + body rendered + status.
+- **`packages/db/scripts/seed-mensagens.ts`** + script `pnpm db:seed:mensagens` — popula **5 templates** por tenant: cobranca_d1 (D+1 WhatsApp), cobranca_d3 (D+3 WhatsApp), cobranca_d7 (D+7 email com subject), reengajamento_15d (WhatsApp), boas_vindas (WhatsApp); + **1 régua canônica "Cobrança D+1/+3/+7"** desativada com trigger `invoice.overdue` + 3 actions encadeadas com delay_days acumulado [0, 2, 4] + stop_on `[invoice.paid, invoice.cancelled]` + guards padrão. 8 tenants = **40 templates + 8 réguas total**.
+
+**Faixa D (ADRs Accepted + fechamento):**
+
+- **[`docs/decisions/0025-provider-whatsapp.md`](docs/decisions/0025-provider-whatsapp.md)** — atualizado de Proposed → **Accepted** (2026-05-13). Documenta que schema (`message_providers` com `credentials_encrypted` + RLS) + Server Actions + UI estão prontos pra receber adapter real; **sub-decisão final Twilio vs Gupshup BR fica Sprint 13b** (POC).
+- **[`docs/decisions/0026-motor-regua-dsl.md`](docs/decisions/0026-motor-regua-dsl.md)** — atualizado de Proposed → **Accepted** (2026-05-13). Documenta DSL Zod-validada + 10 eventos + 2 kinds + 3 helpers + 23 tests + UI builder + seed canônica entregues; **evaluator runtime cron tick fica Sprint 13b** (consome `domain_events` + processa `regua_executions.next_action_at`).
+- **237 testes Vitest total verdes** (era 206 → +31 Sprint 13: 8 RLS + 23 DSL); 19 test files.
+- Typecheck clean.
+
+**Pendências menores adiadas Sprint 13b próximo PR:**
+
+- **Envio real** WhatsApp/Email via adapter Twilio/Gupshup/Resend; sub-decisão final ADR 0025 + POC.
+- **Evaluator runtime** cron tick (consome `domain_events` + processa `regua_executions.state='running' AND next_action_at <= now()` + chama provider via `safeFetch()` regra 37 + grava callbacks).
+- **Hub inbound multifluxo** (ADR 0051): `whatsapp_inbound_messages` + `whatsapp_conversations` + `tenant_whatsapp_settings` + identity_matcher por persons.phone + intent_router IA Claude Haiku + classificador anexos PDF/imagem + `scanUpload` regra 38 + handler registry pluggable consumido por Sprints 15 (boleto)/12 (foto-progress)/30 (exame).
+- **Webhook callbacks** delivery/read (POST /api/mensagens/webhook/whatsapp + email Resend) que atualiza `messages_sent.delivered_at`/`read_at`/`failed_at`.
+- **Rate limit por (tenant, member, 24h)** via Redis self-host antes de enviar.
+- **Opt-out flow via `consents`**: verificar `marketing_messages` revoked antes de enviar.
+- **UI `/app/mensagens/providers`** config credentials_encrypted + sandbox toggle + teste de envio.
+- **UI `/app/mensagens/inbound`** operador acompanha mensagens recebidas pendentes intervenção.
+- **RIPD `docs/compliance/ripd/v1.0-whatsapp.md`** (regra 29 + ADR 0054) — gate de produção.
+- **Feature flag `mensagens_v1`** (PostHog dropado MVP).
+- **Particionamento `messages_sent`** por mês (regra 34 + ADR 0072) Sprint 14+ quando volume justificar.
+- **Canais de notificação `system_alerts`** (ADR 0071) via worker consumer da `notification_queue`.
+- **Trigger BEFORE UPDATE em `messages_sent`** validando apenas colunas de callback foram alteradas (audit append-only sem violar callback flow).
+
+### Build — Sprint 12 100%: Avaliações físicas (schemas dinâmico + calculadoras + EVA scorer + UI low-code + ADR 0024) 2026-05-13
+
+Sprint 12 fecha em **100%**. Faixas A+B+C+D entregues no mesmo dia: 5 schemas + RLS especial pra biblioteca global de tipos + 10 tests; 5 calculadoras antropométricas + scorer EVA com 35 tests; 7 Server Actions wrapped incluindo `createAssessment` em transação com cálculos automáticos via field_key reconhecido; UI completa (hub + catálogo de tipos com filtros + editor low-code de fields + tabela member + wizard dinâmico + detail com cálculos derivados + widget perfil); ADR 0024 publicado documentando `fields jsonb` declarativo cross-vertical (Academia composição + Fisio escalas funcionais + Nutri Sprint 29). Seed standalone popula 5 tipos globais (Antropometria + Bioimpedância + Dobras 7 Pollock + Anamnese Academia + EVA Fisio com clinical_reference + scoring_method).
+
+**Faixa A (Schema + RLS + Tests):**
+
+- **`packages/db/src/schema/avaliacoes.ts`** — 5 tabelas:
+  - `assessment_types` — `tenant_id` **nullable** (NULL = biblioteca global LogiFit, NOT NULL = customizado tenant); `fields jsonb` declarativo (schema dinâmico ADR 0024); `scoring_method jsonb` (escalas funcionais com `strategy`/`domains`/`interpretation`); `clinical_reference text` (citação bibliográfica); enum `assessment_category` (composicao_corporal/escala_funcional/anamnese/teste_funcional/custom) + enum `assessment_vertical` (academia/fisio/nutri); versionamento via `parent_type_id` + `version int`; índices parciais `assessment_types_global_idx` + `assessment_types_tenant_category_idx`.
+  - `assessments` — `type_version int` snapshot pra preservar schema histórico; `soft_deleted_at` retenção 20a (COFFITO 415 + CFM 2.299); `performed_at`/`performed_by_user_id`/`notes`.
+  - `assessment_measurements` — `value_num`/`value_text`/`value_enum` mutex via check `assessment_measurements_has_value`; enum `measurement_source` (manual/device/import_csv); pré-cabeada Device Hub Sprint 34 com `source_device_reading_id` + check `assessment_measurements_device_requires_validation` (source=device exige validated_by+validated_at); unique `(assessment_id, field_key)`.
+  - `assessment_photos` — Storage bucket privado placeholder; enum `assessment_photo_kind` (front/back/side_left/side_right/custom); `scan_status` pra integração Sprint 38 ClamAV (regra 38).
+  - `assessment_calculations` — cache de derivados; `calc_key` canônico (`imc`/`pct_gordura_pollock7`/`tmb_mifflin`/`tmb_harris_benedict`/`tmb_katch_mcardle`/`rcq`/`massa_magra_kg`); `classification` (faixa OMS/Pollock/cardiovascular); unique `(assessment_id, calc_key)`.
+- **`packages/db/src/policies/0031_avaliacoes_rls.sql`** — 15 policies tenant-scoped. Biblioteca global em `assessment_types` (SELECT `tenant_id IS NULL OR tenant_id = app.tenant_id`). INSERT global bloqueado pra app-role. Sem DELETE em assessments (soft-delete obrigatório pra retenção 20a).
+- **`packages/db/tests/avaliacoes-rls.test.ts`** — 10 testes: biblioteca global visível cross-tenant + INSERT global rejeitado via app-role + tipo customizado não vaza + isolamento assessments + check has_value + unique field_key + check device requires validation + unique calc_key + soft-delete preserva row.
+
+**Faixa B (Calculadoras + EVA + Server Actions):**
+
+- **`packages/db/src/avaliacoes/calc.ts`** (ADR 0070): 5 calculadoras + helper:
+  - `calculateImc({weightKg, heightCm})` — IMC + classificação OMS (6 bands)
+  - `calculatePollock7({7 dobras, ageYears, sex})` — densidade Jackson-Pollock 1980 + Siri 1956 → % gordura + bands por sexo
+  - `calculateTmbMifflin({weight, height, age, sex})` — Mifflin-St Jeor 1990 (recomendada ADA)
+  - `calculateTmbHarrisBenedict({weight, height, age, sex})` — Harris-Benedict revisado 1984
+  - `calculateTmbKatchMcArdle({leanMassKg})` — usa LBM (mais precisa com bioimpedância)
+  - `calculateRcq({waist, hip, sex})` — relação cintura-quadril + risco cardiovascular OMS
+  - `calculateLeanMass(weight, pctFat)` — LBM derivado
+  - Todos retornam null em edge cases (peso/altura/idade inválidos); 27 unit tests cobrindo casos canônicos + edge cases.
+- **`packages/db/src/avaliacoes/scoring-eva.ts`**: EVA 0-10 Huskisson 1974 com 5 bands (sem_dor/leve/moderada/intensa/insuportavel) + severity (info/warning/danger/critical); 8 unit tests.
+- **`packages/db/package.json`** — novo export `./avaliacoes`.
+- **`apps/web/app/app/avaliacoes/actions.ts`** — 7 Server Actions wrapped:
+  - `createAssessmentType` / `listAssessmentTypes` (combina global+tenant; filtros category/vertical)
+  - `createAssessment` — **transação com cálculos automáticos**: lookup measurements por `field_key` reconhecido → chama calc.ts → popula `assessment_calculations` em batch (IMC se peso+altura ou context.heightCm; Pollock se 7 dobras + context.ageYears + context.sex; RCQ se cintura+quadril+context.sex; TMB Mifflin se peso+altura+idade+sexo; lean mass se peso+Pollock)
+  - `listMemberAssessments` (filtro category opcional)
+  - `getAssessment` (measurements + photos + calculations expandidos + audit setAuditResource)
+  - `compareAssessments` (série temporal por field_key pra gráfico evolução)
+  - `softDeleteAssessment` (preserva row + audit retenção 20a)
+  - `getLatestAssessmentSummary` (widget perfil — última avaliação + calcs)
+
+**Faixa C (UI):**
+
+- **`/app/avaliacoes/page.tsx`** — hub: lista recentes (até 20) com link member + tipo + categoria + data.
+- **`/app/avaliacoes/tipos/page.tsx`** — catálogo combinado com badges "Global"/"Tenant" + filtros category/vertical + cards mostrando fields preview + clinical_reference.
+- **`/app/avaliacoes/tipos/new/page.tsx`** + form client — editor low-code de fields: add/remove campos + kind picker (number/text/enum/likert) + unit/min/max/options.
+- **`/app/members/[id]/avaliacoes/page.tsx`** — tabela das avaliações do member com link "+ Nova".
+- **`/app/members/[id]/avaliacoes/new/page.tsx`** + wizard client — **schema dinâmico em runtime**: seleciona tipo → busca fields jsonb → renderiza form (number/text/enum/likert) + context pre-preenchido de person (idade calculada de birth_date, sexo de person.sex, altura manual) → `createAssessment`.
+- **`/app/members/[id]/avaliacoes/[assessmentId]/page.tsx`** — detail com cards de **cálculos derivados** (IMC + classificação com cor por severity OMS, % gordura Pollock + faixa, TMB Mifflin, RCQ + risco cardiovascular) + tabela de measurements com unit por field_def.
+- **`/app/members/[id]/page.tsx`** — adicionado widget "📊 Última avaliação" entre Treinos e slot Copilot futuro com 3 calc cards mini.
+- **`packages/db/scripts/seed-avaliacoes.ts`** + script `pnpm db:seed:avaliacoes` — popula **5 tipos globais**: Antropometria Academia (peso+altura+4 circ), Bioimpedância (peso+altura+%gordura+massa magra+%água+gordura visceral), Dobras 7-pregas Pollock (clinical_reference Pollock & Jackson 1980 + Siri 1956), Anamnese Academia (objetivo+nível atividade+histórico médico+medicamentos+restrições+frequência), EVA — Escala de Dor (scoring_method completo + clinical_reference Huskisson 1974).
+
+**Faixa D (ADR + fechamento):**
+
+- **[`docs/decisions/0024-avaliacoes-schema-dinamico-fields-jsonb.md`](docs/decisions/0024-avaliacoes-schema-dinamico-fields-jsonb.md)** — ADR 0024 Accepted. Justifica `fields jsonb` declarativo cross-vertical (vs tabela-por-tipo / EAV / JSONB único): adicionar tipo = INSERT row sem migration; cross-vertical reuso Sprint 20 Fisio + Sprint 29 Nutri; cálculos derivados via field_key canônico; snapshot type_version preserva schema histórico; biblioteca global cross-tenant; alternativas rejeitadas (tabela-por-tipo explode N tabelas; EAV puro perde tipagem + queries lentas; JSONB único perde unique + índices).
+- **45 testes Vitest Sprint 12 verdes** (10 RLS + 27 calc + 8 EVA); **206 testes total verdes** (era 161).
+- Typecheck clean.
+
+**Pendências menores adiadas Sprint 12+ próximo PR:**
+
+- 7 escalas funcionais Fisio restantes (Oswestry/DASH/Tampa/SF-36/Berg/TUG/WOMAC) seguindo mesmo padrão MVP EVA + scoring_method jsonb completo.
+- Calculadoras protocolos brasileiros (Petroski 4 dobras, Guedes 3 dobras, Durnin-Womersley, Faulkner, Cunningham).
+- Upload foto MinIO bucket privado + ClamAV scan (regra 38) + URL assinada.
+- Gráficos Recharts de evolução temporal por field_key (consome `compareAssessments`).
+- Comparação visual lado-a-lado entre 2-3 avaliações (antes × depois × atual).
+- Integração com Sprint 09 goals via evento `measurement.recorded` (medição peso → atualiza progresso goal kind=weight_loss).
+- WhatsApp photo-progress handler hub Sprint 13 — paciente manda foto pelo WA → rascunho pending em `/app/members/[id]/avaliacoes/pending-photo`.
+- Device Hub source=device validation trigger Sprint 34 (já check constraint mas trigger Server Action faltando).
+- RIPD `docs/compliance/ripd/v1.0-avaliacoes-fisicas.md` (regra 29 + ADR 0054) — gate de produção clínica.
+- Feature flag `avaliacoes_v1` (PostHog dropado MVP).
+- Particionamento `assessment_measurements` por mês (regra 34 + ADR 0072) Sprint 12+ quando volume real justificar.
+
+### Build — Sprint 11 100%: Prescrições + biblioteca de treinos (schemas polimórficos + Server Actions + UI catálogo/wizard/execução + ADR 0023) 2026-05-13
+
+Sprint 11 fecha em **100%**. Faixas A+B+C+D entregues no mesmo dia: 6 schemas + RLS especial pra biblioteca global + 13 tests; 12 Server Actions incluindo `prescribeWorkout` + `startSession` + `finishSession` (preenche `calculated_kcal` automaticamente via MET); UI completa (catálogo `/app/biblioteca/exercicios` + wizard novo workout `/app/treinos/new` + ficha do member `/app/members/[id]/treino` + execução set-a-set + widget perfil); helper `calculateKcalPerSession` em `@repo/db/treinos` com 11 unit tests + ADR 0070; ADR 0023 publicado documentando `prescriptions` polimórfico `kind`+`ref_id` como base cross-vertical (workout MVP, meal_plan Sprint 29, fisio_protocol Sprint 20). Seed standalone popula 20 exercícios globais Compendium 2024 + 2 workouts por tenant.
+
+**Faixa A (Schema + RLS + Tests):**
+
+**Adições:**
+
+- **`packages/db/src/schema/treinos.ts`** — 6 tabelas:
+  - `exercises` — `tenant_id` **nullable** (NULL = biblioteca global LogiFit, NOT NULL = tenant); `met_value numeric` obrigatório (Compendium 2024); `muscle_groups text[]`, `variations uuid[]`, `level` enum (iniciante/intermediario/avancado); `video_storage_path` + `thumbnail_url`. Check `exercises_met_positive` (>0). Índice parcial `exercises_global_idx` p/ leitura quente da biblioteca.
+  - `workouts` — templates por tenant com versionamento via `parent_workout_id` + `version int`; goal/duration/description; soft-delete `archived_at`. Check `workouts_version_positive`.
+  - `workout_items` — ordem + sets + reps text livre ("10"/"8-12"/"AMRAP") + load_kg opcional + rest_seconds + notes + `superset_group` opcional. Unique `(workout_id, order)`. Cascade delete pela workout.
+  - `prescriptions` — **base polimórfica (ADR 0023)** com enum `prescription_kind` (workout/meal_plan/fisio_protocol/custom) + `ref_id uuid` (FK lógica). Checks `prescriptions_ref_required` (custom não exige ref_id) + `prescriptions_ends_after_starts`. Índice parcial `prescriptions_active_idx`.
+  - `workout_sessions` — referencia `prescription_id` (NÃO `workout_id`) pra preservar histórico mesmo se profissional trocar workout; `started_at`/`finished_at`; `overall_rpe` (range 1-10); `calculated_kcal numeric` preenchido em `finishSession`.
+  - `workout_session_items` — registro set-a-set: `set_number`/`reps_performed`/`weight_kg`/`rpe`/`done_at`. Unique `(session_id, workout_item_id, set_number)`. Append-only via ausência de UPDATE/DELETE policy.
+- **`packages/db/src/policies/0030_treinos_rls.sql`** — 16 policies tenant-scoped. **Política especial em `exercises`**: SELECT permite `tenant_id IS NULL OR tenant_id = app.tenant_id` (biblioteca global visível a todos), INSERT/UPDATE só com tenant_id próprio (curador externo seedea globais via superuser). `workout_session_items` sem UPDATE/DELETE policy → silently blocked (append-only audit-like).
+- **`packages/db/tests/treinos-rls.test.ts`** — 13 testes cobrindo: isolamento per-tenant + biblioteca global visível cross-tenant + INSERT global rejeitado via app-role + check constraints (met_positive, version_positive, sets_positive, rpe_range, ends_after_starts, ref_required) + unique workout_items order + versionamento via parent_workout_id + polimorfismo prescription (kind=workout exige ref_id, kind=custom não) + workout_session_items append-only.
+
+**Faixa B (kcal helper + Server Actions):**
+
+**Adições:**
+
+- **`packages/db/src/treinos/kcal.ts`** — `calculateKcalPerSession({ items, weightKg, durationMin })`:
+  - Fórmula MET clássica: `kcal = MET_médio_ponderado × weight × duration_hours`
+  - Edge cases: weight≤0 → fallback 70kg (até Sprint 12 antropometria); duration≤0 ou items vazio → 0; MET inválido (≤0) ignorado no average ponderado; clampeado [0, 5000] kcal pra proteger contra duration absurda.
+  - 11 unit tests Vitest cobrindo todos cenários (caso canônico, fallback, items inválidos, duration 0/negativa, clamp, 2 casas decimais).
+- **`packages/db/package.json`** — novo export `./treinos`.
+- **`apps/web/app/app/treinos/actions.ts`** — 12 Server Actions wrapped (envelope ADR 0071 + audit_log):
+  - `createExercise` / `listExercises` (catálogo do tenant + biblioteca global incluída por default; filtros por busca/nível/grupo muscular).
+  - `createWorkout` (transação com workout_items batch); `updateWorkout` (versionamento: cria nova row `version+1` + `parent_workout_id`, sem UPDATE in-place); `listWorkouts` / `getWorkout` (com items expandidos + JOIN exercises pra MET/level/grupos).
+  - `prescribeWorkout` — cria `prescriptions` kind=workout, valida member+workout no tenant. **Cross-prescrição alert ADIADO Sprint 11+**: depende `getCrossTenantSummary` (Sprint 02 pendência) + meal_plans (Sprint 29) + fisio_protocols (Sprint 20).
+  - `listMemberPrescriptions` (com JOIN workouts pra exibir nome/goal/version no widget).
+  - `startSession` (cria workout_session) / `recordSessionItem` (registra série) / `finishSession` (preenche `calculated_kcal` em transação: busca workout_items via prescription → MET ponderado × peso fallback 70kg × duration_min → clamp 5000).
+
+**Faixa C (UI):**
+
+**Adições:**
+
+- **`/app/biblioteca/exercicios/page.tsx`** — catálogo combinado (global + tenant) com filtros (search/level/muscle); badge "GLOBAL" vs "TENANT"; cards com MET/nível/equipamento/grupos.
+- **`/app/biblioteca/exercicios/new/page.tsx`** + form client — cadastro de exercício no tenant (biblioteca global é seedada via curadoria LogiFit fora do app).
+- **`/app/treinos/page.tsx`** — lista de workouts com contagem de items inline.
+- **`/app/treinos/new/page.tsx`** + wizard client — header (nome/goal/duration) + lista add 1-a-1 de exercises com edição inline de séries/reps/carga/descanso/superset; mover ↑/↓; salva via `createWorkout`.
+- **`/app/treinos/[id]/page.tsx`** — detalhe read-only com items expandidos + link pra versão anterior (`parent_workout_id`).
+- **`/app/members/[id]/treino/page.tsx`** — ficha do member: prescrições ativas (com botão "Iniciar sessão" via Server Action) + form `prescribeWorkout` inline + histórico de sessões com kcal calculado + sessão ativa em banner se houver.
+- **`/app/members/[id]/treino/sessao/[sessionId]/page.tsx`** + execution panel client — UI de execução set-a-set por workout_item; capture reps_performed/weight_kg/rpe inline; botão "Finalizar sessão" abre painel inline com RPE geral + notas (substitui `window.prompt` proibido pela regra 45). Refresh automático após cada record/finish.
+- **`/app/members/[id]/page.tsx`** — adicionado widget "🏋️ Treinos prescritos" entre Metas e slot Copilot futuro; mostra até 5 prescrições ativas com nome/goal/version + link "ver ficha" para `/app/treinos/[id]`.
+- **`packages/db/scripts/seed-treinos.ts`** + script `pnpm db:seed:treinos` — popula **20 exercícios globais** Compendium 2024 cobrindo grupos canônicos (peito/dorsal/quadriceps/posterior/ombro/braço/core/aeróbico) com MET ponderado. Por tenant: cria **2 workouts** (Treino A — Superior Push+Pull + Treino B — Inferior Pernas+Core) com 6 items cada (idempotente por nome de exercise + count workouts por tenant).
+- **`.claude/launch.json`** — adicionado config `web` (porta 3100) pra preview MCP.
+
+**Faixa D (ADR + fechamento):**
+
+- **[`docs/decisions/0023-prescricoes-polimorficas-base.md`](docs/decisions/0023-prescricoes-polimorficas-base.md)** — ADR 0023 Accepted. Justifica `prescriptions` polimórfico com `kind`+`ref_id` em vez de N tabelas por vertical: cross-feature uniforme (copilot Sprint 06 / régua Sprint 13 / cross-alert Sprint 27 / cross-prescrição cross-tenant Sprint 11+ ADR 0077 consomem 1 query); FK lógica em ref_id (FK relacional polymorphic não existe nativamente em PG); `active` materializado pra evitar timestamp arithmetic em query quente (custo: job cron diário Sprint 12+); versionamento workouts via parent_workout_id preserva ficha histórica em prescrições antigas. Rejeitadas: tabela-por-vertical (explode N tabelas + 3-way UNION), JSONB sem ref_id (perde integridade), Single Table Inheritance (80+ colunas nullable).
+- 161 testes Vitest verdes em 15 files (eram 137 antes — +13 treinos-rls +11 kcal).
+- Typecheck `pnpm --filter @app/web typecheck` clean.
+
+**Pendências menores adiadas Sprint 11+ próximo PR:**
+
+- Cross-prescrição alert (ADR 0077 + regra 42): `detectCrossPrescriptionConflicts` Server Action + `cross_prescription_alerts` schema particionado por trimestre + 4 regras canônicas (hypoglycemia_risk / volume_incompatible / motor_restriction_violation / cardiac_load_excessive) + UI banner antes de `prescribeWorkout` salvar; depende `getCrossTenantSummary` (Sprint 02 pendência) + `meal_plans` (Sprint 29) + `fisio_protocols` (Sprint 20).
+- Particionamento `workout_sessions` + `workout_session_items` por trimestre + agregação trimestral (regra 34 + ADR 0072) — Sprint 12+ quando volume real justificar.
+- Job cron diário que zera `prescriptions.active=false` quando `ends_at < now()` — Sprint 12+.
+- Upload de vídeo de exercício pra MinIO + URL assinada — Sprint 11+ próximo PR (`uploadExerciseVideo` Server Action + bucket `exercises`).
+- Drag-and-drop no wizard de workout (Faixa stretch).
+- E2E Playwright completo (instrutor cria workout → prescreve → aluno executa → RPE → kcal).
+- Feature flag `treinos_v1` (PostHog dropado MVP; quando avaliar PostHog self-host pós-MVP religa).
+- RIPD `docs/compliance/ripd/v1.0-prescricoes.md` (regra 29 + ADR 0054) — gate de produção; implementação desbloqueada, ativação clínica precisa RIPD assinado pelo DPO.
+- Lint `cross-tenant-read-must-log` enforcement nos Server Actions de treinos (regra 42) — quando primeira read cross-tenant aterrissar via cross-prescrição alert.
+
+**Bug pré-existente identificado durante verificação preview (não-regressão Sprint 11):** Server Components que usam `db` global (vendas/members/treinos lista) retornam 0 rows porque RLS bloqueia (`app.tenant_id` não setado nessa conexão — `withSessionContext` só funciona pra Server Actions). Documentado em `session.ts`. Resolução requer mudança infraestrutural (envelope `withSessionContext` em todo Server Component OU `db.transaction` com `SET LOCAL`) — fora escopo Sprint 11. Mitigação: catálogo global de exercícios funciona (RLS permite tenant_id NULL); demais páginas usam mesmo padrão pré-existente em vendas/members.
+
 ### Build — Sprint 10 100%: Funil de vendas completo (schemas + Server Actions + UI kanban + ADR 0022) 2026-05-13
 
 Sprint 10 fecha em **100%**. Faixas A+B+C+D entregues no mesmo dia: 5 schemas + RLS + 8 tests; 7 Server Actions (incluindo `convertLeadToMember` atomic transaction); UI kanban + lista tabular + form quick capture + detalhe com timeline; ADR 0022 publicado documentando o modelo `lead.person_id` opcional + `quick_*` + conversão reusa mesmo `person_id`. Seed standalone popula 6 stages + 10 leads por tenant.

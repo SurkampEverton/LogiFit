@@ -123,6 +123,120 @@ export default async function FinanceiroPage() {
         </div>
       </header>
 
+      <nav
+        className="grid gap-3"
+        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}
+      >
+        <Link
+          href="/app/financeiro/plano-contas"
+          className="rounded-xl border border-[color:var(--ev-border)] p-4 hover:bg-[color:var(--ev-surface)]"
+        >
+          <div style={{ fontWeight: 600 }}>📒 Plano de contas</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-text-muted)' }}>
+            Hierarquia contábil brasileira (ADR 0033)
+          </div>
+        </Link>
+        <Link
+          href="/app/financeiro/fornecedores"
+          className="rounded-xl border border-[color:var(--ev-border)] p-4 hover:bg-[color:var(--ev-surface)]"
+        >
+          <div style={{ fontWeight: 600 }}>🏭 Fornecedores</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-text-muted)' }}>
+            Cadastro + histórico de compras
+          </div>
+        </Link>
+        <Link
+          href="/app/financeiro/contas-pagar"
+          className="rounded-xl border border-[color:var(--ev-border)] p-4 hover:bg-[color:var(--ev-surface)]"
+        >
+          <div style={{ fontWeight: 600 }}>💸 Contas a pagar</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-text-muted)' }}>
+            AP com workflow de aprovação (ADR 0034)
+          </div>
+        </Link>
+        <Link
+          href="/app/financeiro/contas-receber"
+          className="rounded-xl border border-[color:var(--ev-border)] p-4 hover:bg-[color:var(--ev-surface)]"
+        >
+          <div style={{ fontWeight: 600 }}>💰 Contas a receber</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-text-muted)' }}>
+            AR avulso (não-contrato)
+          </div>
+        </Link>
+        <Link
+          href="/app/financeiro/aging"
+          className="rounded-xl border border-[color:var(--ev-border)] p-4 hover:bg-[color:var(--ev-surface)]"
+        >
+          <div style={{ fontWeight: 600 }}>📊 Aging</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-text-muted)' }}>
+            Distribuição por faixa de vencimento
+          </div>
+        </Link>
+        <Link
+          href="/app/financeiro/rateio/regras"
+          className="rounded-xl border border-[color:var(--ev-border)] p-4 hover:bg-[color:var(--ev-surface)]"
+        >
+          <div style={{ fontWeight: 600 }}>⚖️ Rateio entre filiais</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-text-muted)' }}>
+            Regras de distribuição (ADR 0036)
+          </div>
+        </Link>
+        <Link
+          href="/app/financeiro/intercompany"
+          className="rounded-xl border border-[color:var(--ev-border)] p-4 hover:bg-[color:var(--ev-surface)]"
+        >
+          <div style={{ fontWeight: 600 }}>🔄 Intercompany</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-text-muted)' }}>
+            Lançamentos cruzando companies + fechamento
+          </div>
+        </Link>
+        <Link
+          href="/app/financeiro/bancos"
+          className="rounded-xl border border-[color:var(--ev-border)] p-4 hover:bg-[color:var(--ev-surface)]"
+        >
+          <div style={{ fontWeight: 600 }}>🏦 Bancos</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-text-muted)' }}>
+            Contas + OFX + conciliação (Sprint 17)
+          </div>
+        </Link>
+        <Link
+          href="/app/financeiro/fluxo-caixa"
+          className="rounded-xl border border-[color:var(--ev-border)] p-4 hover:bg-[color:var(--ev-surface)]"
+        >
+          <div style={{ fontWeight: 600 }}>💹 Fluxo de caixa</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-text-muted)' }}>
+            Projeção 30/60/90 dias
+          </div>
+        </Link>
+        <Link
+          href="/app/financeiro/custos"
+          className="rounded-xl border border-[color:var(--ev-border)] p-4 hover:bg-[color:var(--ev-surface)]"
+        >
+          <div style={{ fontWeight: 600 }}>🧾 Custos</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-text-muted)' }}>
+            Lançamentos rápidos (Sprint 14)
+          </div>
+        </Link>
+        <Link
+          href="/app/financeiro/dre"
+          className="rounded-xl border border-[color:var(--ev-border)] p-4 hover:bg-[color:var(--ev-surface)]"
+        >
+          <div style={{ fontWeight: 600 }}>📈 DRE</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-text-muted)' }}>
+            Demonstrativo de resultado
+          </div>
+        </Link>
+        <Link
+          href="/app/financeiro/previsao"
+          className="rounded-xl border border-[color:var(--ev-border)] p-4 hover:bg-[color:var(--ev-surface)]"
+        >
+          <div style={{ fontWeight: 600 }}>🔮 Previsão</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-text-muted)' }}>
+            Forecast receita 3-12m
+          </div>
+        </Link>
+      </nav>
+
       <section
         className="grid gap-4"
         style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}
