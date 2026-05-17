@@ -1,7 +1,8 @@
 # ADR 0026 — Motor de régua de cobrança via DSL declarativa
 
-- **Status:** Proposed
-- **Date:** 2026-04-27
+- **Status:** Accepted
+- **Date:** 2026-04-27 (proposed) · 2026-05-13 (accepted)
+- **Aceito em:** Sprint 13 Faixas A+B+C+D entregues 2026-05-13. Schema `reguas` (`trigger jsonb` + `actions jsonb` + `stop_on jsonb` + `guards jsonb`) + Zod `ReguaDslSchema` validando 10 eventos canônicos + 2 kinds de ações (`send_message`/`wait`) + helpers `nextActionAtFromSteps`/`renderTemplate`/`isWithinHourWindow` + 23 unit tests + UI builder visual + seed canônica "Cobrança D+1/+3/+7" prontos. **Evaluator runtime cron tick** (consome `domain_events` + enfileira execuções pendentes via `regua_executions.next_action_at`) **fica Sprint 13b** quando provider real aterrissar.
 
 ## Context
 

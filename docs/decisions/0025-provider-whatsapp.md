@@ -1,7 +1,8 @@
 # ADR 0025 — Provider WhatsApp Business API (escolha + abstração)
 
-- **Status:** Proposed
-- **Date:** 2026-04-27
+- **Status:** Accepted
+- **Date:** 2026-04-27 (proposed) · 2026-05-13 (accepted)
+- **Aceito em:** Sprint 13 Faixas A+B+C+D entregues 2026-05-13. Schema (`message_providers` com `credentials_encrypted jsonb` + `channel`/`provider`/`sandbox`/`active` + RLS tenant-scoped) + Server Actions + UI prontos pra receber adapter real. **Sub-decisão final entre Twilio e Gupshup BR fica para Sprint 13b** quando POC real for executado; MVP usa `provider='stub'` em `messages_sent` sem envio efetivo.
 
 ## Context
 
