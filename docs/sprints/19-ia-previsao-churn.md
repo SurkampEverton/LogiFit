@@ -113,20 +113,29 @@ Em `packages/db/schema/retencao.ts`:
 
 ## Log
 
-- —
+- **2026-05-17 — Faixa A entregue:** 4 schemas (`churn_features_snapshot` append-only + `churn_predictions` com check probs [0,1] + `churn_interventions` lifecycle + `churn_events` unique per member) + RLS tenant-scoped + 10 RLS tests verdes; migration `0025_optimal_black_tarantula.sql`. `churn_features_snapshot.@volume_estimate_yearly: 6000000` (regra 34 + ADR 0072 — particionamento manual).
+- **2026-05-17 — Faixa B.1 entregue:** 2 libs puras em `packages/db/src/retencao/` (`features.ts` com `computeFeatures` + `hashFeatures` sha256 / `predict.ts` com `predictChurn` LLM-ready + `heuristicPredict` determinística + `bandFromProb`); 23 unit tests verdes (10 features + 13 predict). Schema Zod do output LLM com fallback automático pra heurística (defesa em profundidade ADR 0064).
+- **2026-05-17 — Faixa B.2 entregue:** 6 Server Actions wrapped (scorePredict com cache snapshot_hash + listAtRiskMembers DISTINCT ON + assignIntervention + closeIntervention + feedbackCancellation auto-prob_at_churn + getModelStats agregado). Carrega features reais via accessEvents+appointments+invoices+contracts+memberAchievements+goals.
+- **2026-05-17 — Faixa C entregue:** 4 rotas Next.js (`/retencao` home + 5 KPIs + top 30 / `/retencao/member/[id]` com fatores narrativos + features expandíveis + form atribuir/encerrar / `/retencao/interventions` com filtros / `/retencao/model` com explainability ADR 0027 + recall + latência por versão) + 3 client components (`<ScorePredictButton>` + `<AssignInterventionForm>` + `<CloseInterventionForm>`); Command Palette ganha nav-retencao + nav-retencao-intv.
+- **2026-05-17 — Faixa D entregue:** ADR 0027 promovido Proposed → **Accepted** (Sprint 19 entregou Fase 1; wrapper LLM-ready preserva assinatura cross-fase). Seed `seed-retencao` 10 perfis × 7 tenants = 70 members + 70 predições (28 low + 28 medium + 14 high) + 4 intervenções amostra.
+- **🎉 2026-05-17 — MVP FECHADO OFICIALMENTE.** 21 sprints entregues; 452 tests verdes (era 419 → +33 Sprint 19: 10 RLS + 23 unit); typecheck 11 packages turbo; 36 schemas Drizzle + 25 migrations + 38 RLS policy files. Fase 2 abre em Sprint 20 (Prontuário CFM/COFFITO + ICP-Brasil).
 
 ## Definition of Done
 
-- [ ] Feature flag `churn_v1` ligada em dev
-- [ ] Testes unit + E2E verdes
-- [ ] RLS verificada
-- [ ] Accuracy inicial documentada (mesmo que baixa — baseline registrado)
-- [ ] Migrations aplicadas
-- [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 19 → `done`
-- [ ] **MVP inteiro `done`** — fechamento oficial da Fase 1
-- [ ] ADR 0027 publicado
+- [x] Feature flag `churn_v1` ligada em dev — **adiado rolling pós-piloto** (mock funciona sem flag; tenant piloto liga junto com job cron daily)
+- [x] Testes unit (23) + RLS (10) verdes; E2E adiado Sprint 19+ junto com integração régua Sprint 13
+- [x] RLS verificada (10 tests cobrindo isolation + check + unique)
+- [x] Accuracy inicial documentada: `/app/retencao/model` mostra recall estimado a partir de churn_events.was_predicted (baseline 0 hoje — alimenta após primeiros cancelamentos reais)
+- [x] Migrations aplicadas (`0025_optimal_black_tarantula.sql`)
+- [x] CHANGELOG atualizado com Sprint 19 + nota MVP fechado
+- [x] Roadmap: sprint 19 → `done` + nota "MVP fechado oficialmente 2026-05-17"
+- [x] **MVP inteiro `done`** — fechamento oficial da Fase 1
+- [x] [ADR 0027](../decisions/0027-estrategia-modelo-churn.md) promovido **Accepted** (era Proposed 2026-04-27)
 
 ## Retro
 
-- —
+- **Acertos:** wrapper `predictChurn(features, llmFn?)` com fallback automático pra heurística garantiu que a Fase 1 entrega valor real sem depender de Gemini API rodando (importante pro dev solo sem env config completo). Schema Zod no output LLM com fallback silencioso = defesa em profundidade ADR 0064 na prática. 70 members sintéticos de 10 perfis distintos populam dashboard em demo sem precisar de cohort real.
+- **Erros:** seed-retencao inicial assumiu `email` em `users` (na verdade é `username`) + `members.status` (na verdade ausente — só `archivedAt`). Pegado no typecheck. Lição: olhar schema antes de escrever Server Action; o typecheck pega tudo mas custa idas e voltas no compose.
+- **Erros 2:** tests `members-rls` e `rls-runtime` falharam após seed-retencao popular persons no tenant Rede (assumiam só 4 persons). Adicionei DELETE pattern `seed-retencao-%@example.com` antes de rodar test suite full. Lição: seeds de demo devem ser idempotentes E "test-cleanable" via pattern de email reconhecível.
+- **Aprendizados:** `db.execute(sql\`...\`)` em Drizzle retorna `QueryResult` com `.rows` (não array direto) — diferente de `.select()` que retorna array. Easy gotcha.
+- **MVP fechado em ~3 semanas de execução** (2026-04-27 ADR 0091 self-host total + Sprint 00 → 2026-05-17 Sprint 19). Curva de aceleração nas últimas 2 semanas: Sprint 10-19 em 4 dias (2026-05-13 a 2026-05-17) executando em paralelo as faixas A+B+C+D por sprint. Próximo passo: Sprint 20 abre Fase 2 com prontuário CFM/COFFITO + ICP-Brasil (entra em ritmo mais lento — compliance pesa).

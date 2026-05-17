@@ -40,6 +40,8 @@ const CANONICAL_ITEMS: CommandItem[] = [
   { id: 'nav-cobrancas', label: 'Cobranças', hint: '/app/financeiro/cobrancas', href: '/app/financeiro/cobrancas', emoji: '🧾', category: 'navigation' },
   { id: 'nav-promocoes', label: 'Promoções', hint: '/app/financeiro/promocoes', href: '/app/financeiro/promocoes', emoji: '🎟️', category: 'navigation' },
   { id: 'nav-checkins', label: 'Check-ins ao vivo', hint: '/app/acesso/checkins', href: '/app/acesso/checkins', emoji: '🚪', category: 'navigation' },
+  { id: 'nav-retencao', label: 'Retenção / Churn', hint: '/app/retencao', href: '/app/retencao', emoji: '🎯', category: 'navigation' },
+  { id: 'nav-retencao-intv', label: 'Intervenções de retenção', hint: '/app/retencao/interventions', href: '/app/retencao/interventions', emoji: '📋', category: 'navigation' },
   { id: 'nav-recepcao', label: 'Dashboard Recepção', hint: '/app/dashboard/recepcao', href: '/app/dashboard/recepcao', emoji: '🛎️', category: 'navigation' },
   { id: 'nav-users', label: 'Usuários e roles', hint: '/app/settings/users', href: '/app/settings/users', emoji: '⚙️', category: 'navigation' },
   // Actions

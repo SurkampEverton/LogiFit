@@ -6,6 +6,64 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### 🎉 MVP FECHADO — Sprint 19 100% (IA preditiva de churn + retenção + ADR 0027 Accepted) 2026-05-17
+
+**Sprint 19 fecha o MVP em 100%.** 21 sprints entregues. Pipeline preditiva end-to-end funcional via heurística determinística + wrapper LLM-ready, alinhado à estratégia 2-fases do ADR 0027.
+
+**Faixa A entregue (Schemas + RLS + 10 tests):**
+
+- **`packages/db/src/schema/retencao.ts`** — 4 tabelas:
+  - `churn_features_snapshot` — features jsonb + snapshot_hash sha256 (cache key) + append-only (sem UPDATE policy). `@volume_estimate_yearly: 6000000` particionamento por trimestre em migration manual futura.
+  - `churn_predictions` — prob_30d/60d/90d numeric(4,3) com check [0,1] + risk_band enum derivado + top_factors jsonb (explainability) + source (llm/heuristic) + unique(snapshot_id).
+  - `churn_interventions` — action enum (6 opções) + assigned_to → closed_at + outcome enum (success/partial/failed/member_canceled_anyway).
+  - `churn_events` — unique per member (1 churn por member) + prob_at_churn + was_predicted (true se prob_30d ≥ 0.6 antes do cancelamento).
+- **`packages/db/src/policies/0038_retencao_rls.sql`** — RLS tenant-scoped + FORCE.
+- Migration `0025_optimal_black_tarantula.sql` aplicada.
+- **`packages/db/tests/retencao-rls.test.ts`** — 10 tests verdes (insert válido, isolation cross-tenant, check probs [0,1], unique snapshot_id, intervention lifecycle, unique churn_event per member).
+
+**Faixa B.1 entregue (2 libs puras + 23 unit tests):**
+
+- **`packages/db/src/retencao/features.ts`** — `computeFeatures(input)` puro: frequência 30d × 30-60d com variação%, daysSinceLastCheckin, overdue count+total, monthsAsMember, ticket médio últimos 6m, achievements/goals contagens, downgrade detection. `hashFeatures(f)` sha256 hex canônico (chaves ordenadas) → cache key. **10 tests** (member estável, em risco, variação 50%, prev30=0 → 100%, never checkin → -1, ticket 6m window, hash determinístico).
+- **`packages/db/src/retencao/predict.ts`** — `predictChurn(features, llmFn?)` tenta callback LLM com Zod schema validation; fallback automático pra `heuristicPredict` se schema falhar ou LLM throw (defesa em profundidade ADR 0064). Heurística determinística: 40% absence + 30% frequency_drop + 20% overdue + 10% downgrade, com atenuadores (engagement_active -15% / loyalty -5% se member 12m+ e score>0.15). `bandFromProb(p)` 0.3/0.6 cutoffs. **13 tests** (band limites, member estável → low, alto risco → high, invariante prob_30d ≤ prob_60d ≤ prob_90d, engajamento reduz score, loyalty buff, clamp [0,1], never_checkin só dispara monthsAsMember ≥ 2, LLM válido → source=llm, LLM inválido → fallback heurística, LLM throw → fallback).
+- **`packages/db/package.json`** novo export `./retencao` + script `db:seed:retencao`.
+
+**Faixa B.2 entregue (6 Server Actions):**
+
+- **`apps/web/app/app/retencao/actions.ts`** — `scorePredict({memberId, force?})` carrega features reais via SQL (accessEvents + appointments + invoices + contracts + memberAchievements + goals) + computa features + verifica cache via snapshot_hash + persiste snapshot+prediction. `listAtRiskMembers({band, limit})` usa `DISTINCT ON (member_id)` pra trazer só a predição mais recente por member. `assignIntervention` valida prediction no tenant antes de criar. `closeIntervention` registra outcome + closedByUserId. `feedbackCancellation` auto-popula `prob_at_churn` + `was_predicted` lendo última predição + linka última intervenção (1 churn_event por member enforced via unique constraint → captura cause.code). `getModelStats` agrega via SQL: members_scored, recall (preditos/total cancelamentos), intervention success rate, latência média, banda atual. `loadFeaturesForUI` helper (não-wrapped) para detail page.
+
+**Faixa C entregue (4 rotas + 3 client components):**
+
+- **`/app/retencao`** — 5 KPIs (members scored + high_now + medium_now + open intv + cancellations 30d) + tabela top 30 em risco ordered por prob_30d desc com color-coded bands + open_interventions badge + link detalhe.
+- **`/app/retencao/member/[id]`** — 4 KPIs (P30/60/90 + banda + fonte) + lista de fatores narrativos com peso color-coded + features completas em `<details>` expandível + `<ScorePredictButton>` (calcular agora + ↻ forçar) + `<AssignInterventionForm>` (6 actions + atendente + notas) + tabela intervenções com `<CloseInterventionForm>` inline + histórico de predições.
+- **`/app/retencao/interventions`** — filtros open/closed/all via querystring + tabela com prob_30d + outcome color-coded + link member detail.
+- **`/app/retencao/model`** — explainability do ADR 0027 (2 fases) + 4 KPIs (members scored + recall + intervention success + latência) + breakdown por (model_version, source) com latência média.
+- Command Palette ganha `nav-retencao` (🎯) + `nav-retencao-intv` (📋).
+
+**Faixa D entregue (ADR + seed):**
+
+- **`docs/decisions/0027-estrategia-modelo-churn.md`** promovido **Proposed → Accepted** (Sprint 19 entregou Fase 1 com heurística + wrapper LLM-ready preservando assinatura cross-fase).
+- **`packages/db/scripts/seed-retencao.ts`** + `pnpm db:seed:retencao` — 10 perfis canônicos (estável / engajado / caindo frequência / em atraso / risco alto / sumiu / novo sem visita / veterano leal / downgrade recente / estagnado) × 7 tenants seed canônico = **70 members + 70 snapshots + 70 predições + 4 intervenções amostra**. Distribuição: 28 low + 28 medium + 14 high. Idempotente via email pattern `seed-retencao-{tenant}-{profile}@example.com` + snapshot_hash.
+
+**🎉 MVP FECHADO OFICIALMENTE 2026-05-17.**
+
+- 21 sprints entregues: 00 (setup), 00b (menu lateral), 01a (identidade+topology), 01b (RBAC+passaporte), 02 (CRM), 03 (agenda), 04 (financeiro Asaas), 05 (ofertas), 06 (copilot IA), 07 (dashboards), 08 (controle acesso), 09 (engajamento), 10 (vendas), 11 (treinos), 12 (avaliações), 13 (mensagens), 14 (custos/DRE), 15 (ERP financeiro core), 16 (rateio/intercompany), 17 (bancos/OFX), 18 (adquirência), 19 (churn IA).
+- 452 tests verdes (RLS + unit). Typecheck 11 packages. 36 schemas Drizzle aplicados via 25 migrations + 38 RLS policy files.
+- ADRs publicados/promovidos: 0011-0078 + 0080-0091 (índice no roadmap).
+- Tudo self-host total Oracle Cloud SP (ADR 0091) sem Vercel nem Supabase.
+- **Fase 2 (Fisioterapia + ERP Saúde) abre em Sprint 20 (Prontuário CFM/COFFITO + assinatura ICP-Brasil).**
+
+**Pendências Sprint 19+ (rolling pós-piloto, não bloqueiam fechamento MVP):**
+
+- Job cron daily `recalculate-churn-daily` por tenant ativo + Vercel Cron / node-cron Coolify
+- Wiring real do `llmClassifyFn` usando `resolveModelForTask('classification')` + Gemini Flash + Zod parse safe
+- Integração com Sprint 13 régua `reengajamento_risco_alto` — disparo automático quando `prob_30d ≥ 0.7` (depende de Sprint 13 evaluator runtime)
+- Widget `risco` no dashboard do member (slot `risco`, `showWhen: prob_30d > 0.3`)
+- Permissions `retencao.read` / `retencao.write` / `retencao.intervene` em `roles_permissions` seed
+- Feature flag `churn_v1` no painel admin
+- E2E Playwright: member degrada → aparece em risco → atribui intervenção → encerra com outcome
+- RIPD churn (regra 29) — dado de saúde sensível combinado a comportamento financeiro
+- Job retrain dataset (Fase 2 trigger): exportar `churn_features_snapshot + churn_events.was_predicted` em Parquet pra sklearn training fora-de-banda
+
 ### Build — Sprint 18a 100% (Adquirência: maquininhas + antecipação + receita unificada + ADR 0039 Proposed) 2026-05-17
 
 Sprint 18 fecha o **core MVP (18a)** em **100%** e encerra o bloco **ERP Financeiro**. Sprint 18b (adapters reais Stone/Cielo/Rede/GetNet/PagSeguro + envelope encryption + webhook chargeback + job daily sync + antecipação automática por regra) fica como sprint futuro pendente de credenciais sandbox real.

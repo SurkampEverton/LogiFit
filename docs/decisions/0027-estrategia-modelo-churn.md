@@ -1,7 +1,8 @@
 # ADR 0027 — Estratégia de modelo para previsão de churn
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-04-27
+- **Accepted at:** 2026-05-17 (Sprint 19 entregou Fase 1 com heurística determinística + wrapper LLM-ready)
 
 ## Context
 

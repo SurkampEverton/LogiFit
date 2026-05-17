@@ -97,3 +97,6 @@ export * from './certificados'
 
 // Sprint 18 Faixa A — Adquirência (maquininhas): acquirer_connections + acquirer_sales + anticipations + acquirer_reconciliation_rules (ADR 0039 esperado). acquirer_sales @volume 12M+/ano (regra 34 + ADR 0072 — particionamento trimestral migration manual).
 export * from './adquirencia'
+
+// Sprint 19 Faixa A — Retenção/Churn: churn_features_snapshot + churn_predictions + churn_interventions + churn_events (ADR 0027 promover Accepted). churn_features_snapshot @volume 6M+/ano (regra 34 + ADR 0072 — particionamento trimestral migration manual). Fase 1 LLM Gemini classifier + cache 24h + fallback heurístico.
+export * from './retencao'
