@@ -18,7 +18,8 @@
     "./financeiro": "./src/financeiro/index.ts",
     "./erp-financeiro": "./src/erp-financeiro/index.ts",
     "./rateio": "./src/rateio/index.ts",
-    "./bancos": "./src/bancos/index.ts"
+    "./bancos": "./src/bancos/index.ts",
+    "./adquirencia": "./src/adquirencia/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -36,6 +37,7 @@
     "db:seed:erp-financeiro": "tsx scripts/seed-erp-financeiro.ts",
     "db:seed:rateio-ic": "tsx scripts/seed-rateio-ic.ts",
     "db:seed:bancos": "tsx scripts/seed-bancos.ts",
+    "db:seed:adquirencia": "tsx scripts/seed-adquirencia.ts",
     "db:rls-check": "tsx tests/rls-check.ts"
   },
   "dependencies": {

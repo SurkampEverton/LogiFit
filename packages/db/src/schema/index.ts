@@ -94,3 +94,6 @@ export * from './bancos'
 
 // Sprint 17 Faixa A — Certificado digital A1 + NF-e SEFAZ cursors: company_certificates (PFX cifrado AES-256-GCM + senha separada) + nfe_sefaz_cursors.
 export * from './certificados'
+
+// Sprint 18 Faixa A — Adquirência (maquininhas): acquirer_connections + acquirer_sales + anticipations + acquirer_reconciliation_rules (ADR 0039 esperado). acquirer_sales @volume 12M+/ano (regra 34 + ADR 0072 — particionamento trimestral migration manual).
+export * from './adquirencia'

@@ -235,6 +235,24 @@ export default async function FinanceiroPage() {
             Forecast receita 3-12m
           </div>
         </Link>
+        <Link
+          href="/app/financeiro/adquirencia"
+          className="rounded-xl border border-[color:var(--ev-border)] p-4 hover:bg-[color:var(--ev-surface)]"
+        >
+          <div style={{ fontWeight: 600 }}>💳 Adquirência</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-text-muted)' }}>
+            Maquininhas + antecipação (Sprint 18)
+          </div>
+        </Link>
+        <Link
+          href="/app/financeiro/receita"
+          className="rounded-xl border border-[color:var(--ev-border)] p-4 hover:bg-[color:var(--ev-surface)]"
+        >
+          <div style={{ fontWeight: 600 }}>📊 Receita unificada</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-text-muted)' }}>
+            Online (Asaas) + presencial (maquininha)
+          </div>
+        </Link>
       </nav>
 
       <section

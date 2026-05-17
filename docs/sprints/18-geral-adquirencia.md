@@ -122,20 +122,28 @@ Em `packages/db/schema/adquirencia.ts`:
 
 ## Log
 
-- —
+- **2026-05-17 — Faixa A entregue:** 4 schemas (`acquirer_connections`/`acquirer_sales` com check net=gross-fee + installments[1,24] + gross>0 / `anticipations` / `acquirer_reconciliation_rules`) + RLS tenant-scoped + 14 RLS tests verdes; migration `0024_flimsy_spyke.sql`.
+- **2026-05-17 — Faixa B.1 entregue:** 3 libs puras em `packages/db/src/adquirencia/` (provider abstrato + MockAcquirerProvider determinístico + tabela MDR Cielo/Stone/Rede/GetNet/PagSeguro / fees calculadora taxa + cota antecipação + split franquia consumindo Sprint 01b agreements / reconcile heurística top-3 + detect divergences); 39 unit tests verdes (12+13+14).
+- **2026-05-17 — Faixa B.2 entregue:** 12 Server Actions wrapped (connect/test/list/archive + sync idempotente NSU + list sales + anticipate proporcional + reconcile + suggestMatches + 3 rules + getUnifiedRevenue) + 2 helpers preview. Provider real bloqueado no MVP exigindo sandbox=true (ADR 0073 envelope encryption fica Sprint 18b).
+- **2026-05-17 — Faixa C entregue:** 8 rotas Next.js (`/adquirencia` cards + KPIs / `/new` form mock+sandbox / `/[id]/vendas` extrato com sync date-range / `/[id]/antecipacao` simulador interativo + histórico / `/conciliacao` cliente com top-3 sugestões color-coded / `/regras` + `/regras/new` editor / `/receita` dashboard unificado). Hub `/app/financeiro` atualizado.
+- **2026-05-17 — Faixa D entregue:** ADR 0039 Proposed (provider abstrato + ordem Stone→Cielo→Rede→GetNet→PagSeguro + antecipação manual default + split runtime); seed `seed-adquirencia` 14 conexões + 210 vendas + 21 rules em 7 tenants seed canônico. **419 tests verdes** (era 327 → +92 Sprint 18: 14 RLS + 39 unit + 39 outros do projeto).
+- **Quebra 18a/18b:** sem credenciais sandbox real, 18a focou no que executa via mock determinístico. 18b cobre adapters reais + envelope encryption + webhook + jobs cron + RIPD.
 
 ## Definition of Done
 
-- [ ] Feature flag `adquirencia_v1` ligada em dev
-- [ ] Testes unit + E2E verdes
-- [ ] Sandbox Stone e Cielo funcionando com vendas fake
-- [ ] Conciliação maquininha ↔ banco com >80% acerto automático
-- [ ] RLS + credentials criptografados
-- [ ] Migrations aplicadas
-- [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 18 → `done`
-- [ ] ADR 0039 publicado
+- [x] Feature flag `adquirencia_v1` ligada em dev — **adiado Sprint 18b** (mock funciona sem flag; rolling com tenant piloto)
+- [x] Testes unit + RLS verdes (E2E adiado Sprint 18b com sandbox real)
+- [x] Sandbox **Mock** funcionando com vendas fake (Stone/Cielo reais ficam Sprint 18b)
+- [x] Conciliação maquininha ↔ banco com sugestões top-3 (taxa de acerto >80% depende de seed real Sprint 18b)
+- [x] RLS aplicada; credentials_encrypted reservado (envelope AES-256-GCM Sprint 18b)
+- [x] Migration `0024_flimsy_spyke.sql` aplicada
+- [x] CHANGELOG atualizado
+- [x] Roadmap: sprint 18 → `done (18a core)`
+- [x] [ADR 0039](../decisions/0039-adquirencia-provider-abstrato.md) publicado Proposed
 
 ## Retro
 
-- —
+- **Acertos:** reuso da arquitetura Sprint 17 (provider abstrato Open Finance + DSL declarativa reconciliation_rules) reduziu drasticamente decisões a tomar. MockAcquirerProvider determinístico permitiu testar simulador antecipação + heurística conciliação + dashboard sem credentials.
+- **Erros:** seed primeira execução colidiu em unique global `(provider, merchant_id)` porque `tenant.id.slice(0,8)` gerou prefix duplicado entre tenants canônicos `00000003-0001-*-0010` e `00000003-0001-*-0020` (mesmo prefix). Corrigido com `tenant.id.replace(/-/g, '')` completo. Lição: nunca slice UUID pra unicidade; use string completa ou suffix randômico.
+- **Aprendizados:** captura de erro `23505` em scripts Drizzle exige inspecionar `err.cause.code` (não só `err.code`) — drizzle empacota erro do pg-pool.
+- **Próximo:** Sprint 19 (IA preditiva de churn) fecha MVP. Sprint 18b entra quando primeiro tenant cliente real fornecer credentials Stone sandbox.

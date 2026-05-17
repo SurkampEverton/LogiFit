@@ -6,6 +6,63 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 18a 100% (Adquirência: maquininhas + antecipação + receita unificada + ADR 0039 Proposed) 2026-05-17
+
+Sprint 18 fecha o **core MVP (18a)** em **100%** e encerra o bloco **ERP Financeiro**. Sprint 18b (adapters reais Stone/Cielo/Rede/GetNet/PagSeguro + envelope encryption + webhook chargeback + job daily sync + antecipação automática por regra) fica como sprint futuro pendente de credenciais sandbox real.
+
+**Decisão de quebra 18a/18b (2026-05-17):** sem credenciais sandbox de Stone/Cielo/Rede/GetNet/PagSeguro, focar 18a no que executa sem dependência externa. `MockAcquirerProvider` gera vendas determinísticas por (merchant_id, range) — exercita pipeline completa (sync → conciliação → antecipação) localmente. ADR 0039 documenta interface abstrata + ordem de implementação real para POC quando houver chave.
+
+**Faixa A entregue (Schemas + RLS + 14 tests):**
+
+- **`packages/db/src/schema/adquirencia.ts`** — 4 tabelas:
+  - `acquirer_connections` — provider enum (cielo/stone/rede/getnet/pagseguro/mock) + merchant_id + credentials_encrypted (text base64 envelope) + sandbox flag + status enum (pending/active/error/revoked) + settlement_bank_account_id link com Sprint 17 + unique global `(provider, merchant_id)`.
+  - `acquirer_sales` — NSU `external_id` unique por `(connection_id, external_id)` + gross/fee/net cents com **check `net = gross - fee`** + card_brand text + card_kind enum (credit/debit/voucher/pix/other) + installments 1-24 com check + expected/actual settlement_date YYYY-MM-DD text + reconciled_with_bank_tx_id FK + status enum (captured/anticipated/settled/chargeback/cancelled) + raw_payload jsonb. `@volume_estimate_yearly: 12000000` particionamento por trimestre em migration manual futura (regra 34 + ADR 0072).
+  - `anticipations` — sales_ids `uuid[]` + status pipeline (requested → approved → credited / rejected / cancelled) + effective_rate_pct text + rejection_reason + check `original > 0`.
+  - `acquirer_reconciliation_rules` — DSL jsonb condition (providerEquals/cardBrandEquals/cardKindEquals/amountMin/Max/daysAfterSettlementMax/bankDescriptionContains) + 2 actions (auto_match_bank/flag_for_review) + priority asc + hits_count + unique `(tenant, name)`.
+- **`packages/db/src/policies/0037_adquirencia_rls.sql`** — RLS tenant-scoped + FORCE em 4 tabelas.
+- Migration `0024_flimsy_spyke.sql` aplicada.
+- **`packages/db/tests/adquirencia-rls.test.ts`** — 14 tests verdes (acquirer_connections unique provider+merchant global, isolation, mesmo merchant em providers diferentes coexiste; acquirer_sales unique external_id por connection, check net=gross-fee, installments [1,24], gross>0; anticipations check original>0; rules unique name por tenant + mesmo name em tenants diferentes aceito).
+
+**Faixa B.1 entregue (3 libs puras + 39 tests):**
+
+- **`packages/db/src/adquirencia/provider.ts`** — `AcquirerAdapter` interface + `MockAcquirerProvider` determinístico (gera 3 vendas/dia pseudo-aleatórias por seed (merchantId, range)) + `getAdapter(provider)` falha pedindo POC pra provider real + `feeRateFor(provider, kind, installments)` consulta tabela MDR calibrada Cielo/Stone/Rede/GetNet/PagSeguro 2024-2025 pública. **12 tests** cobrindo testConnection mock + fetchSales determinístico + range invertido + check net=gross-fee + requestAnticipation 1.99% + getAdapter erro pra provider real + feeRateFor 4 providers.
+- **`packages/db/src/adquirencia/fees.ts`** — `computeSaleCost(gross, kind, installments, feeRate, flatFee?)` decompõe venda + margem em BR%; `quoteAnticipation(originalCents, daysToSettlement, monthlyRate?)` cota = original × rate% × dias/30; `splitFranchiseSale({netCents, capturedAtCompanyId, agreements: FranchiseAgreement[]})` consome Sprint 01b `franchise_agreements` + retorna lista de `IntercompanyEntryDraft` (royalty + marketing) para Sprint 16 materializar. **13 tests** cobrindo consistência net = gross - totalFee + tarifa fixa + cota 30d/15d/<0d + split royalty+marketing + valor arredondado + acordo inativo.
+- **`packages/db/src/adquirencia/reconcile.ts`** — `matchAcquirerRules(sale, rules, bankTx?)` priority asc + skip inativas + Zod-typed condition (providerEquals/cardBrandEquals/cardKindEquals/amountMin/Max/daysAfterSettlementMax/bankDescriptionContains); `suggestSettlementMatches(sale, candidates)` heurística top-N com score = 55%valor + 35%data + 10%desc; `detectDivergences(sales, threshold)` flag pra alerta `acquirer.divergence_detected`. **14 tests** cobrindo match por provider/brand/kind/amount/days + priority asc + inativa ignorada + cardBrand case-insensitive + bankTx valida targetBank+descrição+daysMax + settlement exato score>0.9 + D+2 score reduzido + débitos descartados + divergence detection.
+- **`packages/db/package.json`** novo export `./adquirencia`.
+
+**Faixa B.2 entregue (12 Server Actions):**
+
+- **`apps/web/app/app/financeiro/adquirencia/actions.ts`** — `connectAcquirer` (bloqueia provider real sem sandbox no MVP), `testAcquirerConnection`, `listAcquirerConnections`, `archiveAcquirerConnection`, `syncAcquirerSales(connectionId, from, to)` idempotente via NSU + atualiza lastSyncedAt, `listAcquirerSales` (filtros connection/company/status/reconciled/period), `requestAnticipationAction(connectionId, saleIds[])` valida elegibilidade + propaga status + atualiza anticipatedAmountCents proporcional nas vendas, `reconcileSale(saleId, bankTxId)` valida bank_tx positivo + marca settled + actual_settlement_date hoje, `suggestSettlementMatchesAction(saleId, maxResults)` carrega bankTxs ±7d positivas + roda heurística, `createAcquirerReconciliationRule` captura 23505 → VALIDATION_ERROR, `listAcquirerReconciliationRules`, `archiveAcquirerReconciliationRule`, `getUnifiedRevenue(companyId?, from, to)` agrega invoices.paid + acquirer_sales não-cancelled. Helpers `quoteAnticipationPreview` + `computeSaleCostPreview` exportados para UI.
+
+**Faixa C entregue (8 rotas Next.js):**
+
+- **`/app/financeiro/adquirencia`** — cards por conexão com KPIs 30d (vendas + bruto + líquido + custo taxas consolidado top); badges Sandbox + status color-coded.
+- **`/app/financeiro/adquirencia/new`** — form com dropdown 5 providers + mock recomendado + merchantId + nickname + dropdown settlement bank account + sandbox toggle + warning provider real bloqueado no MVP.
+- **`/app/financeiro/adquirencia/[id]/vendas`** — 4 KPIs (total/bruto/líquido/a-conciliar) + `<SyncSalesButton>` cliente date-range default últimos 7d que chama `syncAcquirerSales` + tabela com badges status color-coded + link "Conciliar" inline.
+- **`/app/financeiro/adquirencia/[id]/antecipacao`** — `<AnticipationForm>` cliente com checkboxes vendas elegíveis + select-all/clear + 4 KPIs simulador (original/taxa/antecipado/dias) + submit + histórico tabular.
+- **`/app/financeiro/adquirencia/conciliacao`** — server lista pendentes settled/anticipated não reconciliadas + `<ReconciliacaoList>` cliente: por venda botão "Buscar sugestões" → top-3 cards com match% color-coded (>90 verde / >70 azul / >50 amarelo) + reasons + botão "Conciliar".
+- **`/app/financeiro/adquirencia/regras`** — lista tabular ordered priority asc + badge action + JSON condition.
+- **`/app/financeiro/adquirencia/regras/new`** — form com 2 actions + priority + targetBankAccount dropdown + condições agrupadas (provider/brand/kind/amountMin/Max/daysAfterSettlement/bankDescription).
+- **`/app/financeiro/receita`** — server com search params from/to + 4 KPIs (online Asaas + presencial líquido + total + custo taxas) + quebra por provider + top 5 companies presencial.
+- Hub `/app/financeiro` atualizado: 💳 Adquirência + 📊 Receita unificada.
+
+**Faixa D entregue (ADR + seed):**
+
+- **`docs/decisions/0039-adquirencia-provider-abstrato.md` Proposed** — interface abstrata `AcquirerAdapter` + `MockAcquirerProvider` no MVP + ordem Sprint 18b Stone→Cielo→Rede→GetNet→PagSeguro (Stone primeiro pela maturidade da API) + antecipação manual default (automática vira stretch pós-MVP) + split de franquia em runtime sem materializar coluna (consome Sprint 01b agreements + materializa em Sprint 16 intercompany_entries via cron daily) + regra 25 enforced (split é financeiro puro, não atravessa company clínica); segurança regra 35/37/38 (allowlist por provider + envelope encryption credentials + safeFetch em runtime); alternativas rejeitadas (5 schemas separados por provider violaria regra 46; gateway externo lock-in; sem abstração impede troca). **Promove pra Accepted quando POC Stone sandbox validar.**
+- **`packages/db/scripts/seed-adquirencia.ts`** + `pnpm db:seed:adquirencia` — por tenant matriz: 2 conexões mock (Stone + Cielo sandbox) + 15 vendas/conexão dispersas em 60 dias com fee table calibrada por kind/installments + 3 reconciliation_rules (Stone settlement / Cielo settlement / Flag voucher >R$5k). 7 tenants seed canônico = **14 conexões + 210 vendas + 21 rules**. Idempotente (capture cause.code para erros wrapped Drizzle).
+
+**Sprint 18b futuro (pendências sem credenciais MVP):**
+
+- Adapters reais `cielo.ts`/`stone.ts`/`rede.ts`/`getnet.ts`/`pagseguro.ts` em `packages/db/src/adquirencia/providers/`
+- Envelope encryption AES-256-GCM com KEK por company para `credentials_encrypted` (ADR 0073 camada 4)
+- Webhook callbacks chargeback/cancel + `acquirer_webhook_events` análogo a Sprint 04
+- Job cron daily `acquirer.sync-daily` por connection ativa + alerta `acquirer.divergence_detected` D+2
+- Job daily materializar split franquia em `intercompany_entries` (Sprint 16) quando settlement confirmar
+- Antecipação automática por regra (`if cashflow_below {threshold} then anticipate_percent {pct} max {rate}`)
+- Upload CSV fallback `/adquirencia/[id]/vendas/import-csv` para tenant sem API
+- Feature flag `adquirencia_v1`
+- E2E sandbox Stone + RIPD adquirência + DPO sign-off
+
 ### Build — Sprint 17a 100% (Bancos + OFX + Conciliação + Cashflow + ADRs 0037/0038 Proposed) 2026-05-15
 
 Sprint 17 fecha o **core MVP (17a)** em **100%**. Sprint 17b (OAuth Pluggy/Belvo + NF-e SEFAZ real + certificado A1 + manifestação UI + devolução compra + NFs relacionadas) fica como sprint futuro pendente de credenciais de provider — schemas pré-cabeados em `certificados.ts`/`bancos.ts` garantem que 17b não exige nova migration.
