@@ -106,3 +106,6 @@ export * from './fisio'
 
 // Sprint 21 Faixa A — Evolução por sessão Fisio + anexos categorizados (exame_imagem/video_execucao/documento/foto_postural/audio_anamnese). evolucoes_sessao @volume 52M+/ano (regra 34 + ADR 0072 — top 5 volume MVP) + retenção 20a (Lei 13.787 + COFFITO 415). Anexos em MinIO bucket fisio-evolucoes com scanUpload obrigatório (regra 38) + URL assinada TTL 10min.
 export * from './evolucoes'
+
+// Sprint 22 Faixa A — TISS/TUSS + Convênios ANS: insurance_plans + tuss_catalog (versionado) + insurance_agreements + member_insurances + authorizations + billing_guides (TISS 4.01 ADR 0079) + billing_guide_items + billing_batches + billing_glosas. billing_guides @volume 2.4M+/ano (regra 34 + ADR 0072). ADRs 0029/0030/0031 esperados.
+export * from './convenios'

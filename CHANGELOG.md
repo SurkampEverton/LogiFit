@@ -6,6 +6,73 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 22a 100% (TISS/TUSS convênios + ADRs 0029/0030/0031 Proposed) 2026-05-17
+
+**Sprint 22 — bloco regulatório mais pesado da Fase 2 (ANS + Lei 9.961/2000).** 22a core entregue sem SOAP automático + sem XSD oficial + sem XMLDSig. Sprint 22b cobre essas dependências externas + ADR 0042 + RIPD.
+
+**Faixa A entregue (Schemas + RLS + 10 tests):**
+
+- **`packages/db/src/schema/convenios.ts`** — 11 tabelas:
+  - `insurance_plans` (global LogiFit + tenant editável; ans_code unique)
+  - `tuss_catalog` (global versionado; PK composta `(code, version)`)
+  - `tuss_catalog_imports` (audit append-only dos imports semestrais)
+  - `insurance_agreements` + `insurance_procedure_prices` (auth_required + max_sessions_per_auth)
+  - `member_insurances` (carteirinha; unique (member, plan, card))
+  - `authorizations` (CHECK qty_used ≤ qty_authorized)
+  - `billing_guides` (4 kinds + unique guideNumber por tenant + snapshot professional+tussVersion). **`@volume_estimate_yearly: 2400000`** particionamento manual trimestral.
+  - `billing_guide_items` (CHECK total = quantity × unit_price)
+  - `billing_batches` (guide_ids uuid[])
+  - `billing_glosas` (pipeline glossed → recurring → recovered|lost; CHECK amount > 0)
+- **`packages/db/src/policies/0041_convenios_rls.sql`** — RLS read-all globais + tenant-scoped + via JOIN.
+- Migration `0028_tiresome_stone_men.sql` aplicada (11 tables + 6 enums).
+- **`packages/db/tests/convenios-rls.test.ts`** — 10 RLS tests (TUSS/plans read-all cross-tenant + agreements isolation + price CHECK + auth qty CHECK + guide CHECK total consistent + paid ≤ total + unique guide_number + glosa amount > 0).
+
+**Faixa B.1 entregue (3 libs puras + 30 unit tests):**
+
+- **`packages/db/src/convenios/tiss-generator.ts`** — `generateGuideXml({tissVersion, kind, guideNumber, operator, prestador, memberInsurance, items, totalCents, issueDate, authorizationNumber})` produz XML TISS 4.01 com namespace `ans:`, tags `guiaConsulta` ou `guiaSPSADT`, `cabecalho`+`dadosBeneficiario`+`procedimentosExecutados`+`equipeExecutora` com CBOS; `generateBatchXml` envelope de lote. Escape XML básico (& < > " '), UTF-8 nativo. **8 tests** cobrindo SP/SADT + consulta + escape + múltiplos itens + opcionais + formato BRL 2 decimais + batch agregando.
+- **`packages/db/src/convenios/tiss-validator.ts`** — `validateGuide(input): {ok, issues}` com 10 regras canônicas (PROF_NO_CBOS, PROF_NO_COUNCIL, PROF_NO_UF, CARD_MISSING, CARD_EXPIRED, AUTH_REQUIRED_MISSING, AUTH_EXPIRED, AUTH_QTY_EXCEEDED, AUTH_NOT_APPROVED, TOTAL_MISMATCH, ITEM_TOTAL_MISMATCH) + 2 warnings (SPECIALTY_MISMATCH, COPAY_MISMATCH). Errors bloqueiam, warnings exibem. **17 tests** cobrindo happy path + 11 cenários adversariais + agregação múltiplos erros.
+- **`packages/db/src/convenios/tiss-return-parser.ts`** — `parseReturnXml(xml): {batchNumber, returnDate, items[]}` regex-based extrai guiaResposta + valorPago + glosas com codigoGlosa/descricaoGlosa/valorGlosa. Deriva status: paid/partially_paid/fully_glossed/cancelled. **5 tests** (paga integralmente / glosa parcial + total / XML vazio / formato BRL 1.234,56 / múltiplas glosas).
+- **`packages/db/package.json`** novo export `./convenios` + script `db:seed:convenios`.
+
+**Faixa B.2 entregue (14 Server Actions):**
+
+- **`apps/web/app/app/fisio/convenios/actions.ts`** — `createInsurancePlan` + `listInsurancePlans`; `createInsuranceAgreement` (capture unique constraint); `listInsuranceAgreements`; `setProcedurePrice` (upsert via onConflictDoUpdate); `addMemberInsurance` (capture unique); `listMemberInsurances`; `requestAuthorization` + `approveAuthorization` + `denyAuthorization` + `listAuthorizations`; **`generateGuide`** — flow completo: carrega memberInsurance+plan+agreement+price+autorização+profissional via JOINs + consulta `professional_registrations` ativa coerente (ADR 0055) + roda `validateGuide` bloqueando se erro + carrega descrições TUSS + gera XML via lib + persiste guide+items com snapshot+tussVersion (`'2026.01'`); **`createBatch`** valida todas guides ready + agrega XML batch + transição status sent + lock batchNumber unique; **`processReturnXml`** parser → atualiza guides status + cria glosas + marca batch returned; **`fileGlosa`** registra recurso manual.
+
+**Faixa C entregue (6 rotas + filtros KPIs):**
+
+- **`/app/fisio/convenios`** — lista planos (global + tenant) + acordos comerciais com plano/company/contrato/prazo/vigência.
+- **`/app/fisio/autorizacoes`** — lista com status badges color-coded + qty (req/auth/usado) + senha + validade.
+- **`/app/fisio/faturamento`** — 5 KPIs (total/faturado/recebido/prontas-enviadas/glosadas) + filtros status (`all/draft/ready/sent/paid/fully_glossed`) + tabela com paciente+kind+valores+badges.
+- **`/app/fisio/faturamento/[id]`** — detail com 4 KPIs + dados profissional executante + tabela itens + tabela glosas + `<details>` expansível com XML TISS 4.01 enviado (auditoria).
+- **`/app/fisio/glosas`** — KPIs (total/valor glosado/recuperado/em aberto) + filtros status + tabela com guia/paciente/código/motivo/valor.
+
+**Faixa D entregue (3 ADRs + seed):**
+
+- **[ADR 0029](docs/decisions/0029-tiss-tuss-schema-xml-generator.md) Proposed** — 11 schemas + gerador XML customizado (rejeita xmlbuilder2/fast-xml-parser/biblioteca específica) + versionamento `(code, version)` PK + snapshot defensivo professional+tussVersion.
+- **[ADR 0030](docs/decisions/0030-tuss-update-pipeline.md) Proposed** — pipeline semestral via admin manual no MVP (upload XLSX) + cron Sprint 22b; rejeita scraping ANS por fragilidade.
+- **[ADR 0031](docs/decisions/0031-tiss-validador-proativo.md) Proposed** — validador 10 regras + XSD diferido Sprint 22b via libxmljs.
+- **`packages/db/scripts/seed-convenios.ts`** + `pnpm db:seed:convenios` — 5 planos globais (Unimed Brasil ANS 343889 / Bradesco Saúde 005711 / Amil 326305 / SulAmérica 006246 / NotreDame 359017) + 28 TUSS top fisio/clínica (10 procedimentos + 3 OPME + 3 medicamentos + 2 taxas + 1 gasoterapia + diversos fisio especializados) + 1 import audit version 2026.01.
+
+**563 tests verdes** (era 523, +40 Sprint 22: 10 RLS + 30 unit).
+
+**Sprint 22b futuro (sem dependências externas + sem credenciais ops):**
+
+- Validação XSD oficial ANS via `libxmljs` ou `xmllint` shell wrapper
+- XMLDSig assinatura digital (xml-crypto) — exigida por algumas operadoras maiores
+- ADR 0042 submissão automática SOAP por operadora (Unimed Central / Bradesco / Amil APIs proprietárias)
+- OAuth + credentials encrypted por agreement (envelope encryption ADR 0073)
+- OCR de carteirinha física (foto) — preenchimento automático
+- Dashboard `/app/super-admin/glosas-stats` com taxa por convênio + sugestão de novas regras pro validador
+- Integração `appointments` → auto-gera guia quando atendimento realizado via convênio
+- Co-participação vira invoice Sprint 04
+- DRE Sprint 14 segrega receita convênio × particular
+- Card "Faturamento Convênios" no dashboard gerente
+- `search_index` (regra 30) indexa billing_guides + authorizations + plans com `is_sensitive=true`
+- Pipeline cron `tuss-update-job` (jul/2026 release)
+- RIPD `docs/compliance/ripd/v1.0-tiss-convenios.md` + DPO sign-off (transmissão dado clínico a operadora)
+- Feature flag `convenios_v1`
+- E2E XSD oficial valida + 10 cenários adversariais bloqueados pelo validador
+
 ### Build — Sprint 21a 100% (Evolução fisio SOAP + anexos categorizados) 2026-05-17
 
 **Sprint 21 continua Fase 2.** 21a core entregue sem upload real ao MinIO. Sprint 21b cobre API Route multipart + scanUpload encadeado + URL assinada + player vídeo + viewer imagem + RIPD.

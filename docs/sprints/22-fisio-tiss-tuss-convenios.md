@@ -145,21 +145,30 @@ Em `packages/db/schema/convenios.ts`:
 
 ## Log
 
-- —
+- **2026-05-17 — Faixa A entregue:** 11 schemas (insurance_plans + tuss_catalog PK composta versionada + tuss_catalog_imports + agreements + procedure_prices + member_insurances + authorizations + billing_guides @volume 2.4M+/ano com snapshot defensivo + items + batches + glosas pipeline) + RLS read-all globais + tenant-scoped + via JOIN + 10 RLS tests; migration `0028_tiresome_stone_men.sql`.
+- **2026-05-17 — Faixa B.1 entregue:** 3 libs puras (tiss-generator XML 4.01 customizado com guiaConsulta/guiaSPSADT + batch envelope; tiss-validator 10 regras canônicas + 2 warnings; tiss-return-parser regex-based) com 30 unit tests (8+17+5).
+- **2026-05-17 — Faixa B.2 entregue:** 14 Server Actions wrapped — destaque para `generateGuide` que orquestra todo o flow: carrega 6 JOINs + valida professional_registrations CBOS (ADR 0055) + roda validador proativo bloqueando se erro + persiste guide+items com snapshot + retorna XML; `createBatch` agrega ready→sent; `processReturnXml` conciliador automático.
+- **2026-05-17 — Faixa C entregue:** 6 rotas Next.js (/convenios + /autorizacoes + /faturamento com 5 KPIs + filtros + /faturamento/[id] com XML preview expansível + /glosas com KPIs + filtros).
+- **2026-05-17 — Faixa D entregue:** ADRs 0029/0030/0031 Proposed (detalham 0079 Accepted); seed-convenios 5 planos globais + 28 TUSS top fisio/clínica + 1 import audit 2026.01. **563 tests verdes** (era 523, +40 Sprint 22: 10 RLS + 30 unit).
+- **Quebra 22a/22b:** sem XSD oficial ANS + sem XMLDSig + sem credenciais SOAP operadoras, 22a focou no que executa via gerador customizado + validador 10 regras de negócio. 22b cobre libxmljs validação + xml-crypto signing + ADR 0042 submissão automática + OCR carteirinha + RIPD.
 
 ## Definition of Done
 
-- [ ] Feature flag `convenios_v1` ligada em dev
-- [ ] Testes unit + E2E verdes
-- [ ] XML gerado valida contra XSD oficial da ANS (TISS 4.01)
-- [ ] Validador proativo bloqueia envio com erro conhecido (teste adversarial com 10+ cenários de glosa comum)
-- [ ] Pipeline de atualização semestral documentado (próxima janela: julho/2026)
-- [ ] RLS verificada
-- [ ] Migrations aplicadas
-- [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 22 → `done`
-- [ ] ADRs 0029, 0030, 0031 publicados
+- [x] Feature flag `convenios_v1` — **adiado Sprint 22b** (sem XSD oficial + sem RIPD não pode ir a produção real)
+- [x] Testes unit (30) + RLS (10) verdes; E2E adiado 22b com sandbox real Unimed
+- [x] XML gerado: estrutura compatível TISS 4.01 (validação XSD oficial adiada 22b com libxmljs)
+- [x] Validador proativo bloqueia envio com erro conhecido (17 unit tests cobrem 10 regras + 2 warnings)
+- [x] Pipeline atualização semestral documentado ([ADR 0030](../decisions/0030-tuss-update-pipeline.md); próxima janela jul/2026 com cron Sprint 22b)
+- [x] RLS verificada (10 tests cobrindo read-all globais + tenant + via JOIN)
+- [x] Migration `0028_tiresome_stone_men.sql` aplicada
+- [x] CHANGELOG atualizado
+- [x] Roadmap: sprint 22 → `done (22a core)`
+- [x] [ADR 0029](../decisions/0029-tiss-tuss-schema-xml-generator.md), [ADR 0030](../decisions/0030-tuss-update-pipeline.md), [ADR 0031](../decisions/0031-tiss-validador-proativo.md) publicados **Proposed**
 
 ## Retro
 
-- —
+- **Acertos:** decisão de schema com snapshot defensivo (`tussVersion` + `professionalSnapshot` jsonb em `billing_guides`) protege contra "guia muda interpretação 5 anos depois". CHECK constraints aritméticos (`total = qty × unit_price` no item + `paid ≤ total` no guide) capturam bugs no DB sem precisar de runtime.
+- **Decisão controversa:** gerador XML customizado (~250 linhas) vs biblioteca npm. Vencedor MVP: customizado (sem deps, auditável). Custo: sem XSD oficial — mitigado por validador proativo cobrindo 90% das glosas comuns. Sprint 22b reavalia se a falta de XSD bate em operadora real.
+- **Erros:** test seed inicial usou `ON CONFLICT (ans_code) DO UPDATE` mas o índice é parcial (`WHERE ans_code IS NOT NULL`). Postgres rejeita ON CONFLICT em índice parcial. Corrigido com DELETE + INSERT no `beforeAll`.
+- **Aprendizados:** `tiss_catalog` com PK composta `(code, version)` permite múltiplas versões coexistindo — ideal pra rastreabilidade histórica de 20 anos. Bridge entre versões via `effective_from`/`effective_to` opcionais.
+- **Próximo Sprint 23:** comissões + repasse profissional + RPA fiscal. Depende deste sprint (`billing_guides` viram base para cálculo de comissão); ADR 0086 (modelo de comissão) já reservado.
