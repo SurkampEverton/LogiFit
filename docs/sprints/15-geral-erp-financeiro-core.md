@@ -1,9 +1,9 @@
 # Sprint 15 — Geral · ERP Financeiro Core (AP + AR + Plano de Contas + OCR boleto + NF-e XML)
 
 - **Área:** geral
-- **Início:** planejado (depois do Sprint 14)
-- **Fim planejado:** +4 semanas — **⚠️ candidato à quebra em 15a (AP/AR core + plano contas + workflow aprovação) + 15b (OCR boleto multi-provider + NF-e XML + fornecedores import)** se estourar 3 semanas (regra 9). Decisão na abertura do sprint conforme estimativa detalhada.
-- **Status:** planejado
+- **Início:** 2026-05-14
+- **Fim planejado:** +4 semanas — **⚠️ candidato à quebra em 15a (AP/AR core + plano contas + workflow aprovação) + 15b (OCR boleto multi-provider + NF-e XML + fornecedores import)** se estourar 3 semanas (regra 9). **Decisão tomada na abertura (2026-05-14):** quebrar em 15a (core MVP — em execução agora) + 15b (OCR + NF-e + retenções tributárias ADR 0061 + manifestação destinatário ADR 0057 + auto-emissão ADR 0060). Schemas pré-cabeados para 15b (taxNatureId/retentionTotalCents/netAmountCents/nfeReceivedId/noInvoice/source enum já em `accounts_payable`) sem precisar nova migration.
+- **Status:** done (15a core; 15b OCR/NF-e/retenções fica em sprint futuro)
 - **Item do roadmap:** #17
 
 ## Goal
@@ -214,7 +214,82 @@ Em `packages/db/schema/erp-financeiro.ts`:
 
 ## Log
 
-- —
+### 2026-05-14 — Faixa A iniciada (25%)
+
+**Decisão de quebra em 15a (core MVP) + 15b (OCR/NF-e/retenções):**
+- 15a: plano de contas hierárquico + suppliers + AP core (workflow + payment manual) + AR avulso + aging — escopo cobrável em ~2 semanas
+- 15b (seguinte): OCR multi-provider (ADR 0035), NF-e inbox unificada (ADR 0056), retenções tributárias (ADR 0061), manifestação destinatário (ADR 0057), self-issued NF-e entrada (ADR 0060)
+- Schemas de AP **pré-cabeados** para 15b (`taxNatureId nullable` + `retentionTotalCents default 0` + `netAmountCents = amount - retention` via check + `nfeReceivedId nullable` + `noInvoice bool` + `source enum` com valores `nfe_*`/`ocr_boleto`) — Faixa B/C/D de 15b não exigem migration nova
+
+**Entregues:**
+- `packages/db/src/schema/erp-financeiro.ts` — 6 tabelas: `chart_of_accounts` (hierárquico self-FK + `is_leaf bool` + unique `(tenant, code)`) + `suppliers` (FK persons ADR 0047 + bank_account jsonb + unique `(tenant, person)`) + `approval_rules` (DSL declarativa min/max + required_approvers jsonb + check `max ≥ min`) + `accounts_payable` (state machine 8 estados + approval_trace jsonb + 4 checks: amount positive, net consistent, retention non-negative, due ≥ issue + unique global doc_key NF-e) + `accounts_receivable` (separado de invoices contratos Sprint 04 + 2 checks) + `ap_ar_payments` (append-only via ausência policy + source_type discriminator 'ap'/'ar')
+- `packages/db/src/policies/0034_erp_financeiro_rls.sql` — RLS tenant-scoped em todas as 6 tabelas + FORCE; SELECT/INSERT/UPDATE em 5 tabelas; `ap_ar_payments` sem UPDATE/DELETE policy (append-only)
+- Migration `0021_woozy_nocturne.sql` aplicada
+- `packages/db/tests/erp-financeiro-rls.test.ts` — **16 tests verdes** cobrindo: unique `(tenant, code)` rejeita duplicata + coexiste em outro tenant + isolation per-tenant; supplier unique `(tenant, person)`; approval_rules check `max < min` rejeitado; AP check `amount=0` rejeitado, `net ≠ amount - retention` rejeitado, `due < issue` rejeitado + AP válida com retenção consistente; doc_key duplicado global rejeitado (cross-tenant); AR válida + AR `due < issue` rejeitada; ap_ar_payments check source_type inválido + append-only UPDATE/DELETE bloqueados (sem policy = 0 rows afetadas).
+- `packages/db/src/erp-financeiro/approval.ts` — workflow engine ADR 0034:
+  - `pickApprovalRule(amountCents, companyId, rules)` — rule de menor `max_amount_cents` que engloba valor; prioriza company-specific antes de global
+  - `decideNextState({amount, company, rules, trace})` — máquina de estado retorna `approved` (3 razões) / `pending_approval` (próximo approver) / `rejected`
+  - `canUserApprove({userId, roles, ...})` — valida que user é o próximo aprovador antes de Server Action `approveAP` aceitar
+  - DSL Zod: `ApproverSchema` (role OU userId) + `RequiredApproversSchema` (series/parallel + max 10 approvers) + `ApprovalTraceEntrySchema`
+- `packages/db/src/erp-financeiro/approval.test.ts` — **21 tests verdes** cobrindo: pickApprovalRule (menor max + company-specific + sem rule + max=NULL) + decideNextState (sem rule → no_rule_required + auto_approved + series next + series all_done + parallel remaining + parallel done + rejected) + canUserApprove (next approver matching role + user_id + rejeita outro user + rejeita estado approved)
+- `packages/db/package.json` — exports `./erp-financeiro` apontando para `src/erp-financeiro/index.ts`
+- **298 testes Vitest verdes total** (era 261 → +37 Sprint 15: 16 RLS + 21 workflow)
+- Typecheck clean
+
+**Próximo (Faixa B):**
+- B.2 seed plano de contas brasileiro simplificado (~60 contas) + Server Actions chart
+- B.3 Server Actions suppliers + AP (create/submit/approve/reject/pay) + AR (create + manual receive)
+
+### 2026-05-15 — Sprint 15a core MVP done (100%)
+
+**Faixa B entregue:**
+
+- **`packages/db/scripts/seed-plano-contas.ts`** (ADR 0033) — popula ~67 contas brasileiras canônicas em cada tenant: 12 agregadoras (5 raízes + 7 subgrupos) + 55 folhas operacionais adaptadas a academia/clínica fisio/nutri. Pass 1 INSERT idempotente via `ON CONFLICT (tenant_id, code) DO NOTHING`; Pass 2 resolve `parent_id` via lookup por `code`. Bonus: cria 3 `approval_rules` canônicas (Auto até R$ 500 / Gerente até R$ 5.000 / Gerente+Diretor acima). Comando: `pnpm --filter @repo/db db:seed:plano-contas`.
+- **`apps/web/app/app/financeiro/plano-contas/actions.ts`** — 5 Server Actions wrapped: `createChartAccount` (valida parent existe + kind herda + marca pai automaticamente como não-folha), `listChartAccounts` (filtro kind + includeArchived), `listLeafAccounts` (para select de AP/AR), `archiveChartAccount` (bloqueia se houver filhos ativos OU lançamentos AP/AR), `moveChartAccount` (valida kind do novo pai + bloqueia ciclo trivial).
+- **`apps/web/app/app/financeiro/fornecedores/actions.ts`** — 5 Server Actions: `createSupplier` (valida persons existe no tenant), `updateSupplier` (só campos específicos do supplier — identidade edita em `/app/pessoas/[id]` ADR 0047), `listSuppliers` (filtros + ILIKE name/document), `getSupplier` (com histórico AP últimas 20), `archiveSupplier` (bloqueia se houver APs em aberto).
+- **`apps/web/app/app/financeiro/contas-pagar/actions.ts`** — 7 Server Actions consumindo workflow engine `approval.ts`: `createAP` (valida chart é folha + ativa + due ≥ issue), `submitForApproval` (passa draft→pending E roda `decideNextState` — rule sem approvers vira approved direto), `approveAP` (chama `canUserApprove` antes; adiciona trace; transiciona), `rejectAP` (registra rejeição no trace), `cancelAP` (estados ≤ scheduled), `registerManualPayment` (insere `ap_ar_payments` + soma agregada; status vira `paid` quando total ≥ netAmount, senão `scheduled`), `listAP` (filtros status/supplier/company/due), `getAP` (com payments + trace).
+- **`apps/web/app/app/financeiro/contas-receber/actions.ts`** — 6 Server Actions: `createAR`, `markARIssued`, `registerARReceived` (similar a registerManualPayment — soma agregada via `ap_ar_payments` source_type='ar'), `cancelAR`, `listAR`, `getAR`.
+
+**Faixa C entregue (9 rotas Next.js):**
+
+- **`/app/financeiro/plano-contas`** — tree view server-rendered agrupado por kind (5 cards ativo/passivo/receita/despesa/custo) com dots coloridos e indentação por profundidade do code (depth = count de `.`); badge "grupo" em não-folhas; folhas em fonte normal.
+- **`/app/financeiro/plano-contas/new`** — form criação com selector de kind, pai filtrado por kind (cascading), code regex `^[0-9]+(\.[0-9]+)*$`, checkbox isLeaf.
+- **`/app/financeiro/fornecedores`** — lista tabular com nome, doc formatado (CPF/CNPJ), contato, payment method default badge, prazo D+N.
+- **`/app/financeiro/fornecedores/new`** — form com busca de pessoa existente + select grandes (size=8), dados bancários opcionais (PIX + banco/agência/conta), pgto padrão + prazo.
+- **`/app/financeiro/fornecedores/[id]`** — detalhe com 3 KPIs (Total pago / Em aberto / Notas) + dados + histórico AP últimas 30 com badges de status color-coded.
+- **`/app/financeiro/contas-pagar`** — lista filtrável (status/from/to) com 2 KPIs (A pagar / Em atraso color-coded vermelho), tabela ordenada por dueDate com row em vermelho+bold quando overdue.
+- **`/app/financeiro/contas-pagar/new`** — wizard com companies + suppliers + leaf accounts (filtrado a despesa/custo/passivo); ao selecionar supplier, auto-preenche dueDate via defaultPaymentTermDays; opção "submeter imediatamente" chama `submitForApproval` em seguida.
+- **`/app/financeiro/contas-pagar/[id]`** — detalhe com 4 KPIs (Bruto/Líquido/Pago/A pagar) + dados + histórico approval_trace timeline color-coded por action (submitted azul / approved verde / rejected vermelho) + `<APActions>` client-side com dialogs inline para Aprovar (com comentário), Rejeitar (com motivo min 5 chars), Cancelar, Registrar Pagamento (com valor/data/método/referência); botões aparecem condicionalmente baseado em status.
+- **`/app/financeiro/contas-receber`** — lista filtrável similar a AP com 2 KPIs (A receber / Recebido color-coded verde).
+- **`/app/financeiro/contas-receber/new`** — wizard com payer search + leaf accounts filtrado a receita/ativo; opção "marcar como emitida imediatamente".
+- **`/app/financeiro/contas-receber/[id]`** — detalhe com 3 KPIs + dados + `<ARActions>` client-side (Marcar emitida / Registrar recebimento / Cancelar).
+- **`/app/financeiro/aging`** — relatório AP+AR distribuído em 5 buckets (A vencer / 1-30 / 31-60 / 61-90 / 90+) com bar charts horizontais color-coded; 2 seções (AP e AR) com totais por seção.
+- **`/app/financeiro`** (hub) — atualizado com 8 cards nav: Plano de contas, Fornecedores, Contas a pagar, Contas a receber, Aging + Custos, DRE, Previsão (Sprint 14).
+
+**Faixa D entregue:**
+
+- **`docs/decisions/0033-plano-contas-hierarquico-erp-financeiro.md`** Accepted — plano hierárquico self-FK + is_leaf + kind herda do pai + seed brasileiro simplificado ~67 contas + alternativas rejeitadas (ltree, nested set, achatado).
+- **`docs/decisions/0034-workflow-aprovacao-ap-declarativo.md`** Accepted — `approval_rules` DSL JSON (`mode series/parallel` + `approvers role|userId` + `min/max amount` + `companyId opcional`); `approval_trace jsonb` append-only no AP; engine puro `pickApprovalRule`/`decideNextState`/`canUserApprove` com 21 unit tests; alternativas rejeitadas (Temporal, stored procs, hardcode).
+- **`packages/db/scripts/seed-erp-financeiro.ts`** — 20 fornecedores PJ típicos brasileiros (imobiliária, energia, telefonia, Google Cloud, suplementos atacado, contabilidade, advocacia, Sabesp, Enel, gráfica, uniformes, Asaas, calibração, eventos, brindes — com CNPJs algoritmicamente válidos); 10 APs por tenant em estados variados (3 paid + 2 pending_approval + 2 approved + 1 rejected + 1 cancelled + 1 draft) com trace sintético; 5 ARs avulsos (2 received + 2 issued + 1 draft); pagamentos `ap_ar_payments` populados pra APs/ARs concluídas. **8 tenants total = 160 fornecedores + 80 APs + 40 ARs**. Comando: `pnpm --filter @repo/db db:seed:erp-financeiro` (idempotente via count check).
+- Typecheck monorepo verde.
+- **298 testes Vitest verdes** (Sprint 14 → 298 incluindo as 37 novas do Sprint 15 Faixa A: 16 RLS + 21 workflow engine).
+
+**Adiado Sprint 15b (sprint futuro, ainda não aberto):**
+
+OCR de boleto multi-provider (ADR 0035), inbox NF-e unificada `nfe_received`/`nfe_returns` (ADRs 0056/0058), manifestação destinatário NF-e (ADR 0057), self-issued NF-e entrada (ADR 0060), retenções tributárias `tax_natures`/`tax_retentions` (ADR 0061), `fiscal_emissions`/`fiscal_events` preparação (ADR 0059), parser FEBRABAN linha digitável, parser XML NF-e, UI `/app/financeiro/nfe` inbox unificada, UI `/app/settings/financeiro/ocr` + `/naturezas` + `/aprovacao`, handler boleto-upload WhatsApp inbound (Sprint 13 hub), feature flag `erp_financeiro_v1` (PostHog dropado MVP), E2E completo (OCR→AP→aprovação→pagamento; XML→fornecedor→AP), RIPD erp-financeiro, lint `cross-tenant-read-must-log` em queries de doc_key NF-e. Schemas AP/AR pré-cabeados (`taxNatureId/retentionTotalCents/netAmountCents/nfeReceivedId/noInvoice/source`) — Faixa B/C/D de 15b não exigem nova migration.
+
+**Pendências menores adiadas Sprint 15+ próximo PR:**
+
+- UI `/app/settings/financeiro/aprovacao` (editor visual de `approval_rules`) — backend Server Actions já prontos; UI fica pendente
+- Pagamento via Asaas (`payViaAsaas`) reusando wrapper Sprint 04
+- Pagamento em lote (gerente seleciona N APs approved e paga de uma vez)
+- Escalada por timeout em AP pending_approval (job cron + Sprint 13 régua dispara reminder)
+- Detecção de ciclo via recursive CTE em `moveChartAccount` (improvável na UI, mas robustez)
+- Widget "Contas a pagar vencendo" no dashboard gerente (Sprint 07 estendido)
+- Permission gates `financeiro.ap.read/write`/`financeiro.approve`/`financeiro.pay` enforcement em Server Actions (atualmente confia em RLS tenant-scoped + workflow `canUserApprove`)
+- Search index sync para `accounts_payable`/`accounts_receivable`/`suppliers` (ADR 0062, regra 30)
+- Particionamento `accounts_payable` por mês quando volume justificar (regra 34 + ADR 0072)
+- Anexar PDF NF/boleto via MinIO (`attachment_storage_path` pré-cabeada; depende de scanUpload regra 38)
 
 ## Definition of Done
 
