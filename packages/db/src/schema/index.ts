@@ -103,3 +103,6 @@ export * from './retencao'
 
 // Sprint 20 Faixa A — Prontuário Fisio + CID-11 + CIF + signature_policies (ADR 0028 esperado + ADR 0032 Accepted). consultas @volume 6M+/ano (regra 34 + ADR 0072) + retenção 20 anos (Lei 13.787/2018). Política de assinatura por profissão (CFM 2.299/COFFITO 414/CFN 599) com gate de registro profissional ativo (ADR 0055).
 export * from './fisio'
+
+// Sprint 21 Faixa A — Evolução por sessão Fisio + anexos categorizados (exame_imagem/video_execucao/documento/foto_postural/audio_anamnese). evolucoes_sessao @volume 52M+/ano (regra 34 + ADR 0072 — top 5 volume MVP) + retenção 20a (Lei 13.787 + COFFITO 415). Anexos em MinIO bucket fisio-evolucoes com scanUpload obrigatório (regra 38) + URL assinada TTL 10min.
+export * from './evolucoes'

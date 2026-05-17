@@ -6,6 +6,56 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 21a 100% (Evolução fisio SOAP + anexos categorizados) 2026-05-17
+
+**Sprint 21 continua Fase 2.** 21a core entregue sem upload real ao MinIO. Sprint 21b cobre API Route multipart + scanUpload encadeado + URL assinada + player vídeo + viewer imagem + RIPD.
+
+**Faixa A entregue (Schemas + RLS + 10 tests):**
+
+- **`packages/db/src/schema/evolucoes.ts`** — 2 tabelas:
+  - `evolucoes_sessao` — SOAP jsonb (subjetivo/objetivo/avaliacao/plano) + free_text + status (draft/locked/signed) + unique appointment_id quando NOT NULL (1 evolução por agendamento) + check signed+locked consistente + retenção 20a. **`@volume_estimate_yearly: 52000000`** — top 5 volume do MVP; particionamento manual trimestral.
+  - `evolucao_attachments` — 5 kinds (exame_imagem/video_execucao/documento/foto_postural/audio_anamnese) + 4 scan_status (pending/clean/rejected/soft_deleted) + content_hash dedup + CHECK size 0 < x ≤ 50MB + soft-delete preserva metadata.
+- **`packages/db/src/policies/0040_evolucoes_rls.sql`** — RLS tenant-scoped.
+- Migration `0027_cool_beyonder.sql` aplicada.
+- **`packages/db/tests/evolucoes-rls.test.ts`** — 10 tests verdes (draft insert / CHECK signed sem signed_at / CHECK locked sem locked_at / appointment_id NULL aceita N / isolation cross-tenant / anexo válido / CHECK size > 50MB / size 0 rejeitado / UPDATE scan_status pending→clean / isolation anexo).
+
+**Faixa B.1 entregue (1 lib pura + 22 unit tests):**
+
+- **`packages/db/src/evolucoes/soap.ts`** — `validateSoapForLock(soap, freeText?)` exige pelo menos 1 campo ≥10 chars trimmed; `validateAttachmentUpload({kind, mime, size, filename})` valida MIME por categoria + size por kind (exame_imagem 20MB / video 50MB / documento 10MB / foto 8MB / audio 30MB) + filename sanitizado (sem path traversal); `hashEvolucaoContent` SHA-256 canônico ordenando attachmentIds; `generateStoragePath` formato tenants/{t}/evolucoes/{e}/{hash12}-{filename}; constantes `ALLOWED_MIMES_BY_KIND` + `MAX_SIZE_BY_KIND` + `MAX_SIZE_GLOBAL`. **22 tests** cobrindo todas as regras (SOAP vazio falha; SOAP com freeText alternativo OK; exame_imagem com MIME video rejeitado; video > 50MB rejeitado; documento > 10MB rejeitado; filename com `../` rejeitado; todos kinds têm MIME+size mapping; hash determinístico canônico).
+- **`packages/db/package.json`** novo export `./evolucoes` + script `db:seed:evolucoes`.
+
+**Faixa B.2 entregue (9 Server Actions):**
+
+- **`apps/web/app/app/fisio/evolucoes/actions.ts`** — `createEvolucao` valida member + handles unique appointment 23505; `updateEvolucao` só-draft; `lockEvolucao` valida SOAP min content + carrega attachments clean pra hash + transição status; `addAttachmentMetadata` validação dupla (Zod + lib) + gera storagePath; `markAttachmentScanResult` API Route flow finalizer; `softDeleteAttachment` preserva metadata pra audit; `listEvolucoesByMember` com `attachmentsCount` via subquery; `listEvolucaoAttachments`; `getAttachmentSignedUrl` stub (Sprint 21b com MinIO adapter real).
+
+**Faixa C entregue (4 rotas + 4 client components):**
+
+- **`/app/fisio/pacientes/[memberId]/evolucoes`** — lista tabular com badge status color-coded + contagem de anexos + link timeline.
+- **`/app/fisio/evolucoes/new?memberId=X[&appointmentId=Y]`** — `<NewEvolucaoForm>` cliente com SOAP completo (4 campos auto-focus subjetivo) + freeText + criação rápida.
+- **`/app/fisio/evolucoes/[id]`** — `<EvolucaoEditor>` cliente readonly após lock + `<AddAttachmentForm>` cliente com **browser hash SHA-256 via Web Crypto** (idempotência) + select kind + caption + `<LockEvolucaoButton>` autenticado/ICP-Brasil; pós-lock mostra hash + provider.
+- **`/app/fisio/pacientes/[memberId]/timeline-evolucao`** — visual timeline com dots color-coded por status (verde signed / azul locked / cinza draft) + SOAP truncado por evolução + contagem anexos.
+
+**Faixa D entregue (seed):**
+
+- **`packages/db/scripts/seed-evolucoes.ts`** + `pnpm db:seed:evolucoes` — 3 evoluções fisio realistas (caso dor lombar evolutiva 15d→8d→hoje com EVA 7→4→2 e progressão de cargas) + 1 anexo foto postural inicial. Idempotente via email pattern `seed-evol-{tenant}-paciente@example.com`. 2 tenants (apenas com users seedados) populam.
+
+**523 tests verdes** (era 491, +32 Sprint 21: 10 RLS + 22 unit).
+
+**Sprint 21b futuro (sem upload binário real):**
+
+- API Route `POST /api/fisio/evolucao/[id]/upload` multipart com tempFile → `scanUpload()` (regra 38) → `addAttachmentMetadata({pendingScan:true})` → `markAttachmentScanResult` no callback
+- API Route `GET /api/fisio/evolucao/[id]/attachment/[attachmentId]` redirect para URL assinada TTL 10min via `MinioStorageAdapter.presignGet`
+- Player de vídeo inline com seekbar (`video_execucao`)
+- Viewer de imagem com zoom/pan (`exame_imagem`, `foto_postural`)
+- Player de áudio inline (`audio_anamnese`)
+- Transcrição Whisper de `audio_anamnese` → preenche `soap.subjetivo` (stretch)
+- Comparação lado-a-lado fotos posturais antes/depois
+- `search_index` (regra 30) indexando evolucoes com `is_sensitive=true`
+- RIPD `docs/compliance/ripd/v1.0-evolucao-midias.md` + DPO sign-off (regra 29)
+- Permission `prontuario.read`/`prontuario.write` no roles_permissions seed
+- Feature flag `fisio_evolucao_v1`
+- E2E: URL TTL expira em 10min retorna 403; upload >50MB rejeitado; scan rejeitado preserva metadata + deleta binário
+
 ### Build — Sprint 20a 100% (Prontuário Fisio + CID-11/CIF + signature_policies + ADR 0028 Proposed) 2026-05-17
 
 **Sprint 20 abre Fase 2.** 20a core (sem ICP-Brasil real + sem @react-pdf/renderer) entregue em 100%. Sprint 20b cobre ADR 0041 (escolha Cert.Sign/Bry/Vaultsign), PDF assinado real, audit em leitura, templates assessment_types-based, particionamento manual, RIPD.
