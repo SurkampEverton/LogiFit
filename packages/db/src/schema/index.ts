@@ -109,3 +109,6 @@ export * from './evolucoes'
 
 // Sprint 22 Faixa A — TISS/TUSS + Convênios ANS: insurance_plans + tuss_catalog (versionado) + insurance_agreements + member_insurances + authorizations + billing_guides (TISS 4.01 ADR 0079) + billing_guide_items + billing_batches + billing_glosas. billing_guides @volume 2.4M+/ano (regra 34 + ADR 0072). ADRs 0029/0030/0031 esperados.
 export * from './convenios'
+
+// Sprint 23 Faixa A — Comissões e repasse profissional: professional_contracts (4 kinds × 4 bases) + commission_rules overrides + commission_entries + commission_periods. commission_entries @volume 18M+/ano (regra 34 + ADR 0072). ADR 0086 esperado. Gate ADR 0055 + retenções placeholder (ADR 0061 integração Sprint 23b).
+export * from './rh'

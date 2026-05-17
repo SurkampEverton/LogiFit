@@ -6,6 +6,72 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 23a 100% (Comissões + repasse profissional + ADR 0086 Proposed) 2026-05-17
+
+**Sprint 23 — RH financeiro fisio.** 23a core entregue sem `calculateRetentions` real + sem Asaas transfer + sem holerite PDF. Sprint 23b integra ADR 0061 retenções tributárias reais + transferência Asaas + @react-pdf/renderer + RIPD + feature flag.
+
+**Faixa A entregue (Schemas + RLS + 14 tests):**
+
+- **`packages/db/src/schema/rh.ts`** — 4 tabelas:
+  - `professional_contracts` — versionado (`version int`); unique `(person, company, service_type, version)` permite múltiplas versões. CHECK garante `default_percent` ou `default_amount_cents` conforme `kind`. Effective range validado.
+  - `commission_rules` — overrides priority asc com `service_type` e/ou `tuss_code`; CHECK exige pelo menos um critério + valor (percent ou amount_cents).
+  - `commission_entries` — @volume 18M+/ano particionamento manual; **unique `(contract, source_event_ref)` garante idempotência** (mesmo evento não vira 2 entries); CHECK `net = commission - retention`; status pipeline `pending|included|excluded|reversed`.
+  - `commission_periods` — fechamento mensal; unique `(person, company, period_start, period_end)`; pipeline `draft|approved|paid|cancelled`; CHECK consistência net + range datas.
+- **`packages/db/src/policies/0042_rh_rls.sql`** — RLS tenant-scoped + `commission_rules` via JOIN com contract.
+- Migration `0029_ambiguous_venus.sql` aplicada.
+- **`packages/db/tests/rh-rls.test.ts`** — 14 RLS tests: contract válido / CHECK percent missing / fixo sem amount / tabela OK sem defaults / percent > 100 / isolation / entry net consistente / inconsistente rejeitado / unique source_event / period net consistente / inconsistente / unique person+period / period range invertido.
+
+**Faixa B.1 entregue (1 lib pura + 25 unit tests):**
+
+- **`packages/db/src/rh/commission.ts`** — `calculateCommission({event, contract, rules, today})` retorna `{entry, skipReason}`. Algoritmo:
+  1. Verifica contrato vigente (active + effective_from ≤ today ≤ effective_to)
+  2. Valida compat kind × event (`percent_recebido` ↔ payment_received/guide_paid; `fixo_por_atendimento` ↔ appointment/consulta/evolucao; etc)
+  3. Filtra base (recebido_particular exige paymentSource=particular; convenio aceita guide_paid)
+  4. `resolveRule(event, rules)` busca match priority asc: tussCode+serviceType → tussCode → serviceType → null
+  5. Calcula valor por kind (fixo usa default_amount; percent usa pct × amount; tabela exige rule)
+  6. Retenção placeholder 0 (Sprint 23b integra ADR 0061)
+  7. `netAmountCents = commissionCents - retentionTotalCents`
+
+  `resolveRule()` + `aggregateEntries()` exportados separadamente. **25 unit tests** cobrindo 4 kinds × 4 bases + overrides + priority + inativas + vigência + agregação status filter.
+
+- **`packages/db/package.json`** novo export `./rh` + script `db:seed:rh`.
+
+**Faixa B.2 entregue (10 Server Actions):**
+
+- **`apps/web/app/app/rh/actions.ts`** — `createProfessionalContract` valida person no tenant + gate ADR 0055 (service_type → council_body mapping: fisioterapia→CREFITO, personal_training→CREF, nutricao→CRN, medicina→CRM, enfermagem→COREN) + captura CHECK 23514 com mensagem acionável. `listProfessionalContracts` com filtro person. `createCommissionRule` valida contract no tenant. `calculateCommissionForEvent` carrega contract + rules + chama lib pura + persiste com `status='pending'` (captura unique 23505 = idempotente). `closePeriod` agrega entries `pending` no range → cria `commission_periods` draft + transition entries para `included` + linka periodId. `approvePeriod` transition `draft→approved` com aprovador. `markPeriodPaid` `approved→paid` + grava `asaas_transfer_id` (Sprint 23b chama Asaas real). `listCommissionEntries` + `listCommissionPeriods` com filtros. `generateExtractStub` placeholder Sprint 23b.
+
+**Faixa C entregue (4 rotas):**
+
+- **`/app/rh`** — hub com 5 KPIs (contratos ativos / entries pendentes / pendente bruto / periods draft / approved a pagar) + navegação 4 cards.
+- **`/app/rh/profissionais`** — lista tabular contratos com badges kind+base+default+versão.
+- **`/app/rh/comissoes`** — entries com filtros status (`all/pending/included/excluded/reversed`) + badges color-coded + decomposição bruto/retenção/líquido.
+- **`/app/rh/fechamento`** — periods com filtros status (`all/draft/approved/paid`) + KPIs + datas approve/pago.
+
+**Faixa D entregue (ADR + seed):**
+
+- **[ADR 0086 Proposed](docs/decisions/0086-modelo-comissao-profissional.md)** — 4 kinds × 4 bases + versionamento + imutabilidade pós-approved + reversão via entry espelhada (mantém histórico íntegro) + tributação placeholder MVP integra ADR 0061 Sprint 23b + gate ADR 0055; rejeita modificar entry original em estorno (quebraria audit), cálculo PL/pgSQL (difícil testar), 1 tabela única poliforma.
+- **`packages/db/scripts/seed-rh.ts`** + `pnpm db:seed:rh` — 3 perfis canônicos × 7 tenants = **21 contratos + 21 rules + 105 entries pending**:
+  - Fisio (percent_recebido misto 60% default + rule TUSS 20104073 70%)
+  - Personal (fixo_por_atendimento R$ 60 default + rule TUSS 50000128 R$ 80)
+  - Nutri (tabela_por_servico + rule TUSS 50000470 55%)
+
+**602 tests verdes** (era 563, +39 Sprint 23: 14 RLS + 25 unit).
+
+**Sprint 23b futuro:**
+
+- Integração `calculateRetentions()` real do Sprint 15 (ADR 0061) — INSS/IRRF/ISS para PF autônomo RPA; PIS/COFINS/CSLL/IRRF para PJ; sem retenção para Simples Nacional
+- UI decomposição completa: "Bruto R$ 2.500 → INSS R$ 275 + IRRF R$ 64,12 + ISS R$ 50 = Líquido R$ 2.110,88"
+- Transferência Asaas sandbox + production no `markPeriodPaid`
+- @react-pdf/renderer extract PDF com decomposição fiscal + GPS/DARF sugeridos pra contador
+- Job cron mensal automático `monthly-close-job` cria periods draft para cada (person, company) ativo
+- Listeners reais nos eventos `payment.received` / `billing_guide.paid` / `appointment.completed` / `consulta.signed` / `evolucao.created`
+- Trigger BEFORE UPDATE bloqueando mudança em entries de period.status='approved'|'paid' (imutabilidade enforcement)
+- Reversão via entry espelhada nos listeners `payment.refunded` / `billing_glosa.received`
+- Widget "comissão do mês" no dashboard do profissional (slot `comissao`)
+- Permission `rh.read` / `rh.write` / `rh.approve` + RIPD `v1.0-comissoes-rh.md` + DPO sign-off
+- Feature flag `rh_v1`
+- E2E: fisio com 10 atendimentos → 8 pagos + 1 glosado → period fechado → retenções aplicadas → transferência Asaas
+
 ### Build — Sprint 22a 100% (TISS/TUSS convênios + ADRs 0029/0030/0031 Proposed) 2026-05-17
 
 **Sprint 22 — bloco regulatório mais pesado da Fase 2 (ANS + Lei 9.961/2000).** 22a core entregue sem SOAP automático + sem XSD oficial + sem XMLDSig. Sprint 22b cobre essas dependências externas + ADR 0042 + RIPD.

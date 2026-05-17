@@ -23,7 +23,8 @@
     "./retencao": "./src/retencao/index.ts",
     "./fisio": "./src/fisio/index.ts",
     "./evolucoes": "./src/evolucoes/index.ts",
-    "./convenios": "./src/convenios/index.ts"
+    "./convenios": "./src/convenios/index.ts",
+    "./rh": "./src/rh/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -46,6 +47,7 @@
     "db:seed:fisio": "tsx scripts/seed-fisio.ts",
     "db:seed:evolucoes": "tsx scripts/seed-evolucoes.ts",
     "db:seed:convenios": "tsx scripts/seed-convenios.ts",
+    "db:seed:rh": "tsx scripts/seed-rh.ts",
     "db:rls-check": "tsx tests/rls-check.ts"
   },
   "dependencies": {

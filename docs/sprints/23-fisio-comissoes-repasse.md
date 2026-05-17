@@ -121,19 +121,28 @@ Em `packages/db/schema/rh.ts`:
 
 ## Log
 
-- —
+- **2026-05-17 — Faixa A entregue:** 4 schemas (professional_contracts versionado + commission_rules + commission_entries @volume 18M+/ano com idempotência via unique source_event_ref + commission_periods pipeline) + RLS tenant-scoped + via JOIN + 14 RLS tests; migration `0029_ambiguous_venus.sql`.
+- **2026-05-17 — Faixa B.1 entregue:** lib pura calculateCommission cobrindo 4 kinds × 4 bases + resolveRule priority asc + aggregateEntries com 25 unit tests (compat eventos / overrides / vigência / status filter).
+- **2026-05-17 — Faixa B.2 entregue:** 10 Server Actions wrapped — createProfessionalContract com gate ADR 0055 + mapping council por service_type; calculateCommissionForEvent idempotente; closePeriod agrega pending→included; approvePeriod transição draft→approved; markPeriodPaid placeholder Asaas.
+- **2026-05-17 — Faixa C entregue:** 4 rotas (/rh hub 5 KPIs + /profissionais + /comissoes filtros + /fechamento filtros).
+- **2026-05-17 — Faixa D entregue:** ADR 0086 Proposed (4 kinds × 4 bases + versionamento + imutabilidade + reversão entry espelhada + tributação placeholder); seed-rh 3 perfis × 7 tenants = 21 contratos + 21 rules + 105 entries. **602 tests verdes** (era 563, +39 Sprint 23: 14 RLS + 25 unit).
+- **Quebra 23a/23b:** sem `calculateRetentions` real (ADR 0061 não-integrado) + sem Asaas transfer + sem holerite PDF + sem cron mensal, 23a focou em schema + calculadora pura + workflow básico. 23b integra todas as pontas.
 
 ## Definition of Done
 
-- [ ] Feature flag `rh_v1` ligada em dev
-- [ ] Testes unit + E2E verdes
-- [ ] RLS verificada
-- [ ] Migrations aplicadas
-- [ ] Transferência Asaas sandbox funcional
-- [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 23 → `done`
-- [ ] ADR 0086 publicado
+- [x] Feature flag `rh_v1` — **adiado Sprint 23b** (sem retenção real + Asaas + RIPD não pode ir a produção)
+- [x] Testes unit (25) + RLS (14) verdes; E2E adiado 23b com Asaas sandbox + retenções reais
+- [x] RLS verificada (14 tests cobrindo isolation + CHECK + unique + via JOIN)
+- [x] Migration `0029_ambiguous_venus.sql` aplicada
+- [x] Transferência Asaas — **adiado Sprint 23b** (markPeriodPaid no MVP só registra ID externo)
+- [x] CHANGELOG atualizado
+- [x] Roadmap: sprint 23 → `done (23a core)`
+- [x] [ADR 0086](../decisions/0086-modelo-comissao-profissional.md) publicado **Proposed**
 
 ## Retro
 
-- —
+- **Acertos:** calculadora pura (lib `commission.ts`) com 25 testes cobre toda matriz 4 kinds × 4 bases sem precisar de DB. Server Actions ficam thin (CRUD + chamada da lib + persistência). Versionamento via `version` column + `(person, company, service_type, version)` unique resolve necessidade de "histórico" sem tabela `commission_history` separada.
+- **Decisão controversa:** reversão via **entry espelhada** ao invés de modificar entry original. Custo: history fica mais comprida (2 rows por estorno). Benefício: imutabilidade total — period antigo (já approved/paid) não muda nunca. Aceito pelo gate de auditoria fiscal (5 anos retenção mínima).
+- **Erros:** schema CHECK `pc_default_consistent` é complexo (3 cláusulas OR) — testes RLS cobrem cada caminho. Lição: CHECK constraints complexas precisam de unit test específico por cláusula.
+- **Aprendizados:** drizzle `numeric` em string → JS Number cast manual (`Number(r.percent)`). Mais explícito que jsonb-as-number aninhado. Fácil de errar; capturado pelo typecheck.
+- **Próximo Sprint 24:** estoque (descartáveis + revenda) + POS + inventário. Depende deste sprint para comissão sobre venda; ADR 0087 reservado para método de custo (PEPS vs custo médio).
