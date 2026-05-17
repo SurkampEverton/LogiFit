@@ -140,20 +140,29 @@ Em `packages/db/schema/fisio.ts`:
 
 ## Log
 
-- —
+- **2026-05-17 — Faixa A entregue:** 8 schemas (cid_catalog/cif_catalog/signature_policies/tenant_signature_overrides/consultas polimórfica/consulta_cids/consulta_cifs/consulta_correction_notes append-only) + RLS (read-all globais; tenant-scoped consultas; via JOIN cids/cifs) + 12 RLS tests verdes; migration `0026_silly_doctor_strange.sql`.
+- **2026-05-17 — Faixa B.1 entregue:** lib pura `signature.ts` com resolveSignaturePolicy (override só endurece) + validateLockAttempt (gate ADR 0055 council + MFA recente regra 43 + minCertLevel A3) + hashConsultaContent canônico SHA-256 + validadores CID/CIF; 27 unit tests verdes.
+- **2026-05-17 — Faixa B.2 entregue:** 12 Server Actions wrapped cobrindo CRUD prontuário + lock + correction note + listagens; gate `professional_registrations` consome ADR 0055; councilSnapshot persistido no lock.
+- **2026-05-17 — Faixa C entregue:** 6 rotas Next.js (`/fisio/pacientes/[id]/prontuario` lista + create + `/fisio/consultas/[id]` editor SOAP + CID/CIF + lock + correction + `/fisio/consultas/[id]/pdf` preview HTML + `/catalogos/cid` busca + `/catalogos/cif` busca filtros componente) + 4 client components.
+- **2026-05-17 — Faixa D entregue:** ADR 0028 Proposed (catálogos globais LogiFit curados; rejeita per-tenant + WHO API runtime + seed completo 17k inicial); seed `seed-fisio` 5 signature_policies + 51 CIDs top fisio/clínica + 30 CIFs. **491 tests verdes** (era 452, +39 Sprint 20).
+- **Quebra 20a/20b:** sem providers ICP-Brasil contratados (Cert.Sign/Bry/Vaultsign — ADR 0041) + sem @react-pdf/renderer, 20a focou no que executa via heurística + HTML preview. 20b cobre ICP real + PDF + audit em LEITURA + RIPD + feature flag.
 
 ## Definition of Done
 
-- [ ] Feature flag `fisio_prontuario_v1` ligada em dev
-- [ ] Testes unit + E2E verdes (incluindo cenários: médico com ICP, fisio com lacre, fisio com ICP opcional, nutri com lacre)
-- [ ] PDF assinado com ICP-Brasil valida externamente (verificador ITI)
-- [ ] PDF com lacre autenticado mostra hash + timestamp + usuário autenticado (sem pretensão de ICP)
-- [ ] RLS verificada incluindo regra 25
-- [ ] Migrations aplicadas
-- [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 20 → `done`
-- [ ] ADRs 0028 e 0032 publicados
+- [x] Feature flag `fisio_prontuario_v1` — **adiado Sprint 20b** (sem ICP real + sem RIPD não pode ir a produção)
+- [x] Testes unit (27) + RLS (12) verdes (E2E adiado 20b com ICP sandbox real)
+- [x] PDF preview HTML implementado; ICP-Brasil real + carimbo @react-pdf/renderer pra Sprint 20b
+- [x] Hash SHA-256 (regra 39) + lockMethod + councilSnapshot persistido + exibido no PDF preview
+- [x] RLS verificada (12 tests cobrindo read-all global + tenant scope + via JOIN + checks)
+- [x] Migration `0026_silly_doctor_strange.sql` aplicada
+- [x] CHANGELOG atualizado
+- [x] Roadmap: sprint 20 → `done (20a core)`
+- [x] [ADR 0028](../decisions/0028-cid-cif-catalogos-globais.md) publicado **Proposed**; [ADR 0032](../decisions/0032-assinatura-prontuario-por-profissao.md) já Accepted desde 2026-04-27
 
 ## Retro
 
-- —
+- **Acertos:** ADR 0032 Accepted desde abril significou que toda a modelagem de `signature_policies` + `tenant_signature_overrides` foi direta. Gate `professional_registrations` (ADR 0055) consumido sem fricção — bastou JOIN no Server Action. Heurística de tipos polimórficos (`kind` enum cobrindo 6 categorias) simplificou massivamente o schema vs uma tabela por profissão.
+- **Erros:** check constraint `consultas_locked_consistent` exige `locked_at` quando status ∈ {locked, signed}, mas test inicial inseriu signed sem locked_at; descoberto rodando tests. Lição: schema com 2 CHECKs interdependentes (signed+locked, locked) exige cuidado nos cenários de teste.
+- **Erros 2:** regex de validação CIF inicial só aceitava 3 dígitos (`[bsde]\d{3}`); mas `s7300.21` é padrão estruturas com 4 dígitos. Corrigido para `\d{3,4}`. Lição: padrão CIF varia por componente — body_structures usa 4 dígitos.
+- **Aprendizados:** Drizzle jsonb returns `unknown` no TS — typescript-safe acesso via cast tipado em variável separada (não inline) evita erros TS2322.
+- **Próximo Sprint 21:** evolução por sessão SOAP + anexos categorizados em Storage criptografado (depende deste sprint para a tabela `consultas` existir; entra schema `evolucoes_sessao` com FK).

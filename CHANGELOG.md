@@ -6,6 +6,61 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 20a 100% (Prontuário Fisio + CID-11/CIF + signature_policies + ADR 0028 Proposed) 2026-05-17
+
+**Sprint 20 abre Fase 2.** 20a core (sem ICP-Brasil real + sem @react-pdf/renderer) entregue em 100%. Sprint 20b cobre ADR 0041 (escolha Cert.Sign/Bry/Vaultsign), PDF assinado real, audit em leitura, templates assessment_types-based, particionamento manual, RIPD.
+
+**Faixa A entregue (Schemas + RLS + 12 tests):**
+
+- **`packages/db/src/schema/fisio.ts`** — 8 tabelas:
+  - `cid_catalog` + `cif_catalog` — globais (tenant_id NULL, read-all RLS) curados pela LogiFit (ADR 0028)
+  - `signature_policies` — catálogo global por profissão (medico/fisio/nutri/personal/enfermeiro) com mode + minCertLevel + requiresMfa/AuditChain (ADR 0032 Accepted já existia)
+  - `tenant_signature_overrides` — endurecimento Enterprise (CHECK `mode_override='icp_required'` impede afrouxar)
+  - `consultas` — polimórfica (kind: medico/fisio/nutri/personal/enfermeiro/custom) + status (draft/locked/signed/archived) + signatureMode resolvido por kind na criação + CHECK consistência signed/locked + councilSnapshot jsonb. `@volume_estimate_yearly: 6000000` particionamento manual futuro
+  - `consulta_cids` (M:N com kind principal/secundario) + `consulta_cifs` (qualifier 0-4 com check) — RLS via JOIN com `consultas`
+  - `consulta_correction_notes` — append-only com contentHash entrando em audit chain (regra 39)
+- **`packages/db/src/policies/0039_fisio_rls.sql`** — RLS aplicada (CID/CIF/policies read-all; consultas tenant-scoped; correction notes append-only sem UPDATE policy).
+- Migration `0026_silly_doctor_strange.sql` aplicada.
+- **`packages/db/tests/fisio-rls.test.ts`** — 12 tests verdes (CID/CIF read-all cross-tenant; signature_policies cross-tenant; override CHECK só icp_required; consulta insert draft + isolation cross-tenant; CHECK signed sem signed_at falha; consulta_cids herda RLS via JOIN; CIF qualifier 5 rejeitado; correction note append).
+
+**Faixa B.1 entregue (1 lib pura + 27 unit tests):**
+
+- **`packages/db/src/fisio/signature.ts`** — `resolveSignaturePolicy({professionOrKind, policies, tenantOverrides, tenantId})` (override só endurece pra icp_required; custom → fallback fisio); `validateLockAttempt({policy, attempt, mfaRecentMs, hasActiveCouncil})` cobre gate ADR 0055 (council ativo) + regra 43 (MFA recente <15min) + minCertLevel A3 enforcement; `hashConsultaContent({content, cids, cifs, signedAtIso, professionalUserId})` SHA-256 canônico ordenando chaves recursivamente; `validateCidCode`/`validateCifCode`/`validateCifQualifier`. **27 tests** cobrindo todos os caminhos (médico+A3+MFA → OK; médico+lacre → falha; médico+A1 → falha minCertLevel; fisio+lacre+MFA → OK; fisio sem MFA → falha; fisio sem CREFITO → falha; hash determinístico canônico; CIDs ordenados → mesmo hash; CIF s7300.21 padrão estruturas aceito).
+- **`packages/db/package.json`** novo export `./fisio` + script `db:seed:fisio`.
+
+**Faixa B.2 entregue (12 Server Actions):**
+
+- **`apps/web/app/app/fisio/consultas/actions.ts`** — `createConsulta` resolve signatureMode via política antes de gravar; `updateConsultaContent` só-draft; `linkCid` valida catálogo existir + status draft; `linkCif` valida componente+qualifier; `lockConsulta` carrega política+overrides+council via `professional_registrations` + verifica MFA recente (`session.logifit.mfaAt`) + computa hash conteúdo+CIDs+CIFs + persiste councilSnapshot do profissional + transição draft→locked|signed conforme lockMethod; `createCorrectionNote` exige status ≠ draft + hash da nota; `listConsultasByMember`; `listCidCatalog` ILIKE busca; `listCifCatalog` filtros componente; `exportPdfStub` retorna INTERNAL_ERROR placeholder.
+
+**Faixa C entregue (6 rotas + 4 client components):**
+
+- **`/app/fisio/pacientes/[memberId]/prontuario`** — lista de consultas do member ordered desc + `<CreateConsultaButton>` cliente com picker dos 6 kinds.
+- **`/app/fisio/consultas/[id]`** — header com badges status+signatureMode; KPIs Criada/Política/Lock method/Quando; `<ConsultaEditor>` cliente com SOAP (Subjetivo/Objetivo+Avaliação/Plano/Observações) + adicionar CID/CIF inline (autocomplete pendente Sprint 20b); listas CIDs/CIFs vinculados; `<LockConsultaForm>` com seletor de método (ICP-A3/ICP-A1/Lacre) + valida pelo menos 1 CID principal; bloco "Lacre / assinatura" pós-lock com hash SHA-256 visível + dados profissional (council body+state+number); `<CorrectionNoteForm>` cliente expansível.
+- **`/app/fisio/consultas/[id]/pdf`** — preview HTML PDF-like com layout impresso (paciente, kind, SOAP, CIDs, CIFs, rodapé com status+lockMethod+hash+council; placeholder pra Sprint 20b @react-pdf/renderer real).
+- **`/app/catalogos/cid`** + **`/app/catalogos/cif`** — read-only busca + filtros (CIF filtra por componente b/s/d/e).
+
+**Faixa D entregue (ADR + seed):**
+
+- **`docs/decisions/0028-cid-cif-catalogos-globais.md` Proposed** — catálogos globais LogiFit curados (rejeita per-tenant + API WHO em runtime + seed completo 17k inicial); migration anual via WHO+Datasus dump; bridge histórico via `active=false`; seed minimal Sprint 20 cobre top 50 fisio/clínica. Promove pra Accepted quando primeira migration de release real (2027-Q1) executar.
+- **`packages/db/scripts/seed-fisio.ts`** + `pnpm db:seed:fisio` — **5 signature_policies** (medico icp_required A3 / fisio authenticated_lock / nutri authenticated_lock / personal authenticated_lock / enfermeiro icp_optional A1) + **51 CIDs** (MG lombalgia/cervicalgia + FB tendinopatias/bursites + BA lesão joelho + FA artrite/osteoartrose + 8B AVC/paraplegia + CA asma/DPOC + 5A/B diabetes/obesidade + QA promoção saúde + BD vasculares + LD pediátricos + QC pós-operatório + MG dor crônica) + **30 CIFs** (b funções dor/força/marcha + s estruturas membros/tronco + d atividades andar/vestir/trabalhar + e fatores família/saúde/edifícios).
+
+**491 tests verdes** (era 452, +39 Sprint 20: 12 RLS + 27 unit).
+
+**Sprint 20b futuro (sem providers ICP-Brasil real):**
+
+- Adapter ICP-Brasil real (Cert.Sign vs Bry vs Vaultsign — ADR 0041)
+- `@react-pdf/renderer` + carimbo ICP no PDF + verificação externa pelo verificador ITI
+- Audit em LEITURA de consulta `status='signed'` (regra 5)
+- Templates por especialidade (ortopedia / neuro / respiratória / pediatria / urogine) reusando assessment_types Sprint 12
+- Widget `prontuario` no dashboard do member (slot `prontuario`, requiredVertical: 'fisio', consentPurpose: 'cross_module_fisio')
+- Search index global indexando consultas (regra 30 + is_sensitive=true + required_permission='prontuario.read')
+- Particionamento manual `consultas` por trimestre (regra 34 + ADR 0072) + cold storage Parquet pós-2a
+- RIPD `docs/compliance/ripd/v1.0-prontuario-fisio.md` + DPO sign-off
+- Integração handler `receipt` no hub WhatsApp inbound (ADR 0051)
+- Permission `prontuario.read`/`prontuario.write`/`prontuario.sign` no roles_permissions seed
+- Feature flag `fisio_prontuario_v1`
+- E2E Playwright: fisio sem CREFITO → bloqueia; fisio com CREFITO suspenso → bloqueia; médico tenta lacre → falha (icp_required); fisio assina ICP A3 quando tenant override forçou; signed_hash externo verificável
+
 ### 🎉 MVP FECHADO — Sprint 19 100% (IA preditiva de churn + retenção + ADR 0027 Accepted) 2026-05-17
 
 **Sprint 19 fecha o MVP em 100%.** 21 sprints entregues. Pipeline preditiva end-to-end funcional via heurística determinística + wrapper LLM-ready, alinhado à estratégia 2-fases do ADR 0027.

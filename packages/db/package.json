@@ -20,7 +20,8 @@
     "./rateio": "./src/rateio/index.ts",
     "./bancos": "./src/bancos/index.ts",
     "./adquirencia": "./src/adquirencia/index.ts",
-    "./retencao": "./src/retencao/index.ts"
+    "./retencao": "./src/retencao/index.ts",
+    "./fisio": "./src/fisio/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -40,6 +41,7 @@
     "db:seed:bancos": "tsx scripts/seed-bancos.ts",
     "db:seed:adquirencia": "tsx scripts/seed-adquirencia.ts",
     "db:seed:retencao": "tsx scripts/seed-retencao.ts",
+    "db:seed:fisio": "tsx scripts/seed-fisio.ts",
     "db:rls-check": "tsx tests/rls-check.ts"
   },
   "dependencies": {

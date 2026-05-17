@@ -100,3 +100,6 @@ export * from './adquirencia'
 
 // Sprint 19 Faixa A — Retenção/Churn: churn_features_snapshot + churn_predictions + churn_interventions + churn_events (ADR 0027 promover Accepted). churn_features_snapshot @volume 6M+/ano (regra 34 + ADR 0072 — particionamento trimestral migration manual). Fase 1 LLM Gemini classifier + cache 24h + fallback heurístico.
 export * from './retencao'
+
+// Sprint 20 Faixa A — Prontuário Fisio + CID-11 + CIF + signature_policies (ADR 0028 esperado + ADR 0032 Accepted). consultas @volume 6M+/ano (regra 34 + ADR 0072) + retenção 20 anos (Lei 13.787/2018). Política de assinatura por profissão (CFM 2.299/COFFITO 414/CFN 599) com gate de registro profissional ativo (ADR 0055).
+export * from './fisio'
