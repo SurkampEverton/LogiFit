@@ -138,7 +138,7 @@ ADRs no LogiFit seguem **numeração sequencial densa** com uma exceção legít
 | 0011-0012 | reservados | (não-alocados; gap legítimo histórico) | livre |
 | 0013 | Sprint 04 | Plano/Contrato/Cobrança como entidades separadas | a produzir |
 | 0014 | Sprint 04 | Chave Asaas + conta bancária por company vs tenant | a produzir |
-| 0015 | Sprint 06 | Copilot safety: vocabulário proibido + classificador de output | a produzir |
+| [0015](decisions/0015-copilot-safety-classifier-dois-pontos.md) | Sprint 06 | Copilot safety: classifier de input + output em dois pontos com regex curado | **Accepted (formalizado 2026-05-18)** |
 | 0016-0017 | reservados | (futuros, allotment livre) | livre |
 | 0018 | Sprint 08 | Hardware da catraca + modalidade de auth | a produzir |
 | 0019 | Sprint 01b | RBAC: union user_roles + user_permissions com expires_at | a produzir |

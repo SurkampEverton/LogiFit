@@ -221,7 +221,7 @@ Soft diário excedido → toast informativo, não bloqueia mensal. Mensal excedi
 
 ## Decisões tomadas / ADRs esperados
 
-- [ADR 0015 — Copilot safety: vocabulário proibido + classificador de output](../decisions/0015-copilot-safety-vocabulario-proibido-classificador-output.md) — accepted 2026-05-13
+- [ADR 0015 — Copilot safety: classifier de input + output em dois pontos com regex curado](../decisions/0015-copilot-safety-classifier-dois-pontos.md) — Accepted 2026-05-18
 - [ADR 0064 — Arquitetura de IA (Gemini default + BYOK + RAG)](../decisions/0064-ia-arquitetura-gemini-default-byok-rag.md) — accepted
 - [ADR 0075 — Assistente IA universal (3 camadas + tool registry distribuído + cotas por plano)](../decisions/0075-assistente-ia-universal-tres-camadas-tool-registry.md) — accepted (2026-04-24)
 - **Pergunta aberta:** limite de contexto — quanto da timeline incluir (últimas 5 interações? últimos 30 dias?). Decidir com análise de custo por conversa.

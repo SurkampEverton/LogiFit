@@ -6,6 +6,28 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — ADR 0015 Accepted (Copilot safety classifier dois pontos) 2026-05-18
+
+Documenta implementação Sprint 06 já estável (`packages/ai/src/classifier.ts` + 19 unit tests passando).
+
+**Decisão:** classifier em **dois pontos** (input anti-injection + output anti-prescrição/diagnóstico/termo proibido) com **regex curado versionado em TS** (latency ~1ms vs LLM-classifier 2-3s; determinístico audit-friendly). Cobertura pt-BR + en + es desde dia 1 (regra 27 + ADR 0052). Output bloqueado retorna **mensagem persona-aware** via `getBlockedOutputMessage(reason)` — UX friendly (envelope `ok=true data.blocked=true`), não `FORBIDDEN`. Integra defense-in-depth ADR 0073 camada 5 + regra 28 CFM 2.454/2026.
+
+**4 categorias de pattern** versionadas:
+- `PRESCRIPTION_PATTERNS` (5 regex): verbo `prescrev[oae]`, imperativo + dosagem em pt+en+es
+- `DIAGNOSIS_PATTERNS` (3 regex): "você tem/está com [doença]" em pt+en + "diagnóstico positivo/confirmado/de"
+- `PROHIBITED_TERMS` (4 regex absolutos): atestado, receituário, autorização, emissão de receita (só ICP-Brasil emite)
+- `INJECTION_PATTERNS` (6 regex): ignore previous instructions (pt/en), `<system>`/`<|im_start|>`, execute tool, reveal prompt, code exec (eval/drop table)
+
+**Integração obrigatória:** `wrapAction` chama `classifyInput` antes de `resolveModelForTask`; após response, chama `classifyOutput` antes de retornar envelope. `ai_audit_log` grava decisão + reason + match name + input_hash (SHA-256, não plain pra LGPD). 3 bloqueios em 5min do mesmo user dispara `system_alerts severity=warning` pro DPO revisar (false positive curadoria).
+
+**DoD Sprint 06 atingido:** ≥90% pass rate em 19 unit tests cobrindo 4 categorias × 3 idiomas. CI bloqueia se cair.
+
+**Status:** Accepted 2026-05-18. Curadoria ampliação contínua via dataset de incidentes reais (false negatives reportados em produção). Lint custom `no-llm-without-classifier` (Sprint 06b) bloqueará commit que chame `resolveModelForTask` sem wrap.
+
+**Rejeitadas (5):** classificar só output (LLM gasta custo + bypass risco); classificar só input (hallucination passa); LLM-classifier (latency +2-3s, custo +100%, não-determinístico, recursivo); hybrid (complexidade sem ganho); só pt-BR (BYOK responde em en por bug); LLM-generated fallback (recursão potencial); FORBIDDEN envelope em output (UX ruim).
+
+`docs/decisions/0015-copilot-safety-classifier-dois-pontos.md` publicado. Sprint 06 doc atualizado pra refletir slug real. Roadmap linha 141 `a produzir` → `Accepted (formalizado 2026-05-18)`.
+
 ### Docs — Cleanup docs-check tech debt (24 sprint refs + 20 ADR cross-refs corrigidos) 2026-05-18
 
 **Cleanup operacional pós-Sprint 36a.** `node scripts/docs-check.mjs` agora passa **0 erros / 0 avisos** — antes acumulava 44 warnings de tech debt criado ao longo de 20+ sprints.
