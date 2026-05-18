@@ -35,6 +35,7 @@ import {
   setMemberCookie,
   withMemberContext,
 } from '../lib/member-session'
+import { wrapMemberAction } from '../lib/wrap-member-action'
 
 // ─── Zod schemas ────────────────────────────────────────────────────────
 
@@ -338,26 +339,25 @@ export async function cancelMyAppointment(input: unknown) {
 }
 
 // ─── revokeMySession ────────────────────────────────────────────────────
-export async function revokeMySession(input: unknown) {
-  const parsed = RevokeSessionSchema.safeParse(input)
-  if (!parsed.success)
-    throw new ApiException({
-      code: 'VALIDATION_ERROR',
-      message: 'Dados inválidos',
-      request_id: randomUUID(),
-    })
-  const session = await requireMemberSession('/meu/perfil')
-
-  return withMemberContext(session, async () => {
+// Sprint 02c2: migrado pra wrapMemberAction (apps/web/app/lib/wrap-member-action.ts)
+export const revokeMySession = wrapMemberAction(
+  {
+    module: 'meu.perfil',
+    action: 'session.revoke',
+    returnTo: '/meu/perfil',
+    resourceType: 'member_sessions',
+    schema: RevokeSessionSchema,
+  },
+  async (input, { session }) => {
     const r = await pool.query(
       `UPDATE member_sessions
        SET revoked_at = now(), revoked_reason = 'user_revoke'
        WHERE id = $1 AND member_id = $2 AND revoked_at IS NULL`,
-      [parsed.data.sessionId, session.memberId],
+      [input.sessionId, session.memberId],
     )
     return { ok: true, revoked: r.rowCount ?? 0 }
-  })
-}
+  },
+)
 
 // ─── updateMyConsent ────────────────────────────────────────────────────
 export async function updateMyConsent(input: unknown) {

@@ -5,16 +5,14 @@
  *
  * Member sobe próprio exame com consent_self_upload_exam (Sprint 31b RIPD).
  * MVP: storage path stub (Sprint 33b plugar MinIO + scanUpload regra 38).
+ *
+ * **Sprint 02c2**: migrado para `wrapMemberAction()` helper (apps/web/app/lib/).
+ * Envelope ADR 0071 + Zod schema + member session + withMemberContext automáticos.
  */
 
 import { pool } from '@repo/db/client'
-import { ApiException } from '@repo/errors'
-import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
-import {
-  requireMemberSession,
-  withMemberContext,
-} from '../../lib/member-session'
+import { wrapMemberAction } from '../../lib/wrap-member-action'
 
 const UploadExamSchema = z.object({
   storagePath: z.string().min(2).max(500),
@@ -25,18 +23,15 @@ const UploadExamSchema = z.object({
 
 // ─── selfUploadExam (member portal) ─────────────────────────────────────
 
-export async function selfUploadExam(input: unknown) {
-  const parsed = UploadExamSchema.safeParse(input)
-  if (!parsed.success) {
-    throw new ApiException({
-      code: 'VALIDATION_ERROR',
-      message: parsed.error.issues.map((i) => i.message).join('; '),
-      request_id: randomUUID(),
-    })
-  }
-  const session = await requireMemberSession('/meu/exames/upload')
-
-  return withMemberContext(session, async () => {
+export const selfUploadExam = wrapMemberAction(
+  {
+    module: 'meu.exames',
+    action: 'exam.self_upload',
+    returnTo: '/meu/exames/upload',
+    resourceType: 'exam_documents',
+    schema: UploadExamSchema,
+  },
+  async (input, { session }) => {
     const r = await pool.query<{ id: string }>(
       `INSERT INTO exam_documents
        (tenant_id, member_id, source, uploaded_by_member_id, storage_path, original_filename, mime_type, file_size_bytes, status)
@@ -46,18 +41,18 @@ export async function selfUploadExam(input: unknown) {
         session.tenantId,
         session.memberId,
         session.memberId,
-        parsed.data.storagePath,
-        parsed.data.originalFilename,
-        parsed.data.mimeType,
-        parsed.data.fileSizeBytes ?? null,
+        input.storagePath,
+        input.originalFilename,
+        input.mimeType,
+        input.fileSizeBytes ?? null,
       ],
     )
 
     // Sprint 33b: dispara job de processamento (OCR + IA) via fila
 
     return { ok: true as const, id: r.rows[0]!.id }
-  })
-}
+  },
+)
 
 // ─── listMyExams ────────────────────────────────────────────────────────
 
@@ -71,10 +66,13 @@ interface MyExamRow {
   collected_at: Date | null
 }
 
-export async function listMyExams() {
-  const session = await requireMemberSession('/meu/exames')
-
-  return withMemberContext(session, async () => {
+export const listMyExams = wrapMemberAction(
+  {
+    module: 'meu.exames',
+    action: 'exam.list_my',
+    returnTo: '/meu/exames',
+  },
+  async (_input: void, { session }) => {
     const r = await pool.query<MyExamRow>(
       `SELECT id, status::text AS status, exam_type_detected, laboratory,
               uploaded_at, reviewed_at, collected_at
@@ -85,5 +83,5 @@ export async function listMyExams() {
       [session.memberId],
     )
     return { ok: true as const, rows: r.rows }
-  })
-}
+  },
+)
