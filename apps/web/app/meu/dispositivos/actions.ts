@@ -3,7 +3,7 @@
 /**
  * Server Actions Device Hub (portal /meu/dispositivos) — Sprint 32 Faixa B.2 (ADR 0049).
  *
- * Caller é PACIENTE. Usa requireMemberSession + withMemberContext.
+ * Caller é PACIENTE. Usa `wrapMemberAction` (Sprint 02c2).
  *
  * Actions:
  *   - startConnection({provider}) — OAuth/BLE init
@@ -22,12 +22,8 @@ import { pool } from '@repo/db/client'
 import { ApiException } from '@repo/errors'
 import { resolveDeviceProvider, partitionValidReadings, parseInBodyCsv } from '@repo/ai'
 import type { DeviceProviderName } from '@repo/ai'
-import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
-import {
-  requireMemberSession,
-  withMemberContext,
-} from '../../lib/member-session'
+import { wrapMemberAction } from '../../lib/wrap-member-action'
 
 const DEVICE_PROVIDER_ENUM = [
   'garmin',
@@ -82,35 +78,33 @@ const RevokeConsentSchema = z.object({
 
 // ─── startConnection ────────────────────────────────────────────────────
 
-export async function startConnection(input: unknown) {
-  const parsed = StartConnectionSchema.safeParse(input)
-  if (!parsed.success) {
-    throw new ApiException({
-      code: 'VALIDATION_ERROR',
-      message: parsed.error.issues.map((i) => i.message).join('; '),
-      request_id: randomUUID(),
-    })
-  }
-  const session = await requireMemberSession('/meu/dispositivos')
-
-  return withMemberContext(session, async () => {
+export const startConnection = wrapMemberAction(
+  {
+    module: 'meu.dispositivos',
+    action: 'device.start_connection',
+    returnTo: '/meu/dispositivos',
+    resourceType: 'device_connections',
+    schema: StartConnectionSchema,
+  },
+  async (input, { session }) => {
     // Verifica se já existe connection ativa do mesmo provider
     const existing = await pool.query<{ id: string }>(
       `SELECT id FROM device_connections
        WHERE member_id = $1 AND provider = $2::device_provider AND status IN ('active', 'pending')
        LIMIT 1`,
-      [session.memberId, parsed.data.provider],
+      [session.memberId, input.provider],
     )
     if (existing.rows.length > 0) {
       throw new ApiException({
         code: 'CONFLICT',
-        message: `Já existe conexão ativa para ${parsed.data.provider}. Desconecte primeiro.`,
-        request_id: randomUUID(),
+        message: `Já existe conexão ativa para ${input.provider}. Desconecte primeiro.`,
+        request_id: '',
       })
     }
 
-    const provider = resolveDeviceProvider(parsed.data.provider as DeviceProviderName)
-    const redirectUri = parsed.data.redirectUri ?? `https://logifit.local/meu/dispositivos/${parsed.data.provider}/callback`
+    const provider = resolveDeviceProvider(input.provider as DeviceProviderName)
+    const redirectUri =
+      input.redirectUri ?? `https://logifit.local/meu/dispositivos/${input.provider}/callback`
     const { authUrl, state } = await provider.startAuth({
       memberId: session.memberId,
       redirectUri,
@@ -120,49 +114,62 @@ export async function startConnection(input: unknown) {
     await pool.query(
       `INSERT INTO device_connections (tenant_id, member_id, provider, status, metadata)
        VALUES ($1, $2, $3::device_provider, 'pending', $4::jsonb)`,
-      [session.tenantId, session.memberId, parsed.data.provider, JSON.stringify({ state, redirectUri })],
+      [
+        session.tenantId,
+        session.memberId,
+        input.provider,
+        JSON.stringify({ state, redirectUri }),
+      ],
     )
 
     return { ok: true as const, authUrl, state }
-  })
-}
+  },
+)
 
 // ─── completeConnection ─────────────────────────────────────────────────
 
-export async function completeConnection(input: unknown) {
-  const parsed = CompleteConnectionSchema.parse(input)
-  const session = await requireMemberSession('/meu/dispositivos')
-
-  return withMemberContext(session, async () => {
+export const completeConnection = wrapMemberAction(
+  {
+    module: 'meu.dispositivos',
+    action: 'device.complete_connection',
+    returnTo: '/meu/dispositivos',
+    resourceType: 'device_connections',
+    schema: CompleteConnectionSchema,
+  },
+  async (input, { session }) => {
     // Busca connection pending do mesmo provider
-    const conn = await pool.query<{ id: string; metadata: { state?: string; redirectUri?: string } }>(
+    const conn = await pool.query<{
+      id: string
+      metadata: { state?: string; redirectUri?: string }
+    }>(
       `SELECT id, metadata FROM device_connections
        WHERE member_id = $1 AND provider = $2::device_provider AND status = 'pending'
        ORDER BY created_at DESC LIMIT 1`,
-      [session.memberId, parsed.provider],
+      [session.memberId, input.provider],
     )
     if (conn.rows.length === 0) {
       throw new ApiException({
         code: 'NOT_FOUND',
         message: 'Nenhuma conexão pendente encontrada — inicie via startConnection',
-        request_id: randomUUID(),
+        request_id: '',
       })
     }
     const c = conn.rows[0]!
-    if (c.metadata?.state !== parsed.state) {
+    if (c.metadata?.state !== input.state) {
       throw new ApiException({
         code: 'VALIDATION_ERROR',
         message: 'State OAuth inválido',
-        request_id: randomUUID(),
+        request_id: '',
       })
     }
 
-    const provider = resolveDeviceProvider(parsed.provider as DeviceProviderName)
-    const { accessToken, refreshToken, expiresAt, externalUserId, deviceLabel } = await provider.completeAuth({
-      code: parsed.code,
-      state: parsed.state,
-      redirectUri: parsed.redirectUri ?? c.metadata?.redirectUri ?? '',
-    })
+    const provider = resolveDeviceProvider(input.provider as DeviceProviderName)
+    const { accessToken, refreshToken, expiresAt, externalUserId, deviceLabel } =
+      await provider.completeAuth({
+        code: input.code,
+        state: input.state,
+        redirectUri: input.redirectUri ?? c.metadata?.redirectUri ?? '',
+      })
 
     await pool.query(
       `UPDATE device_connections
@@ -174,16 +181,20 @@ export async function completeConnection(input: unknown) {
     )
 
     return { ok: true as const, connectionId: c.id }
-  })
-}
+  },
+)
 
 // ─── disconnect ─────────────────────────────────────────────────────────
 
-export async function disconnect(input: unknown) {
-  const parsed = DisconnectSchema.parse(input)
-  const session = await requireMemberSession('/meu/dispositivos')
-
-  return withMemberContext(session, async () => {
+export const disconnect = wrapMemberAction(
+  {
+    module: 'meu.dispositivos',
+    action: 'device.disconnect',
+    returnTo: '/meu/dispositivos',
+    resourceType: 'device_connections',
+    schema: DisconnectSchema,
+  },
+  async (input, { session }) => {
     const r = await pool.query<{
       provider: string
       access_token_encrypted: string | null
@@ -192,13 +203,13 @@ export async function disconnect(input: unknown) {
        FROM device_connections
        WHERE id = $1 AND member_id = $2
        LIMIT 1`,
-      [parsed.connectionId, session.memberId],
+      [input.connectionId, session.memberId],
     )
     if (r.rows.length === 0) {
       throw new ApiException({
         code: 'NOT_FOUND',
         message: 'Connection não encontrada',
-        request_id: randomUUID(),
+        request_id: '',
       })
     }
     const c = r.rows[0]!
@@ -218,12 +229,12 @@ export async function disconnect(input: unknown) {
        SET status = 'revoked', revoked_at = now(), updated_at = now(),
            access_token_encrypted = NULL, refresh_token_encrypted = NULL
        WHERE id = $1`,
-      [parsed.connectionId],
+      [input.connectionId],
     )
 
     return { ok: true as const }
-  })
-}
+  },
+)
 
 // ─── listMyConnections ──────────────────────────────────────────────────
 
@@ -237,10 +248,13 @@ interface ConnRow {
   last_error: string | null
 }
 
-export async function listMyConnections() {
-  const session = await requireMemberSession('/meu/dispositivos')
-
-  return withMemberContext(session, async () => {
+export const listMyConnections = wrapMemberAction(
+  {
+    module: 'meu.dispositivos',
+    action: 'device.list_connections',
+    returnTo: '/meu/dispositivos',
+  },
+  async (_input: void, { session }) => {
     const r = await pool.query<ConnRow>(
       `SELECT id, provider::text AS provider, status::text AS status,
               device_label, connected_at, last_synced_at, last_error
@@ -250,8 +264,8 @@ export async function listMyConnections() {
       [session.memberId],
     )
     return { ok: true as const, rows: r.rows }
-  })
-}
+  },
+)
 
 // ─── listMyReadings ─────────────────────────────────────────────────────
 
@@ -265,27 +279,30 @@ interface ReadingRow {
   quality: string | null
 }
 
-export async function listMyReadings(input: unknown) {
-  const parsed = ListReadingsSchema.parse(input)
-  const session = await requireMemberSession('/meu/dispositivos')
-
-  return withMemberContext(session, async () => {
+export const listMyReadings = wrapMemberAction(
+  {
+    module: 'meu.dispositivos',
+    action: 'device.list_readings',
+    returnTo: '/meu/dispositivos/historico',
+    schema: ListReadingsSchema,
+  },
+  async (input, { session }) => {
     const conditions: string[] = ['member_id = $1']
     const params: unknown[] = [session.memberId]
     let i = 2
-    if (parsed.observationCode) {
+    if (input.observationCode) {
       conditions.push(`observation_code = $${i++}`)
-      params.push(parsed.observationCode)
+      params.push(input.observationCode)
     }
-    if (parsed.fromDate) {
+    if (input.fromDate) {
       conditions.push(`measured_at >= $${i++}::date`)
-      params.push(parsed.fromDate)
+      params.push(input.fromDate)
     }
-    if (parsed.toDate) {
+    if (input.toDate) {
       conditions.push(`measured_at <= ($${i++}::date + INTERVAL '1 day')`)
-      params.push(parsed.toDate)
+      params.push(input.toDate)
     }
-    params.push(parsed.limit)
+    params.push(input.limit)
 
     const r = await pool.query<ReadingRow>(
       `SELECT id, observation_code, value::text AS value, unit, measured_at,
@@ -297,16 +314,20 @@ export async function listMyReadings(input: unknown) {
       params,
     )
     return { ok: true as const, rows: r.rows }
-  })
-}
+  },
+)
 
 // ─── importInBodyCsv ────────────────────────────────────────────────────
 
-export async function importInBodyCsv(input: unknown) {
-  const parsed = ImportCsvSchema.parse(input)
-  const session = await requireMemberSession('/meu/dispositivos')
-
-  return withMemberContext(session, async () => {
+export const importInBodyCsv = wrapMemberAction(
+  {
+    module: 'meu.dispositivos',
+    action: 'device.import_csv',
+    returnTo: '/meu/dispositivos/importar',
+    resourceType: 'device_readings',
+    schema: ImportCsvSchema,
+  },
+  async (input, { session }) => {
     // 1. Garante connection file_import existe
     let connId: string
     const existing = await pool.query<{ id: string }>(
@@ -328,7 +349,7 @@ export async function importInBodyCsv(input: unknown) {
     }
 
     // 2. Parse + validação
-    const parsedCsv = parseInBodyCsv(parsed.content)
+    const parsedCsv = parseInBodyCsv(input.content)
     const { valid, invalid } = partitionValidReadings(parsedCsv.readings)
 
     // 3. Ingest leituras válidas (ON CONFLICT DO NOTHING — dedup unique)
@@ -372,22 +393,26 @@ export async function importInBodyCsv(input: unknown) {
       invalidReadings: invalid.length,
       parseErrors: parsedCsv.errors,
     }
-  })
-}
+  },
+)
 
 // ─── grantDeviceConsent / revokeDeviceConsent ────────────────────────────
 
-export async function grantDeviceConsent(input: unknown) {
-  const parsed = GrantConsentSchema.parse(input)
-  const session = await requireMemberSession('/meu/dispositivos/consent')
-
-  return withMemberContext(session, async () => {
+export const grantDeviceConsent = wrapMemberAction(
+  {
+    module: 'meu.dispositivos',
+    action: 'device.grant_consent',
+    returnTo: '/meu/dispositivos/consent',
+    resourceType: 'device_consents',
+    schema: GrantConsentSchema,
+  },
+  async (input, { session }) => {
     // Revoga consent anterior do mesmo provider (1 ativo por par)
     await pool.query(
       `UPDATE device_consents
        SET revoked_at = now()
        WHERE member_id = $1 AND provider = $2::device_provider AND revoked_at IS NULL`,
-      [session.memberId, parsed.provider],
+      [session.memberId, input.provider],
     )
 
     const r = await pool.query<{ id: string }>(
@@ -398,35 +423,39 @@ export async function grantDeviceConsent(input: unknown) {
       [
         session.tenantId,
         session.memberId,
-        parsed.provider,
-        parsed.purposes,
-        parsed.rawDataAccess,
-        parsed.ripdVersion,
+        input.provider,
+        input.purposes,
+        input.rawDataAccess,
+        input.ripdVersion,
       ],
     )
 
     return { ok: true as const, id: r.rows[0]!.id }
-  })
-}
+  },
+)
 
-export async function revokeDeviceConsent(input: unknown) {
-  const parsed = RevokeConsentSchema.parse(input)
-  const session = await requireMemberSession('/meu/dispositivos/consent')
-
-  return withMemberContext(session, async () => {
+export const revokeDeviceConsent = wrapMemberAction(
+  {
+    module: 'meu.dispositivos',
+    action: 'device.revoke_consent',
+    returnTo: '/meu/dispositivos/consent',
+    resourceType: 'device_consents',
+    schema: RevokeConsentSchema,
+  },
+  async (input, { session }) => {
     const r = await pool.query(
       `UPDATE device_consents
        SET revoked_at = now()
        WHERE id = $1 AND member_id = $2 AND revoked_at IS NULL`,
-      [parsed.consentId, session.memberId],
+      [input.consentId, session.memberId],
     )
     if (r.rowCount === 0) {
       throw new ApiException({
         code: 'NOT_FOUND',
         message: 'Consent não encontrado',
-        request_id: randomUUID(),
+        request_id: '',
       })
     }
     return { ok: true as const }
-  })
-}
+  },
+)

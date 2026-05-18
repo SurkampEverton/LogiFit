@@ -25,7 +25,9 @@ export async function POST(req: NextRequest) {
     )
   }
   try {
-    const result = await registerPushToken(body)
+    // wrapMemberAction internamente valida com Zod (RegisterPushTokenSchema);
+    // cast pra contornar a tipagem estrita da assinatura — input final é validado pelo schema
+    const result = await registerPushToken(body as Parameters<typeof registerPushToken>[0])
     return NextResponse.json(result, { status: 200 })
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Erro inesperado'

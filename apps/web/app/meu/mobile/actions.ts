@@ -6,26 +6,22 @@
  * Caller é PACIENTE via app nativo (Sprint 35b) com session member ativa.
  * Não tem UI web pra isso — endpoints existem pro app consumir.
  *
+ * Migrado pra `wrapMemberAction` (Sprint 02c2) exceto `checkAppVersion` que
+ * é endpoint público pré-login (sem session — wrap-exempt).
+ *
  * Actions:
  *   - registerPushToken({platform, token, deviceId, deviceModel, osVersion, appVersion, locale})
  *   - listMyPushTokens()
  *   - revokeMyPushToken({tokenId, reason})
- *   - checkAppVersion({platform, currentVersion}) — retorna se precisa update
+ *   - checkAppVersion({platform, currentVersion}) — público, retorna se precisa update
  *
- * Sprint 35b conecta:
- *   - APNs/FCM dispatcher real (envia notificações)
- *   - Mobile sessions com refresh longo
- *   - Expo Notifications integration
+ * Sprint 35b conecta APNs/FCM dispatcher real + Mobile sessions com refresh longo.
  */
 
 import { pool } from '@repo/db/client'
 import { ApiException } from '@repo/errors'
-import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
-import {
-  requireMemberSession,
-  withMemberContext,
-} from '../../lib/member-session'
+import { wrapMemberAction } from '../../lib/wrap-member-action'
 
 const RegisterPushTokenSchema = z.object({
   platform: z.enum(['ios', 'android']),
@@ -51,26 +47,22 @@ const CheckVersionSchema = z.object({
 
 // ─── registerPushToken ──────────────────────────────────────────────────
 
-export async function registerPushToken(input: unknown) {
-  const parsed = RegisterPushTokenSchema.safeParse(input)
-  if (!parsed.success) {
-    throw new ApiException({
-      code: 'VALIDATION_ERROR',
-      message: parsed.error.issues.map((i) => i.message).join('; '),
-      request_id: randomUUID(),
-    })
-  }
-  const session = await requireMemberSession('/meu/mobile/push')
-
-  return withMemberContext(session, async () => {
-    const p = parsed.data
+export const registerPushToken = wrapMemberAction(
+  {
+    module: 'meu.mobile',
+    action: 'mobile.register_push_token',
+    returnTo: '/meu/mobile/push',
+    resourceType: 'mobile_push_tokens',
+    schema: RegisterPushTokenSchema,
+  },
+  async (input, { session }) => {
     // Revoga tokens anteriores do mesmo device (unique constraint força)
-    if (p.deviceId) {
+    if (input.deviceId) {
       await pool.query(
         `UPDATE mobile_push_tokens
          SET revoked_at = now(), revoked_reason = 'replaced_by_new_registration'
          WHERE member_id = $1 AND device_id = $2 AND platform = $3::mobile_platform AND revoked_at IS NULL`,
-        [session.memberId, p.deviceId, p.platform],
+        [session.memberId, input.deviceId, input.platform],
       )
     }
 
@@ -82,19 +74,19 @@ export async function registerPushToken(input: unknown) {
       [
         session.tenantId,
         session.memberId,
-        p.platform,
-        p.token,
-        p.deviceId ?? null,
-        p.deviceModel ?? null,
-        p.osVersion ?? null,
-        p.appVersion ?? null,
-        p.locale,
+        input.platform,
+        input.token,
+        input.deviceId ?? null,
+        input.deviceModel ?? null,
+        input.osVersion ?? null,
+        input.appVersion ?? null,
+        input.locale,
       ],
     )
 
     return { ok: true as const, tokenId: r.rows[0]!.id }
-  })
-}
+  },
+)
 
 // ─── listMyPushTokens ──────────────────────────────────────────────────
 
@@ -109,10 +101,13 @@ interface PushTokenRow {
   revoked_at: Date | null
 }
 
-export async function listMyPushTokens() {
-  const session = await requireMemberSession('/meu/mobile/push')
-
-  return withMemberContext(session, async () => {
+export const listMyPushTokens = wrapMemberAction(
+  {
+    module: 'meu.mobile',
+    action: 'mobile.list_push_tokens',
+    returnTo: '/meu/mobile/push',
+  },
+  async (_input: void, { session }) => {
     const r = await pool.query<PushTokenRow>(
       `SELECT id, platform::text AS platform, device_model, os_version, app_version,
               registered_at, last_used_at, revoked_at
@@ -123,32 +118,36 @@ export async function listMyPushTokens() {
       [session.memberId],
     )
     return { ok: true as const, rows: r.rows }
-  })
-}
+  },
+)
 
 // ─── revokeMyPushToken ─────────────────────────────────────────────────
 
-export async function revokeMyPushToken(input: unknown) {
-  const parsed = RevokeTokenSchema.parse(input)
-  const session = await requireMemberSession('/meu/mobile/push')
-
-  return withMemberContext(session, async () => {
+export const revokeMyPushToken = wrapMemberAction(
+  {
+    module: 'meu.mobile',
+    action: 'mobile.revoke_push_token',
+    returnTo: '/meu/mobile/push',
+    resourceType: 'mobile_push_tokens',
+    schema: RevokeTokenSchema,
+  },
+  async (input, { session }) => {
     const r = await pool.query(
       `UPDATE mobile_push_tokens
        SET revoked_at = now(), revoked_reason = $1
        WHERE id = $2 AND member_id = $3 AND revoked_at IS NULL`,
-      [parsed.reason, parsed.tokenId, session.memberId],
+      [input.reason, input.tokenId, session.memberId],
     )
     if (r.rowCount === 0) {
       throw new ApiException({
         code: 'NOT_FOUND',
         message: 'Token não encontrado ou já revogado',
-        request_id: randomUUID(),
+        request_id: '',
       })
     }
     return { ok: true as const }
-  })
-}
+  },
+)
 
 // ─── checkAppVersion (sem session — endpoint público pré-login) ────────
 
@@ -181,10 +180,16 @@ function compareSemver(a: string, b: string): number {
  * Pública (sem auth). App chama em boot pra saber se precisa atualizar.
  * Não precisa de member session — apenas leitura do registry global.
  */
+// wrap-exempt: endpoint público pré-login (sem session pra wrap); app nativo chama em boot
 export async function checkAppVersion(input: unknown): Promise<VersionCheckResult> {
   const parsed = CheckVersionSchema.parse(input)
 
-  const r = await pool.query<{ version: string; min_required: boolean; store_url: string | null; release_notes: string | null }>(
+  const r = await pool.query<{
+    version: string
+    min_required: boolean
+    store_url: string | null
+    release_notes: string | null
+  }>(
     `SELECT version, min_required, store_url, release_notes
      FROM mobile_app_versions
      WHERE platform = $1::mobile_platform AND sunset = false
@@ -211,7 +216,9 @@ export async function checkAppVersion(input: unknown): Promise<VersionCheckResul
   const minRow = r.rows.find((x) => x.min_required)
   const minVersion = minRow?.version ?? null
 
-  const updateRequired = minVersion ? compareSemver(parsed.currentVersion, minVersion) < 0 : false
+  const updateRequired = minVersion
+    ? compareSemver(parsed.currentVersion, minVersion) < 0
+    : false
   const updateAvailable = compareSemver(parsed.currentVersion, latest.version) < 0
 
   return {

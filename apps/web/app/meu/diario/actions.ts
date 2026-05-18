@@ -3,8 +3,8 @@
 /**
  * Server Actions Diário do paciente (portal /meu/diario) — Sprint 31 Faixa B.2.
  *
- * Diferente de `/app/.../actions.ts`: caller é PACIENTE (member portal Sprint 26).
- * Usa `requireMemberSession` + `withMemberContext` (RLS app.member_id).
+ * Caller é PACIENTE (member portal Sprint 26). Usa `wrapMemberAction`
+ * (Sprint 02c2 — apps/web/app/lib/wrap-member-action.ts).
  *
  * Actions:
  *   - logMeal({date, mealName, items[], freeText?, notes?, photoStoragePath?})
@@ -18,12 +18,8 @@
 
 import { pool } from '@repo/db/client'
 import { ApiException } from '@repo/errors'
-import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
-import {
-  requireMemberSession,
-  withMemberContext,
-} from '../../lib/member-session'
+import { wrapMemberAction } from '../../lib/wrap-member-action'
 
 const MEAL_NAME_ENUM = [
   'cafe',
@@ -61,36 +57,40 @@ const ListDiarySchema = z.object({
   limit: z.number().int().min(1).max(200).default(60),
 })
 
+const EntryIdSchema = z.object({ entryId: z.string().uuid() })
+
 // ─── logMeal ─────────────────────────────────────────────────────────────
 
-export async function logMeal(input: unknown) {
-  const parsed = LogMealSchema.safeParse(input)
-  if (!parsed.success) {
-    throw new ApiException({
-      code: 'VALIDATION_ERROR',
-      message: parsed.error.issues
-        .map((i) => `${i.path.join('.')}: ${i.message}`)
-        .join('; '),
-      request_id: randomUUID(),
-    })
-  }
-  const { consumedDate, mealName, consumedAt, items, freeTextDescription, photoStoragePath, notes } =
-    parsed.data
+export const logMeal = wrapMemberAction(
+  {
+    module: 'meu.diario',
+    action: 'diary.log_meal',
+    returnTo: '/meu/diario/novo',
+    resourceType: 'meal_log_entries',
+    schema: LogMealSchema,
+  },
+  async (input, { session }) => {
+    const {
+      consumedDate,
+      mealName,
+      consumedAt,
+      items,
+      freeTextDescription,
+      photoStoragePath,
+      notes,
+    } = input
 
-  // Pelo menos 1 fonte de conteúdo (check constraint)
-  if (items.length === 0 && !freeTextDescription && !photoStoragePath) {
-    throw new ApiException({
-      code: 'VALIDATION_ERROR',
-      message: 'Informe pelo menos um alimento, descrição em texto ou foto',
-      request_id: randomUUID(),
-    })
-  }
+    // Pelo menos 1 fonte de conteúdo (check constraint)
+    if (items.length === 0 && !freeTextDescription && !photoStoragePath) {
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: 'Informe pelo menos um alimento, descrição em texto ou foto',
+        request_id: '',
+      })
+    }
 
-  const session = await requireMemberSession('/meu/diario/novo')
-
-  return withMemberContext(session, async () => {
     // 1. Carregar nutrients dos foods estruturados (se houver) e calcular agregado
-    let calculatedNutrition: Record<string, number> = {
+    const calculatedNutrition: Record<string, number> = {
       kcal: 0,
       protein_g: 0,
       lipid_g: 0,
@@ -113,7 +113,8 @@ export async function logMeal(input: unknown) {
       }
       // Arredonda
       for (const key of Object.keys(calculatedNutrition)) {
-        calculatedNutrition[key] = Math.round((calculatedNutrition[key]! + Number.EPSILON) * 10) / 10
+        calculatedNutrition[key] =
+          Math.round((calculatedNutrition[key]! + Number.EPSILON) * 10) / 10
       }
     }
 
@@ -155,8 +156,8 @@ export async function logMeal(input: unknown) {
       id: r.rows[0]!.id,
       calculatedNutrition: items.length > 0 ? calculatedNutrition : null,
     }
-  })
-}
+  },
+)
 
 // ─── listMyDiary ─────────────────────────────────────────────────────────
 
@@ -174,27 +175,30 @@ interface DiaryRow {
   created_at: Date
 }
 
-export async function listMyDiary(input: unknown) {
-  const parsed = ListDiarySchema.parse(input)
-  const session = await requireMemberSession('/meu/diario')
-
-  return withMemberContext(session, async () => {
+export const listMyDiary = wrapMemberAction(
+  {
+    module: 'meu.diario',
+    action: 'diary.list',
+    returnTo: '/meu/diario',
+    schema: ListDiarySchema,
+  },
+  async (input, { session }) => {
     const conditions: string[] = ['member_id = $1']
     const params: unknown[] = [session.memberId]
     let i = 2
-    if (parsed.fromDate) {
+    if (input.fromDate) {
       conditions.push(`consumed_date >= $${i++}`)
-      params.push(parsed.fromDate)
+      params.push(input.fromDate)
     }
-    if (parsed.toDate) {
+    if (input.toDate) {
       conditions.push(`consumed_date <= $${i++}`)
-      params.push(parsed.toDate)
+      params.push(input.toDate)
     }
-    if (parsed.mealName) {
+    if (input.mealName) {
       conditions.push(`meal_name = $${i++}::meal_name_enum`)
-      params.push(parsed.mealName)
+      params.push(input.mealName)
     }
-    params.push(parsed.limit)
+    params.push(input.limit)
 
     const r = await pool.query<DiaryRow>(
       `SELECT id, consumed_date, meal_name, consumed_at, free_text_description,
@@ -207,16 +211,19 @@ export async function listMyDiary(input: unknown) {
       params,
     )
     return { ok: true as const, rows: r.rows }
-  })
-}
+  },
+)
 
 // ─── getDiaryEntry ─────────────────────────────────────────────────────────
 
-export async function getDiaryEntry(input: unknown) {
-  const parsed = z.object({ entryId: z.string().uuid() }).parse(input)
-  const session = await requireMemberSession('/meu/diario')
-
-  return withMemberContext(session, async () => {
+export const getDiaryEntry = wrapMemberAction(
+  {
+    module: 'meu.diario',
+    action: 'diary.get',
+    returnTo: '/meu/diario',
+    schema: EntryIdSchema,
+  },
+  async (input, { session }) => {
     const r = await pool.query<DiaryRow & { foods_structured: unknown }>(
       `SELECT id, consumed_date, meal_name, consumed_at, foods_structured,
               free_text_description, photo_storage_path, notes_member, calculated_nutrition,
@@ -224,38 +231,42 @@ export async function getDiaryEntry(input: unknown) {
        FROM meal_log_entries
        WHERE id = $1 AND member_id = $2
        LIMIT 1`,
-      [parsed.entryId, session.memberId],
+      [input.entryId, session.memberId],
     )
     const entry = r.rows[0]
     if (!entry) {
       throw new ApiException({
         code: 'NOT_FOUND',
         message: 'Entrada não encontrada',
-        request_id: randomUUID(),
+        request_id: '',
       })
     }
     return { ok: true as const, entry }
-  })
-}
+  },
+)
 
 // ─── deleteDiaryEntry ────────────────────────────────────────────────────
 
-export async function deleteDiaryEntry(input: unknown) {
-  const parsed = z.object({ entryId: z.string().uuid() }).parse(input)
-  const session = await requireMemberSession('/meu/diario')
-
-  return withMemberContext(session, async () => {
+export const deleteDiaryEntry = wrapMemberAction(
+  {
+    module: 'meu.diario',
+    action: 'diary.delete',
+    returnTo: '/meu/diario',
+    resourceType: 'meal_log_entries',
+    schema: EntryIdSchema,
+  },
+  async (input, { session }) => {
     const r = await pool.query(
       `DELETE FROM meal_log_entries WHERE id = $1 AND member_id = $2`,
-      [parsed.entryId, session.memberId],
+      [input.entryId, session.memberId],
     )
     if (r.rowCount === 0) {
       throw new ApiException({
         code: 'NOT_FOUND',
         message: 'Entrada não encontrada',
-        request_id: randomUUID(),
+        request_id: '',
       })
     }
     return { ok: true as const }
-  })
-}
+  },
+)

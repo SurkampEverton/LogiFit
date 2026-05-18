@@ -10,7 +10,18 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { logMeal } from '../actions'
 
-const MEAL_OPTIONS = [
+type MealName =
+  | 'cafe'
+  | 'lanche_manha'
+  | 'almoco'
+  | 'lanche_tarde'
+  | 'jantar'
+  | 'ceia'
+  | 'pre_treino'
+  | 'pos_treino'
+  | 'outro'
+
+const MEAL_OPTIONS: Array<{ value: MealName; label: string }> = [
   { value: 'cafe', label: 'Café da manhã' },
   { value: 'lanche_manha', label: 'Lanche da manhã' },
   { value: 'almoco', label: 'Almoço' },
@@ -22,6 +33,11 @@ const MEAL_OPTIONS = [
   { value: 'outro', label: 'Outro' },
 ]
 
+const MEAL_VALUES = MEAL_OPTIONS.map((o) => o.value)
+function isMealName(v: string): v is MealName {
+  return (MEAL_VALUES as string[]).includes(v)
+}
+
 interface Props {
   initialMeal: string | null
 }
@@ -30,7 +46,9 @@ export function NewDiaryForm({ initialMeal }: Props) {
   const router = useRouter()
   const today = new Date().toISOString().slice(0, 10)
   const [date, setDate] = useState(today)
-  const [mealName, setMealName] = useState(initialMeal ?? 'almoco')
+  const [mealName, setMealName] = useState<MealName>(
+    initialMeal && isMealName(initialMeal) ? initialMeal : 'almoco',
+  )
   const [freeText, setFreeText] = useState('')
   const [notes, setNotes] = useState('')
   const [pending, startTransition] = useTransition()
@@ -85,7 +103,9 @@ export function NewDiaryForm({ initialMeal }: Props) {
       <select
         id="meal"
         value={mealName}
-        onChange={(e) => setMealName(e.target.value)}
+        onChange={(e) => {
+          if (isMealName(e.target.value)) setMealName(e.target.value)
+        }}
         className="ev-portal-select"
       >
         {MEAL_OPTIONS.map((o) => (
