@@ -6,6 +6,76 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 34 (Nutri-Agent IA cross-module — backbone 34a core) 2026-05-18
+
+Agente IA dedicado à nutrição que cruza dados Academia + Fisio + Nutri + Devices + Lab para gerar sugestões conservadoras de ajuste no plano alimentar + alertas de aderência + resumo pré-consulta + detecção de pattern de risco. ADRs 0043 + 0044 **Proposed 2026-05-18**. **Backbone Faixa A** com agente determinístico (pattern detector curado + suggestion generator + classifier reusado Sprint 33) + gate Comitê IA regra 13/28. Sprint 34b/c promove ADRs pra Accepted quando IA Vertex AI real + cron triggers + integração updateMealPlan + RIPD/ANVISA sign-off + piloto ≥10 runs.
+
+**Schemas (`packages/db/src/schema/nutri-agent.ts`)** — 5 enums + 3 tabelas:
+
+- `nutri_agent_runs` — execução do agente (1 por trigger). 6 status `queued/collecting/analyzing/completed/failed/blocked` + 4 triggers canônicos `manual_professional` (nutri clicou "Re-analisar") / `pre_consult_auto` (24h antes consulta agendada via cron) / `weekly_adherence` (resumo semanal) / `risk_event_triggered` (consumer domain_events Sprint 31). Audit: triggeredByUserId + modelUsed + costCents + failureReason + summary jsonb. 2 indexes incl. partial `WHERE status IN ('queued','collecting','analyzing')` pra fila ativa hot. CHECK `completed_consistency` (status terminal exige completedAt).
+- `nutri_agent_suggestions` — propostas geradas pela run. 5 kinds canônicos: `plan_adjustment` (sugestão de ajuste no meal_plan ativo) / `alert` (operacional: aderência baixa, déficit extremo) / `risk_pattern` (overtraining sugestivo, perfil aterogênico) / `pre_consult_summary` (resumo executivo pré-consulta) / `follow_up_exam` (exame complementar sugerido). 3 severities `info/attention/critical`. 4 statuses `pending/accepted/rejected/expired`. `targetMealPlanId` FK setNull mealPlans Sprint 29 (kind=`plan_adjustment`) + `appliedMealPlanId` FK setNull (quando aceito + aplicado, aponta pra nova versão). `proposedChanges jsonb` (diff sobre meal_plan). `blockedByClassifier` flag + `classifier_blocked_terms jsonb` audit reusa Sprint 33. `expiresAt` obrigatório (14d default). 4 indexes incl. partial `WHERE status='pending'` por tenant+severity. 2 CHECKs: `confidence_range` 0-1 + `reviewed_consistency` (accepted/rejected exige reviewedByUserId+reviewedAt).
+- `nutri_agent_metrics_snapshot` — snapshot dos dados consultados na run. `data jsonb` formato canônico (`meal_plan + last_diary_summaries + anthropometric_trend + workout_load + fisio_active_cids + lab_results_recent + device_summary + consents_used`) + `data_hash` SHA-256 pra detecção de reprodutibilidade (mesmo input retorna mesma run). Append-only — sem UPDATE/DELETE policy. Audit forense + LGPD (provar quais dados foram processados).
+
+Migration `0039_nutri_agent.sql`. RLS `0052_nutri_agent_rls.sql` — FORCE em 3 tabelas + 8 policies: tenant scope em runs/suggestions/metrics + member portal via `app.member_id` em select de `nutri_agent_suggestions` WHERE `status='accepted'` (paciente vê só sugestões aplicadas em plano dele — não vê rejeitadas nem pending) + GRANT diferenciado pra metrics append-only (só SELECT, INSERT).
+
+**3 libs puras em `packages/ai/src/nutri-agent/` (508 linhas totais):**
+
+- `types.ts` (131 linhas) — `MemberContextSnapshot` canônico (demographics + mealPlan + diaryLast14d + workoutLoad + fisioActiveCids + labResultsRecent + deviceSummary + consentsUsed) + `DetectedRiskPattern` + `AgentSuggestion` reusando schemas Sprints 29/30/31/32/33.
+- `pattern-detector.ts` (228 linhas) — 7 detectores curados conservadores (estratégia catálogo > IA generativa, mesmo padrão Sprint 33 detectPatterns: determinístico + auditável + reprodutível + curadoria nutricional explícita):
+  - `checkExtremeCaloricDeficit` — avg_kcal_7d / target_kcal < 0.7 → attention; < 0.5 → critical; confidence 0.95. Evidence: diary.avg_kcal_7d + meal_plan.target_kcal + computed.ratio.
+  - `checkLowAdherence` — avg_adherence_pct_7d < 50% → info; < 30% → attention; confidence 0.92.
+  - `checkOvertrainingSuggestion` — resting_hr_avg_7d > 75bpm + sleep_avg_7d < 360min concomitantes → attention; confidence 0.78.
+  - `checkCardiovascularRisk` — LDL above + HDL below ambos outOfRange em lab_results → attention; confidence 0.88.
+  - `checkGlycemicRisk` — glicose_jejum ou hba1c above outOfRange → attention; confidence 0.86.
+  - `checkRapidWeightLoss` — weightTrendKgPerMonth < -6 (= -1.5kg/semana) → attention; confidence 0.90.
+  - `checkFisioWorkoutTension` — fisio_active_cids > 0 + workoutLoad.sessionsCount ≥ 5 → info; confidence 0.75.
+
+  `detectRiskPatterns(snapshot)` orchestrador retorna ordenado por severityRank `critical=3 > attention=2 > info=1`.
+- `suggestion-generator.ts` (149 linhas) — `generateSuggestionsFromPatterns(patterns, snapshot)` mapeia code→kind via `PATTERN_TO_KIND` (deficit→plan_adjustment, aderencia→alert, overtraining→risk_pattern, lipídico/glicêmico/fisio→plan_adjustment) + `computeProposedChanges` conservador (deficit_calorico_extremo: subir target pra `avgKcal × 1.1` pra "chegar perto do real"; perda_peso_rapida: +200kcal pra frear perda; risco_cardiovascular/glicemico/fisio_workout: sem changes específicas → profissional decide); `generatePreConsultSummary(patterns, snapshot)` gera bullet list determinística (plano ativo + diary status + CIDs fisio + exames alterados + padrões detectados) — confidence 1.0 (resumo determinístico) + severity propagada do pior padrão.
+
+**18 unit tests `pattern-detector.test.ts`** (392l) cobrindo: deficit extremo critical < 0.5 / attention 0.5-0.7 / null > 0.7; baixa adherence info<50% / attention<30% / null≥50%; overtraining requer HR + sleep concomitantes; cardiovascular requer LDL above + HDL below ambos; glicemic ativa em glicose ou hba1c isoladamente; rapid weight loss threshold -6kg/month; fisio_workout requer ≥5 sessões + CIDs ativos; orchestrator ordena por severity rank; vazio quando nada detectado; severityRank critical>attention>info.
+
+**5 Server Actions wrapped em `apps/web/app/app/nutri-agent/actions.ts` (618 linhas):**
+
+- `runNutriAgentForMember({memberId, trigger='manual_professional'})` — orquestra 7 etapas:
+  1. **Gate Comitê IA regra 13/28**: valida `ai_committees.status='active'` no tenant → cria run blocked + audit `comite_ia_inativo` + retorna FORBIDDEN com mensagem orientativa "Cadastrar comitê em /app/settings/compliance/comite-ia antes de ativar o Nutri-Agent".
+  2. Cria run status `collecting` + startedAt.
+  3. `collectMemberContext(tenantId, memberId)` busca cross-module — demographics via `persons.birthDate/sex` + `ageYearsAt`; mealPlan ativo (`mealPlans.active=true`); food_log_daily_summary 14d Sprint 31; lab_results 90d com JOIN labAnalytes Sprint 30 (analyteCode + value + unit + outOfRange + direction); consulta_cids signed kind=`principal` fisio Sprint 20 (top 10 últimos 6m); device_readings_daily_summary 7d via raw SQL agregando HR_RESTING/SLEEP_DURATION_MIN/STEPS/HRV Sprint 32; prescriptions kind=`workout` active Sprint 11 (workoutLoad stub kcal+sessions+completion% Sprint 34b refina via workout_sessions reais).
+  4. Persiste `nutri_agent_metrics_snapshot` com data jsonb + SHA-256 hash (audit forense + reprodutibilidade — LGPD provar quais dados foram processados).
+  5. Atualiza run `analyzing`.
+  6. `detectRiskPatterns(snapshot)` + `generateSuggestionsFromPatterns(patterns, snapshot)` + `generatePreConsultSummary(patterns, snapshot)`.
+  7. **Classifier guard `classifyInterpretationFields` regra 28 reusa Sprint 33** em title+description de cada sugestão → persiste suggestions com `blocked_by_classifier` flag + `expires_at = now + 14d`.
+  8. Marca run `completed` com summary jsonb (`patternsCount, suggestionsCount, critical, attention, blockedByClassifier`).
+
+  Catch: erro técnico marca run `failed` com failureReason.
+- `listSuggestions({status?, severity?, memberId?, limit?=50})` com filtros + JOIN members+persons retorna ORDER BY expiresAt ASC (urgentes primeiro pra evitar `expired`).
+- `acceptSuggestion({suggestionId, applyChanges=false})` atualiza status=`accepted` + reviewedByUserId/reviewedAt. MVP só registra aceitação (audit). Sprint 34b conecta `applyChanges=true` → chama `updateMealPlan` Sprint 29 (versionado pattern parent_meal_plan_id+1 pra rastreabilidade Lei 13.787).
+- `rejectSuggestion({suggestionId, reason})` atualiza status=`rejected` + rejectionReason.
+- `getPreConsultSummary({memberId})` retorna kind=`pre_consult_summary` mais recente (Server Component nutri page consome pra preview).
+
+**UI `/app/nutri-agent` dashboard (224 linhas)** Server Component:
+
+- 5 KPI cards: **Pendentes** (count status=pending) + **Críticas** (count severity=critical pending, color danger) + **Aceitas 30d** (count reviewed_at > NOW - 30d) + **Runs 30d** (count completed > NOW - 30d) + **Bloqueadas Comitê IA 30d** (count status=blocked queued > NOW - 30d, color warning).
+- Nav filtros severity (Todas / critical / attention / info) com active state highlight.
+- Lista pendentes ordenada `CASE severity WHEN critical THEN 1 WHEN attention THEN 2 ELSE 3 END, created_at DESC` (worst-first):
+  - Card por suggestion com borderLeft 4px color-coded severity.
+  - KIND_LABEL: 🍽 Ajuste de plano / ⚠ Alerta / 🩺 Padrão de risco / 📋 Resumo pré-consulta / 🧪 Exame complementar.
+  - Confidence% + expira data formatada + member name link `/app/members/[id]/nutri-summary`.
+  - Banner amarelo "⚠ Classifier bloqueou" quando `blocked_by_classifier=true`.
+- Empty state aponta `/app/members/[id]/nutri-summary` pra rodar agent manual.
+- Nota footer: "UI completa accept/reject inline + diff visual proposedChanges entra Sprint 34b. MVP entrega backend + lista read-only."
+
+**9 RLS + check tests** em `packages/db/tests/nutri-agent-rls.test.ts` (264l).
+
+**2 ADRs Proposed 2026-05-18:**
+
+- [ADR 0043](docs/decisions/0043-nutri-agent-arquitetura.md) — Nutri-Agent: agente especializado vs Copilot generalizado. Decisão: agente próprio com task router `resolveModelForTask('reasoning')` + reuso da infra Sprint 06 (classifier + RAG + cache) + 4 alternativas rejeitadas (Copilot com persona genérica; chain of MoE; only-LLM sem heurística determinística; only-heurística sem LLM).
+- [ADR 0044](docs/decisions/0044-nutri-agent-politica-mudancas-plano.md) — Política de mudanças: **sempre proposta, nunca write direto**. `acceptSuggestion(applyChanges=true)` exige revisão profissional explícita; sem auto-apply mesmo em Enterprise. 3 alternativas rejeitadas (auto-apply em mudanças "menores"; opt-in tenant Enterprise pra auto-apply; gradual rollout com staging).
+
+**941 unit/RLS tests verdes** (era 914 +27 Sprint 34: 18 unit + 9 RLS). Typecheck 11/11 packages verde.
+
+**Sprint 34b/c futuro:** IA real `resolveModelForTask('reasoning')` Vertex AI Gemini Pro substitui pattern-detector determinístico em padrões não-catalogados (regra 32 + ADR 0064) + cache semântico via `data_hash` (mesmo input retorna mesma run, custo zero); cron triggers Vercel Cron (`pre_consult_auto` 24h antes consulta agendada Sprint 03 + `weekly_adherence` ticking domingo 06:00 SP + `risk_event_triggered` consumer `domain_events` Sprint 31 quando meal_log_reviews score baixo); `acceptSuggestion(applyChanges=true)` integra `updateMealPlan` Sprint 29 versionado pattern (cuidar pra não criar loop infinito de versões) + lint custom `no-nutri-agent-direct-write` bloqueia commit que persista mealPlan via SA do nutri-agent sem proposal_id; cron `expire-nutri-agent-suggestions` D+14 → status=`expired`; UI accept/reject inline com `<ConfirmDialog>` regra 45 + diff visual color-coded de `proposedChanges` + `/app/members/[id]/nutri-summary` consolidado com timeline runs + cards severity color-coded; particionamento `nutri_agent_runs` ANUAL (regra 34 — @volume 720k+/ano); permissions RBAC `nutri_agent.read`/`nutri_agent.run`/`nutri_agent.accept`/`nutri_agent.reject`; consent `cross_module_nutri_agent` cobrindo cruzamento de dados Fisio↔Nutri↔Devices↔Lab; **notificação ANVISA RDC 657/2022 SaMD Classe II** antes de feature flag prod (regra 28 + ADR 0053); **RIPD `docs/compliance/ripd/v1.0-nutri-agent-ia.md`** com DPO sign-off (regra 29 + ADR 0054 — cobre IA generativa + cruzamento cross-module + classifier + revisão humana obrigatória); feature flag `nutri_agent_v1`; E2E Playwright fluxo manual_professional + cron pre_consult_auto + gate Comitê IA inativo bloqueia + classifier blocking; piloto ≥10 runs reais antes de promover ADRs 0043/0044 pra Accepted; stretch: tool calling LLM via tools_registry ADR 0075 + persona `nutricionista-agent` dedicada + RAG indexando guidelines SBNutri + ABRAN + Mayo Clinic + reconhecimento de foto refeição via Whisper-Vision.
+
 ### Build — Sprint 33 (Pipeline Inteligente de Exames Laboratoriais — backbone 33a core) 2026-05-18
 
 Pipeline de extração automática de exames laboratoriais (`Upload → OCR → IA extração → IA interpretação conservadora → revisão profissional → lab_results oficial`). ADR 0050 Accepted desde 2026-04-23. **Backbone Faixa A** entregue — pipeline real (OCR + LLM Vertex AI Gemini + scanUpload + drag-drop + ICP-Brasil-style revisão completa) fica para Sprint 33b/c.
