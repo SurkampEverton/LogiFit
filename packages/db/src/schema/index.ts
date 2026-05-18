@@ -112,3 +112,6 @@ export * from './convenios'
 
 // Sprint 23 Faixa A — Comissões e repasse profissional: professional_contracts (4 kinds × 4 bases) + commission_rules overrides + commission_entries + commission_periods. commission_entries @volume 18M+/ano (regra 34 + ADR 0072). ADR 0086 esperado. Gate ADR 0055 + retenções placeholder (ADR 0061 integração Sprint 23b).
 export * from './rh'
+
+// Sprint 24 Faixa A — Estoque + POS + Inventário: stock_items + stock_movements (append-only) + stock_inventories + stock_inventory_entries. stock_movements @volume 2.4M+/ano (regra 34 + ADR 0072). ADR 0087 esperado (PEPS vs custo médio). Saldo calculado por soma (não denormalizado).
+export * from './estoque'

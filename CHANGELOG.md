@@ -6,6 +6,78 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 24a 100% (Estoque + POS + ADR 0087 Proposed) 2026-05-17
+
+**Sprint 24 — bloco geral de estoque atendendo Fisio/Academia/Nutri.** 24a core entregue sem AR via Sprint 15 + sem NFC-e Focus + sem multi-unit. Sprint 24b integra essas pontas.
+
+**Faixa A entregue (Schemas + RLS + 12 tests):**
+
+- **`packages/db/src/schema/estoque.ts`** — 4 tabelas:
+  - `stock_items` — unique `(tenant, company, sku)` + CHECK `min_stock >= 0` + CHECK `cost_cents >= 0` + `cost_method` enum (peps/custo_medio) default custo_medio + index parcial pra resale items.
+  - `stock_movements` — **APPEND-ONLY** (sem GRANT UPDATE) + 8 kinds (entry_purchase/adjustment/return_from_customer + exit_consumption/sale/loss/adjustment/return_to_supplier) + CHECK `quantity > 0` (sinal vem do kind) + CHECK `unit_cost_cents IS NOT NULL on entry_purchase`. **`@volume_estimate_yearly: 2400000`** particionamento manual Sprint 24b.
+  - `stock_inventories` — pipeline `draft → finalized` com `finalized_at` + `finalized_by_user_id`.
+  - `stock_inventory_entries` — PK composta (inventory, item) + CHECK `difference = physical_qty - system_qty` + CHECK `qty >= 0`.
+- **`packages/db/src/policies/0043_estoque_rls.sql`** — RLS tenant-scoped; stock_movements SEM policy UPDATE (regra 5 enforcement); stock_inventory_entries via JOIN.
+- Migration `0030_wide_slyde.sql` aplicada.
+- **`packages/db/tests/estoque-rls.test.ts`** — 12 RLS tests cobrindo: insert válido + SKU duplicado rejeitado + min_stock negativo + isolation; entry_purchase com/sem unit_cost; exit sem unit_cost OK; quantity 0/negativa rejeitadas; **UPDATE rejeitado (append-only enforcement)**; inventory difference inconsistente.
+
+**Faixa B.1 entregue (1 lib pura + 23 unit tests):**
+
+- **`packages/db/src/estoque/inventory.ts`**:
+  - `signOfKind(kind)` retorna +1/-1 conforme prefix `entry_`/`exit_`
+  - `calculateBalance(movements)` via SUM com signOfKind
+  - `calculateAverageCostCents(movements)` média ponderada considerando só entries com unitCost (saídas não afetam)
+  - `calculatePeps(movements)` ordena cronologicamente + cria lots em entries + consome FIFO em exits + retorna `{finalBalance, cogsCents, currentInventoryCostCents, remainingLots[]}`
+  - `detectLowStockCrossing({balanceBefore, balanceAfter, minStock})` distingue `shouldAlert` (saldo atual ≤ min) de `crossedDown` (cruzou agora)
+  - `calculateInventoryAdjustment({systemQty, physicalQty})` deriva `{difference, adjustmentKind: entry_adjustment|exit_adjustment|null, adjustmentQty}`
+  - `calculateTurnover` (giro de estoque pra Sprint 24b relatórios)
+
+  **23 unit tests:** signOfKind 8 kinds / balance vazio + entry-exit + multi + decimais / avgCost 1-entry + 2-entries ponderada + sem custo ignorado + saídas ignoradas / PEPS lote antigo primeiro + saída maior que lote + intercalado + fora-de-ordem + sem custo / detectLowStock cruzou pra baixo + já abaixo + aumentou + exatamente no min / inventoryAdjustment 3 caminhos.
+
+- **`packages/db/package.json`** novo export `./estoque` + script `db:seed:estoque`.
+
+**Faixa B.2 entregue (11 Server Actions):**
+
+- **`apps/web/app/app/estoque/actions.ts`** — `createStockItem` captura 23505 + mensagem acionável; `updateStockItem` patch parcial; `archiveStockItem` soft-delete; `listStockItems` com filtros company/archived/resale.
+- `registerEntry` valida unit_cost on entry_purchase; chama `registerMovementInternal` que: carrega item, calcula saldo antes via SUM, INSERT movement, recalcula saldo, atualiza `cost_cents` se método=custo_medio (média ponderada nova), retorna alert se cruzou pra baixo do min_stock.
+- `registerExit` mesma pipeline sem unit_cost.
+- `sellAtPos` (MVP) cria APENAS movements `exit_sale` com `reference_doc='pos:user:timestamp'` — sem invoice (Sprint 04 exige contractId; Sprint 24b integra AR Sprint 15 + Focus NFe NFC-e ADR 0059). Valida resale + sale_price + total > 0.
+- `getItemBalance` retorna `{balance, averageCostCents}` agregado.
+- `listLowStockItems` via SQL agregado (SUM com signOfKind) WHERE balance ≤ min_stock ORDER BY (min - balance) DESC.
+- Inventory pipeline: `startInventory` cria draft; `addInventoryCount` upsert via onConflictDoUpdate com systemQty calculado; `finalizeInventory` gera ajustes em stock_movements pra cada entry com difference ≠ 0.
+- `listMovements` paginado com itemSku/itemName join.
+
+**Faixa C entregue (2 rotas iniciais MVP):**
+
+- **`/app/estoque`** — hub com 5 KPIs (SKUs ativos / revenda / movimentos 30d / estoque crítico count / **valor de estoque calculado via SUM(cost × balance)**) + nav 6 cards.
+- **`/app/estoque/itens`** — catálogo com saldos derivados via SQL inline + badge low_stock color-coded quando balance ≤ min_stock + colunas SKU/nome/cat/saldo/min/custo/preço/tipo/método-custo.
+
+Demais rotas (`/entradas`, `/saidas`, `/vendas` POS, `/inventario`, `/relatorios`, `/itens/[id]`, `/itens/new`) são placeholders preparados — implementação UI completa Sprint 24b junto com AR/NFC-e integration.
+
+**Faixa D entregue (ADR + seed):**
+
+- **[ADR 0087 Proposed](docs/decisions/0087-estoque-custo-saldo-model.md)** — PEPS + custo médio configurável por item (UEPS vedado por Lei 6.404); saldo via SUM (não denormalizado — verdade única + auditoria total + sem trigger); APPEND-ONLY enforced (regra 5 fiscal); multi-company MVP / multi-unit Sprint 24b se houver demanda; POS sem invoice MVP (Sprint 24b com AR Sprint 15 + chartAccountId em tenant_settings); detecção low_stock crossing-based (alert UMA vez quando cruza). Rejeita só PEPS / só médio / UEPS / contador denormalizado / multi-unit MVP / POS-invoice-automático.
+- **`packages/db/scripts/seed-estoque.ts`** + `pnpm db:seed:estoque` — 10 itens (5 consumo: gaze/agulha/atadura/álcool/luva; 5 revenda: creme/gel/faixa/garrafa/whey) × 7 tenants (apenas 2 com users seedados) = **20 items + 60 movements** (1 entrada inicial 50un + 2 saídas 5un cada por item).
+
+**637 tests verdes** (era 602, +35 Sprint 24: 12 RLS + 23 unit).
+
+**Sprint 24b futuro:**
+
+- Integração `sellAtPos` → `accounts_receivable` (Sprint 15) com `chartAccountId` configurável em `tenant_settings.pos_default_chart_account`
+- Emissão NFC-e via Focus NFe (Sprint 36 ADR 0059) quando ativo
+- Multi-unit (`stock_items.unit_id` + kinds `entry_transfer_in`/`exit_transfer_out`)
+- View materializada `stock_balances` refresh on demand (se performance demandar)
+- Trigger BEFORE INSERT bloqueando movements retroativos em período fechado (`tenant_settings.closed_period_end`)
+- Listeners em `nfe_returns.emitted` (ADR 0058) → `exit_return_to_supplier` + `nfe_received.inbound_direction='sales_return'` → `entry_return_from_customer`
+- Job `low_stock_detector` que emite evento `stock.low_stock_alert` consumido por régua Sprint 13
+- Régua padrão de baixo estoque + WhatsApp pro gerente
+- Widget "estoque crítico" no dashboard gerente Sprint 07
+- UI completa restante (entradas, saídas, POS interativo, inventário, relatórios giro)
+- Leitor de código de barras via câmera (PWA)
+- Permission `estoque.read` / `estoque.write` / `estoque.sell` + RIPD `v1.0-estoque.md`
+- Feature flag `estoque_v1`
+- E2E: cadastra, compra, vende, inventaria, baixa em devolução cliente
+
 ### Build — Sprint 23a 100% (Comissões + repasse profissional + ADR 0086 Proposed) 2026-05-17
 
 **Sprint 23 — RH financeiro fisio.** 23a core entregue sem `calculateRetentions` real + sem Asaas transfer + sem holerite PDF. Sprint 23b integra ADR 0061 retenções tributárias reais + transferência Asaas + @react-pdf/renderer + RIPD + feature flag.

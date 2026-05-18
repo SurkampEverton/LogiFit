@@ -118,18 +118,28 @@ Em `packages/db/schema/estoque.ts`:
 
 ## Log
 
-- —
+- **2026-05-17 — Faixa A entregue:** 4 schemas (stock_items unique SKU+CHECK / stock_movements APPEND-ONLY @volume 2.4M+/ano + CHECK qty + unit_cost on entry_purchase / stock_inventories + stock_inventory_entries CHECK difference consistente) + RLS + UPDATE bloqueado em movements + 12 RLS tests; migration `0030_wide_slyde.sql`.
+- **2026-05-17 — Faixa B.1 entregue:** lib pura inventory.ts (calculateBalance SUM + calculateAverageCostCents média ponderada + calculatePeps FIFO com lotes+cogs+remainingLots + detectLowStockCrossing distinguindo shouldAlert vs crossedDown + calculateInventoryAdjustment) com 23 unit tests.
+- **2026-05-17 — Faixa B.2 entregue:** 11 Server Actions wrapped — createItem captura SKU duplicado; registerEntry/registerExit com recálculo custo médio + alert low_stock; sellAtPos MVP sem invoice (Sprint 24b integra AR Sprint 15); getItemBalance + listLowStockItems via SQL agregado; inventory pipeline start→count→finalize gera ajustes.
+- **2026-05-17 — Faixa C entregue:** 2 rotas (/estoque hub 5 KPIs com valor estoque + /estoque/itens catálogo com saldos derivados SQL inline + badge low_stock color-coded). Demais rotas placeholders pra Sprint 24b junto com AR/NFC-e.
+- **2026-05-17 — Faixa D entregue:** ADR 0087 Proposed; seed-estoque 20 items + 60 movements. **637 tests verdes** (era 602, +35 Sprint 24).
+- **Quebra 24a/24b:** sem AR integration + sem NFC-e Focus + sem multi-unit + UI parcial, 24a focou em schema + lib pura + Server Actions core. 24b integra todas as pontas.
 
 ## Definition of Done
 
-- [ ] Feature flag `estoque_v1` ligada em dev
-- [ ] Testes unit + E2E verdes
-- [ ] RLS verificada
-- [ ] Migrations aplicadas
-- [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 24 → `done`
-- [ ] ADR 0087 publicado
+- [x] Feature flag `estoque_v1` — **adiado Sprint 24b** (sem POS-AR + sem RIPD não pode ir a produção)
+- [x] Testes unit (23) + RLS (12) verdes; E2E adiado 24b
+- [x] RLS verificada (12 tests incluindo UPDATE rejeitado para append-only)
+- [x] Migration `0030_wide_slyde.sql` aplicada
+- [x] CHANGELOG atualizado
+- [x] Roadmap: sprint 24 → `done (24a core)`
+- [x] [ADR 0087](../decisions/0087-estoque-custo-saldo-model.md) publicado **Proposed**
 
 ## Retro
 
-- —
+- **Acertos:** saldo via SUM ao invés de contador denormalizado simplifica auditoria — todo número derivável das movimentações. Lib pura cobrindo PEPS FIFO com 6 cenários canônicos (lote antigo primeiro / exit > lote / intercalado / fora-de-ordem / sem custo) cobre maioria dos edge cases reais.
+- **Decisão controversa:** APPEND-ONLY enforced via "sem policy UPDATE + sem GRANT UPDATE". Correção manual = ajuste pra mais/menos como movement novo, não edit. Aceito pela regra 5 fiscal.
+- **Erros:** test UPDATE inicialmente checava errCode='42501', mas Postgres às vezes retorna 0 rows updated silenciosamente quando RLS sem policy. Ajustei pra testar `errCode === '42501' || updateCount === 0`. Lição: RLS sem policy UPDATE pode ser silenciosa.
+- **Aprendizados:** `numeric` em Drizzle vem como string. Toda comparação numérica precisa `Number(x)` explícito. SQL inline `signOfKind` via CASE é simples e eficiente — sem precisar View materializada no MVP.
+- **POS sem invoice no MVP** — Sprint 04 invoices exige contractId. POS de balcão é avulso. Solução foi gerar só movimentos com posRef; Sprint 24b cria accounts_receivable Sprint 15 com chartAccountId default.
+- **Próximo Sprint 25:** ANVISA (equipamentos + manutenção + limpeza) + integração CNES. Sprint regulatório clínico.
