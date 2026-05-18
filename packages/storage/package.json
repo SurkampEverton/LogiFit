@@ -14,14 +14,14 @@
     "bootstrap": "tsx scripts/bootstrap-buckets.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.705.0",
-    "@aws-sdk/s3-request-presigner": "^3.705.0",
+    "@aws-sdk/client-s3": "^3.1048.0",
+    "@aws-sdk/s3-request-presigner": "^3.1048.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@repo/config": "workspace:*",
     "@types/node": "^22.10.1",
-    "tsx": "^4.19.2",
+    "tsx": "^4.22.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.5"
   }

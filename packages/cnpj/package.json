@@ -16,7 +16,7 @@
     "@repo/db": "workspace:*",
     "@repo/security": "workspace:*",
     "drizzle-orm": "^0.45.2",
-    "pg": "^8.13.1",
+    "pg": "^8.21.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
