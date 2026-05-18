@@ -215,6 +215,7 @@ function Step({
             background: done
               ? 'var(--ev-success, #16a34a)'
               : 'var(--ev-muted-bg, #e5e7eb)',
+            // design-token-exempt: #fff pra contraste sobre success bg quando done
             color: done ? '#fff' : 'var(--ev-muted, #6b7280)',
             textAlign: 'center',
             lineHeight: '1.75rem',

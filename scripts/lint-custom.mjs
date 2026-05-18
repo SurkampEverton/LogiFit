@@ -134,19 +134,51 @@ function checkNoRawFetch(file, lines) {
 
 // ───────────────────────────────────────────────────────────
 // 3. no-hardcoded-design-token (regra 44)
+//
+// Regra: proibido hardcode de hex em CSS/JSX style.
+// Exceção: hex dentro de `var(--ev-*, #fallback)` é fallback CSS válido
+//   (padrão pra browsers/snapshots sem custom property carregada).
+//
+// Contextos isentos (não são tokens UI — são dados ou bypass técnico):
+//   - Arquivos `tokens.css` / `globals.css` (definem os próprios tokens)
+//   - Arquivos `seed-*.ts` / `seed*.ts` (cores de dado por tenant, não tema)
+//   - Arquivos `*.test.ts` / `*.test.tsx` (fixtures)
+//   - Pasta `**/pdf/**` (PDF renderer não suporta CSS custom properties)
+//   - Arquivos `manifest.webmanifest*` (PWA manifest JSON, não CSS)
+//   - Linhas com `.default('#...')` (Drizzle/Zod default em schema/validator)
+//   - Linhas com `themeColor` / `theme_color` / `background_color` (Next.js
+//     viewport + PWA manifest — lidos antes do CSS carregar)
 // ───────────────────────────────────────────────────────────
-const RE_HEX = /#[0-9A-Fa-f]{3,8}\b/
+const RE_HEX = /#[0-9A-Fa-f]{3,8}\b/g
+const RE_VAR_FALLBACK_HEX = /var\(\s*--[\w-]+\s*,\s*#[0-9A-Fa-f]{3,8}\s*\)/g
 const TOKENS_FILE = /packages[\\/]ui[\\/]src[\\/]tokens\.css$/
 const APP_GLOBALS = /apps[\\/]web[\\/]app[\\/]globals\.css$/
+const SEED_FILE = /[\\/]seed[a-zA-Z0-9_-]*\.ts$/
+const PDF_PATH = /[\\/]pdf[\\/]/
+const MANIFEST_PATH = /manifest\.webmanifest/
+const RE_DEFAULT_CALL = /\.default\(\s*['"]#[0-9A-Fa-f]{3,8}['"]/
+const RE_THEME_COLOR_KEYS = /\b(themeColor|theme_color|background_color)\s*:\s*['"]#/
 function checkNoHardcodedDesignToken(file, lines) {
   if (TOKENS_FILE.test(file)) return
   if (APP_GLOBALS.test(file)) return
+  if (SEED_FILE.test(file)) return
+  if (PDF_PATH.test(file)) return
+  if (MANIFEST_PATH.test(file)) return
+  if (file.includes('.test.')) return
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
     const trimmed = line.trim()
     if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*')) continue
     if (hasExemption(lines, i, '// design-token-exempt:')) continue
-    if (!RE_HEX.test(line)) continue
+    // Conta hex total - hex dentro de var() fallback. Se sobra hex "solto", dispara.
+    const totalHex = (line.match(RE_HEX) ?? []).length
+    if (totalHex === 0) continue
+    const inVarFallback = (line.match(RE_VAR_FALLBACK_HEX) ?? []).length
+    if (totalHex <= inVarFallback) continue
+    // Drizzle/Zod default('#XXX') — cor é dado, não tema
+    if (RE_DEFAULT_CALL.test(line)) continue
+    // Next.js viewport themeColor / PWA manifest theme_color/background_color
+    if (RE_THEME_COLOR_KEYS.test(line)) continue
     report('no-hardcoded-design-token', file, i + 1, line)
   }
 }
@@ -204,6 +236,8 @@ function checkNoHardcodedToastMessage(file, lines) {
 const RE_USE_SERVER = /^\s*['"]use server['"]/m
 const RE_EXPORTED_ASYNC = /^export\s+(?:async\s+function|const\s+\w+\s*=\s*async)/
 const RE_WRAP_ACTION = /\bwrapAction\s*\(/
+const RE_REQUIRE_MEMBER_SESSION = /\brequireMemberSession\s*\(/
+const RE_WITH_MEMBER_CONTEXT = /\bwithMemberContext\s*\(/
 const ACTION_FILE_PATTERN = /\.(action|server)\.ts$/
 function checkNoUnwrappedAction(file, lines) {
   if (file.includes('.test.')) return
@@ -211,9 +245,16 @@ function checkNoUnwrappedAction(file, lines) {
   const content = lines.join('\n')
   const isServerAction = RE_USE_SERVER.test(content) || ACTION_FILE_PATTERN.test(file)
   if (!isServerAction) return
-  // Se arquivo todo está marcado ai-blocked + tem wrapAction em alguma linha, OK
+  // Padrões aceitos (heurística por arquivo — refinar pra função-nível Sprint 02d+):
+  //   1. `wrapAction(` / `wrapServerAction(` — padrão staff (ADR 0071)
+  //   2. `requireMemberSession(` + `withMemberContext(` — padrão member portal
+  //      Sprint 26 (ADR 0088 magic link). Session/context é diferente do staff
+  //      flow — `wrapServerAction` assume `requireFullSession` (JWT staff claims)
+  //      que não cabe no portal do paciente.
   const hasWrap = RE_WRAP_ACTION.test(content)
-  if (hasWrap) return // assume todas as funções estão wrapadas (lint é heurística — refinar Sprint 01a)
+  const hasMemberAuth =
+    RE_REQUIRE_MEMBER_SESSION.test(content) && RE_WITH_MEMBER_CONTEXT.test(content)
+  if (hasWrap || hasMemberAuth) return
   // Detecta exports async não-wrapadas
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]

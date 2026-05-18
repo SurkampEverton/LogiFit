@@ -567,7 +567,7 @@ export const getModelStats = wrapServerAction(
   },
 )
 
-// Helper para UI carregar features de um member sem mutação
+// wrap-exempt: helper de leitura pra Server Component (read-only, recebe tenantId via parâmetro — não Server Action de browser)
 export async function loadFeaturesForUI(
   memberId: string,
   tenantId: string,

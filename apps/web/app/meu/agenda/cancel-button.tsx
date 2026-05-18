@@ -3,16 +3,14 @@
 /**
  * Cancel button — chama cancelMyAppointment + reload.
  *
- * Sprint 26 Faixa C (26b): usa confirm() do browser (regra 45 proíbe alert/confirm
- * em telas operador; pro portal MVP é aceitável até `<ConfirmDialog>` ter wrapper
- * mobile-PWA de touch (Sprint 26+)). Sub-task adiada explicitamente: trocar por
- * `<ConfirmDialog>` quando o catálogo tiver gestures touch.
- *
- * TODO Sprint 26+: substituir por `confirm()` helper de `packages/ui/messages`
- * (regra 45) com swipe gestures pra UX mobile real.
+ * Sprint 26 Faixa C (26b) → Sprint 02c cleanup: substituído `window.confirm()`
+ * por `confirm()` helper de `@repo/ui/messages` (regra 45 + ADR 0089). Dialog
+ * renderiza via `<MessageHost>` no layout. Sprint 26b+ pode adicionar swipe
+ * gestures pra UX mobile mais fluida.
  */
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { confirm } from '@repo/ui/messages'
 import { cancelMyAppointment } from '../actions'
 
 interface Props {
@@ -24,10 +22,15 @@ export function CancelButton({ appointmentId }: Props) {
   const [pending, startTransition] = useTransition()
   const [err, setErr] = useState<string | null>(null)
 
-  function handleClick() {
-    if (typeof window !== 'undefined' && !window.confirm('Cancelar este agendamento?')) {
-      return
-    }
+  async function handleClick() {
+    const ok = await confirm({
+      title: 'Cancelar agendamento?',
+      body: 'Você tem certeza que quer cancelar este agendamento? Dependendo da política da empresa, o cancelamento pode ficar pendente de aprovação.',
+      danger: true,
+      confirmLabel: 'Sim, cancelar',
+      cancelLabel: 'Manter',
+    })
+    if (!ok) return
     startTransition(async () => {
       setErr(null)
       try {

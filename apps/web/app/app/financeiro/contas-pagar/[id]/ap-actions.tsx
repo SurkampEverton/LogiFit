@@ -254,6 +254,7 @@ export function APActions({ apId, status }: Props) {
               className="ev-btn"
               style={{
                 backgroundColor: 'var(--ev-danger, #dc2626)',
+                // design-token-exempt: branco puro pra contraste sobre danger
                 color: '#fff',
               }}
             >

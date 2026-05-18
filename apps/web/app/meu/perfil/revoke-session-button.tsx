@@ -2,6 +2,7 @@
 
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { confirm } from '@repo/ui/messages'
 import { revokeMySession } from '../actions'
 
 interface Props {
@@ -12,10 +13,14 @@ export function RevokeSessionButton({ sessionId }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
-  function handleClick() {
-    if (typeof window !== 'undefined' && !window.confirm('Encerrar sessão neste dispositivo?')) {
-      return
-    }
+  async function handleClick() {
+    const ok = await confirm({
+      title: 'Encerrar sessão?',
+      body: 'Esta sessão será deslogada imediatamente. Você precisará entrar de novo no dispositivo correspondente.',
+      danger: true,
+      confirmLabel: 'Encerrar',
+    })
+    if (!ok) return
     startTransition(async () => {
       await revokeMySession({ sessionId })
       router.refresh()

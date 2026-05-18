@@ -37,6 +37,7 @@ export default async function BrandingPage() {
   const current: BrandingRow = rows[0] ?? {
     tenant_id: tenantId,
     logo_storage_path: null,
+    // design-token-exempt: cor inicial de branding tenant — espelha schema default (dado, não tema UI)
     primary_color: '#3498DB',
     logo_width_px: 120,
     signature_storage_path: null,

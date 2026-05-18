@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google'
 import { headers } from 'next/headers'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
-import { Toaster } from '@repo/ui/messages'
+import { MessageHost, Toaster } from '@repo/ui/messages'
 import './globals.css'
 
 const inter = Inter({
@@ -46,6 +46,7 @@ export default async function RootLayout({
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
           <Toaster nonce={nonce} />
+          <MessageHost />
         </NextIntlClientProvider>
       </body>
     </html>

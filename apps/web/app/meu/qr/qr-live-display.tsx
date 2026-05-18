@@ -70,6 +70,7 @@ export function QrLiveDisplay({ initialQrString }: Props) {
             justifyContent: 'center',
             fontFamily: 'monospace',
             fontSize: '10px',
+            // design-token-exempt: QR fallback é renderizado como texto preto puro sobre branco (alto contraste pra leitura)
             color: '#000',
             wordBreak: 'break-all',
             padding: '8px',

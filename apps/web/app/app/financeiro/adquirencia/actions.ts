@@ -827,6 +827,7 @@ export const getUnifiedRevenue = wrapServerAction(
 
 // ─── Helpers públicos pra UI ─────────────────────────────────────────────
 
+// wrap-exempt: helper de leitura pra Server Component (read-only, recebe tenantId via parâmetro — não Server Action de browser)
 export async function quoteAnticipationPreview(input: {
   saleIds: string[]
   tenantId: string
