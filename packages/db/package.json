@@ -26,7 +26,8 @@
     "./convenios": "./src/convenios/index.ts",
     "./rh": "./src/rh/index.ts",
     "./estoque": "./src/estoque/index.ts",
-    "./vigilancia": "./src/vigilancia/index.ts"
+    "./vigilancia": "./src/vigilancia/index.ts",
+    "./portal-member": "./src/portal-member/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

@@ -118,3 +118,6 @@ export * from './estoque'
 
 // Sprint 25 Faixa A — Vigilância Sanitária (ANVISA + CNES + limpeza): equipment + equipment_maintenance (fluxo manutenção externa com NF-e remessa/retorno ADR 0059 Sprint 36) + equipment_usage_log @volume 18M+/ano + cleaning_checklists + cleaning_logs.
 export * from './vigilancia'
+
+// Sprint 26 Faixa A — Portal do Paciente: member_auth_tokens (magic link 15min TTL) + member_sessions (refresh 30d multi-device) + member_consents (intra-tenant finalidades granulares). ADR 0088 esperado. RLS member role aplica em todas tabelas de domínio via 0045_portal_member_rls.sql.
+export * from './portal-member'
