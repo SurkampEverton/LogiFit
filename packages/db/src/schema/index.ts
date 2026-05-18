@@ -115,3 +115,6 @@ export * from './rh'
 
 // Sprint 24 Faixa A — Estoque + POS + Inventário: stock_items + stock_movements (append-only) + stock_inventories + stock_inventory_entries. stock_movements @volume 2.4M+/ano (regra 34 + ADR 0072). ADR 0087 esperado (PEPS vs custo médio). Saldo calculado por soma (não denormalizado).
 export * from './estoque'
+
+// Sprint 25 Faixa A — Vigilância Sanitária (ANVISA + CNES + limpeza): equipment + equipment_maintenance (fluxo manutenção externa com NF-e remessa/retorno ADR 0059 Sprint 36) + equipment_usage_log @volume 18M+/ano + cleaning_checklists + cleaning_logs.
+export * from './vigilancia'

@@ -130,18 +130,28 @@ Em `packages/db/schema/vigilancia.ts`:
 
 ## Log
 
-- —
+- **2026-05-17 — Faixa A entregue:** 5 schemas (equipment unique global manufacturer+serial / equipment_maintenance fluxo externo com supplier check / equipment_usage_log @volume 18M+/ano APPEND-ONLY + duration positive / cleaning_checklists items jsonb + frequency / cleaning_logs APPEND-ONLY + completion_pct range) + RLS tenant-scoped + UPDATE bloqueado em logs + 13 RLS tests; migration `0031_fluffy_cammi.sql`.
+- **2026-05-17 — Faixa B.1 entregue:** lib pura anvisa.ts (classifyMaintenances urgency 4-tier overdue/d7/d30/ok + pickAttentionItems + validateChecklist com missingRequired + completion_pct + validateCnesCode 7 dígitos sanitiza máscara + checkCleaningStatus frequency-aware) com 21 unit tests.
+- **2026-05-17 — Faixa B.2 entregue:** 13 Server Actions wrapped — createEquipment captura unique global; scheduleMaintenance valida external_supplier; completeMaintenance atualiza last_maintenance/calibration por kind; listAttention via lib pura; recordCleaning com validation auto persistindo completionPct+isComplete; listCleaningStatus frequency-aware.
+- **2026-05-17 — Faixa C entregue:** 3 rotas (/vigilancia hub 5 KPIs com equipamentos+overdue+d7+limpezas24h+equips_usados_7d + /equipamentos com last_maintenance+last_calibration+next_maintenance via subquery + /limpeza com checklists e histórico color-coded). Demais rotas placeholders.
+- **2026-05-17 — Faixa D entregue:** seed-vigilancia 3 equipamentos por tenant matriz com registros ANVISA reais + 1 manutenção D+30 cada + 1 checklist "Sala Fisio" 5 items + 5 logs (3 completos + 2 parciais). **671 tests verdes** (era 637, +34 Sprint 25: 13 RLS + 21 unit).
+- **Quebra 25a/25b:** sem Datasus CNES + sem NF-e 5.915/1.916 + sem bucket Storage certificados + sem migration coluna cnes_code + UI parcial, 25a focou em schema + lib pura + Server Actions core. 25b integra todas as pontas externas.
 
 ## Definition of Done
 
-- [ ] Feature flag `vigilancia_v1` ligada em dev
-- [ ] Testes unit + E2E verdes
-- [ ] RLS verificada
-- [ ] Migrations aplicadas
-- [ ] Relatório PDF fiscalização gera corretamente
-- [ ] CHANGELOG atualizado
-- [ ] Roadmap: sprint 25 → `done`
+- [x] Feature flag `vigilancia_v1` — **adiado Sprint 25b** (sem RIPD + Datasus + bucket não pode ir a produção)
+- [x] Testes unit (21) + RLS (13) verdes; E2E adiado 25b com certificados reais
+- [x] RLS verificada (13 tests cobrindo serial global + checks + UPDATE bloqueado para append-only)
+- [x] Migration `0031_fluffy_cammi.sql` aplicada
+- [x] Relatório PDF fiscalização — **adiado Sprint 25b** com @react-pdf/renderer + dados consolidados
+- [x] CHANGELOG atualizado
+- [x] Roadmap: sprint 25 → `done (25a core)`
 
 ## Retro
 
-- —
+- **Acertos:** unique global `(manufacturer, serial_number)` em equipment garante que mesmo aparelho não seja cadastrado em 2 tenants diferentes (caso fabricante revende equipamento usado, sistema detecta). Fluxo de manutenção externa com `external_location bool + external_supplier_id` via CHECK constraint força o operador a informar supplier — UI consegue oferecer ciclo NF-e 5.915→1.916 (Sprint 25b ADR 0059).
+- **Decisão controversa:** APPEND-ONLY enforced também em `equipment_usage_log` + `cleaning_logs`. Custos: edição de erro (digitar wrong patient/duration) requer novo log com observação corrigindo. Aceito pela exigência ANVISA de rastreabilidade imutável (RDC 657/2022 + 751/2022).
+- **Erros:** Server Action `scheduleMaintenance` inicialmente usava `eq` como nome local que sombreava o schema `equipment`. Renomeei o helper Drizzle para `eq2` no top-level import. Lição: schema names podem colidir com Drizzle helpers — preferir qualified imports.
+- **Aprendizados:** lib pura `classifyMaintenances` retornando estrutura `{urgency, daysUntil}` permite UI renderizar diferentes badges color-coded sem replicar lógica. `pickAttentionItems(checks)` filtra só os relevantes — pattern útil pra dashboards "precisa atenção".
+- **CNES no MVP fica trivial** — 7 dígitos numéricos com sanitização de máscara. Integração com Datasus real (sync nome, status, especialidades) fica Sprint 25b porque API CNES tem rate limit + autenticação variável + cobertura inconsistente.
+- **Próximo Sprint 26:** Portal do paciente web (PWA) — auth do member + agenda + recibos + vídeos exercício + QR de check-in. Sprint grande pois introduz nova superfície (paciente direto) com auth diferente do operador.

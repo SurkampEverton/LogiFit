@@ -25,7 +25,8 @@
     "./evolucoes": "./src/evolucoes/index.ts",
     "./convenios": "./src/convenios/index.ts",
     "./rh": "./src/rh/index.ts",
-    "./estoque": "./src/estoque/index.ts"
+    "./estoque": "./src/estoque/index.ts",
+    "./vigilancia": "./src/vigilancia/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -50,6 +51,7 @@
     "db:seed:convenios": "tsx scripts/seed-convenios.ts",
     "db:seed:rh": "tsx scripts/seed-rh.ts",
     "db:seed:estoque": "tsx scripts/seed-estoque.ts",
+    "db:seed:vigilancia": "tsx scripts/seed-vigilancia.ts",
     "db:rls-check": "tsx tests/rls-check.ts"
   },
   "dependencies": {

@@ -6,6 +6,45 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 25a 100% (ANVISA + CNES + Limpeza) 2026-05-17
+
+**Sprint 25 — bloco regulatório clínico.** 25a core entregue sem integração Datasus CNES + sem NF-e 5.915/1.916 + sem bucket Storage para certificados. Sprint 25b cobre essas integrações + permissions vigilancia.* + RIPD + feature flag + coluna `cnes_code` em companies.
+
+**Faixa A entregue (Schemas + RLS + 13 tests):**
+
+- **`packages/db/src/schema/vigilancia.ts`** — 5 tabelas:
+  - `equipment` — **unique global `(manufacturer, serial_number)`** + 12 kinds enum + ANVISA registration + intervals positivos via CHECK + last_maintenance_at/last_calibration_at cached
+  - `equipment_maintenance` — 3 kinds (preventive/calibration/corrective) + status pipeline (scheduled→in_transit_to_external→at_external→returning→completed|overdue|cancelled) + CHECK `completed exige performed_at` + CHECK `external_location=true exige external_supplier_id` + placeholders para NF-e Sprint 25b
+  - `equipment_usage_log` — **APPEND-ONLY** rastreabilidade clínica (paciente × aparelho × parâmetros); **`@volume_estimate_yearly: 18000000`** particionamento Sprint 25b
+  - `cleaning_checklists` — items jsonb + frequency_days
+  - `cleaning_logs` — **APPEND-ONLY** + CHECK completion_pct ∈ [0,100]
+- **`packages/db/src/policies/0044_vigilancia_rls.sql`** — RLS tenant-scoped; equipment_usage_log + cleaning_logs SEM policy UPDATE (regra 5 enforcement; auditoria ANVISA).
+- Migration `0031_fluffy_cammi.sql` aplicada (5 tabelas + 4 enums).
+- **`packages/db/tests/vigilancia-rls.test.ts`** — 13 RLS tests.
+
+**Faixa B.1 entregue (1 lib pura + 21 unit tests):**
+
+- **`packages/db/src/vigilancia/anvisa.ts`**: classifyMaintenances urgency (overdue/d7/d30/ok) + pickAttentionItems + validateChecklist com missingRequired + validateCnesCode 7 dígitos + checkCleaningStatus frequency-aware.
+- **`packages/db/package.json`** novo export `./vigilancia` + script `db:seed:vigilancia`.
+
+**Faixa B.2 entregue (13 Server Actions):**
+
+- CRUD equipment + decommission; scheduleMaintenance com gate external_supplier_id; completeMaintenance atualiza last_maintenance/calibration; listAttention via lib pura; recordUsage rastreabilidade; checklists CRUD; recordCleaning com validation auto; listCleaningStatus por frequency; validateCnesCodeAction.
+
+**Faixa C entregue (3 rotas iniciais):**
+
+- `/vigilancia` hub 5 KPIs (equipamentos / overdue / d7 / limpezas 24h / equips usados 7d)
+- `/vigilancia/equipamentos` lista com last_maintenance + last_calibration + next maintenance subquery
+- `/vigilancia/limpeza` checklists + histórico com isComplete badge
+
+**Faixa D entregue (seed):**
+
+- `seed-vigilancia` 3 equipamentos por tenant matriz (Bioset Sonopulse 3 + IBRAMED NeuroDyn II + InBody 270) com registros ANVISA reais + 1 manutenção D+30 cada + 1 checklist "Sala Fisio" 5 items + 5 logs amostra → 6 equipamentos + 6 manutenções + 2 checklists + 10 logs.
+
+**671 tests verdes** (era 637, +34 Sprint 25: 13 RLS + 21 unit).
+
+**Sprint 25b futuro:** Datasus CNES API + migration coluna cnes_code + NF-e 5.915/1.916 ADR 0059 + bucket equipment-certificates + job mark-overdue + régua Sprint 13 + UI completa restante + particionamento usage_log + permissions vigilancia.* + RIPD + feature flag + E2E.
+
 ### Build — Sprint 24a 100% (Estoque + POS + ADR 0087 Proposed) 2026-05-17
 
 **Sprint 24 — bloco geral de estoque atendendo Fisio/Academia/Nutri.** 24a core entregue sem AR via Sprint 15 + sem NFC-e Focus + sem multi-unit. Sprint 24b integra essas pontas.
