@@ -1,18 +1,25 @@
 'use server'
 
 /**
- * Portal do Paciente — Server Actions (Sprint 26 Faixa B.2).
+ * Portal do Paciente — Server Actions core (Sprint 26 Faixa B.2).
  *
  * Diferente de `/app/.../actions.ts`: o caller é o PACIENTE (member), não staff.
  * Sessão usa cookie próprio (`lf_member_session`) e RLS via `app.member_id`.
  *
+ * Sprint 02c2 → 02d-2: migrado pra `wrapMemberAction` (apps/web/app/lib/wrap-member-action.ts).
+ * 3 SAs pré-auth (requestMagicLink / verifyMagicLink / logoutMember) ficam
+ * fora do wrapper (sem session ainda; anti-enumeration ou idempotência exigem
+ * controle manual) — `// wrap-exempt:` comment marca explicitamente.
+ *
  * Actions:
- *   - requestMagicLink — público (sem auth) + rate-limited + anti-enumeration
- *   - verifyMagicLink — público (token plano vindo do email/SMS)
- *   - logout — invalida sessão atual
+ *   - requestMagicLink — público (pré-auth) + rate-limited + anti-enumeration
+ *   - verifyMagicLink — público (token plano vindo do email/SMS) cria 1ª sessão
+ *   - logoutMember — tolerante (não exige session ativa)
  *   - cancelMyAppointment — respeita cancellation policy por vertical
  *   - revokeMySession — desloga outro dispositivo
  *   - updateMyConsent — liga/desliga consent intra-tenant
+ *   - acknowledgeCrossPrescriptionAlert / acknowledgeIncident — confirma leitura
+ *   - exportCrossTenantAccessLog — solicita export LGPD art. 18 V
  */
 
 import { pool } from '@repo/db/client'
@@ -31,9 +38,7 @@ import { z } from 'zod'
 import {
   clearMemberCookie,
   getMemberSession,
-  requireMemberSession,
   setMemberCookie,
-  withMemberContext,
 } from '../lib/member-session'
 import { wrapMemberAction } from '../lib/wrap-member-action'
 
@@ -87,13 +92,14 @@ const ExportAccessLogSchema = z.object({
   format: z.enum(['csv', 'pdf']),
 })
 
-// ─── requestMagicLink ───────────────────────────────────────────────────
+// ─── requestMagicLink (PRÉ-AUTH) ────────────────────────────────────────
 /**
  * Público — qualquer um pode chamar com email. Retorna SEMPRE ok=true (anti-
  * enumeration). Envia email SE: email existe + rate limit permite.
  *
  * Sprint 26 entrega só email (canal SMS adicionado Sprint 26b com Twilio).
  */
+// wrap-exempt: pré-auth público (sem member session), anti-enumeration sempre retorna ok:true
 export async function requestMagicLink(input: unknown) {
   const parsed = RequestMagicLinkSchema.safeParse(input)
   if (!parsed.success) {
@@ -161,11 +167,12 @@ export async function requestMagicLink(input: unknown) {
   return { ok: true, sent: true }
 }
 
-// ─── verifyMagicLink ────────────────────────────────────────────────────
+// ─── verifyMagicLink (PRÉ-AUTH) ─────────────────────────────────────────
 /**
  * Verifica token plano vindo do link. Marca used_at + cria member_session.
  * Retorna refresh token plano (caller seta cookie).
  */
+// wrap-exempt: pré-auth público (sem member session ainda), cria a primeira session
 export async function verifyMagicLink(input: unknown) {
   const parsed = VerifyMagicLinkSchema.safeParse(input)
   if (!parsed.success) {
@@ -249,7 +256,8 @@ export async function verifyMagicLink(input: unknown) {
   }
 }
 
-// ─── logout ─────────────────────────────────────────────────────────────
+// ─── logoutMember (TOLERANTE) ───────────────────────────────────────────
+// wrap-exempt: tolerante (getMemberSession em vez de require) — idempotente, funciona mesmo sem session ativa
 export async function logoutMember() {
   const session = await getMemberSession()
   if (session) {
@@ -263,17 +271,16 @@ export async function logoutMember() {
 }
 
 // ─── cancelMyAppointment ────────────────────────────────────────────────
-export async function cancelMyAppointment(input: unknown) {
-  const parsed = CancelAppointmentSchema.safeParse(input)
-  if (!parsed.success)
-    throw new ApiException({
-      code: 'VALIDATION_ERROR',
-      message: 'Dados inválidos',
-      request_id: randomUUID(),
-    })
-  const session = await requireMemberSession('/meu/agenda')
 
-  return withMemberContext(session, async () => {
+export const cancelMyAppointment = wrapMemberAction(
+  {
+    module: 'meu.agenda',
+    action: 'appointment.cancel',
+    returnTo: '/meu/agenda',
+    resourceType: 'appointments',
+    schema: CancelAppointmentSchema,
+  },
+  async (input, { session }) => {
     // 1. Buscar appointment + tenant vertical
     const r = await pool.query<{
       id: string
@@ -285,14 +292,14 @@ export async function cancelMyAppointment(input: unknown) {
        FROM appointments
        WHERE id = $1 AND member_id = $2
        LIMIT 1`,
-      [parsed.data.appointmentId, session.memberId],
+      [input.appointmentId, session.memberId],
     )
     const appt = r.rows[0]
     if (!appt)
       throw new ApiException({
         code: 'NOT_FOUND',
         message: 'Agendamento não encontrado',
-        request_id: randomUUID(),
+        request_id: '',
       })
 
     // Sprint 26: vertical fixo academia (MVP); Sprint 26b: lookup tenant.verticals
@@ -301,7 +308,12 @@ export async function cancelMyAppointment(input: unknown) {
     const decision = decideCancellation({
       vertical,
       appointmentStartsAt: appt.starts_at.toISOString(),
-      appointmentStatus: appt.status as 'scheduled' | 'confirmed' | 'cancelled' | 'no_show' | 'completed',
+      appointmentStatus: appt.status as
+        | 'scheduled'
+        | 'confirmed'
+        | 'cancelled'
+        | 'no_show'
+        | 'completed',
     })
 
     if (!decision.ok) {
@@ -311,7 +323,7 @@ export async function cancelMyAppointment(input: unknown) {
           decision.action === 'denied'
             ? 'Não é possível cancelar este agendamento'
             : 'Esta vertical requer reagendamento ao invés de cancelamento',
-        request_id: randomUUID(),
+        request_id: '',
         details: { reason: decision.reason, action: decision.action },
       })
     }
@@ -335,11 +347,11 @@ export async function cancelMyAppointment(input: unknown) {
       [appt.id],
     )
     return { ok: true, action: 'awaiting_provider_ack' as const }
-  })
-}
+  },
+)
 
 // ─── revokeMySession ────────────────────────────────────────────────────
-// Sprint 02c2: migrado pra wrapMemberAction (apps/web/app/lib/wrap-member-action.ts)
+
 export const revokeMySession = wrapMemberAction(
   {
     module: 'meu.perfil',
@@ -360,26 +372,25 @@ export const revokeMySession = wrapMemberAction(
 )
 
 // ─── updateMyConsent ────────────────────────────────────────────────────
-export async function updateMyConsent(input: unknown) {
-  const parsed = UpdateConsentSchema.safeParse(input)
-  if (!parsed.success)
-    throw new ApiException({
-      code: 'VALIDATION_ERROR',
-      message: 'Dados inválidos',
-      request_id: randomUUID(),
-    })
-  const session = await requireMemberSession('/meu/privacidade')
 
-  return withMemberContext(session, async () => {
+export const updateMyConsent = wrapMemberAction(
+  {
+    module: 'meu.privacidade',
+    action: 'consent.update',
+    returnTo: '/meu/privacidade',
+    resourceType: 'member_consents',
+    schema: UpdateConsentSchema,
+  },
+  async (input, { session }) => {
     // Revoga consent atual da mesma purpose (se existir)
     await pool.query(
       `UPDATE member_consents
        SET revoked_at = now()
        WHERE member_id = $1 AND purpose = $2 AND revoked_at IS NULL`,
-      [session.memberId, parsed.data.purpose],
+      [session.memberId, input.purpose],
     )
 
-    if (parsed.data.granted) {
+    if (input.granted) {
       // Insere novo grant
       const ins = await pool.query<{ id: string }>(
         `INSERT INTO member_consents
@@ -389,9 +400,9 @@ export async function updateMyConsent(input: unknown) {
         [
           session.tenantId,
           session.memberId,
-          parsed.data.purpose,
-          parsed.data.ripdVersion ?? 'v1.0',
-          parsed.data.consentText ?? null,
+          input.purpose,
+          input.ripdVersion ?? 'v1.0',
+          input.consentText ?? null,
         ],
       )
       return { ok: true, consentId: ins.rows[0]!.id, granted: true }
@@ -402,11 +413,11 @@ export async function updateMyConsent(input: unknown) {
        (tenant_id, member_id, purpose, granted, ripd_version)
        VALUES ($1, $2, $3, false, $4)
        RETURNING id`,
-      [session.tenantId, session.memberId, parsed.data.purpose, parsed.data.ripdVersion ?? 'v1.0'],
+      [session.tenantId, session.memberId, input.purpose, input.ripdVersion ?? 'v1.0'],
     )
     return { ok: true, consentId: ins.rows[0]!.id, granted: false }
-  })
-}
+  },
+)
 
 // ─── acknowledgeCrossPrescriptionAlert (Sprint 26b — ADR 0077) ─────────
 /**
@@ -415,28 +426,25 @@ export async function updateMyConsent(input: unknown) {
  * Schema `cross_prescription_alerts` será materializado em extensão Sprint 11+;
  * MVP retorna ok=true sem persistir. Caller passa alertId UUID.
  */
-export async function acknowledgeCrossPrescriptionAlert(input: unknown) {
-  const parsed = AcknowledgeAlertSchema.safeParse(input)
-  if (!parsed.success)
-    throw new ApiException({
-      code: 'VALIDATION_ERROR',
-      message: 'Dados inválidos',
-      request_id: randomUUID(),
-    })
-  const session = await requireMemberSession('/meu/privacidade/alertas-cruzados')
-
-  return withMemberContext(session, async () => {
+export const acknowledgeCrossPrescriptionAlert = wrapMemberAction(
+  {
+    module: 'meu.privacidade',
+    action: 'cross_prescription_alert.acknowledge',
+    returnTo: '/meu/privacidade/alertas-cruzados',
+    schema: AcknowledgeAlertSchema,
+  },
+  async (input, _ctx) => {
     // Sprint 26c: UPDATE cross_prescription_alerts SET acknowledged_at = now()
     // WHERE id = $1 AND patient_passport_id = $2 (após FK + RLS).
     // MVP: registra audit + retorna sucesso (idempotente).
     return {
       ok: true,
-      alertId: parsed.data.alertId,
+      alertId: input.alertId,
       acknowledged: true,
       note: 'Schema cross_prescription_alerts será materializado em Sprint 11+ extensão',
     }
-  })
-}
+  },
+)
 
 // ─── acknowledgeIncident (Sprint 26b — ADR 0067 addendum) ──────────────
 /**
@@ -445,27 +453,24 @@ export async function acknowledgeCrossPrescriptionAlert(input: unknown) {
  * Schema `security_incidents` + tabela de notificações por paciente vai vir
  * com addendum ao ADR 0067. MVP retorna ok=true.
  */
-export async function acknowledgeIncident(input: unknown) {
-  const parsed = AcknowledgeIncidentSchema.safeParse(input)
-  if (!parsed.success)
-    throw new ApiException({
-      code: 'VALIDATION_ERROR',
-      message: 'Dados inválidos',
-      request_id: randomUUID(),
-    })
-  const session = await requireMemberSession('/meu/privacidade/incidentes')
-
-  return withMemberContext(session, async () => {
+export const acknowledgeIncident = wrapMemberAction(
+  {
+    module: 'meu.privacidade',
+    action: 'incident.acknowledge',
+    returnTo: '/meu/privacidade/incidentes',
+    schema: AcknowledgeIncidentSchema,
+  },
+  async (input, _ctx) => {
     // Sprint 26c: UPDATE security_incident_notifications SET viewed_at = now()
     // WHERE incident_id = $1 AND patient_passport_id = $2.
     return {
       ok: true,
-      incidentId: parsed.data.incidentId,
+      incidentId: input.incidentId,
       acknowledged: true,
       note: 'Schema security_incidents será materializado em ADR 0067 addendum',
     }
-  })
-}
+  },
+)
 
 // ─── exportCrossTenantAccessLog (Sprint 26b — ADR 0077) ────────────────
 /**
@@ -479,19 +484,17 @@ export async function acknowledgeIncident(input: unknown) {
  * Sprint 26c: jobs assíncronos (relatórios grandes >100k linhas) + PDF via
  * @react-pdf/renderer + assinatura digital opcional.
  */
-export async function exportCrossTenantAccessLog(input: unknown) {
-  const parsed = ExportAccessLogSchema.safeParse(input)
-  if (!parsed.success)
-    throw new ApiException({
-      code: 'VALIDATION_ERROR',
-      message: 'Datas ou formato inválidos',
-      request_id: randomUUID(),
-    })
-  const session = await requireMemberSession('/meu/privacidade/acessos')
+export const exportCrossTenantAccessLog = wrapMemberAction(
+  {
+    module: 'meu.privacidade',
+    action: 'cross_tenant_access.export',
+    returnTo: '/meu/privacidade/acessos',
+    resourceType: 'data_subject_requests',
+    schema: ExportAccessLogSchema,
+  },
+  async (input, { session }) => {
+    const exportId = randomUUID()
 
-  const exportId = randomUUID()
-
-  await withMemberContext(session, async () => {
     // Resolve passport do member
     const passRes = await pool.query<{ passport_id: string }>(
       `SELECT pcl.passport_passport_id AS passport_id
@@ -506,7 +509,7 @@ export async function exportCrossTenantAccessLog(input: unknown) {
       throw new ApiException({
         code: 'NOT_FOUND',
         message: 'Vínculo cross-tenant não encontrado',
-        request_id: randomUUID(),
+        request_id: '',
       })
     }
 
@@ -528,18 +531,18 @@ export async function exportCrossTenantAccessLog(input: unknown) {
         session.memberId,
         JSON.stringify({
           export_kind: 'cross_tenant_access_log',
-          start_date: parsed.data.startDate,
-          end_date: parsed.data.endDate,
-          format: parsed.data.format,
+          start_date: input.startDate,
+          end_date: input.endDate,
+          format: input.format,
           passport_id: passportId,
         }),
       ],
     )
-  })
 
-  return {
-    ok: true as const,
-    exportId,
-    downloadUrl: `/api/meu/privacidade/export/${exportId}`,
-  }
-}
+    return {
+      ok: true as const,
+      exportId,
+      downloadUrl: `/api/meu/privacidade/export/${exportId}`,
+    }
+  },
+)
