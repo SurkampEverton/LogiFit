@@ -3,7 +3,7 @@
 - **Área:** geral
 - **Início:** planejado (depois do Sprint 01b)
 - **Fim planejado:** +3 semanas
-- **Status:** planejado
+- **Status:** **done (02a core)** 2026-05-18 — Faixas A+B+C entregues 2026-05-12 + fechamento Path A (passport actions + landing invite + has_cross_tenant_access SQL fn) entregue 2026-05-18; Path B cadastro proativo + Turnstile + SMS Twilio adiado pra Sprint 02b
 - **Item do roadmap:** #4
 
 ## Goal
@@ -234,6 +234,29 @@ Consumidores no MVP: timeline UI via Realtime (mesmo tenant). Fase 2+ (cross-ale
 - [ ] Importador CSV para migração de cliente
 
 ## Log
+
+- **2026-05-18 — Fechamento Path A entregue (`done (02a core)`).**
+  - Função SQL `has_cross_tenant_access(reader_user_id, reader_tenant_id, passport_id, module, category)` em `packages/db/src/policies/0055_has_cross_tenant_access.sql` retorna bool combinando: vínculo ativo + módulo ativo + data_levels cobre categoria + 4 limites duros sempre FALSE (`financeiro`/`prontuario_cfm_bruto`/`terceiros_mencionados`/`workspace`). STABLE, GRANT EXECUTE pra `logifit_app`. Caller padrão: Server Action chama antes de ler dado clínico cross-tenant + grava `patient_data_access_log` (lint `cross-tenant-read-must-log` enforça).
+  - 11 testes SQL em `packages/db/tests/has-cross-tenant-access.test.ts` cobrindo 10+ cenários canônicos: vínculo ativo + módulo + nível → TRUE; vínculo revogado → FALSE; módulo inativo (substituído) → FALSE; categoria não autorizada em data_levels → FALSE; limite duro financeiro → FALSE; workspace nível 5 → FALSE; prontuario_cfm_bruto → FALSE; terceiros_mencionados → FALSE; categoria desconhecida fail-closed → FALSE; sem vínculo → FALSE; sanity TENANT_SOURCE — total 11 tests.
+  - 8 Server Actions wrapped em `apps/web/app/app/passport/actions.ts` (520l):
+    - `sendPatientInvite({passportPassportId, personId, modules:[{module, responsibleProfessionalUserId, dataLevels}]})` — staff cria `patient_company_links` status=`pending` + `creationPath='reactive'` + `invitedByUserId/invitedAt` + N modules status=`pending` em transação. Bloqueia se já existe link não-revogado pra mesmo passport+tenant.
+    - `acceptPatientInvite({linkId, acceptedModules?, dataLevelOverrides?})` — em transação: valida link status=`pending` no tenant + carrega modules pendentes; **detecta colisões** com módulos ativos do mesmo passport em outros tenants (constraint global ADR 0077) → retorna CONFLICT com lista pra caller chamar `confirmModuleSubstitution()`; se sem colisão, atualiza link→`active`+`acceptedAt` + modules→`active`+`activatedAt` + aplica `dataLevelOverrides` se passados.
+    - `cancelPatientInvite({linkId})` — staff cancela invite ainda em `pending` → status=`revoked` + `revokedReason='cancelled_by_staff'`.
+    - `revokePatientLink({linkId, reason})` — staff revoga vínculo ativo → status=`revoked` + reason; em cascata desativa todos modules → status=`inactive` + `deactivatedReason='link_revoked'`.
+    - `confirmModuleSubstitution({newLinkId, module})` — paciente confirma trocar empresa em módulo já ativo; em transação desativa módulo ativo global (qualquer tenant) → `status='inactive'` + `deactivatedReason='substituted_by_other_tenant'` + ativa novo módulo + eleva link pendente pra `active` se necessário.
+    - `setSharingLevel({linkModuleId, dataLevels})` — staff ajusta data_levels do módulo (com consent prévio do paciente — Sprint 02b adiciona consent flow real).
+    - `listInvites({status?, limit?})` — staff lista invites enviados pelo tenant (filtro por status pending/active/revoked/all) com JOIN persons.
+    - `getCrossTenantSummary({passportPassportId, module, category, resourceType, resourceId?})` — chama `has_cross_tenant_access()` SQL + se TRUE resolve `sourceTenantId` via primeiro link ativo do passport fora deste tenant + insere `patient_data_access_log` (sempre — provê auditoria forense LGPD art. 11). Retorna `{allowed, sourceTenantId, reason}` (reason='hard_limit' pra categorias bloqueadas).
+  - Landing invite `/i/[token]` em `apps/web/app/i/[token]/page.tsx` — Server Component público (sem auth) que resolve metadata via fetch a `GET /api/i/[token]`. Renderiza:
+    - Header tenant emissor + profissional que enviou + data.
+    - Card sobre empresa + lista módulos com ícone+label+descrição (🏋️ Academia / 🥇 Personal / 🩺 Fisioterapia / 🥗 Nutrição / 🧘 Pilates).
+    - Card "Dados que serão compartilhados" agregando data_levels de todos modules (📇 Identidade / 📏 Antropometria / 💪 Treino / 🩺 Clínico apenas resumo).
+    - Nota anti-fraude "notas privadas do profissional + financeiro + prontuário CFM original nunca cruzam empresas".
+    - Status-driven CTA: `pending` → 2 botões (Fazer login + Criar conta apontando pra `/cadastro?invite=<token>` Sprint 02b); `already_accepted` → banner verde + link `/meu/privacidade`; `revoked`/`unknown` → banner vermelho.
+  - API Route `GET /api/i/[token]` em `apps/web/app/api/i/[token]/route.ts` — endpoint público sem auth com regex UUID validation, retorna JSON com: token + status amigável (pending/already_accepted/revoked/unknown) + tenant name+slug + invitedByName (via JOIN users+persons) + invitedAt + acceptedAt + **personMaskedName** (anti-fraude: nome + iniciais do sobrenome) + modules com status + data_levels. **Não expõe dados sensíveis** do paciente — só metadata pra confirmação visual; aceite/recusa acontece após login.
+  - Migration sem nova entry — função SQL via policy idempotente; tabelas já existiam Sprint 01b Faixa B.
+  - **Typecheck verde 11/11 packages**. Tests SQL prontos pra rodar quando Postgres dev up (segue mesmo padrão exames-rls.test.ts/etc).
+  - **Path B cadastro proativo + Turnstile + SMS Twilio adiados pra Sprint 02b**: precisam (a) Twilio sandbox provisionado + credentials cifradas; (b) Cloudflare Turnstile configurado em Sprint 00 (ainda pendente); (c) ADR sobre persons-without-tenant (schema atual exige tenantId NOT NULL — Sprint 02b decide se cria "system tenant" pivot ou refactor pra nullable + RLS adaptado). Sem essas dependências resolvidas, implementar /cadastro vira mock fake-it que não dá pra ligar em produção.
 
 - **2026-05-12 — Faixas A+B+C entregues (Sprint 02 a 70%).** Núcleo CRM members aterrissado: 4 tabelas (`members`, `member_events` append-only, `member_notes` Nível 5, `member_tags` PK composta), 12 RLS policies isolamento per-tenant + append-only, ADR 0011 (member como perfil único cross-module), 10 Server Actions wrapped (createMember/updateMember/archiveMember/transferMember/addNote/addTag/removeTag/listTimeline/listNotes/listMembers/getMember) com `emitEvent()` fire-and-forget, UI completa `/app/members/*` (lista + new wizard + detail com slots Sprint 03+ + timeline). **7 Vitest tests novos** members-rls (isolamento, append-only, PK composta, soft-delete) — total 77 verdes. `addNote` marcado `// ai-blocked: regra 41+42` (Nível 5 nunca via IA). **30% restante adiado:** passaporte Server Actions completas (Sprint 11), portal paciente `/meu/*` (Sprint 26), cadastro proativo + Turnstile (fechamento Sprint 02), WhatsApp invite (Sprint 13), `has_cross_tenant_access()` (quando primeira leitura cross-tenant aterrissar), widget framework (Sprint 03+), `member_events` particionado (Sprint 04+ quando volume justificar).
 

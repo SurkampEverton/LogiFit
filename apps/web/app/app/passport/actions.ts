@@ -1,0 +1,687 @@
+'use server'
+
+/**
+ * Server Actions Passaporte Cross-Tenant — Sprint 02 fechamento (regra 42 + ADR 0077).
+ *
+ * **Caller é staff** (profissional do tenant emissor). Member portal usa
+ * actions próprias em `/meu/privacidade/actions.ts` (Sprint 26).
+ *
+ * Schema vive em `passport.ts`:
+ *   - `patient_company_links` (status=pending|active|revoked + creation_path)
+ *   - `patient_link_modules` (constraint global 1 módulo ativo por paciente)
+ *   - `patient_data_access_log` (auditoria leituras cross-tenant)
+ *
+ * **Fluxo invite reativo** (path A — Sprint 02):
+ *   1. Staff chama `sendPatientInvite(...)` → cria link status='pending' +
+ *      modules status='pending'.
+ *   2. Paciente abre landing `/i/[link_id]` (resolve via `GET /api/i/[link_id]`).
+ *   3. Paciente faz login/cadastro + chama `acceptPatientInvite(linkId, modules[])` →
+ *      atualiza para 'active' + dispara constraint global de substituição se
+ *      houver módulo ativo do mesmo tipo.
+ *
+ * **Path B proativo** (cadastro autônomo `/cadastro`) adiado pra Sprint 02b
+ * — depende Twilio SMS + Turnstile real + decisão schema persons-without-tenant.
+ *
+ * Reads cross-tenant chamam `has_cross_tenant_access()` SQL antes de retornar
+ * dado + persistem audit em `patient_data_access_log` (lint
+ * `cross-tenant-read-must-log` enforça).
+ */
+
+import { db, pool } from '@repo/db/client'
+import {
+  patientCompanyLinks,
+  patientDataAccessLog,
+  patientLinkModules,
+  persons,
+} from '@repo/db/schema'
+import { ApiException } from '@repo/errors'
+import { and, desc, eq, sql } from 'drizzle-orm'
+import { randomUUID } from 'node:crypto'
+import { z } from 'zod'
+import { wrapServerAction } from '../../lib/wrap-action'
+
+// ─── Zod schemas ────────────────────────────────────────────────────────
+
+const DataLevelsSchema = z
+  .object({
+    identidade: z.boolean().default(false),
+    antropometria: z.boolean().default(false),
+    treino: z.boolean().default(false),
+    clinico: z.boolean().default(false),
+  })
+  .strict()
+
+const ModuleEnum = z.enum([
+  'academia',
+  'personal_training',
+  'fisioterapia',
+  'nutricao',
+  'pilates',
+])
+type ModuleKind = z.infer<typeof ModuleEnum>
+
+const ModuleInputSchema = z.object({
+  module: ModuleEnum,
+  responsibleProfessionalUserId: z.string().uuid(),
+  dataLevels: DataLevelsSchema,
+})
+
+const SendInviteSchema = z.object({
+  /** UUID global do passaporte. Frontend resolve via hash(cpf) ou pega de paciente existente. */
+  passportPassportId: z.string().uuid(),
+  /** person_id local do tenant emissor (paciente já cadastrado no tenant) */
+  personId: z.string().uuid(),
+  modules: z.array(ModuleInputSchema).min(1).max(5),
+})
+
+const AcceptInviteSchema = z.object({
+  linkId: z.string().uuid(),
+  /** Subset dos módulos do invite que o paciente aceita. Vazio = aceita todos. */
+  acceptedModules: z.array(ModuleEnum).optional(),
+  /** Override de dataLevels por módulo aceito (granularidade). */
+  dataLevelOverrides: z.record(ModuleEnum, DataLevelsSchema).optional(),
+})
+
+const CancelInviteSchema = z.object({
+  linkId: z.string().uuid(),
+})
+
+const RevokeLinkSchema = z.object({
+  linkId: z.string().uuid(),
+  reason: z.string().min(2).max(500),
+})
+
+const ConfirmSubstitutionSchema = z.object({
+  newLinkId: z.string().uuid(),
+  module: ModuleEnum,
+})
+
+const SetSharingLevelSchema = z.object({
+  linkModuleId: z.string().uuid(),
+  dataLevels: DataLevelsSchema,
+})
+
+const ListInvitesSchema = z
+  .object({
+    status: z.enum(['pending', 'active', 'revoked', 'all']).default('all'),
+    limit: z.number().int().min(1).max(200).default(50),
+  })
+  .optional()
+
+const CrossTenantReadSchema = z.object({
+  passportPassportId: z.string().uuid(),
+  module: ModuleEnum,
+  /** Categoria de dados a ler (identidade/antropometria/treino/clinico). Limites duros (financeiro/prontuario_cfm_bruto/terceiros_mencionados/workspace) sempre bloqueiam. */
+  category: z.enum([
+    'identidade',
+    'antropometria',
+    'treino',
+    'clinico',
+    'financeiro',
+    'prontuario_cfm_bruto',
+    'terceiros_mencionados',
+    'workspace',
+  ]),
+  /** Recurso específico que será lido (audit log) */
+  resourceType: z.string().min(2).max(80),
+  resourceId: z.string().uuid().optional().nullable(),
+})
+
+// ─── sendPatientInvite ──────────────────────────────────────────────────
+
+export const sendPatientInvite = wrapServerAction(
+  {
+    module: 'passport',
+    action: 'invite.send',
+    resourceType: 'patient_company_links',
+  },
+  async (input: z.infer<typeof SendInviteSchema>, { session, setAuditResource }) => {
+    const parsed = SendInviteSchema.parse(input)
+    const tenantId = session.logifit.tenantId
+
+    // Valida person do tenant
+    const personRow = await db
+      .select({ id: persons.id })
+      .from(persons)
+      .where(and(eq(persons.id, parsed.personId), eq(persons.tenantId, tenantId)))
+      .limit(1)
+    if (personRow.length === 0) {
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Person não encontrada no tenant',
+        request_id: '',
+      })
+    }
+
+    // Verifica se já não existe link ativo/pending pra este passport+tenant
+    const existing = await db
+      .select({ id: patientCompanyLinks.id, status: patientCompanyLinks.status })
+      .from(patientCompanyLinks)
+      .where(
+        and(
+          eq(patientCompanyLinks.passportPassportId, parsed.passportPassportId),
+          eq(patientCompanyLinks.tenantId, tenantId),
+          sql`${patientCompanyLinks.revokedAt} IS NULL`,
+        ),
+      )
+      .limit(1)
+    if (existing.length > 0) {
+      throw new ApiException({
+        code: 'CONFLICT',
+        message: `Já existe vínculo ${existing[0]!.status} pra este paciente neste tenant`,
+        request_id: '',
+      })
+    }
+
+    // Cria link + modules em transação
+    const linkId = await db.transaction(async (tx) => {
+      const [linkRow] = await tx
+        .insert(patientCompanyLinks)
+        .values({
+          passportPassportId: parsed.passportPassportId,
+          personId: parsed.personId,
+          tenantId,
+          status: 'pending',
+          creationPath: 'reactive',
+          invitedByUserId: session.user.id,
+          invitedAt: new Date(),
+        })
+        .returning({ id: patientCompanyLinks.id })
+
+      for (const m of parsed.modules) {
+        await tx.insert(patientLinkModules).values({
+          linkId: linkRow!.id,
+          passportPassportId: parsed.passportPassportId,
+          module: m.module,
+          status: 'pending',
+          responsibleProfessionalUserId: m.responsibleProfessionalUserId,
+          dataLevels: m.dataLevels,
+        })
+      }
+
+      return linkRow!.id
+    })
+
+    setAuditResource(linkId, {
+      passport_id: parsed.passportPassportId,
+      modules: parsed.modules.map((m) => m.module),
+    })
+
+    return { ok: true as const, linkId }
+  },
+)
+
+// ─── acceptPatientInvite ───────────────────────────────────────────────
+// Paciente clica em /i/[linkId], faz login/cadastro e aceita.
+// MVP: caller é session do staff em nome do paciente; Sprint 02b roda no
+// member portal session.
+
+export const acceptPatientInvite = wrapServerAction(
+  {
+    module: 'passport',
+    action: 'invite.accept',
+    resourceType: 'patient_company_links',
+  },
+  async (input: z.infer<typeof AcceptInviteSchema>, { session, setAuditResource }) => {
+    const parsed = AcceptInviteSchema.parse(input)
+    const tenantId = session.logifit.tenantId
+
+    // Carrega link + modules pendentes
+    const [link] = await db
+      .select()
+      .from(patientCompanyLinks)
+      .where(
+        and(
+          eq(patientCompanyLinks.id, parsed.linkId),
+          eq(patientCompanyLinks.tenantId, tenantId),
+          eq(patientCompanyLinks.status, 'pending'),
+        ),
+      )
+      .limit(1)
+    if (!link) {
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Invite não encontrado ou já aceito',
+        request_id: '',
+      })
+    }
+
+    const linkModules = await db
+      .select()
+      .from(patientLinkModules)
+      .where(eq(patientLinkModules.linkId, link.id))
+
+    const acceptedSet = new Set<ModuleKind>(
+      parsed.acceptedModules && parsed.acceptedModules.length > 0
+        ? parsed.acceptedModules
+        : linkModules.map((m) => m.module as ModuleKind),
+    )
+
+    // Detecta colisões com módulos ativos em outros tenants (constraint global)
+    const collisions: Array<{ module: string; conflictingLinkModuleId: string }> = []
+    for (const m of linkModules) {
+      if (!acceptedSet.has(m.module as ModuleKind)) continue
+      const [conflict] = await db
+        .select({ id: patientLinkModules.id })
+        .from(patientLinkModules)
+        .where(
+          and(
+            eq(patientLinkModules.passportPassportId, link.passportPassportId),
+            eq(patientLinkModules.module, m.module as ModuleKind),
+            eq(patientLinkModules.status, 'active'),
+            sql`${patientLinkModules.deactivatedAt} IS NULL`,
+          ),
+        )
+        .limit(1)
+      if (conflict && conflict.id !== m.id) {
+        collisions.push({ module: m.module, conflictingLinkModuleId: conflict.id })
+      }
+    }
+
+    if (collisions.length > 0) {
+      throw new ApiException({
+        code: 'CONFLICT',
+        message: `Substituição requerida em ${collisions.length} módulo(s) ativos: ${collisions
+          .map((c) => c.module)
+          .join(', ')}. Chame confirmModuleSubstitution() para cada.`,
+        request_id: '',
+      })
+    }
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(patientCompanyLinks)
+        .set({ status: 'active', acceptedAt: new Date(), updatedAt: new Date() })
+        .where(eq(patientCompanyLinks.id, link.id))
+
+      for (const m of linkModules) {
+        if (!acceptedSet.has(m.module as ModuleKind)) continue
+        const overrides = parsed.dataLevelOverrides?.[m.module as ModuleKind]
+        await tx
+          .update(patientLinkModules)
+          .set({
+            status: 'active',
+            activatedAt: new Date(),
+            dataLevels: overrides ?? m.dataLevels,
+            updatedAt: new Date(),
+          })
+          .where(eq(patientLinkModules.id, m.id))
+      }
+    })
+
+    setAuditResource(link.id, {
+      passport_id: link.passportPassportId,
+      accepted_modules: Array.from(acceptedSet),
+    })
+
+    return {
+      ok: true as const,
+      linkId: link.id,
+      acceptedCount: linkModules.filter((m) => acceptedSet.has(m.module as ModuleKind))
+        .length,
+    }
+  },
+)
+
+// ─── cancelPatientInvite ───────────────────────────────────────────────
+// Staff cancela invite ainda não aceito.
+
+export const cancelPatientInvite = wrapServerAction(
+  {
+    module: 'passport',
+    action: 'invite.cancel',
+    resourceType: 'patient_company_links',
+  },
+  async (input: z.infer<typeof CancelInviteSchema>, { session, setAuditResource }) => {
+    const parsed = CancelInviteSchema.parse(input)
+    const tenantId = session.logifit.tenantId
+
+    const [row] = await db
+      .update(patientCompanyLinks)
+      .set({
+        status: 'revoked',
+        revokedAt: new Date(),
+        revokedReason: 'cancelled_by_staff',
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(patientCompanyLinks.id, parsed.linkId),
+          eq(patientCompanyLinks.tenantId, tenantId),
+          eq(patientCompanyLinks.status, 'pending'),
+        ),
+      )
+      .returning({ id: patientCompanyLinks.id })
+
+    if (!row) {
+      throw new ApiException({
+        code: 'CONFLICT',
+        message: 'Invite não encontrado ou já em status terminal',
+        request_id: '',
+      })
+    }
+
+    setAuditResource(row.id, { reason: 'cancelled_by_staff' })
+    return { ok: true as const }
+  },
+)
+
+// ─── revokePatientLink ────────────────────────────────────────────────
+// Staff revoga vínculo ativo (paciente revoga via /meu/privacidade/actions.ts).
+
+export const revokePatientLink = wrapServerAction(
+  {
+    module: 'passport',
+    action: 'link.revoke',
+    resourceType: 'patient_company_links',
+  },
+  async (input: z.infer<typeof RevokeLinkSchema>, { session, setAuditResource }) => {
+    const parsed = RevokeLinkSchema.parse(input)
+    const tenantId = session.logifit.tenantId
+
+    const [row] = await db
+      .update(patientCompanyLinks)
+      .set({
+        status: 'revoked',
+        revokedAt: new Date(),
+        revokedReason: parsed.reason,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(patientCompanyLinks.id, parsed.linkId),
+          eq(patientCompanyLinks.tenantId, tenantId),
+          eq(patientCompanyLinks.status, 'active'),
+        ),
+      )
+      .returning({ id: patientCompanyLinks.id, passportId: patientCompanyLinks.passportPassportId })
+
+    if (!row) {
+      throw new ApiException({
+        code: 'CONFLICT',
+        message: 'Vínculo não encontrado ou já revogado',
+        request_id: '',
+      })
+    }
+
+    // Desativa todos os módulos do link em cascata
+    await db
+      .update(patientLinkModules)
+      .set({
+        status: 'inactive',
+        deactivatedAt: new Date(),
+        deactivatedReason: 'link_revoked',
+        updatedAt: new Date(),
+      })
+      .where(eq(patientLinkModules.linkId, parsed.linkId))
+
+    setAuditResource(row.id, { reason: parsed.reason })
+    return { ok: true as const }
+  },
+)
+
+// ─── confirmModuleSubstitution ────────────────────────────────────────
+// Paciente confirma que vai trocar de empresa em módulo já ativo em outro tenant.
+// Desativa módulo antigo + ativa novo em transação.
+
+export const confirmModuleSubstitution = wrapServerAction(
+  {
+    module: 'passport',
+    action: 'module.substitute',
+    resourceType: 'patient_link_modules',
+  },
+  async (
+    input: z.infer<typeof ConfirmSubstitutionSchema>,
+    { session, setAuditResource },
+  ) => {
+    const parsed = ConfirmSubstitutionSchema.parse(input)
+    const tenantId = session.logifit.tenantId
+
+    // Resolve novo link + module (escopo tenant)
+    const [newLink] = await db
+      .select()
+      .from(patientCompanyLinks)
+      .where(
+        and(
+          eq(patientCompanyLinks.id, parsed.newLinkId),
+          eq(patientCompanyLinks.tenantId, tenantId),
+        ),
+      )
+      .limit(1)
+    if (!newLink) {
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Novo link não encontrado neste tenant',
+        request_id: '',
+      })
+    }
+
+    const [newModule] = await db
+      .select()
+      .from(patientLinkModules)
+      .where(
+        and(
+          eq(patientLinkModules.linkId, newLink.id),
+          eq(patientLinkModules.module, parsed.module),
+          eq(patientLinkModules.status, 'pending'),
+        ),
+      )
+      .limit(1)
+    if (!newModule) {
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Novo módulo não encontrado em estado pending',
+        request_id: '',
+      })
+    }
+
+    await db.transaction(async (tx) => {
+      // Desativa módulo ativo global (em qualquer tenant)
+      await tx
+        .update(patientLinkModules)
+        .set({
+          status: 'inactive',
+          deactivatedAt: new Date(),
+          deactivatedReason: 'substituted_by_other_tenant',
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(patientLinkModules.passportPassportId, newLink.passportPassportId),
+            eq(patientLinkModules.module, parsed.module),
+            eq(patientLinkModules.status, 'active'),
+            sql`${patientLinkModules.deactivatedAt} IS NULL`,
+          ),
+        )
+
+      // Ativa novo módulo
+      await tx
+        .update(patientLinkModules)
+        .set({
+          status: 'active',
+          activatedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(patientLinkModules.id, newModule.id))
+
+      // Se o newLink ainda está pending (primeira ativação) eleva pra active
+      if (newLink.status === 'pending') {
+        await tx
+          .update(patientCompanyLinks)
+          .set({ status: 'active', acceptedAt: new Date(), updatedAt: new Date() })
+          .where(eq(patientCompanyLinks.id, newLink.id))
+      }
+    })
+
+    setAuditResource(newModule.id, {
+      passport_id: newLink.passportPassportId,
+      substituted_module: parsed.module,
+    })
+
+    return { ok: true as const }
+  },
+)
+
+// ─── setSharingLevel ──────────────────────────────────────────────────
+// Staff ajusta níveis de dados de um módulo (com consent prévio do paciente
+// regra 42; Sprint 02b adiciona consent flow real).
+
+export const setSharingLevel = wrapServerAction(
+  {
+    module: 'passport',
+    action: 'module.set_sharing',
+    resourceType: 'patient_link_modules',
+  },
+  async (
+    input: z.infer<typeof SetSharingLevelSchema>,
+    { session, setAuditResource },
+  ) => {
+    const parsed = SetSharingLevelSchema.parse(input)
+    const tenantId = session.logifit.tenantId
+
+    // Valida módulo do tenant via JOIN
+    const [row] = await db
+      .select({
+        id: patientLinkModules.id,
+        passportId: patientLinkModules.passportPassportId,
+      })
+      .from(patientLinkModules)
+      .innerJoin(
+        patientCompanyLinks,
+        eq(patientCompanyLinks.id, patientLinkModules.linkId),
+      )
+      .where(
+        and(
+          eq(patientLinkModules.id, parsed.linkModuleId),
+          eq(patientCompanyLinks.tenantId, tenantId),
+        ),
+      )
+      .limit(1)
+
+    if (!row) {
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Módulo não encontrado neste tenant',
+        request_id: '',
+      })
+    }
+
+    await db
+      .update(patientLinkModules)
+      .set({ dataLevels: parsed.dataLevels, updatedAt: new Date() })
+      .where(eq(patientLinkModules.id, row.id))
+
+    setAuditResource(row.id, {
+      passport_id: row.passportId,
+      data_levels: parsed.dataLevels,
+    })
+
+    return { ok: true as const }
+  },
+)
+
+// ─── listInvites ──────────────────────────────────────────────────────
+// Lista invites enviados pelo tenant (todos os status).
+
+export const listInvites = wrapServerAction(
+  { module: 'passport', action: 'invite.list' },
+  async (input: unknown, { session }) => {
+    const parsed = ListInvitesSchema.parse(input ?? {}) ?? { status: 'all', limit: 50 }
+    const tenantId = session.logifit.tenantId
+
+    const conditions = [eq(patientCompanyLinks.tenantId, tenantId)]
+    if (parsed.status !== 'all') {
+      conditions.push(eq(patientCompanyLinks.status, parsed.status))
+    }
+
+    const rows = await db
+      .select({
+        id: patientCompanyLinks.id,
+        passportPassportId: patientCompanyLinks.passportPassportId,
+        personId: patientCompanyLinks.personId,
+        personName: persons.name,
+        status: patientCompanyLinks.status,
+        creationPath: patientCompanyLinks.creationPath,
+        invitedAt: patientCompanyLinks.invitedAt,
+        acceptedAt: patientCompanyLinks.acceptedAt,
+        revokedAt: patientCompanyLinks.revokedAt,
+      })
+      .from(patientCompanyLinks)
+      .innerJoin(persons, eq(persons.id, patientCompanyLinks.personId))
+      .where(and(...conditions))
+      .orderBy(desc(patientCompanyLinks.invitedAt))
+      .limit(parsed.limit)
+
+    return { ok: true as const, rows }
+  },
+)
+
+// ─── getCrossTenantSummary ────────────────────────────────────────────
+// Consulta cross-tenant via has_cross_tenant_access() + grava audit log.
+// Retorna `{ allowed: boolean, reason?: string }` — caller leitor de dado
+// roda apenas se allowed=true.
+//
+// **Audit log obrigatório** (regra 42 + lint cross-tenant-read-must-log).
+
+export const getCrossTenantSummary = wrapServerAction(
+  { module: 'passport', action: 'cross_tenant.read_check' },
+  async (input: z.infer<typeof CrossTenantReadSchema>, { session }) => {
+    const parsed = CrossTenantReadSchema.parse(input)
+    const tenantId = session.logifit.tenantId
+    const userId = session.user.id
+
+    // Chama função SQL has_cross_tenant_access
+    const r = await pool.query<{ allowed: boolean }>(
+      `SELECT has_cross_tenant_access($1::uuid, $2::uuid, $3::uuid, $4::passport_module, $5::text) AS allowed`,
+      [userId, tenantId, parsed.passportPassportId, parsed.module, parsed.category],
+    )
+    const allowed = r.rows[0]?.allowed === true
+
+    // Resolve source_tenant_id via primeiro link ativo do passport (fora deste tenant)
+    let sourceTenantId: string | null = null
+    if (allowed) {
+      const [link] = await db
+        .select({ tenantId: patientCompanyLinks.tenantId, personId: patientCompanyLinks.personId })
+        .from(patientCompanyLinks)
+        .where(
+          and(
+            eq(patientCompanyLinks.passportPassportId, parsed.passportPassportId),
+            eq(patientCompanyLinks.status, 'active'),
+            sql`${patientCompanyLinks.revokedAt} IS NULL`,
+            sql`${patientCompanyLinks.tenantId} != ${tenantId}`,
+          ),
+        )
+        .limit(1)
+      sourceTenantId = link?.tenantId ?? null
+
+      // Audit log (regra 42 — append-only via tabela sem UPDATE policy)
+      if (sourceTenantId && link?.personId) {
+        await db.insert(patientDataAccessLog).values({
+          readerUserId: userId,
+          readerTenantId: tenantId,
+          sourceTenantId,
+          patientPersonId: link.personId,
+          passportPassportId: parsed.passportPassportId,
+          moduleType: parsed.module,
+          category: parsed.category,
+          resourceType: parsed.resourceType,
+          resourceId: parsed.resourceId ?? null,
+          requestId: randomUUID(),
+        })
+      }
+    }
+
+    return {
+      ok: true as const,
+      allowed,
+      sourceTenantId,
+      reason: allowed
+        ? null
+        : ['financeiro', 'prontuario_cfm_bruto', 'terceiros_mencionados', 'workspace'].includes(
+              parsed.category,
+            )
+          ? 'hard_limit'
+          : 'no_link_or_module',
+    }
+  },
+)
