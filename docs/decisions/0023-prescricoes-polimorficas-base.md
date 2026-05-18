@@ -176,4 +176,4 @@ Accepted (Sprint 11 Faixa D, 2026-05-13).
 - Regra 33 ([ADR 0071](0071-sistema-tratamento-erros-alertas-tempo-real.md) — `wrapServerAction` aplica envelope)
 - Regra 42 ([ADR 0077](0077-passaporte-paciente-vinculo-cross-tenant.md) — cross-prescrição cross-tenant; motor futuro consome `prescriptions` base)
 - [ADR 0011](0011-member-perfil-unico-cross-module.md) — member como perfil único cross-module
-- [ADR 0070](0070-cache-member-insights-mev-kcal.md) — `calculateKcalPerSession` usa MET dos exercises da prescrição
+- [ADR 0070](0070-insights-cross-module-timeline-integrada.md) — `calculateKcalPerSession` usa MET dos exercises da prescrição

@@ -6,6 +6,787 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — Cleanup docs-check tech debt (24 sprint refs + 20 ADR cross-refs corrigidos) 2026-05-18
+
+**Cleanup operacional pós-Sprint 36a.** `node scripts/docs-check.mjs` agora passa **0 erros / 0 avisos** — antes acumulava 44 warnings de tech debt criado ao longo de 20+ sprints.
+
+**Faixa 1 — 24 sprint files atualizam refs ADR `(esperado)` → links resolvíveis:**
+
+- Sprint 01b → ADR 0019 (rbac-com-grants-diretos-union, Accepted 2026-05-12)
+- Sprint 02 → ADR 0011 (member-perfil-unico-cross-module, Accepted 2026-05-12)
+- Sprint 03 → ADR 0012 (agenda-recurso-slot-recorrente-exclude, Accepted 2026-05-13)
+- Sprint 04 → ADRs 0013/0014 (plano-contrato-cobranca-entidades-separadas + asaas-keys-distributed-vs-centralized, ambos Accepted 2026-05-13)
+- Sprint 05 → ADR 0020 (ofertas-promotions-bundles-credits-referrals, Accepted 2026-05-13)
+- Sprint 07 → ADR 0016 (tokens-equilibrio-vital-light-dark-flat, Accepted 2026-05-13)
+- Sprint 08 → ADRs 0017/0018 (qr-hmac-rotativo-controle-acesso + hardware-catraca-android-default-mvp, ambos Accepted 2026-05-13)
+- Sprint 09 → ADR 0021 (engajamento-regras-declarativas-dsl, Accepted 2026-05-13)
+- Sprint 11 → ADR 0023 (prescricoes-polimorficas-base, Accepted 2026-05-13)
+- Sprint 12 → ADR 0024 (avaliacoes-schema-dinamico-fields-jsonb, Accepted 2026-05-13)
+- Sprint 15 → ADRs 0033/0034 (plano-contas-hierarquico + workflow-aprovacao-ap-declarativo, ambos Accepted 2026-05-14)
+- Sprint 16 → ADR 0036 (rateio-intercompany-dsl-declarativo, Accepted 2026-05-15)
+- Sprint 17 → ADRs 0037/0038 (open-finance-provider + nfe-recepcao-provider, ambos Proposed 2026-05-15)
+- Sprint 18 → ADR 0039 (adquirencia-provider-abstrato, Proposed 2026-05-17)
+- Sprint 20 → ADR 0028 (cid-cif-catalogos-globais, Proposed 2026-05-17)
+- Sprint 22 → ADRs 0029/0030/0031 (tiss-tuss-schema-xml-generator + tuss-update-pipeline + tiss-validador-proativo, todos Proposed 2026-05-17)
+- Sprint 23 → ADR 0086 (modelo-comissao-profissional, Proposed 2026-05-17)
+- Sprint 24 → ADR 0087 (estoque-custo-saldo-model, Proposed 2026-05-17)
+- Sprint 26 → ADR 0088 (portal-member-magic-link-auth, Proposed 2026-05-17)
+- Sprint 27 → ADR 0084 (cross-alert-cid-contraindicacao, Proposed 2026-05-18)
+- Sprint 28 → ADR 0085 (generative-ui-framework, Proposed 2026-05-18)
+- Sprint 29 → ADRs 0080/0081 (banco-alimentos-taco + meal-plans-versionado, ambos Proposed 2026-05-18)
+- Sprint 30 → ADR 0082 (suplementos-separados-de-alimentos, Proposed 2026-05-18)
+- Sprint 31 → ADR 0083 (teleconsulta-provider-abstrato, Proposed 2026-05-18)
+- Sprint 34 → ADRs 0043/0044 (nutri-agent-arquitetura + nutri-agent-politica-mudancas-plano, ambos Proposed 2026-05-18)
+
+Cada entrada migrou do padrão `**ADR XXXX (esperado)** — DESCRIPTION` para um link resolvível `**[ADR XXXX]` apontando para `docs/decisions/XXXX-<slug>.md` + status `(Proposed|Accepted — YYYY-MM-DD)`.
+
+**Faixa 2 — 20 broken ADR-to-ADR cross-references corrigidos (slugs adivinhados quando ADR foi escrito):**
+
+- `0023-prescricoes-polimorficas-versionamento-workouts.md` → `0023-prescricoes-polimorficas-base.md` (4 refs: ADRs 0080/0081/0082/0084)
+- `0028-cid11-cif-catalogo-global.md` → `0028-cid-cif-catalogos-globais.md` (3 refs: ADRs 0082/0083/0084)
+- `0055-cadastro-profissional-registros-conselho.md` → `0055-registros-profissionais-em-conselho.md` (3 refs: ADRs 0029/0031/0086)
+- `0056-nfe-inbox-unificada.md` → `0056-nfe-inbox-unificada-e-metodos-ingestao.md` (1 ref: ADR 0038)
+- `0061-cobertura-fiscal-faseada-grupos-a-g.md` → `0061-motor-retencoes-e-cobertura-fiscal-faseada.md` (1 ref: ADR 0086)
+- `0068-plano-composto-por-servicos-billing-completo.md` → `0068-catalogo-servicos-precos-contextuais-link-financeiro.md` (2 refs: ADR 0013)
+- `0070-cache-member-insights-mev-kcal.md` → `0070-insights-cross-module-timeline-integrada.md` (2 refs: ADRs 0023/0024)
+- `0070-cross-module-insights.md` → `0070-insights-cross-module-timeline-integrada.md` (2 refs: ADRs 0080/0081)
+- `../sprints/35-geral-app-nativo-expo.md` → `../sprints/35-mobile-app-nativo-expo.md` (2 refs: ADRs 0045/0046 escritos no Sprint 35a)
+
+**Validação:** `node scripts/docs-check.mjs` → **0 erros / 0 avisos**. Typecheck 11/11 verde. Sem mudanças de comportamento — apenas hygiene de docs.
+
+### Build — Sprint 36a (Fiscal Focus NFe backbone — provider abstrato + CFOP resolver) 2026-05-18
+
+**Sprint 36a entrega backbone server-side do módulo fiscal** (ADR 0059 Accepted) sem implementar Focus NFe real ainda (Sprint 36b). Foco: schema 5 tabelas + RLS + FiscalProvider abstrato + MockFiscalProvider determinístico + resolveCfop puro 8 tipos × interno/interestadual + Server Actions core wrapped com MFA gate regra 43 + UI inbox + wizard settings esqueleto.
+
+**Sprint 36b/c entrega:** Focus NFe real (`safeFetch` regra 37 + allowlist `focusnfe.com.br`), payload builders por tipo (`emitNfeFromSale`/`emitNfceFromSale`/`emitNfeReturn`/`emitNfeTransfer`/`emitNfeConsertoOut`/`emitNfeConsertoReturn`/`emitNfeSelfEntry`), webhook callback HMAC `POST /api/fiscal/focus-nfe/callback`, wizard onboarding interativo, CRUD catálogo serviços, portal contador `/app/contador` (ADR 0061), aba `/app/fiscal/retencoes` (ADR 0061), integração `invoices.nfse_chave` Sprint 04, integração POS Sprint 24, integração intercompany Sprint 16, integração `equipment_maintenance` Sprint 25, integração `billing_guides` Sprint 22, job mensal `aggregate-fiscal-usage-snapshot` (ADR 0066 overage), feature flag `fiscal_focus_v1`, E2E homologação 8 tipos, lint custom `fiscal-emission-must-have-provider` + `prod-blocks-mock-provider`.
+
+**Faixa A — Schema + RLS (5 tabelas + 4 enums):**
+
+- `packages/db/src/schema/fiscal.ts`:
+  - `fiscal_emissions` (kind 8 tipos via enum: nfse/nfe/nfce/nfe_return/nfe_transfer/nfe_conserto_out/nfe_conserto_return/nfe_self_entry + status workflow draft→queued→processing→completed|rejected|cancelled + provider column ADR 0076 plug-in + source polimórfico (invoice/sale/billing_guide/nfe_return/intercompany/equipment_maintenance/manual) + numeracao serie+numero atomic + chave SEFAZ 44dig unique + provider_ref unique + recipient snapshot (PF/PJ) + payload jsonb audit + xml/pdf storage paths MinIO + rejection_reason + retry_count + cancel_deadline_at 24h + checks completed_consistency/rejected_consistency/cancelled_consistency/positive_numero/positive_serie/retry_nonneg/provider_valid; 6 indexes incluindo retry queue partial + provider_ref partial unique; @volume 3.6M+/ano)
+  - `fiscal_events` (append-only; kind cancellation/cce/inutilizacao + provider_ref unique + payload + xml_storage_path + check `emission_id-XOR-inutilizacao` + check inutilizacao numero_from≤numero_to + check rejected_consistency)
+  - `fiscal_numbering_sequences` (unique por company+kind+serie+environment + nextNumero/lastUsedNumero + atomic UPDATE...RETURNING via reserveNextNumero transação FOR UPDATE + checks positive_serie 1-999 e positive_next 1+)
+  - `fiscal_service_catalog` (LC 116/2003 + alíquota ISS em basis points 0-500bp + CNAE + município IBGE + regime tributário enum simples_nacional/lucro_presumido/lucro_real/mei + retention_rules jsonb pra Sprint 36b consumir ADR 0061 + active flag)
+  - `fiscal_provider_credentials` (PK composta tenant_id+provider + api_token AES-256-GCM cifrado com nonce+tag + webhook_secret também cifrado + base_url override + environment homologacao/producao + last_validated_at + last_validation_status pra UI mostrar "re-validar" se >24h)
+- Enums: `fiscal_emission_kind` (8) + `fiscal_emission_status` (6) + `fiscal_event_kind` (3) + `fiscal_provider_env` (2) + `fiscal_tax_regime` (4).
+- `packages/db/src/policies/0054_fiscal_rls.sql` — RLS por tenant + permissions canônicas (`fiscal.read`/`fiscal.emit`/`fiscal.cancel`/`fiscal.admin`) + portal contador read-only (role `contador_externo` ADR 0061) + role `system` pra webhook callback Sprint 36b + RLS extra fiscal.admin-only em `fiscal_provider_credentials` (token cifrado ainda exige RLS pra defense in depth ADR 0073).
+- Migration `0041_fiscal_focus_nfe.sql` (rename de `0041_strange_paibok.sql` gerado).
+
+**Faixa B.1 — Libs puras `@repo/ai/fiscal` (31 unit tests passando):**
+
+- **`provider.ts`** — `FiscalProvider` interface canônica: 6 métodos (healthCheck + emitNfse + emitNfeProduct + cancel + issueCce + inutilize + queryStatus); 4 tipos de input completos com schemas TS (NfseEmissionInput, NfeProductEmissionInput, CancellationInput, CceInput, InutilizacaoInput) + EmissionResult/EventResult/ProviderHealthResult tipados; suporta enums `FiscalProviderName` (focus_nfe/mock/nfse_nacional/enotas) + `FiscalProviderEnv` (homologacao/producao) + `FiscalEmissionKind` (8 espelha schema).
+- **`mock.ts`** — `MockFiscalProvider` determinístico via SHA-256: gera chave SEFAZ fake 44 dígitos a partir de hash do input (cnpj+serie+numero+document+valor); cobre todos 6 métodos da interface; singleton state-less `mockFiscalProvider`. Bloqueio em produção implementado Sprint 36b.
+- **`cfop-resolver.ts`** — `resolveCfop(input)` puro determinístico: 8 tipos × interno/interestadual; suporta `merchandiseKind` (industrialized/own_production/consumer_use/fixed_asset/service_input); 18 CFOPs canônicos cobertos (5101/5102/5152/5202/5551/5915/5949 saídas; 6101/6102/6152/6202/6551/6915/6949 interestaduais; 1915/1917 entradas; 2915/2917 entradas interestaduais; NFC-e sempre 5102 SEFAZ-imposed; NFS-e retorna sentinel 0000 ISS via município); exhaustive check TS para forçar update quando enum expande; `CANONICAL_CFOPS` catálogo readonly pra UI override.
+- **31 tests cfop-resolver:** nfse sentinel × 2; nfe (interna 5102/interestadual 6102 industrialized + 5101/6101 own_production + 5551/6551 fixed_asset + 5949/6949 service_input genérico + default industrialized); nfce sempre 5102 mesmo se UF dest diferir; nfe_return 5202/6202; nfe_transfer 5152/6152; nfe_conserto_out 5915/6915; nfe_conserto_return 1915/2915 entrada; nfe_self_entry 1917/2917 entrada; determinismo 10x; CANONICAL_CFOPS catálogo 18 entries 4-dígitos numérico saídas 5/6 entradas 1/2; coverage 6 pares interno/interestadual.
+
+**Faixa B.2 — Server Actions wrapped (7 com gate MFA):**
+
+- `listEmissions({companyId?, kind?, status?, limit})` — filtros + ORDER BY created_at desc; inbox `/app/fiscal`.
+- `getEmission(emissionId)` — emissão + eventos relacionados ordenados desc.
+- `emitNfseFromInvoice({invoiceId, serviceCatalogId?})` — valida invoice status='paid' + reserveNextNumero transação FOR UPDATE em `fiscal_numbering_sequences` (cria sequence com nextNumero=1 se não existe; senão SELECT FOR UPDATE + UPDATE +1 atomic) + lookup recipient via persons JOIN members + chama `provider.emitNfse()` (mock síncrono retorna chave 44 dígitos) + INSERT emission com payload jsonb completo + cancelDeadlineAt 24h + audit_log via setAuditResource (Sprint 36b: enriquece com companies.cnpj + companies.municipality_code + fiscal_service_catalog.lc116Code real).
+- **`cancelEmission({emissionId, justification})` — MFA gate `cancelNfe` (regra 43, já em HIGH_RISK_ACTIONS)** — valida status='completed' + cancelDeadlineAt não expirado + provider_ref existente; transação insere `fiscal_events` cancellation + UPDATE emission status='cancelled' atomic.
+- **`issueCce({emissionId, correction})` — MFA gate `issueCce` (ADICIONADO HIGH_RISK_ACTIONS Sprint 36a)** — só NF-e modelo 55 (nfe/nfe_return/nfe_transfer; NFS-e e NFC-e não têm CC-e); conta CC-e prévias pra calcular nextSequence (max 30 por chave); insere event kind='cce' com sequence em payload.
+- **`inutilizeRange({companyId, emissionKind, serie, numeroFrom, numeroTo, justification, year})` — MFA gate `inutilizeRange` (ADICIONADO HIGH_RISK_ACTIONS Sprint 36a)** — valida numeroFrom≤numeroTo; insere event kind='inutilizacao' sem emission_id (check schema valida exclusão mutual com cancellation/cce).
+- `queryEmissionStatus(emissionId)` — re-consulta provider via providerRef; atualiza status local se provider retornar mudança (queued → completed/rejected).
+- `retryEmission(emissionId)` — só em rejected com retry_count < 3; incrementa retry_count + zera rejection_reason + marca queued (Sprint 36b reconstroi payload + reenvia).
+- **HIGH_RISK_ACTIONS expandido** (`packages/security/src/high-risk-actions.ts`): adicionados `issueCce` e `inutilizeRange` na categoria 'fiscal' com `requireMfaMaxAgeMins: 15`.
+- **MVP `getProviderForTenant()`** retorna sempre `mockFiscalProvider` com comentário `// why:` documentando que Sprint 36b implementa factory que decifra `fiscal_provider_credentials.api_token_encrypted` (AES-256-GCM via KEK por tenant).
+
+**Faixa C — UI (2 rotas backbone):**
+
+- `/app/fiscal` — Inbox com 4 KPIs (autorizadas/pendentes/rejeitadas/total autorizado em BRL) + filtros GET (kind + status) + tabela 100 últimas emissões com badge colorido por status (draft cinza, queued/processing azul, completed verde, rejected vermelho com rejection_reason truncado + retry_count, cancelled amarelo) + link "Detalhe" por linha + footer documentando Sprint 36b pendente. KIND_LABEL completo (NFS-e/NF-e/NFC-e/Devolução/Transferência/Conserto/Entrada própria) + STATUS_STYLE com `var(--ev-*)` tokens regra 44.
+- `/app/settings/fiscal` — Wizard esqueleto com 4 Steps marcados como done/pending: (1) Credentials Focus NFe — mostra provider + environment + last_validated_at; (2) Catálogo de serviços — conta ativos; (3) Séries e numeração — lista existentes por (kind, serie, environment); (4) Teste de emissão homologação — placeholder Sprint 36b. Cada step com check verde ou número cinza + borderLeft 4px + badge "Configurado". Banner warning explicitando Sprint 36a backbone + MockFiscalProvider em uso.
+
+**Pendências Sprint 36b/c (3-4 semanas):**
+
+- `FocusNfeProvider` real em `packages/ai/src/fiscal/focus-nfe.ts` com `safeFetch()` regra 37 + allowlist `focusnfe.com.br` + `homologacao.focusnfe.com.br` + rate limit respeitando Focus HTTP 429 → `RATE_LIMITED`
+- 7 payload builders restantes (`nfse-payload.ts` ABRASF/GINFES/IPM/Nota Carioca, `nfe-product-payload.ts` modelo 55, `nfce-payload.ts` modelo 65 com CSC por UF, `nfe-return-payload.ts` finNFe=4, `nfe-transfer-payload.ts`, `nfe-conserto-payload.ts` out/return, `nfe-self-entry-payload.ts`)
+- `resolveFiscalProvider(tenantId)` factory que carrega credentials + decifra AES-256-GCM via KEK + instancia adapter + bloqueia 'mock' em produção
+- `cbos-cnae-resolver.ts` (serviço → código ABRASF + CNAE)
+- Webhook callback `POST /api/fiscal/focus-nfe/callback` com HMAC verification + idempotência + validação IP source Focus NFe (allowlist documentada) + UPDATE emission status/chave/xml/pdf_storage_path + emite domain events `fiscal.emission.completed`/`.rejected`/`.cancelled`
+- Wizard `/app/settings/fiscal` interativo (4 Steps com forms) + cifra credentials AES-256-GCM + validação Focus health check + teste de emissão homologação
+- CRUD `/app/settings/fiscal/catalogo` (LC 116/2003 + alíquota ISS por município + retention_rules jsonb)
+- `/app/fiscal/[id]` detalhe + ações inline (download PDF/XML URL assinada TTL 10min + cancelar com confirm + CC-e com form correction + retry com confirm)
+- Botões emissão contextualizados (`[+ Emitir NFS-e]` em `/app/financeiro/invoices/[id]` se status=paid; `[+ NF-e produto]` em `/app/financeiro/vendas/[id]`; `[+ NFC-e]` automático no POS Sprint 24)
+- Integração `invoices.nfse_chave` + evento `invoice.nfse_emitted` Sprint 04
+- Integração `billing_guides` Sprint 22 (toggle por tenant pra emissão NFS-e automática em guia paga)
+- Integração `nfe_returns.emission_mode='focus_nfe'` Sprint 17 fecha ciclo ADR 0058
+- Integração `equipment_maintenance` Sprint 25 (botão "Emitir NF-e remessa"/"retorno" no fluxo manutenção externa)
+- Integração intercompany Sprint 16 (botão "Emitir NF-e transferência" quando cruza CNPJs distintos)
+- POS Sprint 24 emite NFC-e automaticamente
+- `/app/contador` portal contador externo (ADR 0061) — dashboard + xmls download massa + AP/AR CSV/OFX + retenções + DRE read-only + KPIs agregados + fiscal-emissions list + certificados read-only + convidar via magic link
+- `/app/fiscal/retencoes` relatório mensal por tributo (IRRF/PIS/COFINS/CSLL/INSS/ISS) com export PDF (contador gera DARF) + CSV + campo guide_reference
+- Job mensal `aggregate-fiscal-usage-snapshot` agrega `count(*) WHERE status='completed' AND kind IN (...)` em `tenant_usage_snapshots.fiscal_emissions_count` (ADR 0066; eventos NÃO contam)
+- Cron `validate-fiscal-credentials` semanal chama healthCheck + atualiza last_validated_at + dispara system_alert se >7d sem validação
+- Gap detection cron diário compara `next_numero - 1` vs `max(numero) WHERE status='completed'` → system_alert critical + sugestão inutilização
+- Permissions `fiscal.read`/`fiscal.emit`/`fiscal.cancel`/`fiscal.admin` + `retencoes.read` em RBAC
+- Pesquisa global `search_index` regra 30 indexa `fiscal_emissions` com kind='fiscal_emission' + label "NFS-e 1234"/"NF-e 5678" + required_permission='fiscal.read'
+- Feature flag `fiscal_focus_v1` + dashboard card "Emissões com erro" no Sprint 07 cross-alert
+- Lint custom `fiscal-emission-must-have-provider` (provider column NOT NULL DEFAULT 'focus_nfe' já garante schema; lint reforça check) + `prod-blocks-mock-provider` (env=production → throw em MockFiscalProvider)
+- E2E Playwright com Focus NFe sandbox: emitir 5 NFS-e + 3 NF-e + 2 NFC-e + 1 devolução + cancelar + CC-e + inutilizar; seed homologação
+- Negociação comercial Focus NFe (`docs/contratos/focus-nfe.md` — target R$ 0,12/nota acima de 10k/mês; SLA escrito; sandbox enterprise)
+
+### Build — Sprint 35a (App Nativo Expo backbone + ADRs 0045+0046 Proposed) 2026-05-18
+
+**Sprint 35a entrega backbone server-side do app nativo** sem materializar projeto cliente (Sprint 35b/c). Foco: schema versionamento + push tokens + mobile sessions distintas das web, Server Actions, API Routes, ADRs 0045 (stack) + 0046 (release strategy). Sprint cliente Expo + APNs/FCM dispatcher + Apple Health / Health Connect ficam para 35b/c.
+
+**Faixa A — Schemas + RLS (3 tabelas + 2 enums):**
+
+- `packages/db/src/schema/mobile.ts`:
+  - `mobile_app_versions` — registry global de versões publicadas (sem tenant_id; read-all). Campos: `platform` (mobile_platform enum ios/android) + `version` semver + `build_number` (CFBundleVersion/versionCode) + `store_url` + `release_notes` + `min_required` bool (força update) + `published_at` + `sunset`+`sunset_at` (versão fora de suporte). Unique `(platform, version)`. Index parcial `min_required=true` pra lookup quente.
+  - `mobile_push_tokens` — APNs (iOS) / FCM (Android) tokens por (member, device). Campos: `tenant_id` + `member_id` FK + `platform` + `token` + `device_id` opaco + `device_model` + `os_version` + `app_version` + `locale` + `revoked_at` soft-revoke + `revoked_reason` (user_logout/token_invalid/device_removed/replaced_by_new_registration) + `last_used_at` + `registered_at`. **Unique active** `(member_id, device_id, platform) WHERE revoked_at IS NULL` força re-register substituir. Index parcial `member_active` pra dispatcher (Sprint 35b) pega ativos.
+  - `mobile_sessions` — sessões nativas distintas das web (`member_sessions` Sprint 26). Refresh **90d** vs **30d** web pra UX mobile. Campos: `tenant_id` + `member_id` + `platform` + `refresh_token_hash` SHA-256 + `expires_at` + `device_fingerprint` (deviceId+osVersion+model hash) + `device_label` (UI "dispositivos conectados") + `app_version` + `created_ip`/`last_seen_ip` + `last_seen_at` + status enum (`active`/`revoked`/`expired`) + `revoked_at`/`revoked_reason`. Unique `refresh_token_hash`. Index parcial `member_active`. Check `revoked_consistency` (status=revoked → revoked_at NOT NULL).
+  - Enums: `mobile_platform` (ios/android) + `mobile_session_status` (active/revoked/expired).
+- `packages/db/src/policies/0053_mobile_rls.sql`:
+  - `mobile_app_versions` SELECT global (USING true) — app verifica versão em boot sem auth; curadoria via platform_admin Sprint 35c.
+  - `mobile_push_tokens` + `mobile_sessions` policies tenant + member portal (tenant_id OR member_id) replicam padrão Sprint 26.
+- Migration `0040_mobile_app_backbone.sql` (gerada Drizzle Kit).
+
+**Faixa B — Server Actions (`apps/web/app/meu/mobile/actions.ts`):**
+
+- `registerPushToken({platform, token, deviceId, deviceModel, osVersion, appVersion, locale})` — usa `requireMemberSession` + `withMemberContext`; revoga tokens anteriores do mesmo (member, device, platform) com reason='replaced_by_new_registration'; INSERT novo registro retorna `tokenId`.
+- `listMyPushTokens()` — lista 20 últimos tokens do member (ativos + revogados) com platform/device_model/os_version/app_version/registered_at/last_used_at/revoked_at. Member portal pra "dispositivos conectados".
+- `revokeMyPushToken({tokenId, reason})` — soft-revoke + reason (default 'user_logout'). 404 se não encontrado ou já revogado.
+- `checkAppVersion({platform, currentVersion})` — **pública sem auth** (endpoint pré-login). Busca top 50 versões not-sunset desc + identifica `latest` (top 1) e `minVersion` (mais recente com min_required=true). `compareSemver` puro 3-part. Retorna `{ok, minRequired, updateRequired, latestVersion, updateAvailable, storeUrl, releaseNotes}`. App em boot decide: bloqueante se `updateRequired` ou banner se `updateAvailable`.
+
+**Faixa C — API Routes (2 públicas pro app consumir):**
+
+- `apps/web/app/api/mobile/auth/register-push/route.ts` (POST) — wrap Server Action `registerPushToken` (MVP usa cookie member; Sprint 35b substitui por Bearer JWT + lookup `mobile_sessions.refresh_token_hash`). JSON inválido → 400 VALIDATION_ERROR. `runtime='nodejs'` + `dynamic='force-dynamic'`.
+- `apps/web/app/api/mobile/auth/check-version/route.ts` (POST) — público; rate-limited regra 36 (Sprint 35b adiciona Redis sliding window por IP). JSON inválido → 400. Erro = envelope `{ok:false, error:{code, message}}`.
+
+**ADRs publicados (Proposed):**
+
+- **ADR 0045** `docs/decisions/0045-stack-mobile-expo-managed-react-native.md`:
+  - Decisão: **Expo managed + React Native + TypeScript + Expo Router v3 file-based**
+  - 5 sub-decisões: (1) RN > Flutter (TS uniformidade + reuso Zod tipos + ecosystem saúde maduro); (2) managed > bare (sem manutenção ios/+android/ + EAS Build cloud sem Mac local + config plugins + OTA via EAS Update + prebuild é "saída"); (3) TS strict regra 16; (4) APIs nativas via config plugin (expo-notifications + react-native-health + react-native-health-connect + react-native-ble-plx + expo-secure-store refresh token + expo-background-fetch + expo-camera + expo-barcode-scanner); (5) Expo Router file-based (mesma mental model Next.js App Router + deep links automáticos + TypeScript routes)
+  - Estrutura proposta `apps/mobile/app/` com `(auth)/` + `(member)/` Stack/Tabs
+  - Arquitetura: REST `/api/mobile/*` + header `Authorization: Bearer` (cookie web não compartilhado) + reuso `@repo/types` Zod + TanStack Query
+  - 6 alternativas rejeitadas (Flutter, bare-day1, RN CLI puro, Capacitor/Ionic/PWA-only, Native Swift+Kotlin separados, New Architecture desligada)
+- **ADR 0046** `docs/decisions/0046-release-strategy-app-stores-ota.md`:
+  - Decisão: **App Store + Google Play oficiais + OTA via EAS Update + force update via min_required + access 1h+refresh 90d single-use + push direto APNs/FCM (sem Expo Push Service, regra 46)**
+  - 7 sub-decisões: (1) distribuição canais oficiais (TestFlight/sideload rejeitados); (2) OTA via EAS Update branch policy (production/staging/preview-{pr}) **JS-only** — native module bump runtimeVersion força build novo; cumpre Apple §3.3.2 + Play policy; (3) force update via `mobile_app_versions.min_required` + curadoria política versão atual−6 meses OU 3 majors atrás; (4) tokens **access 1h memória RAM** + **refresh 90d expo-secure-store** + rotação single-use no refresh + family chain detection Sprint 35b; (5) push **direto APNs HTTP/2 + FCM HTTP v1** (sem `exp.host`) — soberania regra 46; tabela `push_dispatches` (Sprint 35b) audita cada envio + soft-revoke automático em BadDeviceToken/UNREGISTERED; (6) CI/CD GitHub Actions orchestration → EAS Build cloud (30 builds/mês free tier) + EAS Submit App Store Connect API + Play Developer API; (7) onboarding 2 paths reativo (invite WhatsApp/SMS deep link `logifit://invite`) + proativo (paciente baixa direto + magic link)
+  - 7 alternativas rejeitadas (sideload Android+TestFlight perpétuo, Microsoft CodePush sunset 2026, OTA full bundle viola Apple, Expo Push Service, single token vida longa, cookie web compartilhado, self-host EAS Build macOS CLUF)
+
+**Pendências Sprint 35b/c:**
+
+- Scaffold `apps/mobile/` Expo SDK 52 + Expo Router v3 + Hermes + New Architecture default
+- UI rotas `(auth)/login` + `(auth)/verify` + `(member)/{index,treino,checkin,agenda,perfil}`
+- `lib/api.ts` fetch wrapper Authorization Bearer + retry + refresh silencioso
+- `lib/session.ts` expo-secure-store hooks (refresh persiste Keychain iOS / Keystore Android)
+- Magic link mobile: `POST /api/mobile/auth/magic-link` + `POST /api/mobile/auth/verify` (SMS+email)
+- Rota `POST /api/mobile/auth/refresh` single-use rotation + family chain detection (revoga toda family se refresh revogado reapresentado)
+- Push dispatcher `packages/notifications/` (APNs HTTP/2 JWT p8 signing + FCM HTTP v1 service account) + tabela `push_dispatches` audit + retry exponencial + dead-letter + soft-revoke automático token inválido
+- Apple Health via `react-native-health` config plugin + Health Connect via `react-native-health-connect` + background-fetch sync diário → POST `/api/mobile/health/sync` ingere em `device_readings` (expande Device Hub Sprint 32)
+- BLE bioimpedância `react-native-ble-plx` config plugin
+- UI super-admin `/admin/mobile/versions` pra curadoria `mobile_app_versions` (publish + min_required + sunset)
+- Universal links + Apple Smart App Banner + Play Integrity API anti-fraude
+- RIPD app-mobile + DPO sign-off + feature flag `mobile_app_v1`
+- E2E Maestro ou Detox
+- EAS Submit App Store Connect API + Play Console staged rollout 5%→20%→50%→100% 7 dias + Apple Phased Release
+- Rate limit Redis Sliding Window por IP em `/api/mobile/auth/check-version` (regra 36)
+
+### Build — Sprint 34 100% (Nutri-Agent IA cross-module + ADRs 0043+0044 Proposed) 2026-05-18
+
+**Sprint 34 estende Fase 3.** Entrega 100% do core: 3 schemas + RLS + 8 RLS tests + 3 libs puras + 18 unit tests + 5 Server Actions + 1 rota UI + ADR 0043 (arquitetura Nutri-Agent especializado) + ADR 0044 (política NUNCA mudança automática). Sprint expande stub Sprint 34 com implementação core do agente cross-module.
+
+**Faixa A — Schemas + RLS (8 RLS tests):**
+
+- `packages/db/src/schema/nutri-agent.ts` — 3 tabelas:
+  - `nutri_agent_runs` (execução do agente; trigger enum: manual_professional/pre_consult_auto/weekly_adherence/risk_event_triggered; status workflow queued→collecting→analyzing→completed|failed|blocked; check completed_consistency; @volume 720k+/ano)
+  - `nutri_agent_suggestions` (5 kinds: plan_adjustment/alert/risk_pattern/pre_consult_summary/follow_up_exam; 3 severities; classifier guard reuse Sprint 33; expires_at 14d default; check confidence_range + reviewed_consistency; applied_meal_plan_id FK Sprint 29 quando aceito + aplicado)
+  - `nutri_agent_metrics_snapshot` (snapshot data jsonb completo do member context + data_hash SHA-256 pra audit reprodutibilidade; APPEND-ONLY)
+- `packages/db/src/policies/0052_nutri_agent_rls.sql` — staff scope + member portal vê suggestions accepted próprias
+- Migration `0039_nutri_agent.sql`
+- `packages/db/tests/nutri-agent-rls.test.ts` — 8 RLS + check tests
+
+**Faixa B.1 — Libs puras `@repo/ai/nutri-agent` (18 unit tests):**
+
+- **`types.ts`** — `MemberContextSnapshot` (memberId + capturedAt + demographics + mealPlan + diaryLast14d + workoutLoad + fisioActiveCids + labResultsRecent + deviceSummary + consentsUsed[]); `DetectedRiskPattern` (code+label+description+severity+confidence+evidence); `AgentSuggestion` (5 kinds + 3 severities + proposedChanges nullable)
+- **`pattern-detector.ts`** — `detectRiskPatterns(snapshot)` roda **7 detectores curados deterministic**:
+  - `deficit_calorico_extremo` (avg consumo 7d < 70% target; critical se < 50%)
+  - `aderencia_baixa` (avg adherence < 50%; attention se < 30%)
+  - `overtraining_sugestivo` (HR repouso > 75 bpm + sono < 360 min)
+  - `risco_cardiovascular_lipidico` (LDL alto + HDL baixo)
+  - `risco_glicemico` (glicose/HbA1c elevados)
+  - `perda_peso_rapida` (trend > -6 kg/mês)
+  - `fisio_workout_tensao` (CIDs ativos + 5+ sessões/semana)
+  - Ordena por severity critical→attention→info
+- **`suggestion-generator.ts`** — `generateSuggestionsFromPatterns` mapeia pattern→kind canônico + computa `proposedChanges` conservador (deficit_extremo → targetKcalDelta sobe pra avg×1.1; perda_rapida → +200 kcal; outros → null); `generatePreConsultSummary` gera resumo executivo determinístico
+- **18 tests**: 14 pattern-detector (deficit critical/attention/ignora<70%/sem plano; aderência baixa+ignora<4d; overtraining HR+sleep/sóHR/semdevice; cardio LDL+HDL/sóLDL; perda rápida; ordering severity) + 4 suggestion-generator (mapeia kinds + proposedChanges + alert sem changes + preconsult sintético/vazio)
+
+**Faixa B.2 — Server Actions (5 wrapped):**
+
+- `runNutriAgentForMember` — **gate Comitê IA** (regra 13/28: ai_committees.status='active' obrigatório, senão cria run blocked + throw FORBIDDEN); transação completa:
+  1. Cria run status='collecting'
+  2. `collectMemberContext` (8 queries cross-module: persons + meal_plans + food_log_daily_summary 14d + lab_results 90d + consultas+cids fisio + device_readings_daily_summary 7d + prescriptions workout)
+  3. Persiste metrics_snapshot com data_hash SHA-256
+  4. `detectRiskPatterns` + `generateSuggestionsFromPatterns` + `generatePreConsultSummary`
+  5. `classifyInterpretationFields` (Sprint 33 reuse) — bloqueia se detectar termo proibido
+  6. Persiste suggestions com expires_at 14d
+  7. Marca run completed + summary jsonb
+- `listSuggestions({status?, severity?, memberId?, limit})` — ordena severity critical→attention→info → expires_at + JOIN persons
+- `acceptSuggestion({suggestionId, applyChanges?})` — status='accepted' + audit reviewed_by/reviewed_at (Sprint 34b integra updateMealPlan se applyChanges=true)
+- `rejectSuggestion({suggestionId, reason})` — status='rejected' + rejection_reason
+- `getPreConsultSummary({memberId})` — busca kind='pre_consult_summary' mais recente
+
+**Faixa C — UI (1 rota):**
+
+- `/app/nutri-agent` dashboard pendentes com 5 KPIs (pending / critical / accepted 30d / runs 30d / blocked Comitê IA 30d) + filtros por severity + lista ordenada severity+expires_at com card colorido por borda lateral (critical vermelho, attention amarelo, info cinza), kind label com emoji (🍽 plan_adjustment / ⚠ alert / 🩺 risk_pattern / 📋 pre_consult / 🧪 follow_up_exam), confidence%, expires_at, link pra `/app/members/[id]/nutri-summary` (Sprint 34b)
+
+**ADRs publicados (Proposed):**
+
+- **ADR 0043** `docs/decisions/0043-nutri-agent-arquitetura.md`:
+  - Decisão: **agent dedicado especializado** > persona Copilot universal (audit/reprodutibilidade/cross-module deterministic/vocabulário fixo/gate Comitê IA/SaMD separation)
+  - **Stateless** entre runs (snapshot por execução com data_hash pra reprodutibilidade + cache Sprint 34b)
+  - 3 gatilhos: manual_professional + pre_consult_auto + weekly_adherence + risk_event_triggered (cron Sprint 34b)
+  - **Catálogo curado** > IA generativa (7 detectores curados; IA Gemini Flash add-on Sprint 34b sempre via classifier)
+  - Workflow visual documentado completo
+  - 5 alternativas rejeitadas
+- **ADR 0044** `docs/decisions/0044-nutri-agent-politica-mudancas-plano.md`:
+  - Decisão: **NUNCA mudança automática. SEMPRE proposta com revisão profissional.** Workflow Server Action `runNutriAgentForMember` só insere em `nutri_agent_*` — nunca escreve em meal_plans/prescriptions
+  - 5 razões inegociáveis: CFN 599/2018 responsabilidade + regra 28 CFM 2.454/2026 supervisão humana + LGPD art. 20 revisão humana + ANVISA SaMD Classe II (evita escalar pra III) + risco real erro detector
+  - Workflow visual: Pattern Detector → Suggestion Generator → Classifier Guard → suggestions pending → Profissional revisa → accept(applyChanges=true → Sprint 34b updateMealPlan) | accept(false) | reject
+  - Excedido: agent pode gerar pre_consult_summary descritivo + system_alerts notificação (sem ação clínica)
+  - Mecanismos de enforcement: schema default status='pending' + RLS + audit + lint custom Sprint 34b `no-nutri-agent-direct-write`
+  - 6 alternativas rejeitadas (auto-apply info-level, ±10%, pre-approval tipos, confidence > 0.95, Enterprise opt-in, etc)
+
+**Pendências Sprint 34b/c:**
+
+- IA generativa real via `resolveModelForTask('reasoning')` Vertex AI Gemini Pro (gate Comitê IA + classifier guard + cost tracking em run.cost_cents)
+- Cron jobs `pre_consult_auto` (24h antes appointment kind='nutri') + `weekly_adherence` (domingo 06:00 SP) + consumer domain_events `risk_event_triggered`
+- `acceptSuggestion(applyChanges=true)` integração Sprint 29 `updateMealPlan` (cria new version + linka applied_meal_plan_id transacional)
+- Otimização `collectMemberContext` via single CTE query (8x → 1x)
+- WorkoutLoad real via `workout_sessions` + cálculo MET Sprint 11
+- Consents reais em `consentsUsed[]` LGPD audit
+- Cache via data_hash (mesmo input → reusa suggestions sem chamar IA)
+- Notificação ANVISA SaMD Classe II antes do prod (regra 28 + ADR 0053)
+- RIPD `v1.0-nutri-agent-ia.md` + DPO sign-off (regra 29 + ADR 0054)
+- Feature flag `nutri_agent_v1`
+- Lint custom `no-nutri-agent-direct-write` enforça ADR 0044
+- UI completa: accept/reject inline + diff visual proposedChanges + retroactive run history
+- `/app/members/[id]/nutri-summary` página dedicada por member
+- Notificação push ao nutri quando suggestion `critical` (Sprint 13 régua)
+- Rejection feedback feeds training Sprint 34c
+- Métricas dashboard: tempo até aceitar + taxa de accept vs reject
+- Integração como tool no Copilot universal Sprint 06 (`tools_registry`)
+- E2E Playwright (manual trigger + suggestion gerada + accept → meal_plan v+1 criado; reject → rejection_reason gravada)
+
+**Verificação:** Migration aplicada via `pnpm db:migrate`. Stub determinístico (pattern detector curado) funciona sem dependência IA externa. UI exige stack rodando — não validado visualmente.
+
+**Stats:** **18 unit tests nutri-agent verdes** (14 pattern-detector + 4 suggestion-generator). Typecheck verde em 11/11 packages.
+
+### Build — Sprint 33 100% (Pipeline Exames Laboratoriais + ADR 0050 Accepted) 2026-05-18
+
+**Sprint 33 estende Fase 3.** Entrega 100% do core: 6 schemas + RLS + 11 RLS tests + 3 libs puras (classifier anti-diagnóstico + extraction Zod schema + interpretation comparator/pattern detector) + 36 unit tests + 8 Server Actions staff + 2 SAs portal paciente + 4 rotas UI. ADR 0050 já estava Accepted desde 2026-04-23.
+
+**Faixa A — Schemas + RLS (11 RLS tests):**
+
+- `packages/db/src/schema/exames.ts` — 6 tabelas:
+  - `exam_documents` (status workflow uploaded→processing→pending_review→published; sources enum professional_upload/patient_portal/patient_whatsapp/lab_integration_future + source_ref pra rastreabilidade WhatsApp Sprint 13 ADR 0051; sensitivity normal/high; particionamento ANUAL Sprint 33b @volume 2M+/ano; retenção 20a Lei 13.787; checks uploader_consistency + review_consistency)
+  - `exam_extractions` (1:1 com doc; raw_text OCR + structured_data jsonb Zod-validated + ocr_provider + ocr_confidence + cache_hit; check confidence 0-1)
+  - `exam_interpretations_draft` (out_of_range + patterns + hypotheses + follow_up_suggestions; blocked_by_classifier flag + classifier_blocked_terms jsonb pra audit)
+  - `exam_interpretations_final` (revisão profissional; accepted_patterns + accepted_hypotheses + rejected_hypotheses + observations + member portal lê via RLS próprio)
+  - `exam_review_edits` (audit append-only — sem UPDATE/DELETE policy; field_key + before_value + after_value)
+  - `tenant_exam_ai_settings` (opt-out por tenant: ai_extraction_enabled + ai_interpretation_enabled + classifier_strictness strict/moderate)
+- `packages/db/src/policies/0051_exames_rls.sql` — RLS member portal + staff scope + append-only em exam_review_edits + member vê interpretations_final próprias
+- Migration `0038_exames_pipeline.sql` (4 enums + 6 tabelas + indexes pra fila pending_review + sensitivity lookup audit)
+- `packages/db/tests/exames-rls.test.ts` — 11 RLS + check tests
+
+**Faixa B.1 — Libs puras `@repo/ai/exames` (36 unit tests):**
+
+- **`classifier.ts`** — `classifyInterpretationOutput(text, strictness)` regex-based contra patterns proibidos: "diagnóstico de X" / "paciente tem [doença]" / "você tem X" / "prescrever Y" / "tome Nmg" / "iniciar tratamento" / "definitivamente" / "garante que" etc. Strict bloqueia tudo; moderate só patterns flagrantes. `classifyInterpretationFields(string[])` para validar JSON completo. `getBlockedMessage()` retorna texto amigável pro profissional. **19 tests**.
+- **`extraction-schema.ts`** — Zod strict schema do JSON IA: `ExamExtractionSchema` (examType + laboratory + collectedAt + analytes[]) + `ExamAnalyteSchema` (code + label + value + unit + referenceHint + labAnalyteIdMatch + matchConfidence). `parseExtractionJson` lança ZodError; `safeParseExtractionJson` retorna discriminated.
+- **`interpretation.ts`**:
+  - `compareWithRanges(analytes, ranges, ctx)` reusa scoring de Sprint 30 (condition/sex/age priority) — retorna `OutOfRangeItem[]` com direction + severity mild/severe
+  - `detectPatterns(outOfRange)` cruza com `PATTERN_CATALOG` curado (7 padrões: perfil_aterogenico, padrao_anemico_ferropriva, resistencia_insulina_inicial, disfuncao_hepatica, hipotireoidismo_sugestivo, deficiencia_vitamina_d, deficiencia_b12); required todos batem + optional aumenta confidence
+  - `getFollowUpSuggestions(patterns)` retorna lista deduplicada baseada em catálogo curado por pattern
+  - **17 tests**
+
+**Faixa B.2 — Server Actions (8 staff + 2 member portal):**
+
+`apps/web/app/app/exames/actions.ts` (staff):
+- `uploadExamDocument` (valida member + tenant + grava exam_documents status='uploaded' + setAuditResource)
+- `processExam` (orquestra pipeline: stub OCR → parseExtractionJson Zod → resolve member age/sex via persons + carrega reference_ranges → compareWithRanges + detectPatterns + getFollowUpSuggestions → classifyInterpretationFields gate → grava extraction + draft + atualiza doc status='pending_review' + exam_type_detected + laboratory + collected_at)
+- `submitExamReview` (transação atômica: cria exam_interpretations_final + exam_review_edits por analito editado + lab_results Sprint 30 por analito não-ignorado + status='published')
+- `listPendingExams` (fila staff com paciente name + filtros sensitivity)
+- `getExamDetail` (doc + extraction + draft completo)
+- `markSensitive` + `rejectExam` (com reason audit)
+
+`apps/web/app/meu/exames/actions.ts` (portal):
+- `selfUploadExam` (source='patient_portal' + uploaded_by_member_id + status='uploaded'; Sprint 33b conecta scanUpload + job de processamento)
+- `listMyExams`
+
+**Faixa C — UI (4 rotas):**
+
+Staff:
+- `/app/exames/fila` lista pending_review ORDER BY uploaded_at ASC + paciente + tipo + lab + origem badge ícone + sensitivity flag + status IA (✓ Pronto / ⚠ IA bloqueou) + idade entry
+- `/app/exames/[id]` detalhe completo: header com tipo/lab/source/processed_at + tabela analitos com flag ⬆/⬇ severity mild/severe + alert IA bloqueada se houver + padrões detectados com confidence% + sugestões de follow-up. UI table editor + submit review fica Sprint 33b
+
+Portal paciente:
+- `/meu/exames` lista próprios exames com status amigável (Recebido / Em análise / Aguardando profissional / ✓ Analisado / Não pôde analisar)
+- `/meu/exames/upload` page com call-out "envie via WhatsApp" (drag-drop MinIO Sprint 33b)
+
+**ADR 0050 já Accepted** (não criado neste sprint — existia desde 2026-04-23). Documenta:
+- Pipeline OCR → IA extração → IA interpretação → revisão profissional → lab_results oficial
+- IA conservadora; classificador anti-diagnóstico mandatório (regra 28 CFM 2.454/2026)
+- SaMD Classe II ANVISA RDC 657/2022 — exige notificação antes do prod
+- Paciente pode subir via portal/WhatsApp/integração lab futura
+- Source ref preserva rastreabilidade WhatsApp hub Sprint 13
+
+**Pendências Sprint 33b/c:**
+
+- OCR provider real (ADR 0035): OCR.space default + Google Vision + AWS Textract + Tesseract — com `safeFetch` allowlist (regra 37)
+- Extração IA real via `resolveModelForTask('extraction')` Vertex AI Gemini (substitui stub)
+- Interpretação IA real via `resolveModelForTask('chat')` com prompt conservador + few-shot examples
+- Cache semântico Sprint 06 pra exames similares (reduz custo)
+- Particionamento ANUAL `exam_documents` + jobs cold storage Parquet pós-5a (regra 34)
+- Job Vercel Cron `/api/jobs/exames/process-queue` processa uploads em fila
+- scanUpload (regra 38) obrigatório em uploadExamDocument — PDF malicioso disfarçado de laudo via portal/WhatsApp = bloqueado antes de OCR
+- Storage MinIO bucket `lab-documents` privado + signedUrl TTL 10min
+- UI revisão completa: PDF viewer lado-a-lado + table editor de analitos + checkbox accept/reject patterns + observation textarea + submit
+- Handler WhatsApp inbound (ADR 0051): hub identifica anexo como exame + chama uploadExamDocument source='patient_whatsapp' + responde "📄 Recebi! Em análise" + "✓ Analisado! Ver: {portal_link}"
+- Integração régua Sprint 13: lab_result.published com valor crítico → notificação WhatsApp
+- Pesquisa global indexar lab_results sensível (ADR 0062 + regra 30)
+- Categoria sensível: permission `exam.sensitive.read` enforcement (HIV/psiquiátrico/genético/paternidade)
+- Opt-out IA por tenant via `/app/settings/exames/ia`
+- Seed 10 exames de 5 labs diferentes (Sabin/DB/Hermes/Fleury/Delboni) + expected JSON pra CI
+- LOINC mapping completo (interop internacional)
+- Modelo local OCR + IA pra tenants sensíveis a LGPD (não enviar pra Anthropic/Google)
+- Comparativo automático com exame anterior do mesmo analito
+- RIPD `v1.0-exames-laboratoriais.md` + DPO sign-off (regra 29 + ADR 0054)
+- **Notificação ANVISA RDC 657/2022** (regra 28 + ADR 0053): pipeline interpretação é SaMD Classe II — feature não ativa em prod sem notificação aprovada
+- Feature flag `exames_ia_v1`
+- E2E Playwright (upload + OCR + extração + interpretação + revisão + publicação)
+
+**Verificação:** Migration aplicada via `pnpm db:migrate`. Stub OCR + extraction determinístico funciona sem dependência externa. UI exige stack rodando — não validado visualmente.
+
+**Stats:** **36 unit tests exames verdes** (19 classifier + 17 interpretation). Typecheck verde em 11/11 packages.
+
+### Build — Sprint 32 100% (Device Hub v1 + ADR 0049 Proposed) 2026-05-18
+
+**Sprint 32 estende Fase 3.** Entrega 100% do core: 7 schemas + RLS + 10 RLS tests + 3 libs puras (provider abstrato + normalizer FHIR + parser CSV InBody) + 17 unit tests + 8 Server Actions + 4 rotas UI + ADR 0049 (Device Hub provider abstrato + FHIR Observation + curadoria profissional + retenção 3 camadas).
+
+**Faixa A — Schemas + RLS (10 RLS tests):**
+
+- `packages/db/src/schema/devices.ts` — 7 tabelas:
+  - `device_connections` (OAuth + BLE; unique active por (member, provider); tokens criptografados Sprint 32b via envelope encryption ADR 0073)
+  - `device_readings` (FHIR-like Observation; @volume 180M+/ano — particionamento diário Sprint 32b; dedup unique (connection, observation_code, measured_at); retenção raw 90d)
+  - `device_readings_daily_summary` (PK tenant×member×code×date; check min ≤ max; retenção perpétua; cron 02:00 SP popula antes do drop)
+  - `device_readings_curated` (snapshot pré-drop quando profissional referencia em assessment_measurements; rastreabilidade clínica Lei 13.787)
+  - `device_sync_cursors` (PK connection_id; cursor opaco por provider)
+  - `device_consents` (granular por provider; 1 ativo por (member, provider); raw_data_access flag separado)
+  - `device_incidents` (audit de erros: token_expired/rate_limited/parser_failed/calibration_anomaly)
+- `packages/db/src/policies/0050_devices_rls.sql` — RLS member portal + staff scope
+- Migration `0037_device_hub.sql` (3 enums + 7 tabelas + indexes)
+- `packages/db/tests/devices-rls.test.ts` — 10 RLS + check tests
+
+**Faixa B.1 — Libs puras (17 unit tests):**
+
+- `packages/ai/src/devices/provider.ts` — `DeviceProvider` interface (startAuth + completeAuth + sync + revoke) + `MockDeviceProvider` (gera 21 readings determinísticas 7 dias × 3 codes) + `resolveDeviceProvider` resolver
+- `packages/ai/src/devices/normalizer.ts`:
+  - `PHYSIOLOGICAL_RANGES` (18 observation codes com faixa min/max/unit)
+  - `validateReading` (out_of_range / unit_mismatch / unknown_code)
+  - `partitionValidReadings` (separa válidos de inválidos com reason)
+  - `aggregateDailySummaries` (group by code+date → min/max/avg/count)
+  - `detectOutliers` (z-score ±3σ contra baseline + fallback validação faixa quando baseline pequeno)
+- `packages/ai/src/devices/inbody-parser.ts` — `parseInBodyCsv` tolerante (`,` ou `;`; formato BR dd/mm/yyyy + US ISO; aceita PT-BR ou EN; ignora colunas desconhecidas; reporta erros por linha)
+- **5 validateReading + 1 partition + 2 aggregate + 3 outliers + 6 inbody-parser = 17 tests**
+
+**Faixa B.2 — Server Actions (8 wrapped):**
+
+`apps/web/app/meu/dispositivos/actions.ts` (paciente — member portal Sprint 26):
+- `startConnection` (verifica não-duplicata + provider.startAuth + cria connection status='pending' com state)
+- `completeConnection` (valida state OAuth + provider.completeAuth + grava tokens + status='active')
+- `disconnect` (provider.revoke best-effort + status='revoked' + apaga tokens)
+- `listMyConnections`
+- `listMyReadings` (filtros observation_code/fromDate/toDate/limit)
+- `importInBodyCsv` (parseInBodyCsv + partitionValidReadings + INSERT ON CONFLICT DO NOTHING dedup; cria/reusa connection 'file_import')
+- `grantDeviceConsent` (revoga anterior + insert)
+- `revokeDeviceConsent`
+
+**Faixa C — UI (4 rotas, member portal Sprint 26):**
+
+- `/meu/dispositivos` lista conectados (badge status active/error/pending/revoked + ícone provider + última sync) + disponíveis pra conectar (Garmin/Oura/Fitbit com badge "Sprint 32b"; Apple/Google com "Em breve" pra app nativo; file_import funcional MVP)
+- `/meu/dispositivos/historico` últimas 200 leituras (90d) com label legível (Frequência cardíaca, % Gordura, etc.) + provider + qualidade
+- `/meu/dispositivos/importar` page Server Component + `<ImportCsvForm>` client com textarea CSV + preview de erros de parse + contadores válido/inválido/inserido
+
+**ADR 0049 publicado (Proposed)** `docs/decisions/0049-device-hub-wearables-clinicos.md`:
+
+- Decisão: provider **abstrato** (`DeviceProvider` interface) > hard-code
+- FHIR-like Observation > schema proprietário (interop futura)
+- Retenção **3 camadas**: raw 90d → agregado perpétuo → curadas perpétuas
+- **Curadoria profissional obrigatória** (NUNCA automação) — regra 28 CFM 2.454/2026 + responsabilidade clínica
+- Consent granular por provider + raw_data_access flag separado
+- Separação visual obrigatória device 📱 vs avaliação 🩺 (sem calibração automática cross-fonte)
+- Particionamento diário `device_readings` + jobs aggregate-then-drop em sequência (Sprint 32b)
+- 8 alternativas rejeitadas documentadas
+- Cenário de uso completo + POC plan Sprint 32b
+
+**Pendências Sprint 32b/c:**
+
+- Adapters reais: Garmin Connect API + Oura Ring API + Fitbit Web API com `safeFetch` (regra 37) + allowlist
+- Web Bluetooth bioimpedância Omron HBF-226 (GATT 0x181D) + G-Tech Glass 7
+- Parsers FIT (Garmin) + TCX/GPX em arquivos dedicados
+- Particionamento diário `device_readings` + jobs `aggregate-daily-summaries` (02:00 SP) + `drop-old-partitions` (00:00 UTC) com dependência de ordem garantida
+- Envelope encryption tokens via `LOGIFIT_DATA_KEY` (ADR 0073)
+- `/app/members/[id]/dispositivos/curar` UI curadoria lado-a-lado (leitura bruta × valor final)
+- `/app/members/[id]/monitoramento` painel tendências (Uso 2)
+- Cross-alert dispatcher Sprint 07 consome leituras: HR repouso +10bpm 3d → fisio; passos <3k 7d → instrutor; % gordura +2% 30d + sono <6h → nutri
+- `assessment_measurements.source_device_reading_id` FK + UI Sprint 12 com seleção de leituras pra avaliação oficial
+- `member_device_connections` no search_index (regra 30 + ADR 0062)
+- Permissions `devices.read` / `devices.read_raw` / `devices.admin`
+- RIPD `v1.0-device-hub.md` + DPO sign-off
+- Feature flag `device_hub_v1`
+- E2E Playwright (OAuth Garmin sandbox + BLE mock + revogação)
+- Webhook push Garmin (reduz polling)
+- Dashboard saúde populacional anonimizado (% alunos com HR elevado, sono <6h, etc.)
+- Apple Health + Google Health Connect via app nativo Expo (Sprint 35)
+
+**Verificação:** Migration aplicada via `pnpm db:migrate`. UI exige stack rodando — não validado visualmente.
+
+**Stats:** **17 unit tests devices verdes**. Typecheck verde em 11/11 packages.
+
+### Build — Sprint 31 100% (Diário alimentar + Teleconsulta + ADR 0083 Proposed) 2026-05-18
+
+**Sprint 31 estende Fase 3.** 4 schemas + 12 RLS tests + lib pura diario/calc 17 unit tests + lib pura @repo/ai/teleconsulta provider abstrato + 10 Server Actions + 3 rotas UI + ADR 0083 (Daily.co default + Whereby/Jitsi/Twilio/Mock alternativas + cliente embed iframe + gravação MinIO próprio + transcrição pós-gravação Groq Whisper + 2 consents distintos LGPD art. 11). Detalhes acima.
+
+### Build — Sprint 30 100% (Suplementos + Exames laboratoriais + ADR 0082 Proposed) 2026-05-18
+
+**Sprint 30 estende Fase 3.** Entrega 100% do core: 6 schemas + RLS + 13 RLS tests + 1 lib pura + 23 unit tests + 11 Server Actions + 4 rotas UI + seed canônico (10 suplementos + 30 interações + 20 analitos com faixas de referência) + ADR 0082 (suplementação separada de alimentos).
+
+**Faixa A — Schemas + RLS (13 RLS tests):**
+
+- `packages/db/src/schema/nutri-labs.ts` — 6 tabelas: `supplements` (global+tenant, 11 kinds enum, ANVISA registration); `supplement_interactions` (pares curados com severity info/caution/avoid + source); `supplement_prescriptions` separado de Sprint 11 prescriptions por posologia rica (dose+frequência+via+duração); `lab_analytes` global (11 categorias enum); `lab_reference_ranges` 1:N por analyte (sex × age × condition); `lab_results` tenant+member com `out_of_range` denormalizado + reference_range_id_used FK audit
+- `packages/db/src/policies/0048_nutri_labs_rls.sql`
+- Migration `0035_nutri_labs_suplementos.sql` (4 enums extras + 6 tabelas)
+- `packages/db/tests/nutri-labs-rls.test.ts` — 13 RLS + check tests
+
+**Faixa B.1 — Lib pura lab.ts (23 unit tests):**
+
+- `matchReferenceRange(ranges, ctx)` — scoring por especificidade: +1000 condition exato, +200 sex exato, +50 sex 'any', +100 dentro faixa etária + bonus estreita
+- `isOutOfRange(value, range)` — 4 casos cobertos (só min, só max, ambos, nenhum)
+- `classifyLabResult(value, ranges, ctx)` — combina + severity mild (<20%) / severe (≥20%)
+- `ageYearsAt(birthDate, atDate)` helper
+
+**Faixa B.2 — Server Actions (11 wrapped):**
+
+`searchSupplements`, `createTenantSupplement` (Zod runtime), `listSupplementInteractions`, `prescribeSupplement` (valida member+supplement), `discontinueSupplementPrescription`, `listMemberSupplementPrescriptions`, `listLabAnalytes`, `getLabAnalyteWithReferences`, `registerLabResult` (resolve birth_date/sex → classifyLabResult lib pura → out_of_range denormalizado), `listMemberLabResults` (filtrável onlyAltered), `compareAnalyteOverTime`.
+
+**Faixa C — UI (4 rotas):**
+
+`/app/nutri/suplementos` busca form GET + tabela; `/app/nutri/suplementos/[id]` detalhe + interações ordenadas por severity color-coded (avoid vermelho, caution amarelo, info cinza); `/app/nutri/exames` catálogo categoria filter + count ranges. Páginas member-specific Sprint 30b.
+
+**Faixa D — Seed:**
+
+`seed-nutri-labs` idempotente: **10 suplementos canônicos** (Vit D3, B12, Ômega 3, Magnésio, Ferro, Creatina, Whey isolado, Probiótico, Cálcio, Multivitamínico); **30 interações curadas** com sources (Mayo/BNF/SBEM/ISSN/WHO/AHA); **20 analitos** com faixas multi-segmentadas (split sex + gestante + osteoporose) sources SBD/SBC/SBPC/SBEM/OMS/SBAC.
+
+**ADR 0082 publicado (Proposed)** — suplementos separados de foods (posologia + ANVISA + interações + linguagem clínica); supplement_prescriptions separada de Sprint 11 (posologia rica + descontinuação); supplement_interactions tabela 1:N > jsonb; lab_reference_ranges 1:N > jsonb; lab_results.out_of_range denormalizado > VIEW; fontes curadoria LogiFit + revisão semestral.
+
+**Pendências Sprint 30b/c:** 50 analitos extras + faixas pediátricas/geriátricas + páginas member exames/suplementação + OCR laudo (Sprint 33 cobre) + comparação cross-lab + tenant override ranges + cron valida out_of_range + particionamento anual + régua Sprint 13 alerta WhatsApp + widget GenUI + portal `/meu/exames` Sprint 26 + RIPD + feature flag `nutri_suplementos_exames_v1` + E2E + nutri-agent IA.
+
+**Verificação:** Migration aplicada via `pnpm db:migrate`. UI exige stack rodando — não validado visualmente.
+
+**Stats:** **23 unit tests lab.ts verdes**. Typecheck verde em 11/11 packages.
+
+### Build — Sprint 29 100% (Nutri TACO + Plano alimentar + ADRs 0080+0081 Proposed — Fase 3 ABERTA) 2026-05-18
+
+**Sprint 29 abre a Fase 3 (Nutrição + Mobile + Fiscal).** Entrega 100% do core: 7 schemas + RLS + 12 RLS tests + 2 libs puras + 26 unit tests + 9 Server Actions + 7 rotas UI + seed canônico (47 alimentos TACO + 20 equivalências) + ADR 0080 (banco TACO/USDA nutrients jsonb) + ADR 0081 (meal_plans versionado).
+
+**Faixa A — Schemas + RLS (12 RLS tests):**
+
+- `packages/db/src/schema/nutri.ts` — 7 tabelas: `foods` (global + tenant; nutrients jsonb Zod-validated; external_code unique pra idempotência seed), `food_measures` (PK food_id+measure; check grams > 0), `food_equivalences` (curadas global + tenant; check not_self + grams positive), `meal_plans` (versionado via parent_meal_plan_id; polimórfico Sprint 11; targets opcionais), `meal_plan_meals`, `meal_items` (check grams > 0; unique order), `tenant_branding` (1 row/tenant)
+- `packages/db/src/policies/0047_nutri_rls.sql` — RLS: foods/equivalences leitura global + tenant; INSERT/UPDATE só tenant; meal_plans+items com member portal scope; tenant_branding tenant-only
+- Migration `0034_nutri_foods_planos.sql`
+- `packages/db/tests/nutri-rls.test.ts` — 12 RLS + check tests
+
+**Faixa B.1 — Libs puras (26 unit tests):**
+
+- `nutrients-schema.ts` — `NutrientsSchema` Zod strict com 30+ campos (kcal/protein_g/lipid_g/carbohydrate_g obrigatórios; macros detalhados + minerais + vitaminas + outros opcionais); faixas fisiológicas (kcal 0–900 etc); helpers `parseNutrients`/`safeParseNutrients`/`scaleNutrientsByGrams`/`addNutrients`. **5 tests**
+- `calc.ts` — `calculateMealNutrition(meal)` + `calculateMealPlanNutrition(meals)` ordenando + `compareAgainstTargets(totals, targets)` retornando `TargetGap[]` status `low|on_target|high` ±10% + `statusEmoji`. **15 tests**
+- `equivalences.ts` — `rankEquivalents(seed, rows, topN=5)` score `|seedKcal - candidateKcal|/seedKcal`; suporta seed como A ou B; escala se seedGrams ≠ par. **6 tests**
+
+**Faixa B.2 — Server Actions (9 wrapped):**
+
+`searchFoods` / `getFoodDetail` / `createTenantFood` (Zod nutrients runtime) / `listMealPlans` / `createMealPlan` (transação plan + meals + items) / `getMealPlanFull` (JOIN nutrients + nutrition + gaps) / `updateMealPlan` (versão nova via Sprint 11 pattern) / `listSubstitutions` (carrega seed + equivRows global+tenant + chama lib pura) / `upsertBranding` (INSERT...ON CONFLICT UPDATE) / `getBranding`.
+
+**Faixa C — UI (7 rotas):**
+
+`/app/nutri` hub 5 KPIs · `/app/nutri/alimentos` busca server-rendered form GET + tabela macros · `/app/nutri/alimentos/[id]` detalhe 30+ nutrientes + medidas caseiras · `/app/nutri/planos` lista filtrável ativos/todos · `/app/nutri/planos/[id]` detalhe 4 KPIs gaps emoji + breakdown refeições/items × P/C/L · `/app/settings/branding` form com color picker + preview. Drag-drop editor visual fica Sprint 29b.
+
+**Faixa D — Seed:**
+
+`seed-nutri-foods` 47 alimentos TACO canônicos (cereais + tubérculos + verduras + frutas + gorduras + proteínas animais + ovos + laticínios + leguminosas + nozes/sementes + bebidas + açucarados + suplementos) com external_code TACO único + medidas caseiras + macros completos + micros principais. 20 equivalências curadas direcionais (carbos: arroz↔batata/mandioca/quinoa/tapioca; proteínas: frango↔patinho/peixe/ovo/queijo/whey; gorduras: azeite↔castanha/abacate). Idempotente via `ON CONFLICT (source, external_code) DO UPDATE`. Script `pnpm db:seed:nutri-foods`.
+
+**ADRs publicados (Proposed):**
+
+- **ADR 0080** banco alimentos TACO + nutrients jsonb: `foods.nutrients jsonb` com Zod strict > tabela 1:N (volume estático + import TACO/USDA trivial + validação consolidada); catálogo global + tenant custom; `food_measures` separada (não jsonb); `external_code` único pra idempotência seed; faixas fisiológicas no Zod
+- **ADR 0081** meal_plans versionado: 3 níveis (`meal_plans` → `meal_plan_meals` → `meal_items`) > 2 níveis flat; versionamento `parent_meal_plan_id` Sprint 11 pattern > UPDATE in-place (Lei 13.787 + prescrições imutáveis); cálculo nutricional via função pura runtime > materialized view; substituições via `food_equivalences` curadas + ranking runtime > IA generativa; targets no `meal_plan` > `contracts`; polimorfismo com Sprint 11 prescriptions kind='meal_plan'
+
+**Pendências Sprint 29b/c:**
+
+- Editor drag-drop visual completo + cálculo instantâneo client-side
+- Migration data file TACO 2011 completa (~3000 entries) — MVP entrega subset 47
+- Auto-pré-preenchimento de targets via TDEE (ADR 0070) + `suggestMacroSplit(goal)`
+- Cache `meal_plans.cached_totals jsonb`
+- 10 planos modelo via seed (emagrecimento/ganho massa/vegetariano/cetogênico/low carb/diabético/renal/gestante/esportivo)
+- Export PDF com branding via `@react-pdf/renderer` + `tenant_branding`
+- Upload logo + assinatura digitalizada via MinIO adapter
+- Extension PG `pg_trgm` + `unaccent` pra busca fuzzy + trigger auto `name_normalized`
+- USDA FoodData Central como segundo source
+- Cache pesquisas via `ai_semantic_cache` Sprint 06
+- RIPD `v1.0-nutri-plano.md` + DPO sign-off (regra 29)
+- Feature flag `nutri_plano_v1`
+- Widget `<MealPlanCard />` Sprint 28 GenUI (integração)
+- Integração `/meu/cardapio` Sprint 26 portal
+- E2E Playwright + plano IA Copilot (stretch ADR 0085 GenUI)
+
+**Verificação:** Migration aplicada via `pnpm db:migrate`. UI exige stack rodando — não validado visualmente neste turno. RLS tests rodam via `pnpm test` quando DB up.
+
+**Stats:** **26 unit tests nutri verdes** (5 nutrients-schema + 15 calc + 6 equivalences). Typecheck verde em 11/11 packages. **🚀 Fase 3 aberta** com Sprint 29; próximo é #30 Suplementos+Exames laboratoriais + #31 Diário alimentar + teleconsulta.
+
+### Build — Sprint 28 100% (Generative UI v1 + ADR 0085 Proposed — Fase 2 FECHADA) 2026-05-18
+
+**Sprint 28 — Generative UI fecha a Fase 2.** Entrega framework de tool calls + 6 componentes ricos + Server Action + API Route + demo + 18 unit tests + ADR 0085. **Sem migration nova** — coluna `assistantMessages.toolCalls jsonb` já existia desde Sprint 06. LLM stub determinístico no MVP; Sprint 28b conecta LLM real via Vertex AI Gemini + tool calling.
+
+**Faixa A — Framework `@repo/ai/genui` (18 unit tests):**
+
+- **`packages/ai/src/genui/types.ts`** — `GenUIToolDefinition<TArgs>` (name + description + argsSchema Zod + category + allowedPersonas[] + readOnly + example), `GenUIToolCall` (id + name + args raw), `GenUIRenderableCall` (args validados tipados), `GenUIMessageBlock` (`text | tool_call`), `GenUIResponse`
+- **`packages/ai/src/genui/registry.ts`** — `registerUIComponent`, `getToolDefinition`, `getRegisteredTools`, `getToolsForPersona`, `clearRegistry`, `validateToolCall(call, ctx)` retornando resultado discriminado `{ok:true,call} | {ok:false,reason}` com 4 guardrails: `unknown_tool` / `schema_violation` (path + msg Zod) / `persona_not_allowed` / `mutation_attempted` (`readOnly=false` bloqueado MVP)
+- **`packages/ai/src/genui/tools.ts`** — 6 tools default registradas via `registerDefaultGenUITools()`:
+  - `genui.fisio.patient_card` (memberId/name/age/vertical/contractStatus/lastVisitAt/activeRisks)
+  - `genui.fisio.evolution_chart` (memberId/metric/unit/points[≥2]/referenceRange opcional)
+  - `genui.fisio.cid_suggestion` (cids[]: code/description/confidence/rationale — **apenas professional_clinical**, regra 28 CFM 2.299)
+  - `genui.fisio.exercise_recommendation` (goal/exercises[]: id/name/muscleGroups/contraindicationFlag avoid|modify|caution/sets/reps/rationale — integração ADR 0084)
+  - `genui.geral.measurement_comparison` (memberId/metrics[]: name/unit/before/after/desiredDirection/beforeAt/afterAt)
+  - `genui.geral.report_section` (title/body markdown leve/tone info|success|warning|danger default info)
+- **`packages/ai/src/genui/registry.test.ts`** — 18 unit tests (register+lookup+clear / 4 guardrails + persona / 6 tools default registradas + args válidos)
+- Re-export em `@repo/ai/index.ts` + export `./genui` em package.json
+- **zod** adicionado como dependency em @repo/ai
+
+**Faixa B — Componentes `@repo/ui/genui`:**
+
+- `<PatientCard />` — card com avatar + status contrato badge color-coded + risks chips warning
+- `<EvolutionChart />` — SVG nativo (sem Recharts) com faixa de referência verde + delta tabular Δ% color-coded
+- `<CidSuggestion />` — `'use client'` com ranking confidence color-coded + botão "Adicionar" condicional (callback caller wireia SA Sprint 20)
+- `<ExerciseRecommendation />` — barra lateral colorida por flag avoid (vermelho) / modify (amarelo) / caution (cinza) / null
+- `<MeasurementComparison />` — tabela compacta com delta % color-coded por `desiredDirection` (lower=verde se delta<0, higher=verde se delta>0)
+- `<ReportSection />` — bloco com title + body markdown leve (mini-parser regex: **bold**, *italic*, listas `- `) + tom border-left colorido
+- `<GenUIMessage />` — renderer principal com **dispatch fixo** (regra 28 guardrail): switch case por `tool.name` → componente; fallback dashed para `unknown_tool`
+- Re-export em `@repo/ui/index.ts` + export `./genui` em package.json
+
+**Faixa C — Server Action + API:**
+
+- **`apps/web/app/app/copilot/genui-actions.ts`**:
+  - `composeGenUIResponse(input)` wrapped: resolve session (cria se ausente) + insert user message + LLM stub determinístico baseado em keywords (resumo|evolução|CID|exercícios|comparação|relatório) gerando blocos plausíveis + valida cada tool call via `validateToolCall` com persona + insert assistant_messages.tool_calls jsonb auditável + retorna `GenUIResponse {sessionId, blocks}`
+  - LLM stub mapeia pra 6 componentes:
+    - "resumo" → patient_card
+    - "evolução" → evolution_chart EVA dor 5 pontos 60d com referenceRange
+    - "CID" → cid_suggestion top 2 com confidence 0.86/0.32 + rationale
+    - "exercícios" → exercise_recommendation 3 itens incluindo flag avoid em agachamento livre (integra ADR 0084)
+    - "comparação" → measurement_comparison 4 métricas peso/cintura/IMC/EVA
+    - sempre fecha com report_section "Próximos passos" tone=info
+  - Tool calls bloqueadas viram texto `[Componente X bloqueado: <reason>]` + audit grava no jsonb
+- **`apps/web/app/api/ai/genui/route.ts`** — POST batch endpoint que delega para Server Action
+
+**Faixa D — UI demo:**
+
+- **`/app/copilot/genui-demo/page.tsx`** Server Component com 4 atalhos de prompts pré-feitos via `?q=` query string + autosubmit
+- **`/app/copilot/genui-demo/form.tsx`** client component com input + submit via Server Action + render `<GenUIMessage>` + estado de sessão multi-turn + error display
+
+**ADR 0085 publicado (Proposed)** em `docs/decisions/0085-generative-ui-framework.md`:
+
+- Decisão: framework próprio sobre `assistantMessages.toolCalls jsonb` (zero migration) > Vercel AI SDK `streamUI` direto (provider lock-in implícito)
+- Registro **estático** (LLM nunca cria entrada nova) — duplo registro proposital: tools.ts + dispatch em gen-ui-message.tsx
+- 4 guardrails Zod runtime (unknown_tool/schema_violation/persona_not_allowed/mutation_attempted)
+- Persona-aware: `cid_suggestion` apenas para `professional_clinical` (regra 28 + CFM 2.299)
+- Batch MVP > streaming SSE (mais simples auditar + testar + cachear); Sprint 28b adiciona SSE sem refactor
+- 6 cenários de uso documentados na demo
+- Alternativas rejeitadas: LLM escreve JSX dinâmico (XSS+sem audit+viola regra 28), JSON Schema (Zod é padrão repo regra 7), sem persona check (quebra ato exclusivo CFM/COFFITO), persistir em `tools_registry` Sprint 06 (aquela é pra ações, não runtime UI)
+
+**Pendências Sprint 28b/c:**
+
+- LLM real via `resolveModelForTask('chat')` + tool calling (Vertex AI Gemini default) — Sprint 28b
+- Streaming SSE progressivo em `/api/ai/genui/stream`
+- Componentes adicionais: `<WorkoutCard />`, `<TrainingHistory />` (Sprint 28b — Academia), `<MealPlanCard />`, `<NutritionTable />` (Sprint 29 — Nutri)
+- Recharts pra `<EvolutionChart />` com tooltips/zoom/drill-down
+- Persistência do layout (re-load mantém componentes)
+- Export PDF com layout preservado
+- Few-shot examples no system prompt LLM
+- E2E Playwright (perguntar "relatório do Marcelo" → render + clicar CID propõe adicionar)
+- Feature flag `genui_v1`
+- Markdown sanitizado via `remark-parse` em `<ReportSection />`
+- `ai_audit_log` row dedicada por tool call com hash chain (regra 39 + ADR 0072)
+
+**Verificação:** Migration desnecessária (toolCalls jsonb já existia). UI demo exige stack rodando (Postgres + assistant_sessions seed mínimo) — não validado visualmente neste turno. RLS herdado de assistantMessages Sprint 06.
+
+**Stats:** **18 unit tests genui verdes**. Typecheck verde em 11/11 packages. **🎉 Fase 2 fechada** — Fisio (Sprint 20-23) + ERP Saúde (24-25) + Portal Paciente (26) + Cross-alert (27) + Generative UI (28).
+
+### Build — Sprint 27 100% (Cross-alert lesão Fisio → Academia + ADR 0084 Proposed) 2026-05-18
+
+**Sprint 27 — primeiro cross-alert real do produto.** Entrega 100%: 3 schemas + RLS + 16 RLS tests + 2 libs puras + 33 unit tests + 7 Server Actions + 6 rotas UI (3 lado operador + 1 portal) + 35 contraindicações curadas seed global + ADR 0084 publicado. Gates regra 25 (franchise) + consent (cross_module_share) + contrato Academia ativo + workout ativo enforcados antes de criar `member_injury_alerts`.
+
+**Faixa A — Schemas + RLS (16 RLS tests):**
+
+- **`packages/db/src/schema/cross.ts`** — 3 tabelas:
+  - `cid_exercise_contraindications` — catálogo global LogiFit (tenant_id NULL) + tenant override; check `at_least_one_target` (exercise_id OR muscle_group OR movement_pattern); unique dedup canônico; índices `cid_contra_code_active_idx` + `cid_contra_global_idx`
+  - `member_injury_alerts` — alerta cross-module; status `pending_review|accepted|rejected|expired|blocked`; check `blocked_requires_reason` + `reviewed_consistency`; particionamento adiado (volume estimado 600k/ano cabe sem partitioning MVP)
+  - `workout_adaptations` — 1:1 com alert (unique alert_id); status `suggested|confirmed|rejected|manually_overridden`; changes jsonb canônico (removed/replaced/added/summary); check `confirmed_consistency`
+- **`packages/db/src/policies/0046_cross_rls.sql`** — RLS por tenant + leitura global de catálogo; UPDATE só na linha do tenant; member vê `member_injury_alerts` próprios via `app.member_id`
+- Migration `0033_cross_alert_lesao.sql` (3 enums + 3 tabelas + 4 indexes + FKs + checks)
+- **`packages/db/tests/cross-rls.test.ts`** — 16 RLS + check tests
+
+**Faixa B.1 — Libs puras (33 unit tests):**
+
+- **`packages/db/src/cross/contraindications.ts`**:
+  - `maxSeverity(a, b)` — agregação por ranking `avoid=3 > modify=2 > caution=1`
+  - `detectContraindications(activeCids, items, rules)` — matcher precedência exercise_id > movement_pattern > muscle_group; agrega múltiplas regras com max severity; merge alternative_exercise_ids sem duplicar; counts por severidade
+  - `mergeRules(globals, tenants)` — tenant override prevalece sobre global por chave canônica
+  - `buildAdaptationDiff({ matches, exerciseLookup })` — gera diff jsonb: avoid+alternativa → replaced / avoid sem alt → removed / modify+alt → replaced / modify sem alt → mantém / caution → mantém
+- **`packages/db/src/cross/franchise-gate.ts`**:
+  - `canCrossModuleAlert({ topology, sourceCompanyId, targetCompanyId, hasConsent, hasActiveAcademiaContract, hasActiveWorkout })` — gates em ordem: regra 25 (franchise + companies diferentes) > consent > contrato > workout; regra 25 domina mesmo com consent ativo (regulatório CFM/COFFITO)
+  - `isActionableCid(chapter, code)` — filtro CIDs MVP: chapters MG/FA/FB/NB + prefixes 22/ND/NE/NF (cobertos pela CID-11); cardio/endócrino/mental/oncológico não disparam
+- **17 unit tests** contraindications + **16 unit tests** franchise-gate
+
+**Faixa B.2 — Server Actions (7 wrapped):**
+
+`apps/web/app/app/cross/actions.ts`:
+
+- `processInjuryAlert(consultaId)` — dispatcher: carrega consulta + CIDs actionable + workout ativo + consent + contrato + topology; aplica gates; cria `member_injury_alerts` (status=blocked OU pending_review); se ok, gera diff via `detectContraindications` + `buildAdaptationDiff` e cria `workout_adaptations status='suggested'`; **toda tentativa fica gravada** (blocked também)
+- `suggestWorkoutAdaptation(memberId, cidCodes)` — re-roda matcher manualmente para member ativo (sem persistir; usado por UI exploratória)
+- `confirmAdaptation(adaptationId)` — materializa nova versão do workout: cópia de items + aplica diff (replaced troca exercise_id; removed pula) + cria new workout (parent_workout_id + version+1) + atualiza prescription ativa (inactivate old + insert new); update alert→accepted + adaptation→confirmed
+- `rejectAdaptation(adaptationId, reason)` — fecha workflow; alert→rejected com rejection_reason
+- `listPendingAdaptations()` — fila do instrutor (status=suggested)
+- `listInjuryAlerts()` — todos os alertas do tenant (incluindo blocked para gerente)
+- Sprint 27b: `overrideAdaptation`, cron expire (>14d → expired), integração régua Sprint 13
+
+**Faixa C — UI (6 rotas):**
+
+Lado operador:
+- `/app/cross` hub com 5 KPIs (pending review + adaptations suggested + accepted 30d + rejected 30d + blocked 30d) + atalhos
+- `/app/cross/alertas` lista filtrável por status (`?status=blocked` etc) com colunas: paciente, CID, status, motivo bloqueio, criado, expira
+- `/app/cross/alertas/[id]` detalhe completo: paciente, CIDs, consent_id_used, source/target companies, status, link pra consulta de origem + adaptação relacionada se existe
+- `/app/treinos/adaptacao-pendente` fila do instrutor (status=suggested) com summary + counts avoid/modify/caution + link pra detalhe
+- `/app/treinos/adaptacao-pendente/[id]` detalhe com diff visual color-coded (replaced amarelo, removed vermelho) + botões Confirmar/Rejeitar via `<AdaptationActions>` client component
+
+Portal paciente:
+- `/meu/alertas` timeline cronológica de alertas próprios (status != blocked — paciente não vê eventos bloqueados, que são audit interno); badges por status (`pending_review`/`accepted`/`rejected`); mostra summary da adaptação quando há; link para `/meu/treino`
+
+**Faixa D — Seed + ADR:**
+
+- **`packages/db/scripts/seed-cross-contras.ts`** — 35 contraindicações canônicas globais (`tenant_id IS NULL`) cobrindo:
+  - Coluna: dor lombar (MG30.0 + MG30.1) — flexão lombar carga + core; dor cervical (MG30.50)
+  - Ombro: manguito (FB52), capsulite (FB45.0), bursite subacromial (FB30.1)
+  - Joelho: tendinopatia patelar (FB55.0), femoropatelar (FB55.1), condromalácia (FB80), LCA (BA00), meniscal (BA01)
+  - Punho/Antebraço: túnel do carpo (FB54.0)
+  - Pé/perna: fasciíte plantar (FB56)
+  - Reumatológico: AR (FA20), osteoartrose (FA00), espondilite (FA20.1), fibromialgia (MG30.51)
+  - Neurológico: hemiplegia AVC (8B11)
+  - Outros: DPOC (CA22), diabetes (5A11), bursite trocantérica (FB30.0), insuficiência venosa (BD93.0), miofascial (FB54.5), dor crônica primária (MG31.0)
+  - Fontes citadas: COFFITO 414/2012 + 415/2012, ACSM 2023, curadoria LogiFit
+- Migration `0033_cross_alert_lesao.sql` aplicada
+- **ADR 0084 publicado (Proposed)** em `docs/decisions/0084-cross-alert-cid-contraindicacao.md`:
+  - Decisão: tabela curada > IA generativa (determinístico + auditável + custo)
+  - 3 níveis de granularidade (exercise > pattern > group) + 3 severidades
+  - Catálogo global + tenant override (RLS policies separadas)
+  - Sempre sugere, nunca aplica direto (supervisão humana mandatória — CFM 2.454/2026)
+  - Filtro CIDs actionable por chapter (MG/FA/FB/NB/22/ND/NE/NF)
+  - 3 cenários E2E documentados (happy + regra 25 bloqueio + consent_missing)
+  - Trade-offs aceitos: curadoria inicial trabalhosa, movement_pattern text livre MVP, `added` adiado Sprint 27b/IA, sem auto_apply
+
+**Pendências adiadas Sprint 27b/c:**
+
+- IA complementar quando catálogo não cobre (Gemini Flash via `resolveModelForTask('classification')` regra 32)
+- `cid_chapter_actionable` lookup table refinada
+- `movement_pattern` enum + enriquecimento de `exercises.metadata.movement_patterns`
+- `auto_apply` opcional Enterprise (com termo)
+- Listener real do evento `consulta.signed` Sprint 20 → dispatch `processInjuryAlert` automático
+- Integração régua Sprint 13 (notificar instrutor via WhatsApp quando pending_review criado)
+- Cron expirar pending_review > 14d → `status='expired'`
+- E2E Playwright completo (happy + bloqueio sem consent + bloqueio regra 25 conforme spec do sprint)
+- Adaptação cross-prescription Sprint 11 (quando 2+ profissionais conflitam → `cross_prescription_alerts` para `/meu/privacidade/alertas-cruzados`)
+- `overrideAdaptation` SA (instrutor edita diff antes de confirmar)
+- Substituir `window.confirm/prompt` por `<ConfirmDialog>/<PromptDialog>` (regra 45) quando packages/ui catálogo materializar
+- Feature flag `cross_alert_lesao_v1`
+- Stretch ADR 0084: notificação ao nutri quando lesão afeta atividade + cross-alert inverso (meta atingida → próxima avaliação fisio)
+
+**Verificação:** Migration + UI exigem stack rodando (Postgres + RLS + workouts seed + consultas seed) — não validadas visualmente neste turno. RLS tests rodam via `pnpm test` quando DB local up.
+
+**Stats:** **33 unit tests cross verdes** (17 contraindications + 16 franchise-gate). Typecheck verde em 11/11 packages.
+
+### Build — Sprint 26 100% (Portal do Paciente PWA + ADR 0088 Proposed) 2026-05-17
+
+**Sprint 26 — primeira interface voltada ao usuário final** (member/aluno/paciente). Entrega 100% das rotas `/meu/*` + PWA manifest + service worker + 4 API Routes + telas cross-tenant ADR 0077 + 3 Server Actions novas + ADR 0088 publicado. Faixas A+B (schemas + libs puras + actions auth) já haviam saído no commit anterior (60%); este fechamento entrega Faixas C+D (UI completa) + PWA + ADR + roadmap cleanup.
+
+**Rotas UI entregues:**
+
+- `/meu/agenda` lista próximos + histórico com badges status + botão cancelar (respeita política por vertical via `decideCancellation`); `/meu/agenda/novo` stub redirecionando pra recepção (booking online em Sprint 26c)
+- `/meu/financeiro` lista pendentes + histórico com total destacado; `/meu/financeiro/pagar/[id]` redireciona pro `external_url` Asaas (ou aguarda job D-5 gerar); `/meu/recibos` lista invoices `paid` com download externa
+- `/meu/treino` ficha ativa via `prescriptions kind='workout'` + items ordenados (sets×reps×load+rest+superset) + chips de grupos musculares + últimas 5 sessões com RPE+kcal
+- `/meu/qr` payload HMAC inicial via `generateQrPayload` (lib pura Sprint 26 Faixa B.1) + componente client `qr-live-display` que faz fetch `/api/meu/qr` a cada 60s (countdown visual); usa `access_secrets` Sprint 08
+- `/meu/perfil` dados cadastrais read-only (name/email/phone/document mascarado) + lista de `member_sessions` ativas (revoke individual via `revokeMySession`) + logout via `logoutMember` + atalhos privacidade
+- `/meu/privacidade` overview LGPD art. 18: 5 cards cross-tenant + 5 toggles `CONSENT_CATALOG` (com badge expiring_soon/expired via `checkRenewalStatus`) + 5 botões pros 8 direitos (links pra `/meu/privacidade/solicitar?kind=...` que vai criar `data_subject_requests`)
+- `/meu/privacidade/compartilhamento` lista `patient_company_links` ativos do paciente (resolvido via `passport_passport_id` cross-tenant) + módulos liberados como chips + última leitura por módulo (via `patient_data_access_log`)
+- `/meu/privacidade/acessos` timeline de leituras cross-tenant (últimas 100 entries em `patient_data_access_log`) + form `ExportLogForm` (client) pra solicitar CSV/PDF dos últimos 90d via Server Action
+- `/meu/privacidade/alertas-cruzados` stub formal (schema `cross_prescription_alerts` será materializado em extensão Sprint 11+) com texto explicativo do propósito
+- `/meu/privacidade/incidentes` stub formal (schema vem com ADR 0067 addendum cross-tenant) com texto LGPD art. 48 + ANPD Res. 2/2024
+- `/meu/convidar` stub do path C ADR 0077 (busca de profissional/empresa); autocomplete Sprint 26c
+
+**Server Actions cross-tenant (apps/web/app/meu/actions.ts):**
+
+- `acknowledgeCrossPrescriptionAlert({ alertId })` — paciente confirma leitura; MVP retorna ok sem persistir até schema materializar
+- `acknowledgeIncident({ incidentId })` — paciente confirma leitura de notificação de incidente; idem
+- `exportCrossTenantAccessLog({ startDate, endDate, format })` — registra solicitação em `data_subject_requests` (kind='portability', SLA 15d ANPD Res. 2/2024) + retorna `downloadUrl` apontando pra API Route `/api/meu/privacidade/export/[exportId]`
+
+**API Routes:**
+
+- `POST /api/meu/magic-link` público (sem auth) — proxy pra `requestMagicLink`; sempre 200 com `{ok:true, sent:bool}` anti-enumeration
+- `POST /api/meu/verify` consome token plano + cria session (útil pra app nativo Sprint 35 deeplink)
+- `GET /api/meu/qr` retorna novo payload QR a cada chamada (client refresha visualmente a cada 60s)
+- `GET /api/meu/privacidade/export/[exportId]` materializa CSV inline a partir de `patient_data_access_log` filtrado pelo passport do member; valida ownership via JOIN members+data_subject_requests; TTL 7d via `created_at + 7d` check; PDF retorna 501 NOT_IMPLEMENTED (Sprint 26c @react-pdf/renderer)
+
+**PWA:**
+
+- `app/manifest.webmanifest/route.ts` — Route Handler que serve manifest JSON com scope=/meu + theme #3498DB + 3 shortcuts (Agenda, Treino, QR)
+- `public/meu/sw.js` — service worker mínimo: install pre-cache do shell (`/meu`, `/meu/login`, manifest, ícones), fetch network-first com fallback cache, ignora `/api/*` (sempre online) e fora de `/meu`
+- `app/meu/register-sw.tsx` — client component no layout que registra SW em prod (skip dev)
+- `app/meu/layout.tsx` — exporta `metadata.manifest` + `metadata.viewport={viewportFit:'cover'}` + `appleWebApp.capable=true`
+
+**Design tokens portal (apps/web/app/globals.css):**
+
+Mobile-first total, flat extremo (regra 44). 400+ linhas com prefixo `.ev-portal-*`:
+
+- Shell: `.ev-portal-shell` flex column min-h-100dvh; `.ev-portal-topbar` sticky com safe-area-inset-top; `.ev-portal-main` padding-bottom 72px+safe-area; `.ev-portal-bottom-nav` fixed grid 4 cols com 4 ícones (Agenda/Financeiro/Treino/Mais), touch targets ≥56px (regra 31)
+- Page wrappers: `.ev-portal-page` max-w-720 padding 16; `.ev-portal-h1/2/3` letter-spacing tight; `.ev-portal-muted` text-muted; `.ev-portal-section` flex column gap-3
+- Cards & lists: `.ev-portal-card-grid` auto-fill minmax(140px,1fr); `.ev-portal-card` 96px com hover border-strong; `.ev-portal-list` + `.ev-portal-list-item--row` justify-between
+- Forms: `.ev-portal-form/label/input/select/textarea/button` com min-height 44px (touch-friendly); variantes `--ghost` e `--danger`
+- Estados: `.ev-portal-callout` + `--warning/--danger/--success`; `.ev-portal-badge` + variantes; `.ev-portal-empty` dashed; `.ev-portal-timeline` com bullets
+- QR specific: `.ev-portal-qr-wrap` + `.ev-portal-qr-canvas` 260×260 + `.ev-portal-qr-timer` tabular-nums
+
+**ADR 0088 publicado (Proposed)** em `docs/decisions/0088-portal-member-magic-link-auth.md`:
+
+- **Decisão**: magic link 15min TTL + cookie opaco `lf_member_session` path=/meu + sessão 30d sem rotation MVP + sem MFA pro member (regra 43 lista profissionais; member excluído conscientemente) + anti-enumeration + rate limit por member (5/15min + 60s throttle)
+- **Trade-offs aceitos**: dependência email AWS SES, perda de email = perda de acesso (SMS+fallback recepção Sprint 26c)
+- **Adiado Sprint 26b+**: SMS Twilio, refresh rotativo, MFA opcional tenant-level, rate limit Redis IP, SSO Google/Apple, deeplink universal
+- **Métricas pós-piloto**: taxa de conversão magic link >70%, tempo email→click <2min, sessões por member, reclamações "perdi acesso"
+- Promove pra Accepted quando piloto em prod >100 logins reais por 7 dias validar SES + conversão
+
+**Pendências menores adiadas Sprint 26b/c:**
+
+- Booking online direto pelo paciente (`/meu/agenda/novo` SA `bookMyAppointment` reusando `createAppointment` com `actor='member'`)
+- Asaas checkout embed iframe em `/meu/financeiro/pagar/[id]` (vez de redirect)
+- @react-pdf/renderer pra recibos + export PDF de acessos
+- Schema `cross_prescription_alerts` + `security_incidents` (materialização em Sprint 11+ extensão e ADR 0067 addendum)
+- Autocomplete `/meu/convidar` + criação de pedido inverso (path C ADR 0077)
+- RIPD v1.0-portal-paciente + DPO sign-off
+- Feature flag `portal_member_v1`
+- Testes E2E Playwright 3 viewports (390/768/1280) + Lighthouse PWA ≥95
+- Push notifications PWA (Sprint 26c — incidentes + alertas cross-prescription)
+- Substituir `window.confirm` por `<ConfirmDialog>` (regra 45) com swipe gestures touch
+- Service worker mais sofisticado (background sync, periodic-sync pra QR rotation offline)
+- Push notification VAPID + Sprint 26b dispatcher de notificações por incidente/alerta
+
+**Verificação:** Mudanças observáveis no browser exigem stack rodando (Postgres + member auth + seed) — não validadas visualmente neste turno; teste manual local + Playwright E2E entram no fechamento Sprint 26b.
+
 ### Build — Sprint 25a 100% (ANVISA + CNES + Limpeza) 2026-05-17
 
 **Sprint 25 — bloco regulatório clínico.** 25a core entregue sem integração Datasus CNES + sem NF-e 5.915/1.916 + sem bucket Storage para certificados. Sprint 25b cobre essas integrações + permissions vigilancia.* + RIPD + feature flag + coluna `cnes_code` em companies.

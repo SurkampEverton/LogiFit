@@ -16,12 +16,31 @@
  */
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { RegisterSw } from './register-sw'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata = {
+  title: 'LogiFit · Meu Portal',
+  description: 'Portal do aluno e paciente LogiFit.',
+  manifest: '/manifest.webmanifest',
+  themeColor: '#3498DB',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default' as const,
+    title: 'LogiFit',
+  },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    viewportFit: 'cover',
+  },
+}
 
 export default function PortalLayout({ children }: { children: ReactNode }) {
   return (
     <div className="ev-portal-shell">
+      <RegisterSw />
       {/* Topbar minimalista — só logo + link "sair" via menu */}
       <header className="ev-portal-topbar">
         <Link href="/meu" className="ev-portal-brand">

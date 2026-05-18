@@ -101,19 +101,22 @@ importers:
     dependencies:
       '@ai-sdk/anthropic':
         specifier: ^3.0.77
-        version: 3.0.77(zod@4.4.3)
+        version: 3.0.77(zod@3.25.76)
       '@ai-sdk/google':
         specifier: ^3.0.73
-        version: 3.0.73(zod@4.4.3)
+        version: 3.0.73(zod@3.25.76)
       '@ai-sdk/openai':
         specifier: ^3.0.63
-        version: 3.0.63(zod@4.4.3)
+        version: 3.0.63(zod@3.25.76)
       '@repo/security':
         specifier: workspace:*
         version: link:../security
       ai:
         specifier: ^6.0.180
-        version: 6.0.180(zod@4.4.3)
+        version: 6.0.180(zod@3.25.76)
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
     devDependencies:
       '@repo/config':
         specifier: workspace:*
@@ -3010,37 +3013,37 @@ packages:
 
 snapshots:
 
-  '@ai-sdk/anthropic@3.0.77(zod@4.4.3)':
+  '@ai-sdk/anthropic@3.0.77(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
-      zod: 4.4.3
+      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
+      zod: 3.25.76
 
-  '@ai-sdk/gateway@3.0.114(zod@4.4.3)':
+  '@ai-sdk/gateway@3.0.114(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
+      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
       '@vercel/oidc': 3.2.0
-      zod: 4.4.3
+      zod: 3.25.76
 
-  '@ai-sdk/google@3.0.73(zod@4.4.3)':
+  '@ai-sdk/google@3.0.73(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
-      zod: 4.4.3
+      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
+      zod: 3.25.76
 
-  '@ai-sdk/openai@3.0.63(zod@4.4.3)':
+  '@ai-sdk/openai@3.0.63(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
-      zod: 4.4.3
+      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
+      zod: 3.25.76
 
-  '@ai-sdk/provider-utils@4.0.27(zod@4.4.3)':
+  '@ai-sdk/provider-utils@4.0.27(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.8
-      zod: 4.4.3
+      zod: 3.25.76
 
   '@ai-sdk/provider@3.0.10':
     dependencies:
@@ -4762,13 +4765,13 @@ snapshots:
       loupe: 3.2.1
       tinyrainbow: 1.2.0
 
-  ai@6.0.180(zod@4.4.3):
+  ai@6.0.180(zod@3.25.76):
     dependencies:
-      '@ai-sdk/gateway': 3.0.114(zod@4.4.3)
+      '@ai-sdk/gateway': 3.0.114(zod@3.25.76)
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
+      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
       '@opentelemetry/api': 1.9.1
-      zod: 4.4.3
+      zod: 3.25.76
 
   assertion-error@2.0.1: {}
 

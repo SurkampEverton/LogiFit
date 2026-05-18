@@ -146,6 +146,6 @@ Falta = erro 403 com link acionável `/app/pessoas/[id]/registros`.
 ## Referências
 
 - Sprint 23 [`docs/sprints/23-fisio-comissoes-repasse.md`](../sprints/23-fisio-comissoes-repasse.md)
-- [ADR 0055](0055-cadastro-profissional-registros-conselho.md) — gate de council ativo
-- [ADR 0061](0061-cobertura-fiscal-faseada-grupos-a-g.md) — calculateRetentions Sprint 23b
+- [ADR 0055](0055-registros-profissionais-em-conselho.md) — gate de council ativo
+- [ADR 0061](0061-motor-retencoes-e-cobertura-fiscal-faseada.md) — calculateRetentions Sprint 23b
 - [ADR 0086 numbering](../roadmap.md#realocações-da-faixa-0011-0046-→-0080) — alocado fora da faixa 0011-0046 (ver convenção)

@@ -38,7 +38,7 @@ Lançamentos financeiros que **atravessam companies** do mesmo tenant: uma conta
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0036 (esperado)** — Rateio + Intercompany: `allocation_rules` com JSONB declarativo (critério + pesos); intercompany via lançamentos espelhados com `counter_entry_id` linkando entry A com entry B. Regra 25 enforced por check constraint (tenant.topology='owned' required).
+- **[ADR 0036](../decisions/0036-rateio-intercompany-dsl-declarativo.md)** (Accepted — 2026-05-15) — Rateio + Intercompany: `allocation_rules` com JSONB declarativo (critério + pesos); intercompany via lançamentos espelhados com `counter_entry_id` linkando entry A com entry B. Regra 25 enforced por check constraint (tenant.topology='owned' required).
 - **Pergunta aberta:** rateio dinâmico por KPI (ex: % do faturamento do mês anterior) — calcular no momento do lançamento ou recalcular retroativamente se KPI mudar? Começar estático (snapshot do KPI no momento do lançamento).
 
 ## Módulos entregues

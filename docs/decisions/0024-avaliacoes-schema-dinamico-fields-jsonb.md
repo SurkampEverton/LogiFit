@@ -216,7 +216,7 @@ Accepted (Sprint 12 Faixa D, 2026-05-13).
 - Regra 29 + [ADR 0054](0054-lgpd-art11-dados-saude-ripd-versionado.md) — dado de saúde, audit + RIPD obrigatórios pra ativação clínica
 - Regra 33 + [ADR 0071](0071-sistema-tratamento-erros-alertas-tempo-real.md) — `wrapServerAction` envelope + audit_log
 - Regra 34 + [ADR 0072](0072-escalabilidade-banco-particionamento-retencao-cold-storage.md) — particionamento `assessment_measurements` Sprint 12+ quando volume justificar
-- [ADR 0070](0070-cache-member-insights-mev-kcal.md) — `assessment_calculations` cache de derivados (IMC, Pollock, TMB, RCQ) consumido por widget + gráficos
+- [ADR 0070](0070-insights-cross-module-timeline-integrada.md) — `assessment_calculations` cache de derivados (IMC, Pollock, TMB, RCQ) consumido por widget + gráficos
 - [ADR 0011](0011-member-perfil-unico-cross-module.md) — member como perfil único cross-module; avaliações decoram o member
 - [ADR 0023](0023-prescricoes-polimorficas-base.md) — `prescriptions` polimórfico (mesmo padrão de "tipo + dados específicos" em outro domínio)
 - Sprint 34 (Device Hub) — `assessment_measurements.source` + `source_device_reading_id` pré-cabeados; trigger valida quando source='device' aterrissar

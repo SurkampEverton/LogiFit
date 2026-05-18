@@ -40,7 +40,7 @@ Camada comercial em cima do financeiro: **catálogo de serviços (`services`)** 
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0020 (esperado)** — Ofertas comerciais: `promotions`, `plan_items` (bundle composition), `appointment_credits` e `referrals` como entidades independentes ao invés de colunas em `plans`/`contracts`. Justifica: isolamento de histórico, auditoria limpa, regras de stackability em um só lugar.
+- **[ADR 0020](../decisions/0020-ofertas-promotions-bundles-credits-referrals.md)** (Accepted — 2026-05-13) — Ofertas comerciais: `promotions`, `plan_items` (bundle composition), `appointment_credits` e `referrals` como entidades independentes ao invés de colunas em `plans`/`contracts`. Justifica: isolamento de histórico, auditoria limpa, regras de stackability em um só lugar.
 - **Pergunta aberta:** validade default do crédito de PT (30d? 60d? alinhado com `billing_cycle`?). Fica como config do bundle.
 
 ## Módulos entregues

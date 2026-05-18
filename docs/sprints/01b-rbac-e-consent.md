@@ -41,7 +41,7 @@ Autorização com scope (group/tenant/company/unit), consent cross-module/cross-
 - [ADR 0005 — RBAC com consent cross-module](../decisions/0005-rbac-com-consent-cross-module.md)
 - [ADR 0008 — Group como camada agregada](../decisions/0008-group-como-camada-agregada.md)
 - [ADR 0055 — Registros profissionais em conselho](../decisions/0055-registros-profissionais-em-conselho.md)
-- **ADR 0019 (esperado)** — Autorização por role + role custom por tenant + grant direto `user_permissions`. Policies RLS fazem union de `user_roles` e `user_permissions` ativos (`revoked_at IS NULL AND (expires_at IS NULL OR expires_at > now())`). Grants sempre têm `expires_at` sugerido (UX força preencher; "sem expiração" exige justificativa).
+- **[ADR 0019](../decisions/0019-rbac-com-grants-diretos-union.md)** (Accepted — 2026-05-12) — Autorização por role + role custom por tenant + grant direto `user_permissions`. Policies RLS fazem union de `user_roles` e `user_permissions` ativos (`revoked_at IS NULL AND (expires_at IS NULL OR expires_at > now())`). Grants sempre têm `expires_at` sugerido (UX força preencher; "sem expiração" exige justificativa).
 
 ## Commit
 

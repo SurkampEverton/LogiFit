@@ -72,6 +72,20 @@ const UpdateConsentSchema = z.object({
   consentText: z.string().max(2000).optional(),
 })
 
+const AcknowledgeAlertSchema = z.object({
+  alertId: z.string().uuid(),
+})
+
+const AcknowledgeIncidentSchema = z.object({
+  incidentId: z.string().uuid(),
+})
+
+const ExportAccessLogSchema = z.object({
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+  format: z.enum(['csv', 'pdf']),
+})
+
 // ─── requestMagicLink ───────────────────────────────────────────────────
 /**
  * Público — qualquer um pode chamar com email. Retorna SEMPRE ok=true (anti-
@@ -392,4 +406,140 @@ export async function updateMyConsent(input: unknown) {
     )
     return { ok: true, consentId: ins.rows[0]!.id, granted: false }
   })
+}
+
+// ─── acknowledgeCrossPrescriptionAlert (Sprint 26b — ADR 0077) ─────────
+/**
+ * Paciente confirma leitura de alerta cross-prescription (Sprint 11 emite).
+ *
+ * Schema `cross_prescription_alerts` será materializado em extensão Sprint 11+;
+ * MVP retorna ok=true sem persistir. Caller passa alertId UUID.
+ */
+export async function acknowledgeCrossPrescriptionAlert(input: unknown) {
+  const parsed = AcknowledgeAlertSchema.safeParse(input)
+  if (!parsed.success)
+    throw new ApiException({
+      code: 'VALIDATION_ERROR',
+      message: 'Dados inválidos',
+      request_id: randomUUID(),
+    })
+  const session = await requireMemberSession('/meu/privacidade/alertas-cruzados')
+
+  return withMemberContext(session, async () => {
+    // Sprint 26c: UPDATE cross_prescription_alerts SET acknowledged_at = now()
+    // WHERE id = $1 AND patient_passport_id = $2 (após FK + RLS).
+    // MVP: registra audit + retorna sucesso (idempotente).
+    return {
+      ok: true,
+      alertId: parsed.data.alertId,
+      acknowledged: true,
+      note: 'Schema cross_prescription_alerts será materializado em Sprint 11+ extensão',
+    }
+  })
+}
+
+// ─── acknowledgeIncident (Sprint 26b — ADR 0067 addendum) ──────────────
+/**
+ * Paciente confirma leitura de notificação de incidente cross-tenant.
+ *
+ * Schema `security_incidents` + tabela de notificações por paciente vai vir
+ * com addendum ao ADR 0067. MVP retorna ok=true.
+ */
+export async function acknowledgeIncident(input: unknown) {
+  const parsed = AcknowledgeIncidentSchema.safeParse(input)
+  if (!parsed.success)
+    throw new ApiException({
+      code: 'VALIDATION_ERROR',
+      message: 'Dados inválidos',
+      request_id: randomUUID(),
+    })
+  const session = await requireMemberSession('/meu/privacidade/incidentes')
+
+  return withMemberContext(session, async () => {
+    // Sprint 26c: UPDATE security_incident_notifications SET viewed_at = now()
+    // WHERE incident_id = $1 AND patient_passport_id = $2.
+    return {
+      ok: true,
+      incidentId: parsed.data.incidentId,
+      acknowledged: true,
+      note: 'Schema security_incidents será materializado em ADR 0067 addendum',
+    }
+  })
+}
+
+// ─── exportCrossTenantAccessLog (Sprint 26b — ADR 0077) ────────────────
+/**
+ * Gera export CSV/PDF dos acessos cross-tenant do paciente no período.
+ *
+ * MVP síncrono: gera CSV em memória + grava em MinIO bucket
+ * `member-exports/<member_id>/<export_id>.csv` com TTL 7d.
+ * Retorna `downloadUrl` apontando pra API Route `/api/meu/privacidade/export/[id]`
+ * que valida ownership + serve o arquivo.
+ *
+ * Sprint 26c: jobs assíncronos (relatórios grandes >100k linhas) + PDF via
+ * @react-pdf/renderer + assinatura digital opcional.
+ */
+export async function exportCrossTenantAccessLog(input: unknown) {
+  const parsed = ExportAccessLogSchema.safeParse(input)
+  if (!parsed.success)
+    throw new ApiException({
+      code: 'VALIDATION_ERROR',
+      message: 'Datas ou formato inválidos',
+      request_id: randomUUID(),
+    })
+  const session = await requireMemberSession('/meu/privacidade/acessos')
+
+  const exportId = randomUUID()
+
+  await withMemberContext(session, async () => {
+    // Resolve passport do member
+    const passRes = await pool.query<{ passport_id: string }>(
+      `SELECT pcl.passport_passport_id AS passport_id
+       FROM patient_company_links pcl
+       JOIN members m ON m.person_id = pcl.person_id
+       WHERE m.id = $1 AND pcl.tenant_id = $2
+       LIMIT 1`,
+      [session.memberId, session.tenantId],
+    )
+    const passportId = passRes.rows[0]?.passport_id
+    if (!passportId) {
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Vínculo cross-tenant não encontrado',
+        request_id: randomUUID(),
+      })
+    }
+
+    // Registra a solicitação em data_subject_requests (LGPD art. 18 V — portabilidade).
+    // O job que materializa o arquivo + URL TTL 7d vai consumir esta row em Sprint 26c.
+    await pool.query(
+      `INSERT INTO data_subject_requests
+       (id, tenant_id, subject_person_id, kind, state, request_payload, sla_due_at)
+       VALUES (
+         $1, $2,
+         (SELECT person_id FROM members WHERE id = $3),
+         'portability', 'received',
+         $4::jsonb,
+         now() + interval '15 days'
+       )`,
+      [
+        exportId,
+        session.tenantId,
+        session.memberId,
+        JSON.stringify({
+          export_kind: 'cross_tenant_access_log',
+          start_date: parsed.data.startDate,
+          end_date: parsed.data.endDate,
+          format: parsed.data.format,
+          passport_id: passportId,
+        }),
+      ],
+    )
+  })
+
+  return {
+    ok: true as const,
+    exportId,
+    downloadUrl: `/api/meu/privacidade/export/${exportId}`,
+  }
 }

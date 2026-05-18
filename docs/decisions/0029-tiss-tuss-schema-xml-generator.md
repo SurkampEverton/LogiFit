@@ -120,5 +120,5 @@ CBOS persiste em `billing_guide_items.cbos_code` (snapshot) + `billing_guides.pr
 - [ADR 0079](0079-tiss-401-ans-padrao-vigente.md) — estratégia geral TISS 4.01 (este ADR detalha implementação)
 - [ADR 0030](0030-tuss-update-pipeline.md) — pipeline atualização semestral
 - [ADR 0031](0031-tiss-validador-proativo.md) — validador proativo XSD + regras negócio
-- [ADR 0055](0055-cadastro-profissional-registros-conselho.md) — gate de CBOS via professional_registrations
+- [ADR 0055](0055-registros-profissionais-em-conselho.md) — gate de CBOS via professional_registrations
 - Sprint 22 [`docs/sprints/22-fisio-tiss-tuss-convenios.md`](../sprints/22-fisio-tiss-tuss-convenios.md)

@@ -32,7 +32,7 @@ Controle de estoque de materiais consumíveis (gaze, agulha, atadura, descartáv
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0087 (esperado)** — Método de custo (PEPS vs custo médio) e modelo de saldo (soma de movimentações vs contador denormalizado com trigger). Recomendação: soma + view materializada para performance se necessário. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0031 já alocado a Sprint 22 validador TISS proativo.)
+- **[ADR 0087](../decisions/0087-estoque-custo-saldo-model.md)** (Proposed — 2026-05-17) — Método de custo (PEPS vs custo médio) e modelo de saldo (soma de movimentações vs contador denormalizado com trigger). Recomendação: soma + view materializada para performance se necessário. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0031 já alocado a Sprint 22 validador TISS proativo.)
 - **Pergunta aberta:** multi-depósito — permitir estoque por `unit` ou só por `company`? Começar por `company` (simples); multi-unit é evolução se surgir demanda.
 
 ## Módulos entregues

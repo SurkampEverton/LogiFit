@@ -76,8 +76,8 @@ Transforma o módulo financeiro (que era focado em mensalidade Asaas + custos) e
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0033 (esperado)** — Plano de contas hierárquico: `chart_of_accounts` com `parent_id` self-referencing + seed brasileiro padrão; cada lançamento obrigatoriamente vinculado a 1 conta folha (não pode vincular a conta agregadora).
-- **ADR 0034 (esperado)** — Workflow AP configurável: `approval_rules` por tenant (ou por empresa) com faixas de valor + aprovadores em série ou paralelo. Estado da AP avança conforme cada aprovação chega; audit completo de quem aprovou/rejeitou.
+- **[ADR 0033](../decisions/0033-plano-contas-hierarquico-erp-financeiro.md)** (Accepted — 2026-05-14) — Plano de contas hierárquico: `chart_of_accounts` com `parent_id` self-referencing + seed brasileiro padrão; cada lançamento obrigatoriamente vinculado a 1 conta folha (não pode vincular a conta agregadora).
+- **[ADR 0034](../decisions/0034-workflow-aprovacao-ap-declarativo.md)** (Accepted — 2026-05-14) — Workflow AP configurável: `approval_rules` por tenant (ou por empresa) com faixas de valor + aprovadores em série ou paralelo. Estado da AP avança conforme cada aprovação chega; audit completo de quem aprovou/rejeitou.
 - **ADR 0035 (accepted)** — **OCR de boleto: interface abstrata configurável pelo admin do tenant**. OCR.space é o provider default (tier gratuito 25k/mês), mas o admin pode trocar por Google Vision, AWS Textract, Azure Computer Vision ou Tesseract self-hosted via `/app/settings/financeiro/ocr`. Credentials criptografadas por tenant. Fallback em cadeia configurável. Parser FEBRABAN é pós-OCR e independente de provider. Fallback final: operador digita manual se todos os providers falharem.
 - **Relação com `cost_entries` do Sprint 14:** decidir no sprint se `cost_entries` vira legado ou migra para `accounts_payable` (simplificação). Recomendação: AP é fonte primária; `cost_entries` fica como lançamento rápido para despesas sem fornecedor formal.
 

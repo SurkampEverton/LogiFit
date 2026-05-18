@@ -41,7 +41,7 @@ Prescrição de suplementos (vitaminas, minerais, fitoterápicos) como entidade 
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0082 (esperado)** — Suplementação separada de alimentos: tabelas distintas (`supplements`, `supplement_prescriptions`) por posologia diferente, regulamentação ANVISA e flux de prescrição próprio. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0037 já alocado a Sprint 17 Open Finance.)
+- **[ADR 0082](../decisions/0082-suplementos-separados-de-alimentos.md)** (Proposed — 2026-05-18) — Suplementação separada de alimentos: tabelas distintas (`supplements`, `supplement_prescriptions`) por posologia diferente, regulamentação ANVISA e flux de prescrição próprio. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0037 já alocado a Sprint 17 Open Finance.)
 - **Pergunta aberta:** fonte dos valores de referência laboratorial — SBAC (Sociedade Brasileira de Análises Clínicas)? Manual curado pela LogiFit? Começar com curado + revisão semestral.
 
 ## Módulos entregues

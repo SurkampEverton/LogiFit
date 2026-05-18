@@ -40,7 +40,7 @@ Biblioteca de exercícios com vídeos + montagem de treinos + atribuição (pres
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0023 (esperado)** — Prescrição genérica: `prescriptions` polimórfico com `kind` enum (`workout`, `meal_plan`, `fisio_protocol`, `custom`). Detalhe por tipo fica em tabelas especializadas (`workouts`, `meal_plans` futuros, `fisio_protocols` futuros). Justifica: Fisio (Fase 2) e Nutri (Fase 3) reusam a mesma abstração de "prescrever algo ao member com vigência".
+- **[ADR 0023](../decisions/0023-prescricoes-polimorficas-base.md)** (Accepted — 2026-05-13) — Prescrição genérica: `prescriptions` polimórfico com `kind` enum (`workout`, `meal_plan`, `fisio_protocol`, `custom`). Detalhe por tipo fica em tabelas especializadas (`workouts`, `meal_plans` futuros, `fisio_protocols` futuros). Justifica: Fisio (Fase 2) e Nutri (Fase 3) reusam a mesma abstração de "prescrever algo ao member com vigência".
 - **Pergunta aberta:** biblioteca global (templates compartilhados entre tenants) — quem cura? LogiFit (admin interno) ou comunitário? Começar com curadoria LogiFit (role `platform_admin`).
 
 ## Módulos entregues

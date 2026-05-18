@@ -93,5 +93,5 @@ Sprint 22b: dashboard `/app/super-admin/glosas-stats` mostra distribuição por 
 
 - [ADR 0079](0079-tiss-401-ans-padrao-vigente.md) — estratégia geral
 - [ADR 0029](0029-tiss-tuss-schema-xml-generator.md) — schema (CHECK aritmético já cobre #10 no DB)
-- [ADR 0055](0055-cadastro-profissional-registros-conselho.md) — fonte de CBOS + council
+- [ADR 0055](0055-registros-profissionais-em-conselho.md) — fonte de CBOS + council
 - Sprint 22 [`docs/sprints/22-fisio-tiss-tuss-convenios.md`](../sprints/22-fisio-tiss-tuss-convenios.md)

@@ -121,3 +121,33 @@ export * from './vigilancia'
 
 // Sprint 26 Faixa A — Portal do Paciente: member_auth_tokens (magic link 15min TTL) + member_sessions (refresh 30d multi-device) + member_consents (intra-tenant finalidades granulares). ADR 0088 esperado. RLS member role aplica em todas tabelas de domínio via 0045_portal_member_rls.sql.
 export * from './portal-member'
+
+// Sprint 27 Faixa A — Cross-alert lesão Fisio → ajuste treino Academia: cid_exercise_contraindications (global + tenant override) + member_injury_alerts (com blocked_reason audit) + workout_adaptations (suggested→confirmed via versionamento Sprint 11). ADR 0084 esperado. Regra 25 (franchise) + consent cross_module_share (Sprint 26) gates obrigatórios.
+export * from './cross'
+
+// Sprint 29 Faixa A — Nutri: banco alimentos TACO/USDA (global) + tenant custom + medidas caseiras + equivalências curadas + meal_plans versionado polimórfico (Sprint 11 prescriptions kind='meal_plan') + tenant_branding (PDF). ADRs 0080 + 0081 esperados. nutrients jsonb Zod-validated (30+ campos). meal_items @volume 2.4M+/ano — particionamento Sprint 29b.
+export * from './nutri'
+
+// Sprint 30 Faixa A — Nutri-labs: supplements (global + tenant) + supplement_interactions + supplement_prescriptions (consulta_id opcional Sprint 20) + lab_analytes (global) + lab_reference_ranges (1:N sex/age/condition) + lab_results (tenant + member, out_of_range denormalizado). ADR 0082 esperado. lab_results @volume 6M+/ano (regra 34 + ADR 0072 particionamento anual Sprint 30b). Retenção 20a Lei 13.787 + CFM 2.299.
+export * from './nutri-labs'
+
+// Sprint 31 Faixa A — Diário alimentar: meal_log_entries (paciente registra refeições) + food_log_daily_summary (agregado dia, alimenta calculateCaloricBalance ADR 0070) + meal_log_reviews (validações nutri). @volume 30M+/ano (regra 34 + ADR 0072 particionamento mensal Sprint 31b). Retenção 6m raw + agregado perpétuo.
+export * from './diario'
+
+// Sprint 31 Faixa A — Teleconsulta: teleconsultation_sessions (provider abstrato Daily/Whereby/Jitsi/Twilio — ADR 0083 esperado). Consent gravação + transcrição separados (LGPD art. 11). Rascunho SOAP IA Sprint 31b. Retenção 20a quando vincula a consulta.
+export * from './teleconsulta'
+
+// Sprint 32 Faixa A — Device Hub v1: device_connections (OAuth + BLE) + device_readings (FHIR-like Observation, @volume 180M+/ano, particionamento diário Sprint 32b retenção raw 90d) + device_readings_daily_summary (agregado perpétuo) + device_readings_curated (curadoria profissional Uso 1) + device_sync_cursors + device_consents (granular por provider + raw_data_access flag) + device_incidents. ADR 0049 esperado.
+export * from './devices'
+
+// Sprint 33 Faixa A — Pipeline Exames Laboratoriais: exam_documents (status workflow upload→processing→pending_review→published) + exam_extractions (OCR + IA structured) + exam_interpretations_draft (padrões+hipóteses conservadoras + classifier guard) + exam_interpretations_final (revisão profissional) + exam_review_edits (audit append-only) + tenant_exam_ai_settings (opt-out IA). ADR 0050 Accepted. @volume 2M+/ano. SaMD Classe II ANVISA RDC 657/2022.
+export * from './exames'
+
+// Sprint 34 Faixa A — Nutri-Agent IA: nutri_agent_runs (execução cross-module) + nutri_agent_suggestions (propostas pending/accepted/rejected revisão profissional obrigatória ADR 0044) + nutri_agent_metrics_snapshot (audit + reprodutibilidade). ADRs 0043+0044 esperados. SaMD Classe II ANVISA. Gate funcional: ai_committees.status='active' regra 13/28.
+export * from './nutri-agent'
+
+// Sprint 35 Faixa A — Mobile App Nativo backbone: mobile_app_versions (registry + min_required force update) + mobile_push_tokens (APNs/FCM com unique active por device + soft-revoke) + mobile_sessions (refresh 90d + device fingerprint distintas da web). ADRs 0045+0046 esperados. Sprint 35b/c entrega Expo project completo + APNs/FCM dispatcher real.
+export * from './mobile'
+
+// Sprint 36 Faixa A — Fiscal Emissions backbone (ADR 0059 Accepted): fiscal_emissions (8 kinds + status workflow + provider plug-in ADR 0076) + fiscal_events (append-only cancellation/CC-e/inutilizacao) + fiscal_numbering_sequences (atomic UPDATE...RETURNING) + fiscal_service_catalog (LC116/ISS/retenções) + fiscal_provider_credentials (AES-256-GCM cifrado KEK por tenant ADR 0073). @volume 3.6M+/ano (regra 34). Sprint 36b/c entrega payload builders 7 tipos + webhook Focus + portal contador + retencoes.
+export * from './fiscal'

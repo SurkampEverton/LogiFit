@@ -29,7 +29,7 @@ Agenda universal base (recursos, slots recorrentes, agendamentos, waitlist) serv
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0012 (esperado)** — Agenda como recurso + slot recorrente + materialização lazy. Slots não são linhas no banco pré-geradas; são "regras" que produzem appointments on-demand. Exclusion constraint garante unicidade no nível de banco.
+- **[ADR 0012](../decisions/0012-agenda-recurso-slot-recorrente-exclude.md)** (Accepted — 2026-05-13) — Agenda como recurso + slot recorrente + materialização lazy. Slots não são linhas no banco pré-geradas; são "regras" que produzem appointments on-demand. Exclusion constraint garante unicidade no nível de banco.
 - **Pergunta aberta:** política de cancelamento (cancel até X horas antes sem custo) — configurar por plano/company; fica como coluna em `plans` (Sprint 04) ou config do tenant? Decidir antes de implementar.
 
 ## Módulos entregues

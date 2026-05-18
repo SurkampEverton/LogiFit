@@ -39,7 +39,7 @@ Camada de engajamento v1 consumindo `domain_events`: catálogo de conquistas (ga
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0021 (esperado)** — Engajamento leve: conquistas como regras declarativas + dispatcher que consome `domain_events` e avalia predicates. Evita hard-coding de conquistas em código — cada conquista nova é linha em `achievements`, não deploy.
+- **[ADR 0021](../decisions/0021-engajamento-regras-declarativas-dsl.md)** (Accepted — 2026-05-13) — Engajamento leve: conquistas como regras declarativas + dispatcher que consome `domain_events` e avalia predicates. Evita hard-coding de conquistas em código — cada conquista nova é linha em `achievements`, não deploy.
 - **Pergunta aberta:** motor de regras — DSL própria (JSON schema), JS sandbox, ou SQL parametrizado? Decidir cedo. Começar com JSON schema simples (`kind + params`) e evoluir.
 
 ## Módulos entregues

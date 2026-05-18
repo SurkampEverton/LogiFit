@@ -38,7 +38,7 @@ Home do operador contextual por role (recepção / gerente / diretor / group_own
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0016 (esperado)** — Tokens "Equilíbrio Vital": lista canônica + estratégia light/dark + override dos tokens padrão do shadcn (remover sombras). Fica em `packages/ui/tokens.ts` + `tailwind.config.ts`.
+- **[ADR 0016](../decisions/0016-tokens-equilibrio-vital-light-dark-flat.md)** (Accepted — 2026-05-13) — Tokens "Equilíbrio Vital": lista canônica + estratégia light/dark + override dos tokens padrão do shadcn (remover sombras). Fica em `packages/ui/tokens.ts` + `tailwind.config.ts`.
 - [ADR 0062 — Pesquisa global (Command Palette Ctrl+K)](../decisions/0062-pesquisa-global-command-palette.md) — accepted
 - [ADR 0072 — Escalabilidade de banco (particionamento + retenção + cold storage)](../decisions/0072-escalabilidade-banco-particionamento-retencao-cold-storage.md) — UI de monitoramento materializada neste sprint
 - **Pergunta aberta:** views materializadas vs live queries para KPIs. Começar live; medir latência; se >500ms em p95, materializar (regra 34 + ADR 0072 já preveem materialized views para `tenant_metrics_daily`).

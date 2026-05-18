@@ -52,7 +52,7 @@ Testes E2E:
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0083 (esperado)** — Teleconsulta provider. Opções: Daily.co (simples, pay-per-use, boa reputação), Whereby Embed (white-label, plano fixo), Jitsi auto-hospedado (open source, operação própria), Twilio Video (robusto, caro). Critérios: LGPD (dados médicos via data processing agreement), custo por minuto, latência no Brasil, qualidade de gravação. Decisão com POC no início do sprint. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0038 já alocado a Sprint 17 NF-e recepção.)
+- **[ADR 0083](../decisions/0083-teleconsulta-provider-abstrato.md)** (Proposed — 2026-05-18) — Teleconsulta provider. Opções: Daily.co (simples, pay-per-use, boa reputação), Whereby Embed (white-label, plano fixo), Jitsi auto-hospedado (open source, operação própria), Twilio Video (robusto, caro). Critérios: LGPD (dados médicos via data processing agreement), custo por minuto, latência no Brasil, qualidade de gravação. Decisão com POC no início do sprint. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0038 já alocado a Sprint 17 NF-e recepção.)
 - **Pergunta aberta:** diário alimentar — paciente pode registrar sem plano ativo? Sim, permite; valor ainda é rastreabilidade.
 
 ## Módulos entregues

@@ -55,7 +55,7 @@ Portal web self-service do paciente/aluno, entregue como PWA para funcionar como
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0088 (esperado)** — Autenticação do member: magic link por email/SMS com TTL 15min; JWT com claim `role=member` bloqueia acesso a telas de operador; sessão longa (30d). Separação clara do namespace de role operador. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0032 já alocado a Sprint 20 política de fechamento de prontuário.)
+- **[ADR 0088](../decisions/0088-portal-member-magic-link-auth.md)** (Proposed — 2026-05-17) — Autenticação do member: magic link por email/SMS com TTL 15min; JWT com claim `role=member` bloqueia acesso a telas de operador; sessão longa (30d). Separação clara do namespace de role operador. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0032 já alocado a Sprint 20 política de fechamento de prontuário.)
 - **Pergunta aberta:** cancelamento de agendamento — ir direto ou entrar em fila de "cancelamento a aprovar"? Por vertical: Academia (livre até X horas antes), Fisio (aviso ao profissional), Nutri (reagendamento).
 
 ## Módulos entregues

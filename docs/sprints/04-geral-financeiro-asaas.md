@@ -36,8 +36,8 @@ Catálogo de planos, contratos (matrículas), cobranças Asaas (boleto/Pix/cart�
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0013 (esperado)** — Plano → Contrato → Cobrança como entidades separadas (não colapsar "assinatura" numa tabela só). Justifica: contrato tem vigência independente das cobranças; cobrança tem status próprio; histórico audita tudo.
-- **ADR 0014 (esperado)** — Chave Asaas + conta bancária: por `company` quando `financial_mode=distributed`; por `tenant` (via a única matriz) quando `centralized`. Casa com ADR 0010.
+- **[ADR 0013](../decisions/0013-plano-contrato-cobranca-entidades-separadas.md)** (Accepted — 2026-05-13) — Plano → Contrato → Cobrança como entidades separadas (não colapsar "assinatura" numa tabela só). Justifica: contrato tem vigência independente das cobranças; cobrança tem status próprio; histórico audita tudo.
+- **[ADR 0014](../decisions/0014-asaas-keys-distributed-vs-centralized.md)** (Accepted — 2026-05-13) — Chave Asaas + conta bancária: por `company` quando `financial_mode=distributed`; por `tenant` (via a única matriz) quando `centralized`. Casa com ADR 0010.
 - **Pergunta aberta:** grace period de inadimplência (dias entre vencer e bloquear QR no sprint 07) — decidir agora ou deixar como config por tenant.
 
 ## Módulos entregues

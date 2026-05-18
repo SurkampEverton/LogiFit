@@ -9,7 +9,8 @@
     "./tokens.css": "./src/tokens.css",
     "./messages": "./src/messages/index.ts",
     "./layout/app-layout": "./src/layout/app-layout.tsx",
-    "./assets/*": "./assets/*"
+    "./assets/*": "./assets/*",
+    "./genui": "./src/genui/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

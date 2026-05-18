@@ -27,7 +27,10 @@
     "./rh": "./src/rh/index.ts",
     "./estoque": "./src/estoque/index.ts",
     "./vigilancia": "./src/vigilancia/index.ts",
-    "./portal-member": "./src/portal-member/index.ts"
+    "./portal-member": "./src/portal-member/index.ts",
+    "./cross": "./src/cross/index.ts",
+    "./nutri": "./src/nutri/index.ts",
+    "./diario": "./src/diario/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -53,6 +56,9 @@
     "db:seed:rh": "tsx scripts/seed-rh.ts",
     "db:seed:estoque": "tsx scripts/seed-estoque.ts",
     "db:seed:vigilancia": "tsx scripts/seed-vigilancia.ts",
+    "db:seed:cross-contras": "tsx scripts/seed-cross-contras.ts",
+    "db:seed:nutri-foods": "tsx scripts/seed-nutri-foods.ts",
+    "db:seed:nutri-labs": "tsx scripts/seed-nutri-labs.ts",
     "db:rls-check": "tsx tests/rls-check.ts"
   },
   "dependencies": {

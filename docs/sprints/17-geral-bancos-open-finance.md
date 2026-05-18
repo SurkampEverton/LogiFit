@@ -88,8 +88,8 @@ Integração com bancos via Open Finance (ou importação OFX fallback) + concil
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0037 (esperado)** — Provider Open Finance: Pluggy vs Belvo vs API direta dos bancos. Critério: cobertura de bancos brasileiros, pricing (per-connection), latência, confiabilidade. POC no início do sprint.
-- **ADR 0038 (esperado)** — Provider NF-e recepção: Arquivei (tier gratuito), Sieg, Nfe.io, Focus NFe (mesmo provider do NFS-e emissor pode ter recepção), SEFAZ direto com certificado. Critério: custo por NF, cobertura, gestão de certificado. POC no início do sprint.
+- **[ADR 0037](../decisions/0037-open-finance-provider-pluggy-belvo.md)** (Proposed — 2026-05-15) — Provider Open Finance: Pluggy vs Belvo vs API direta dos bancos. Critério: cobertura de bancos brasileiros, pricing (per-connection), latência, confiabilidade. POC no início do sprint.
+- **[ADR 0038](../decisions/0038-nfe-recepcao-provider-arquivei-sieg-focus.md)** (Proposed — 2026-05-15) — Provider NF-e recepção: Arquivei (tier gratuito), Sieg, Nfe.io, Focus NFe (mesmo provider do NFS-e emissor pode ter recepção), SEFAZ direto com certificado. Critério: custo por NF, cobertura, gestão de certificado. POC no início do sprint.
 - **Pergunta aberta:** certificado digital A1/A3 — como armazenar? A1 em HSM do Supabase/Vault próprio (A1 é arquivo .pfx com senha); A3 é hardware físico (não serve para automação server-side). Optar por A1 + Supabase Vault ou AWS KMS.
 
 ## Módulos entregues

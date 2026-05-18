@@ -56,7 +56,7 @@ plans (catálogo, mutável dentro do tenant)
 
 - **Histórico fiscal**: cada cobrança gera evento fiscal próprio (NFS-e Sprint 36
   pode emitir por invoice). Cancelled invoice continua existindo pra auditoria.
-- **Breakdown jsonb** ([ADR 0068](0068-plano-composto-por-servicos-billing-completo.md)):
+- **Breakdown jsonb** ([ADR 0068](0068-catalogo-servicos-precos-contextuais-link-financeiro.md)):
   `{base, overage_items, discounts, surcharges, taxes_withheld}` permite
   transparência total no display ("quanto cada item somou").
 - **Múltiplas cobranças por contrato**: contrato mensal gera 12 invoices/ano;
@@ -154,5 +154,5 @@ Se modelo provar excesso de complexidade pré-traction:
 
 - [Sprint 04 — Geral · Financeiro Asaas](../sprints/04-geral-financeiro-asaas.md)
 - [ADR 0014 — Chaves Asaas por company vs tenant](0014-asaas-keys-distributed-vs-centralized.md)
-- [ADR 0068 — Plano composto por serviços + breakdown](0068-plano-composto-por-servicos-billing-completo.md)
+- [ADR 0068 — Plano composto por serviços + breakdown](0068-catalogo-servicos-precos-contextuais-link-financeiro.md)
 - [ADR 0010 — financial_mode centralized/distributed](0010-financial-mode-centralized-usa-1-matriz-n-units.md)

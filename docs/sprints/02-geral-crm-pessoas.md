@@ -60,7 +60,7 @@ Perfil único cross-module do aluno/paciente (`members`), timeline append-only (
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0011 (esperado)** — Member como perfil único cross-module + timeline em `member_events` append-only. Tabelas específicas da vertical (prontuário fisio, antropometria nutri) referenciam `member_id` mas nunca duplicam dados básicos.
+- **[ADR 0011](../decisions/0011-member-perfil-unico-cross-module.md)** (Accepted — 2026-05-12) — Member como perfil único cross-module + timeline em `member_events` append-only. Tabelas específicas da vertical (prontuário fisio, antropometria nutri) referenciam `member_id` mas nunca duplicam dados básicos.
 - **[ADR 0077](../decisions/0077-passaporte-paciente-vinculo-cross-tenant.md)** — Passaporte do paciente cross-tenant + Modelo C híbrido (vínculo empresa + módulos explícitos) + 5 módulos canônicos lookup table + 2 paths de cadastro (reativo/proativo) + 5 níveis de dados + audit obrigatório. **Status: Accepted** (decisão arquitetural formalizada 2026-04-25 — schema, fluxos, gates podem ser implementados). **Gate operacional separado:** ativação do feature flag `passaporte_cross_tenant` em tenant clínico (médico/fisio com CFM/COFFITO) depende de parecer jurídico externo + 30d de operação MVP estável (RIPD `v1.0-passaporte-paciente.md` linhas 10/117). Implementar e mergir desbloqueado; ligar em produção bloqueado pelo gate.
 - Pergunta aberta: como detectar aluno duplicado entre companies do mesmo tenant `owned`? Candidatos: CPF (vedado por LGPD em algumas ops) ou telefone+data nascimento. Fechar antes da implementação.
 - Pergunta aberta (ADR 0077): limite de invites/dia por tenant (default sugerido 50) + limite de invites por CPF (default 3/30d) — fechar antes da implementação.

@@ -40,7 +40,7 @@ Cada integração abstraída por interface comum.
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0039 (esperado)** — Adquirência: arquitetura de provider abstrato + ordem de implementação (qual integrar primeiro baseado em demanda do primeiro cliente). Começar com **Stone** (API mais madura, documentação melhor) + **Cielo** (maior volume) + fallback manual (upload CSV).
+- **[ADR 0039](../decisions/0039-adquirencia-provider-abstrato.md)** (Proposed — 2026-05-17) — Adquirência: arquitetura de provider abstrato + ordem de implementação (qual integrar primeiro baseado em demanda do primeiro cliente). Começar com **Stone** (API mais madura, documentação melhor) + **Cielo** (maior volume) + fallback manual (upload CSV).
 - **Pergunta aberta:** antecipação automática por regra? "Se saldo previsto negativo D+7, antecipe X% das vendas pendentes". Útil, mas exige configuração consciente do cliente (custo financeiro). Começar só manual; automação vira stretch.
 
 ## Módulos entregues

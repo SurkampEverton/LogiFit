@@ -38,7 +38,7 @@ Implementar o primeiro **cross-alert real** do produto: quando uma lesão é reg
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0084 (esperado)** — Mapeamento CID → contraindicação de exercício. Começar com tabela `cid_exercise_contraindications` curada pela LogiFit + edit por tenant. Alternativa futura: IA infere (Copilot) — stretch. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0033 já alocado a Sprint 15 plano de contas hierárquico.)
+- **[ADR 0084](../decisions/0084-cross-alert-cid-contraindicacao.md)** (Proposed — 2026-05-18) — Mapeamento CID → contraindicação de exercício. Começar com tabela `cid_exercise_contraindications` curada pela LogiFit + edit por tenant. Alternativa futura: IA infere (Copilot) — stretch. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0033 já alocado a Sprint 15 plano de contas hierárquico.)
 - **Pergunta aberta:** autonomia do sistema — adaptação automática ou só sugere e instrutor escolhe? Começar com "sugere e instrutor confirma" para evitar erros clínicos sem supervisão humana.
 
 ## Módulos entregues

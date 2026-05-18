@@ -165,7 +165,7 @@ nfe_sefaz_cursors (
 ## Referências
 
 - [Sprint 17 — Bancos + Open Finance + NF-e SEFAZ](../sprints/17-geral-bancos-open-finance.md)
-- [ADR 0056](0056-nfe-inbox-unificada.md) — inbox `nfe_received` já criada Sprint 15
+- [ADR 0056](0056-nfe-inbox-unificada-e-metodos-ingestao.md) — inbox `nfe_received` já criada Sprint 15
 - [ADR 0057](0057-manifestacao-destinatario-nfe.md) — manifestação destinatário (4 eventos)
 - [ADR 0059](0059-ciclo-fiscal-emissao-focus-nfe.md) — Focus NFe emissão Sprint 36
 - [ADR 0073](0073-postura-seguranca-defesa-em-profundidade.md) — envelope encryption

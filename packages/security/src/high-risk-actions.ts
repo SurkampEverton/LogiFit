@@ -26,6 +26,10 @@ export const HIGH_RISK_ACTIONS: readonly HighRiskAction[] = [
   // Fiscal — sprint 22 (TISS), 36 (Focus NFe)
   { action: 'cancelTissGuide', requireMfaMaxAgeMins: 15, category: 'fiscal' },
   { action: 'cancelNfe', requireMfaMaxAgeMins: 15, category: 'fiscal' },
+  // Sprint 36 — Eventos pós-emissão fiscal (ADR 0059): CC-e + inutilização
+  // são alto risco (afetam histórico fiscal e numeração; auditoria SEFAZ)
+  { action: 'issueCce', requireMfaMaxAgeMins: 15, category: 'fiscal' },
+  { action: 'inutilizeRange', requireMfaMaxAgeMins: 15, category: 'fiscal' },
 
   // Financeiro — sprint 04 (Asaas), 06 (cobrança), 17 (Open Finance)
   { action: 'voidPaidInvoice', requireMfaMaxAgeMins: 15, category: 'financeiro' },

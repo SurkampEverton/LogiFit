@@ -38,8 +38,8 @@ Para gerar:
 
 ## Decisões esperadas
 
-- ADR 0043 (esperado) — Arquitetura Nutri-Agent: agente especializado vs Copilot generalizado com persona "nutricionista"
-- ADR 0044 (esperado) — Política de mudanças automáticas em plano alimentar (sempre proposta, nunca write direto)
+- [ADR 0043](../decisions/0043-nutri-agent-arquitetura.md) (Proposed — 2026-05-18) — Arquitetura Nutri-Agent: agente especializado vs Copilot generalizado com persona "nutricionista"
+- [ADR 0044](../decisions/0044-nutri-agent-politica-mudancas-plano.md) (Proposed — 2026-05-18) — Política de mudanças automáticas em plano alimentar (sempre proposta, nunca write direto)
 
 ## ADRs já fechados que se aplicam
 

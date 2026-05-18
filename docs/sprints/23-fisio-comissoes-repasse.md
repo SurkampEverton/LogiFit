@@ -34,7 +34,7 @@ Cálculo automático de comissão/repasse por profissional (fisio autônomo, per
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0086 (esperado)** — Modelo de comissão: `professional_contracts` + `commission_rules` (overrides por tipo). Base de cálculo configurável (faturado vs recebido vs pago). Fechamento mensal com imutabilidade após aprovação. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0030 já alocado a Sprint 22 pipeline atualização TISS.)
+- **[ADR 0086](../decisions/0086-modelo-comissao-profissional.md)** (Proposed — 2026-05-17) — Modelo de comissão: `professional_contracts` + `commission_rules` (overrides por tipo). Base de cálculo configurável (faturado vs recebido vs pago). Fechamento mensal com imutabilidade após aprovação. (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0030 já alocado a Sprint 22 pipeline atualização TISS.)
 - **Pergunta aberta:** tributação — o sistema deve calcular INSS/IR retidos ou só o valor bruto? Começar só bruto; tributação vira stretch ou sprint posterior.
 
 ## Módulos entregues

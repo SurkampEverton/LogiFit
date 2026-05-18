@@ -31,7 +31,7 @@ Primeira implementação de Generative UI no produto: resposta do Copilot (Sprin
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0085 (esperado)** — Generative UI: provider (Vercel AI SDK `ui.streamUI` ou framework próprio), registro de componentes, validação Zod por tool, streaming SSE → React. Componentes auditáveis (não código arbitrário). (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0034 já alocado a Sprint 15 workflow AP.)
+- **[ADR 0085](../decisions/0085-generative-ui-framework.md)** (Proposed — 2026-05-18) — Generative UI: provider (Vercel AI SDK `ui.streamUI` ou framework próprio), registro de componentes, validação Zod por tool, streaming SSE → React. Componentes auditáveis (não código arbitrário). (Numeração ≥0080 conforme [roadmap §convenção fora-de-sprint](../roadmap.md) — 0034 já alocado a Sprint 15 workflow AP.)
 - **Pergunta aberta:** hard-coded components vs dinâmicos — começar com registro fixo (seguro); dinamic (LLM escreve JSX) fica fora de escopo indefinidamente (risco de segurança inaceitável).
 
 ## Módulos entregues

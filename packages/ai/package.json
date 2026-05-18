@@ -16,7 +16,8 @@
     "@ai-sdk/google": "^3.0.73",
     "@ai-sdk/openai": "^3.0.63",
     "@repo/security": "workspace:*",
-    "ai": "^6.0.180"
+    "ai": "^6.0.180",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@repo/config": "workspace:*",

@@ -232,6 +232,69 @@
       "when": 1779065568469,
       "tag": "0032_green_marauders",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1779069607837,
+      "tag": "0033_cross_alert_lesao",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1779111236183,
+      "tag": "0034_nutri_foods_planos",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1779113144313,
+      "tag": "0035_nutri_labs_suplementos",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1779114543864,
+      "tag": "0036_diario_teleconsulta",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1779115741474,
+      "tag": "0037_device_hub",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1779116919642,
+      "tag": "0038_exames_pipeline",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1779118080066,
+      "tag": "0039_nutri_agent",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1779119442066,
+      "tag": "0040_mobile_app_backbone",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1779120842287,
+      "tag": "0041_fiscal_focus_nfe",
+      "breakpoints": true
     }
   ]
 }

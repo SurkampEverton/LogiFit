@@ -41,7 +41,7 @@ Catálogo de tipos de avaliação (bioimpedância, dobras cutâneas, antropometr
 
 ## Decisões tomadas / ADRs esperados
 
-- **ADR 0024 (esperado)** — `assessments` como catálogo de tipos + `measurements` séries temporais. Um schema serve bioimpedância, dobras, antropometria (Nutri), ROM (Fisio). Tipos configuráveis por tenant; campos com schema declarativo (Zod dinâmico).
+- **[ADR 0024](../decisions/0024-avaliacoes-schema-dinamico-fields-jsonb.md)** (Accepted — 2026-05-13) — `assessments` como catálogo de tipos + `measurements` séries temporais. Um schema serve bioimpedância, dobras, antropometria (Nutri), ROM (Fisio). Tipos configuráveis por tenant; campos com schema declarativo (Zod dinâmico).
 - **Pergunta aberta:** cálculos derivados (IMC, taxa metabólica basal, índice de gordura Pollock 7 dobras) — feitos no banco via generated columns, na aplicação via função utilitária, ou gravados como campos regulares? Começar com função JS em `packages/db/assessments/calc.ts` e rodar na escrita.
 
 ## Módulos entregues
