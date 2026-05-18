@@ -71,6 +71,7 @@ async function resolveInvite(token: string): Promise<InviteResponse | InviteErro
   const host = h.get('host') ?? 'localhost:3000'
   const proto = h.get('x-forwarded-proto') ?? 'http'
   const url = `${proto}://${host}/api/i/${encodeURIComponent(token)}`
+  // safe-fetch-exempt: same-origin API call (regra 37 cobre URLs externas)
   const r = await fetch(url, { cache: 'no-store' })
   return (await r.json()) as InviteResponse | InviteError
 }

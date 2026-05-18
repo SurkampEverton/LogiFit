@@ -77,6 +77,7 @@ export function MemberQrDisplay({ memberId }: { memberId: string }) {
 
   async function fetchQr() {
     try {
+      // safe-fetch-exempt: same-origin API call (regra 37 cobre URLs externas)
       const res = await fetch(`/api/acesso/qr/${memberId}`, { cache: 'no-store' })
       if (!res.ok) {
         const body = (await res.json()) as { message?: string; error?: string }

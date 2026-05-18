@@ -251,8 +251,18 @@ function checkHighRiskActionMfa(file, lines) {
     const re = new RegExp(`\\b(?:function|const)\\s+${action}\\b`)
     const match = content.match(re)
     if (!match) continue
-    // Encontrou definição da função; deve haver requireRecentMfa() no escopo
+    // Encontrou definição. Deve haver gate de MFA, aceito em 3 padrões:
+    //   1. `requireRecentMfa(...)` direto no handler
+    //   2. `requireRecentMfaForAction(...)` direto no handler
+    //   3. `wrapServerAction({action: 'X', ...}, ...)` onde X é high-risk —
+    //      lib/wrap-action.ts chama requireRecentMfaForAction automaticamente
+    //      via lookup em HIGH_RISK_ACTIONS, então não exige call manual.
     if (content.includes('requireRecentMfa(')) continue
+    if (content.includes('requireRecentMfaForAction(')) continue
+    const wrapRe = new RegExp(
+      `wrap(?:Server)?Action\\s*\\(\\s*\\{[^}]*action\\s*:\\s*['"]${action}['"]`,
+    )
+    if (wrapRe.test(content)) continue
     if (content.includes('// mfa-exempt:')) continue
     const lineNum = content.slice(0, content.indexOf(match[0])).split(/\r?\n/).length
     report('high-risk-action-must-require-recent-mfa', file, lineNum, match[0])

@@ -230,6 +230,7 @@ export function AppShell({
     if (signingOut) return
     setSigningOut(true)
     try {
+      // safe-fetch-exempt: same-origin sign-out endpoint (regra 37 cobre URLs externas)
       await fetch(signOutUrl, {
         method: 'POST',
         credentials: 'include',

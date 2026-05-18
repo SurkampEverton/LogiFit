@@ -39,6 +39,7 @@ export function QrLiveDisplay({ initialQrString }: Props) {
 
     async function refresh() {
       try {
+        // safe-fetch-exempt: same-origin API call (regra 37 cobre URLs externas)
         const res = await fetch('/api/meu/qr', { cache: 'no-store' })
         if (!res.ok) return
         const data = (await res.json()) as { ok?: boolean; qr?: string }
