@@ -6,6 +6,72 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 33 (Pipeline Inteligente de Exames Laboratoriais — backbone 33a core) 2026-05-18
+
+Pipeline de extração automática de exames laboratoriais (`Upload → OCR → IA extração → IA interpretação conservadora → revisão profissional → lab_results oficial`). ADR 0050 Accepted desde 2026-04-23. **Backbone Faixa A** entregue — pipeline real (OCR + LLM Vertex AI Gemini + scanUpload + drag-drop + ICP-Brasil-style revisão completa) fica para Sprint 33b/c.
+
+**Schemas (`packages/db/src/schema/exames.ts`)** — 4 enums + 6 tabelas:
+
+- `exam_documents` — PDF/imagem original com workflow `uploaded → processing → pending_review → published | rejected | failed`. Particionável anual Sprint 33b (regra 34 + ADR 0072), `@volume_estimate_yearly: 2M+`, retenção 20a (Lei 13.787 + CFM 2.299 — 1 ano hot tier + 19 anos cold tier `archive-cold-attachments`). 5 indexes incluindo partial `WHERE status = 'pending_review'` (fila do profissional) e partial `WHERE sensitivity = 'high'` (audit reforçado). 4 sources: `professional_upload`, `patient_portal`, `patient_whatsapp` (Sprint 13 hub ADR 0051 com `source_ref` apontando pra `whatsapp_inbound_messages.id`), `lab_integration_future`. 2 CHECKs: `uploader_consistency` (uploaded_by_user_id OR uploaded_by_member_id NOT NULL) + `review_consistency` (status terminal exige reviewed_by_user_id + reviewed_at).
+- `exam_extractions` — texto bruto OCR + `structured_data jsonb` validado por Zod strict (ExamExtractionSchema). 1:1 com exam_documents via cascade delete. Acompanha particionamento anual Sprint 33b. CHECK `ocr_confidence` 0-1. Provider OCR abstrato reusa Sprint 15 ADR 0035.
+- `exam_interpretations_draft` — interpretação preliminar IA: `out_of_range jsonb`, `patterns jsonb`, `hypotheses jsonb`, `follow_up_suggestions jsonb`. Audit flag `blocked_by_classifier` + `classifier_blocked_terms jsonb` quando classificador anti-diagnóstico bloqueia output IA. Index partial `WHERE blocked_by_classifier = true` pra DPO revisar false positives. Conservadora (regra 28 + ADR 0050).
+- `exam_interpretations_final` — versão revisada pelo profissional. `accepted_patterns` + `accepted_hypotheses` + `rejected_hypotheses jsonb` (audit — saber o que IA sugeriu vs profissional descartou) + `professional_observations text` + reviewed_by_user_id RESTRICT FK pra users.
+- `exam_review_edits` — audit append-only de toda edição durante review. Sem UPDATE/DELETE policy. Field-level (1 entry por analito editado: `field_key='analyte.glicose_jejum'`).
+- `tenant_exam_ai_settings` — opt-out por tenant (LGPD-sensitive). `ai_extraction_enabled` + `ai_interpretation_enabled` independentes + `classifier_strictness` enum strict/moderate + `preferred_model` override do Sprint 06 resolver.
+
+Migration `0038_exames_pipeline.sql` (116 linhas). RLS policies `0051_exames_rls.sql` — FORCE em todas 6 tabelas + 10 policies cobrindo tenant scope + member portal via `app.member_id` em select de `exam_documents` e `exam_interpretations_final` (paciente vê próprios exames) + GRANT diferenciado: `exam_review_edits` recebe só `SELECT, INSERT` (sem UPDATE/DELETE — append-only).
+
+**3 libs puras em `packages/ai/src/exames/`:**
+
+- `classifier.ts` (113 linhas) — classifier de output IA bloqueia frases diagnósticas/prescritivas antes de virar `exam_interpretations_draft`. **11 STRICT patterns** regex case-insensitive: `\bdiagnóstico\s+de\s+\w+/`, `paciente\s+(tem|possui|apresenta)\s+(diabetes|hipertensão|cancer|...)/`, `\bvocê\s+(tem|possui|sofre\s+de)\b/`, `\bprescrev[oe]r?\b/`, `\btome\s+\d+\s*(mg|ml|g|ui)\b/`, `\biniciar?\s+(tratamento|medicação)\b/`, `\b(comece|começar)\s+(a\s+)?(tomar|usar)\b/`, `\bsubstituir?\s+(medicamento|remédio)\b/`, `\bcontraindicad[oa]\s+para\s+\w+/`. **5 MODERATE patterns** adicional: `\bconfirma\s+\w+/`, `\bgarante?\s+que\b/`, `\bcerteza\s+(de|que)\b/`, `\bdefinitivamente\b/`, `\bcomprovadamente\s+(tem|possui)\b/`. Vocabulário aceito (allowlist conceitual): "sugere", "compatível com", "pode indicar", "padrão sugestivo de", "achado a esclarecer". `classifyInterpretationOutput(text, strictness='strict')` retorna `{ok, blockedTerms[], originalText}` + `classifyInterpretationFields([])` agrega multi-string + `getBlockedMessage()` formata mensagem amigável pra UI.
+- `extraction-schema.ts` (69 linhas) — Zod `.strict()` (campos não-listados rejeitados): `ExamAnalyteSchema` com `code` (2-60 chars) + `label` (2-120) + `value` (finite) + `unit` (1-20) + `referenceHint?` + `labAnalyteIdMatch?` UUID + `matchConfidence?` 0-1; `ExamExtractionSchema` com `examType` (2-60) + `laboratory?` + `collectedAt?` ISO datetime + `analytes` (min 1 max 100) + `overallConfidence?` 0-1 + `notes?` (max 500). `parseExtractionJson()` throw + `safeParseExtractionJson()` non-throw discriminado.
+- `interpretation.ts` (337 linhas) — 3 funções puras:
+  - `compareWithRanges(analytes, ranges, ctx)` busca melhor reference range via scoring (condition match=1000pts > sex match=200pts ou 50pts `any` > age range fit=100pts + bonus por amplitude curta) + classifica out_of_range `mild` (até 20% além do limite) ou `severe` (acima 20%).
+  - `detectPatterns(outOfRange)` cruza out_of_range com `PATTERN_CATALOG` curado de 7 padrões cross-analito conservadores:
+    - `perfil_aterogenico` (LDL above + HDL below required; triglicérides above optional)
+    - `padrao_anemico_ferropriva` (hemoglobina + ferritina below required)
+    - `resistencia_insulina_inicial` (glicose_jejum + hba1c above required)
+    - `disfuncao_hepatica` (ast_tgo + alt_tgp above required)
+    - `hipotireoidismo_sugestivo` (tsh above + t4_livre below required)
+    - `deficiencia_vitamina_d` (vitamina_d_25oh below required)
+    - `deficiencia_b12` (vitamina_b12 below required)
+
+    Confidence base 0.85 + 0.1 por optional matchado (cap 1). Cada padrão tem `description` em vocabulário conservador ("Padrão sugestivo de...", "Avaliar contexto clínico", "Investigação adicional recomendada").
+  - `getFollowUpSuggestions(patterns)` retorna sugestões de exames complementares deduplicadas por padrão: apoB+Lp(a)+PCR-us pra aterogênico; ferro sérico+B12+ácido fólico pra anemia ferropriva; insulina jejum+HOMA-IR+TOTG pra resistência insulina; GGT+sorologias hep+USG abdome pra disfunção hepática; repetir TSH+T4 livre+anti-TPO pra hipotireoidismo; PTH+cálcio+fósforo pra deficiência D; ácido fólico+homocisteína+MMA pra deficiência B12.
+
+**36 unit tests verdes** em `@repo/ai`: 19 `classifier.test.ts` (STRICT bloqueia diagnóstico/você tem/prescrever/tome XX mg/iniciar tratamento/comece a tomar/substituir medicamento/contraindicado; MODERATE adicional confirma/garante/certeza/definitivamente/comprovadamente; vocabulário conservador "sugere/compatível com" aceito; multi-field aggregation; getBlockedMessage UI-friendly) + 17 `interpretation.test.ts` (compareWithRanges retorna out_of_range correto LDL above/HDL below/glicose in-range; scoring condition>sex>age priorities; severity mild/severe threshold 20%; detectPatterns perfil_aterogenico com required+optional triglicérides; anemia_ferropriva com hemoglobina+ferritina; direction match enforced; multiple patterns simultaneously; getFollowUpSuggestions deduplica entre padrões).
+
+**9 Server Actions wrapped** (envelope ADR 0071):
+
+Staff em `apps/web/app/app/exames/actions.ts` (685 linhas):
+
+- `uploadExamDocument({memberId, storagePath, originalFilename, mimeType, fileSizeBytes?, sensitivity?, source?, sourceRef?})` valida member do tenant + cria `exam_documents` status=`uploaded` + setAuditResource com source+sensitivity.
+- `processExam({examDocumentId})` chamado por job — MVP usa `stubOcrAndExtraction()` determinístico retornando 5 analitos canônicos (glicose_jejum=102/hba1c=5.8/colesterol_total=215/hdl=38/triglicerides=180 — caso sintético borderline elegível pra detectar perfil_aterogenico + resistencia_insulina). Fluxo: valida doc + member status `uploaded` → marca `processing` → roda OCR stub + grava `exam_extractions` com structured_data Zod-validado → carrega member context (birthDate via persons.birthDate → ageYearsAt + sex) → carrega `lab_analytes` mapeando codes detectados + reference_ranges joinando → `compareWithRanges` → `detectPatterns` → `getFollowUpSuggestions` → `classifyInterpretationFields` guardrail em patterns.description + followUp → persiste `exam_interpretations_draft` com `blocked_by_classifier` flag + `classifier_blocked_terms` audit quando bloqueado → atualiza doc status=`pending_review` + examTypeDetected + laboratory + collectedAt + processedAt. Retorna `{analytesCount, outOfRangeCount, patternsCount, blockedByClassifier, codesNotMapped}` pra observabilidade.
+- `submitExamReview({examDocumentId, reviewedAnalytes[], acceptedPatterns[], acceptedHypotheses[], rejectedHypotheses[], observations?})` em transação atomic: cria `exam_interpretations_final` + audit `exam_review_edits` (1 por analito editado, field_key=`analyte.{code}`) + `lab_results` Sprint 30 (1 por analito não-ignorado com analyteId resolvido + value/unit + collectedAt + laboratory + enteredByUserId) + atualiza doc status=`published` + reviewedAt + reviewedByUserId.
+- `listPendingExams({limit?=50, sensitivityFilter?})` ORDER BY uploaded_at ASC com member+person JOIN.
+- `getExamDetail({examDocumentId})` retorna doc + última extraction + último draft (ORDER BY DESC).
+- `markSensitive({examDocumentId, sensitivity})` permite escalar pra `high`.
+- `rejectExam({examDocumentId, reason})` válido só em status `uploaded`/`processing`/`pending_review` (não-terminal).
+
+Member portal em `apps/web/app/meu/exames/actions.ts` (90 linhas):
+
+- `selfUploadExam({storagePath, originalFilename, mimeType, fileSizeBytes?})` via `withMemberContext` RLS-aware — cria `exam_documents` source=`patient_portal` + `uploaded_by_member_id` + status=`uploaded`. Sprint 33b: dispara job de processamento via fila.
+- `listMyExams()` retorna últimos 50 do member via `withMemberContext` (RLS aplica `app.member_id`).
+
+**5 rotas UI mínimas:**
+
+- `/app/exames/fila` — fila ASC por uploaded_at com 7 colunas (Paciente + Tipo + Lab + Origem ícones 👨‍⚕️/📱/💬/🔌 + Sensibilidade 🔒 Alta / Normal + Status IA "✓ Pronto" verde ou "⚠ IA bloqueou" amarelo + Há "Xh"/"Xd"). Empty state aponta `/meu/exames/upload` e `/app/members/[id]/exames/upload`.
+- `/app/exames/[id]` — detalhe read-only lado-a-lado: cabeçalho member + tipo + lab + sensitivity 🔒 badge; metadados (arquivo+mime, origem, recebido, processado); tabela analitos extraídos com badge ⬆/⬇ + mild/severe color-coded por out_of_range; cards padrões detectados com confidence% borda primary; lista follow-up sugerido; banner amarelo `var(--ev-warning-soft)` quando `blocked_by_classifier=true` mostrando termos bloqueados; nota "Sprint 33b adiciona table editor + submit review".
+- `/app/nutri/exames` — rota nutri-específica.
+- `/meu/exames` — portal mobile-first com status badge amigável ("Recebido — aguardando análise" warning / "Em análise pela IA" warning / "Aguardando seu profissional" info / "✓ Analisado e adicionado ao histórico" success / "Não pôde ser analisado" danger / "Erro técnico — re-enviar" danger).
+- `/meu/exames/upload` — placeholder Sprint 33b apontando WhatsApp da clínica enquanto MinIO+scanUpload não estiver pronto.
+
+**RLS + check tests (`packages/db/tests/exames-rls.test.ts`)** — 8 tests cobrindo: insert válido OK + uploader_consistency NULL rejeita errCode 23514 + review_consistency status=`published` sem reviewed_at rejeita + patient_portal OK com uploaded_by_member_id + cross-tenant isolation TENANT_REDE vê 1 / TENANT_FRANQUIA vê 0 + confidence_range 1.5 rejeita 23514 + blocked_by_classifier preserva texto bloqueado em jsonb pra audit + tenant_exam_ai_settings opt-out insert+update OK + isolation por tenant.
+
+**914 unit/RLS tests verdes** (era 870 +44 Sprint 33: 36 unit + 8 RLS). Typecheck 11/11 packages verde.
+
+**Sprint 33b/c futuro:** OCR provider abstrato real Sprint 15 ADR 0035 com safeFetch regra 37 + allowlist hosts + `resolveModelForTask('extraction')` Vertex AI Gemini regra 32 + cache semântico Sprint 06 + `scanUpload()` regra 38 + ADR 0073 (PDF JS é flag crítica em exame → rejeita imediato; MIME real file-type; magic bytes; embed detection) + MinIO bucket `lab-documents` cifrado AES-256 + URL assinada TTL 10min + UI drag-drop `/app/members/[id]/exames/upload` + `/meu/exames/upload` + **table editor lado-a-lado completo** com PDF embed left pane + analytes editable right pane + cards hipóteses confirmar/rejeitar individual + handler `exam-upload` no hub WhatsApp inbound Sprint 13 ADR 0051 (recebe anexo classificado + chama `uploadExamDocument({source: 'patient_whatsapp', sourceRef: inboundMessageId})` + responde "📄 Recebi seu exame. Em análise.") + particionamento ANUAL `exam_documents`+`exam_extractions` (regra 34 + ADR 0072 + retenção 20a) + cold storage Parquet zstd pós-5 anos + permissions RBAC `exam.read`/`exam.write`/`exam.review`/`exam.sensitive.read` + consent `self_upload_exam` + integração régua Sprint 13 valores críticos via `lab_result.published` + UI super-admin `/app/settings/exames/ia` opt-out + classifier_strictness override + pesquisa global ADR 0062 lab_results com `is_sensitive=true` + `required_permission='exame.read'` + **notificação ANVISA RDC 657/2022 SaMD Classe II** antes de feature flag prod (regra 28 + ADR 0053) + **RIPD `docs/compliance/ripd/v1.0-exames-laboratoriais.md`** com DPO sign-off antes de feature flag (regra 29 + ADR 0054 — cobre OCR + IA generativa + classifier + revisão humana + retenção 20a) + feature flag `exames_ia_v1` + E2E Playwright fluxo profissional + paciente portal + classifier bloqueia 100% benchmark frases proibidas.
+
 ### Docs — ADR 0015 Accepted (Copilot safety classifier dois pontos) 2026-05-18
 
 Documenta implementação Sprint 06 já estável (`packages/ai/src/classifier.ts` + 19 unit tests passando).
