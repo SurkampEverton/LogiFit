@@ -38,6 +38,7 @@ export function CadastroForm({ inviteToken }: Props) {
   const [pending, startTransition] = useTransition()
   const [err, setErr] = useState<string | null>(null)
   const [stubResult, setStubResult] = useState<string | null>(null)
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null)
 
   async function handleRequestOtp(e: React.FormEvent) {
     e.preventDefault()
@@ -111,13 +112,20 @@ export function CadastroForm({ inviteToken }: Props) {
           enableMfa,
           locale: 'pt-BR',
         })) as
-          | { ok: true; personId: string }
-          | { ok: false; code: string; message: string; plannedSchema?: unknown }
+          | {
+              ok: true
+              passportGlobalId: string
+              recoveryCodes: string[] | null
+              redirectUrl: string
+              note?: string
+            }
+          | { ok: false; code: string; message: string }
         if (!r.ok) {
-          // Sprint 02b stub — mostra warning explicativo
+          // Erro de validação ou conflict — mostra warning
           setStubResult(`${r.code}: ${r.message}`)
           return
         }
+        if (r.recoveryCodes) setRecoveryCodes(r.recoveryCodes)
         setStep('done')
       } catch (e) {
         setErr(e instanceof Error ? e.message : 'Erro inesperado')
@@ -384,11 +392,49 @@ export function CadastroForm({ inviteToken }: Props) {
     )
   }
 
-  // step === 'done' — só chega aqui em Sprint 02b2 quando signup real funcionar
+  // step === 'done' — signup criou identity global (Sprint 02b2)
   return (
     <section className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
       <h2>✓ Conta criada!</h2>
-      <p>Confirme seu email pra ativar todos os recursos.</p>
+      <p className="ev-portal-muted" style={{ fontSize: 'var(--ev-text-sm)' }}>
+        Sua identidade global no LogiFit foi criada. Sprint 02b3 ativa o login em
+        <code>/meu/login</code> resolvendo passport_global_identity_id.
+      </p>
+
+      {recoveryCodes && recoveryCodes.length > 0 ? (
+        <div
+          style={{
+            marginTop: 'var(--ev-space-md)',
+            padding: 'var(--ev-space-md)',
+            background: 'var(--ev-warning-soft, var(--ev-surface-muted))',
+            borderLeft: '4px solid var(--ev-warning)',
+            borderRadius: 'var(--ev-radius-sm)',
+          }}
+        >
+          <h3 style={{ marginTop: 0 }}>⚠ Salve seus códigos de recuperação</h3>
+          <p style={{ fontSize: 'var(--ev-text-sm)' }}>
+            Você ativou MFA. Estes são os <strong>10 códigos one-time</strong> pra recuperar a
+            conta se perder o celular. <strong>Cada código só funciona uma vez.</strong> Salve
+            agora — não conseguiremos mostrá-los de novo.
+          </p>
+          <pre
+            style={{
+              fontFamily: 'monospace',
+              fontSize: 'var(--ev-text-sm)',
+              padding: 'var(--ev-space-2)',
+              background: 'var(--ev-surface)',
+              borderRadius: 'var(--ev-radius-sm)',
+              overflow: 'auto',
+            }}
+          >
+            {recoveryCodes.join('\n')}
+          </pre>
+        </div>
+      ) : null}
+
+      <p style={{ marginTop: 'var(--ev-space-md)', fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
+        Próximo passo (Sprint 02b3): enviar email de confirmação + ativar /meu/login + wizard MFA TOTP.
+      </p>
     </section>
   )
 }

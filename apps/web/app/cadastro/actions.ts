@@ -45,7 +45,10 @@ import { pool } from '@repo/db/client'
 import { ApiException } from '@repo/errors'
 import {
   generateOtpCode,
+  generateRecoveryCodes,
   hashOtpCode,
+  hashPassword,
+  hashRecoveryCode,
   sendSmsOtp,
   verifyCaptcha,
   verifyOtpCode,
@@ -252,7 +255,7 @@ export async function verifySmsCode(input: unknown) {
  * Sprint 02b2 completa este handler quando ADR fechar (provavelmente opção C —
  * tabela `passport_global_identities` separada).
  */
-// wrap-exempt: pré-auth público visitor anônimo (sem session); cria a identidade global (Sprint 02b2)
+// wrap-exempt: pré-auth público visitor anônimo (sem session); cria a identidade global (ADR 0093)
 export async function signupPatient(input: unknown) {
   const parsed = SignupPatientSchema.safeParse(input)
   if (!parsed.success) {
@@ -263,7 +266,7 @@ export async function signupPatient(input: unknown) {
     })
   }
 
-  // Re-valida OTP usado recentemente (anti-replay)
+  // 1. Re-valida OTP usado recentemente (anti-replay)
   const otp = await pool.query<{
     id: string
     phone: string
@@ -272,23 +275,22 @@ export async function signupPatient(input: unknown) {
     `SELECT id, phone, used_at FROM passport_signup_otps WHERE id = $1 LIMIT 1`,
     [parsed.data.smsOtpId],
   )
-  const row = otp.rows[0]
-  if (!row || !row.used_at) {
+  const otpRow = otp.rows[0]
+  if (!otpRow || !otpRow.used_at) {
     throw new ApiException({
       code: 'FORBIDDEN',
       message: 'OTP não verificado — execute verifySmsCode antes',
       request_id: '',
     })
   }
-  if (row.phone !== parsed.data.phone) {
+  if (otpRow.phone !== parsed.data.phone) {
     throw new ApiException({
       code: 'VALIDATION_ERROR',
       message: 'Telefone não corresponde ao OTP verificado',
       request_id: '',
     })
   }
-  // Anti-replay: OTP usado precisa ser recente (< OTP_USED_AUDIT_MS)
-  const usedAge = Date.now() - row.used_at.getTime()
+  const usedAge = Date.now() - otpRow.used_at.getTime()
   if (usedAge > OTP_USED_AUDIT_MS) {
     throw new ApiException({
       code: 'FORBIDDEN',
@@ -297,15 +299,93 @@ export async function signupPatient(input: unknown) {
     })
   }
 
-  // STUB: schema persons-without-tenant pendente
+  // 2. CPF normalizado (só dígitos)
+  const cpfNormalized = parsed.data.cpf.replace(/\D/g, '')
+  if (cpfNormalized.length !== 11) {
+    throw new ApiException({
+      code: 'VALIDATION_ERROR',
+      message: 'CPF deve ter 11 dígitos',
+      request_id: '',
+    })
+  }
+
+  // 3. Detecta conta duplicada (CPF ou email) antes do INSERT
+  // Anti-enumeration: erro genérico (não revela qual dos dois bateu)
+  const dup = await pool.query<{ id: string }>(
+    `SELECT id FROM passport_global_identities
+     WHERE (cpf_normalized = $1 OR lower(email) = lower($2))
+       AND deactivated_at IS NULL
+     LIMIT 1`,
+    [cpfNormalized, parsed.data.email],
+  )
+  if (dup.rows.length > 0) {
+    throw new ApiException({
+      code: 'CONFLICT',
+      message: 'Conta já cadastrada com este CPF ou email — use /meu/login',
+      request_id: '',
+    })
+  }
+
+  // 4. Hash de senha (scrypt — packages/security/password-hash.ts)
+  const passwordHash = await hashPassword(parsed.data.password)
+
+  // 5. Gera recovery codes só se MFA está habilitado no signup
+  //    (Sprint 02b3 wizard MFA pós-signup separado pode regenerar)
+  let recoveryCodesPlainForUI: string[] | null = null
+  let recoveryCodesEncrypted: string | null = null
+  if (parsed.data.enableMfa) {
+    const plain = generateRecoveryCodes(10)
+    const codesPayload = plain.map((c) => ({ hash: hashRecoveryCode(c), used_at: null }))
+    // Sprint 02b3 cifra com envelope encryption (LOGIFIT_DATA_KEY ADR 0073).
+    // MVP grava jsonb plain — TODO marcado no comment + lint custom Sprint 02b3.
+    // mfa-exempt: MVP — Sprint 02b3 plugar encryptJsonWithDataKey
+    recoveryCodesEncrypted = JSON.stringify(codesPayload)
+    recoveryCodesPlainForUI = plain
+  }
+
+  // 6. INSERT identidade global (signup proativo)
+  const ins = await pool.query<{ id: string }>(
+    `INSERT INTO passport_global_identities (
+       name, cpf_normalized, email, phone, phone_verified_at,
+       password_hash,
+       recovery_codes_encrypted,
+       accepted_terms_at, terms_version,
+       accepted_privacy_at, privacy_version, ripd_version_signup,
+       signup_path, signup_otp_id
+     ) VALUES (
+       $1, $2, $3, $4, now(),
+       $5,
+       $6,
+       now(), $7,
+       now(), $8, $9,
+       $10, $11
+     )
+     RETURNING id`,
+    [
+      parsed.data.name,
+      cpfNormalized,
+      parsed.data.email,
+      parsed.data.phone,
+      passwordHash,
+      recoveryCodesEncrypted,
+      'v1.0', // terms_version — Sprint 02b3 promove pra fetch de tabela
+      'v1.0', // privacy_version
+      'v1.0-passport-signup', // ripd_version_signup
+      'proactive', // signup_path
+      otpRow.id,
+    ],
+  )
+
+  const passportGlobalId = ins.rows[0]!.id
+
   return {
-    ok: false as const,
-    code: 'SCHEMA_PENDING',
-    message:
-      'Sprint 02b2 — depende ADR persons-without-tenant. Backbone (OTP + Turnstile) entregue; INSERT pendente.',
-    plannedSchema: {
-      decision: 'opção C — tabela passport_global_identities separada',
-      blocker: 'ADR ainda não escrito; aguarda definição arquitetural',
-    },
+    ok: true as const,
+    passportGlobalId,
+    /** Recovery codes (única chance — usuário precisa salvar). Null se MFA não habilitado no signup. */
+    recoveryCodes: recoveryCodesPlainForUI,
+    /** Sprint 02b3 redireciona pra /meu/login (member portal vai refatorar pra resolver passport_global_identity_id em vez de member_sessions atual). */
+    redirectUrl: '/meu/login',
+    note:
+      'Sprint 02b2 partial — identity global criada. Login flow (/meu/login resolver passport_global_identity_id) e wizard MFA TOTP entram em Sprint 02b3.',
   }
 }

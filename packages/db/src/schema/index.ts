@@ -38,6 +38,9 @@ export * from './passport'
 // Sprint 02b Path B — passport_signup_otps (cadastro proativo /cadastro pré-auth OTP SMS)
 export * from './passport-signup'
 
+// Sprint 02b2 — passport_global_identities (identidade global do paciente — ADR 0093)
+export * from './passport-identity'
+
 // Sprint 02 Faixa A — CRM unificado: members + member_events + member_notes + member_tags (ADR 0011 esperado)
 export * from './members'
 

@@ -14,6 +14,7 @@ import { sql } from 'drizzle-orm'
 import {
   boolean,
   date,
+  index,
   jsonb,
   pgEnum,
   pgTable,
@@ -52,6 +53,15 @@ export const persons = pgTable(
     notes: text('notes'),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
 
+    /**
+     * Sprint 02b2 (ADR 0093) — bridge pra identidade global do paciente.
+     * Nullable: persons existentes (criadas em tenant clínico via wizard staff)
+     * podem ou não estar vinculadas a uma global identity. Quando paciente faz
+     * signup proativo `/cadastro` e depois aceita invite, o persons espelho
+     * é criado já com FK setada.
+     */
+    passportGlobalIdentityId: uuid('passport_global_identity_id'),
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -61,6 +71,10 @@ export const persons = pgTable(
     uniqueIndex('persons_tenant_document_uq')
       .on(t.tenantId, t.document)
       .where(sql`${t.document} IS NOT NULL`),
+    // Sprint 02b2 — lookup por bridge global identity (partial index, só rows linked)
+    index('persons_passport_global_id_idx')
+      .on(t.passportGlobalIdentityId)
+      .where(sql`${t.passportGlobalIdentityId} IS NOT NULL`),
   ],
 )
 
