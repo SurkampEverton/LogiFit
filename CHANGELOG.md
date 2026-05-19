@@ -6,6 +6,102 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 02b3 partial — Path A+B híbrido + envelope encryption + tests providers (commits a0ad676 + 9e674f3 + 1ed8ef3 + 1824ebb) 2026-05-19
+
+Continua Sprint 02 com 4 entregas Sprint 02b3 partial — todas tractable sem credentials externas (Twilio/Turnstile/SES adiados pra Sprint 02b3 completo):
+
+**Path A+B híbrido** (commit `a0ad676`) — `signupPatient` detecta `inviteToken` opcional e auto-aceita:
+- Schema ganha `inviteToken: z.string().uuid().optional().nullable()`
+- Helper interno `acceptInviteAfterSignup` (pré-auth, distinto de `acceptPatientInvite` em `app/passport/actions.ts` que exige staff session) — lookup link by id + INSERT persons espelho com `passport_global_identity_id` FK + ON CONFLICT (tenant_id, document) DO UPDATE preserva FK quando staff já criou + UPDATE link status=`active` + UPDATE modules status=`active`
+- Failure-tolerant: try/catch isola — invite inválido só loga warning + signup OK (paciente aceita depois em `/meu/privacidade`)
+- `signup_path` muda `proactive` → `proactive_then_invite` quando token presente
+- Return envelope ganha `linkedTenants: Array<{tenantId, linkId, tenantName}>`
+- UI step done: card verde "🔗 Convite aceito automaticamente" com lista de tenant names
+
+**Tests providers Sprint 02b backbone** (commit `1824ebb`) — fecha gap captcha + sms-otp:
+- `captcha.test.ts` 9 tests: mock dev path + real Turnstile siteverify com `fetch` mockado + URLSearchParams body validation + Cloudflare success=false → valid=false + errorCodes preservados + fetch reject network → fetch_error:<msg> + throw em prod sem `TURNSTILE_SECRET_KEY`
+- `sms-otp.test.ts` 22 tests: generateOtpCode 6 dig zero-padded + variation entre chamadas (secure random) + hashOtpCode determinístico SHA-256 hex 64 chars + verifyOtpCode constant-time + 3 templates pt-BR/en-US/es-419 validation + sendSmsOtp mock dev (log capture) + real Twilio Messages API com Basic auth + HTTP error → errorMessage + fetch reject → Network timeout + throw em prod sem `TWILIO_*`
+- Total tests @repo/security **104 verdes** (era 73 → +31)
+
+**Sprint 02b3 partial — envelope encryption + tests password/recovery + member-session bridge** (commit `9e674f3`):
+- Ativa `encryptSecret(JSON.stringify(codesPayload))` no signupPatient (era jsonb plain — TODO removido); erro amigável quando `LOGIFIT_DATA_KEY` falta + `enableMfa=true`
+- `password-hash.test.ts` 15 tests: scrypt format 6 partes regex + salt random + senha vazia rejeita + case/whitespace-sensitive + hash mal-formatado fail-closed + non-string false + senhas >128 chars + unicode preservado + needsRehash atual/legado/mal-formatado
+- `recovery-codes.test.ts` 26 tests: formato `XXXX-XXXX-XXXX` + alfabeto Crockford sem I/L/O/U/0/1 + 1-50 + hash determinístico SHA-256 hex 64 chars + case-insensitive + ignora hifens + findUnused ignora usados + markUsed imutável + countAvailable
+- Total tests @repo/security 73 verdes (antes deste commit)
+- `MemberSessionClaims` ganha optional `passportGlobalId` + `getMemberSession` JOIN persons resolve FK `passport_global_identity_id` (ADR 0093) + `withMemberContext` seta `app.passport_global_id` na connection (ativa RLS self-only em `passport_global_identities` policy 0057)
+
+**Sprint 02b2 partial — schema passport_global_identities + signupPatient real** (commit `1ed8ef3`) — materializa ADR 0093:
+- Schema novo `passport_global_identities` (packages/db/src/schema/passport-identity.ts) — identidade global SEM tenant_id; campos: name + cpf_normalized UNIQUE + email UNIQUE (lower) + phone E.164 + email/phone_verified_at + birth_date + sex + password_hash scrypt + mfa_totp_secret_encrypted AES-256-GCM + recovery_codes_encrypted + accepted_terms/privacy_at + ripd_version_signup + signup_path + signup_ip + signup_otp_id FK + lifecycle (last_login_at, deactivated_at)
+- Migration `0044_passport_global_identities.sql` (CREATE + ALTER persons ADD nullable `passport_global_identity_id` FK + 5 indexes incl. UNIQUE cpf/email + partial active)
+- RLS policy `0057_passport_global_identities.sql` — FORCE RLS + self-select via `app.passport_global_id` + pré-auth INSERT WITH CHECK true + self-update + DPO override Sprint 02b3
+- 2 helpers novos `packages/security/src/`:
+  - `password-hash.ts` (130l): scrypt Node nativo OWASP 2024 params (N=16384, r=8, p=1, keylen=64, salt=32) + `hashPassword`/`verifyPassword` constant-time + `needsRehash` rotação gradual
+  - `recovery-codes.ts` (130l): `generateRecoveryCodes(n=10)` alfabeto Crockford + `hashRecoveryCode` SHA-256 + `findUnusedMatchingCode` constant-time scan (anti-timing-leak) + `markRecoveryCodeUsed` imutável + `countAvailableRecoveryCodes`
+- `signupPatient` real (substitui stub Sprint 02b backbone): 7 etapas — re-valida OTP anti-replay + CPF normalizado + detecta duplicação CPF/email + hashPassword + (opcional) generateRecoveryCodes + INSERT global + (Sprint 02b3 Path A+B híbrido) acceptInviteAfterSignup
+
+### Docs — ADR 0093 + cron expire-passport-signup-otps + wrapMemberAction audit log (commits 65dea90 + 81e8a4c + 7923969) 2026-05-19
+
+3 entregas consolidadas (A/B/C) que destravam Sprint 02b2 + fecham gap LGPD audit do member portal:
+
+**ADR 0093 — passport global identities** (commit `65dea90`) — `docs/decisions/0093-passport-global-identities.md` (217 linhas) decide schema arquitetural pra paciente sem vínculo clínico. 3 opções avaliadas:
+- (A) Tenant pivot fixo `system-passport-pivot` — REJEITADA (semanticamente estranho + RLS continua + MOVE/COPY caro)
+- (B) `persons.tenant_id` nullable + RLS adaptado — REJEITADA (REFACTOR ENORME quebra 4 schemas + 12 RLS + bugs latentes)
+- (C) Tabela `passport_global_identities` separada como pivot global — **ACEITA** (identidade portável + auth centralizado + LGPD limpo + RLS persons intacta + CPF UNIQUE global)
+- (D) Auth-only BetterAuth global — REJEITADA (falta campos LogiFit; sobre-engineering)
+- Schema canônico com 4 categorias (Identidade + Auth + LGPD aceite + Audit + Lifecycle) + bridge `persons.passport_global_identity_id` FK nullable. Status Accepted.
+
+**Cron `expire-passport-signup-otps`** (commit `81e8a4c`) — fecha tech debt Sprint 02b backbone. Route handler `POST /api/jobs/expire-passport-signup-otps` protegido por `Authorization: Bearer $CRON_SECRET` (`timingSafeEqual` anti-timing-attack). Daily 03:30 UTC = 00:30 SP. (1) DELETE OTPs expirados não-usados >24h (mantém janela debug "código não chegou"); (2) DELETE OTPs usados >30d (audit retention pra LGPD art. 18 V). Retorna `CleanupResult` json com counts. Idempotente.
+
+**`wrapMemberAction` audit log automático Sprint 02d3** (commit `7923969`) — fecha gap LGPD audit do member portal:
+- Migration `0043_member_event_meu_kinds.sql` — ALTER TYPE member_event_kind ADD 15 novos kinds `meu.<resource>.<verb>`: appointment.cancelled / session.revoked / consent.updated / cross_prescription_alert.acknowledged / incident.acknowledged / cross_tenant_access.exported (LGPD art. 18 V) / exam.self_uploaded / device.connected / disconnected / consent_granted / consent_revoked / csv_imported / diary.meal_logged / meal_deleted / mobile.push_token_registered / push_token_revoked
+- `wrapMemberAction` ganha `eventKind: MemberPortalEventKind` no context — fire-and-forget INSERT member_events após handler success. `actor_user_id = NULL` distingue de staff (Sprint 02 Faixa A `member.*` kinds)
+- `setAuditPayload` no context permite handler injetar payload customizado
+- `sanitizeArgs()` redact PII keys (password/totpSecret/recoveryCode/token/codeHash) + truncate document/cpf/phone/email
+- 21 SAs ativadas com `eventKind`: 6 em meu/actions.ts + 1 em meu/exames + 5 em meu/dispositivos + 2 em meu/diario + 2 em meu/mobile (read-only listMy* + checkAppVersion ficam sem audit)
+
+### Build — Sprint 02d wrapMemberAction migration batch (21 SAs portal — commits b3cf35c + 041cde4 + d323236) 2026-05-19
+
+Refactor mecânico que formaliza padrão de Server Actions do member portal Sprint 26 (ADR 0088). Análogo ao `wrapServerAction()` staff mas pra session do paciente — antes cada SA do `/meu/*` repetia boilerplate `safeParse + requireMemberSession + withMemberContext`.
+
+**Novo helper `wrapMemberAction`** em `apps/web/app/lib/wrap-member-action.ts` (Sprint 02c2 — commit `b3cf35c`):
+- 4 etapas compose: `ctx.schema.parse(rawArgs)` quando schema Zod passado → `requireMemberSession(returnTo)` → `withMemberContext(session, ...)` → envelope `wrapAction` (ADR 0071)
+- Sem MFA gate (member portal não usa por default Sprint 26)
+- 2 overloads TS: com schema (caller recebe `z.infer<TSchema>`) ou sem (input genérico)
+- Lint custom `RE_WRAP_ACTION` ampliado: `/\bwrap(?:Server|Member)?Action\s*\(/` reconhece 3 wrappers canônicos
+
+**Migration batch 1 — dispositivos + diario + mobile** (commit `041cde4`): 15 SAs migradas
+- meu/dispositivos/actions.ts (8): startConnection, completeConnection, disconnect, listMyConnections, listMyReadings, importInBodyCsv, grantDeviceConsent, revokeDeviceConsent
+- meu/diario/actions.ts (4): logMeal, listMyDiary, getDiaryEntry, deleteDiaryEntry
+- meu/mobile/actions.ts (3): registerPushToken, listMyPushTokens, revokeMyPushToken (checkAppVersion exempt — pré-auth público)
+- Callers ajustados pela tipagem mais estrita: API Route register-push (cast Parameters<typeof>) + diario/novo/form.tsx (useState<MealName> + isMealName type guard)
+
+**Migration batch 2 — portal core** (commit `d323236`): 6 SAs em meu/actions.ts
+- cancelMyAppointment, revokeMySession, updateMyConsent, acknowledgeCrossPrescriptionAlert, acknowledgeIncident, exportCrossTenantAccessLog
+- 3 SAs ficam com `// wrap-exempt:` (pré-auth/tolerantes): requestMagicLink (anti-enumeration), verifyMagicLink (cria 1ª session), logoutMember (idempotente via getMemberSession)
+
+**Total Sprint 02d: 21 SAs no padrão wrapMemberAction** + 4 exempts justificados (3 pré-auth + 1 read-only mobile).
+
+### Build — Lint custom maturity (cross-tenant-read-must-log REAL + docs rules-42 + cleanup lint hygiene — commits 5dfcf12 + dd922ca + 3fe0d0d) 2026-05-19
+
+Lint custom evoluiu de "ready no-op" pra detector real em 2 regras com callers Sprint 02 fechamento:
+
+**`cross-tenant-read-must-log` REAL** (commit `5dfcf12`) — regra 42 + ADR 0077:
+- Antes: detector procurava funções fictícias (`crossTenantQuery`/`origin_tenant_id`) — no-op
+- Agora: detector bidirecional reconhecendo padrão canônico do Sprint 02 Path A:
+  - Trigger: chamada `has_cross_tenant_access(` (gate SQL) OU INSERT em `patient_data_access_log` (audit)
+  - Exige: ambos no mesmo arquivo (gate sem audit = audit ausente; audit sem gate = log falsificado)
+- Scan linha-a-linha ignorando comments (anti false-positive em docstrings)
+- Exempt: `// cross-tenant-log-exempt: <motivo>` pra jobs background read+log em arquivos separados
+- Validado com 2 test files temporários (gate-sem-log + audit-sem-gate ambos pegaram) + `apps/web/app/app/passport/actions.ts::getCrossTenantSummary` (par completo) passa silencioso
+
+**docs rules-42 nota bidirecional** (commit `dd922ca`) — fecha loop docs↔enforcement. Antes a regra dizia "bloqueia se SA lê cross-tenant sem chamar has_cross_tenant_access + log" sem explicitar as 2 direções. Agora descreve (1) gate sem audit → audit ausente e (2) audit sem gate → log falsificado, + documenta exempt comment.
+
+**chore cleanup lint hygiene** (commit `3fe0d0d`) — fizemos durante Sprint 02c2:
+- `no-window-alert` (regra 45): 4 → 0 violations (3 sites migrados pra `confirm()`/`prompt()` Sprint 02c catálogo + 1 fallback gracioso no próprio dialog com `// alert-exempt:`)
+- `no-hardcoded-design-token` (regra 44): 400 → 0 (refinou regex `var(--ev-*, #fallback)` aceito + ignora contextos legítimos PDF/seed/manifest/.default()/themeColor)
+- `no-unwrapped-action` (regra 33): 29 → 0 (reconhece padrão member portal `requireMemberSession + withMemberContext` + 2 helpers de leitura com `// wrap-exempt:`)
+- Total: **439 violations → 0** ao longo de 3 commits desta sessão. Lint custom 9/9 rules clean.
+
 ### Build — Sprint 02b backbone Path B — cadastro proativo /cadastro (done 02b backbone) 2026-05-19
 
 Continua Sprint 02 (que ficou em `02a` após fechamento Path A em 2026-05-18). Sprint 02b entrega o **backbone do Path B** (cadastro proativo `/cadastro` — visitor anônimo cria conta LogiFit sem invite) sem depender de credenciais externas reais via provider abstrato com mock em dev.
