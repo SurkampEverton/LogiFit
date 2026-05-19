@@ -3,7 +3,7 @@
 - **Área:** geral
 - **Início:** planejado (depois do Sprint 01b)
 - **Fim planejado:** +3 semanas
-- **Status:** **done (02a core)** 2026-05-18 — Faixas A+B+C entregues 2026-05-12 + fechamento Path A (passport actions + landing invite + has_cross_tenant_access SQL fn) entregue 2026-05-18; Path B cadastro proativo + Turnstile + SMS Twilio adiado pra Sprint 02b
+- **Status:** **done (02a + 02b backbone)** 2026-05-18/19 — Faixas A+B+C (2026-05-12) + fechamento Path A (passport actions + landing invite + has_cross_tenant_access SQL fn — 2026-05-18) + Sprint 02b backbone Path B (Captcha+SMS providers abstratos + passport_signup_otps schema + /cadastro 2-step UI + requestSmsCode/verifySmsCode funcionais + signupPatient stub — 2026-05-19). Sprint 02b2 completa signup real quando ADR persons-without-tenant for decidido + Twilio/Turnstile credentials prod provisionadas
 - **Item do roadmap:** #4
 
 ## Goal
@@ -234,6 +234,48 @@ Consumidores no MVP: timeline UI via Realtime (mesmo tenant). Fase 2+ (cross-ale
 - [ ] Importador CSV para migração de cliente
 
 ## Log
+
+- **2026-05-19 — Sprint 02b backbone Path B entregue (`done (02b backbone)`).**
+  - 2 providers abstratos em `packages/security/src/`:
+    - `captcha.ts` (95 linhas): `verifyCaptcha({token, remoteIp?})` retorna `{valid, provider, action?, errorCodes?}`. Estratégia: sem `TURNSTILE_SECRET_KEY` → mock dev (aceita qualquer token não-vazio); com → POST Cloudflare Turnstile siteverify; em prod sem secret → throw (config inválida). Inclui `// safe-fetch-exempt:` comment justificando — fetch direto pro endpoint canônico do provider.
+    - `sms-otp.ts` (135 linhas): `generateOtpCode()` 6 dígitos via `crypto.randomInt`; `hashOtpCode(code)` SHA-256; `verifyOtpCode(plain, hash)` constant-time anti-timing; `sendSmsOtp({phone, code, locale?})` retorna `{sent, provider, messageSid?, errorMessage?}`. 3 templates SMS pt-BR/en-US/es-419 com warning "não compartilhe com ninguém". Estratégia: sem `TWILIO_ACCOUNT_SID/AUTH_TOKEN/FROM_NUMBER` → mock dev (loga código no console); com → POST Twilio Messages API com Basic auth; em prod sem credentials → throw.
+  - Schema novo `passport_signup_otps` em `packages/db/src/schema/passport-signup.ts`:
+    - Sem `tenant_id` nem `member_id` — pré-auth global (visitor anônimo)
+    - Campos: id + phone (E.164) + code_hash (SHA-256) + expires_at + used_at + attempts (rate limit 5) + request_ip + sms_provider + sms_message_sid + created_at
+    - 2 indexes: phone+created_at desc (lookup quente) + expires_at (cleanup cron)
+    - Sem RLS — acesso direto via `pool.query` do Server Action pré-auth
+    - Migration `0042_passport_signup_otps.sql`. Policy `0056_passport_signup_otps.sql` apenas GRANT (sem RLS).
+  - 3 Server Actions em `apps/web/app/cadastro/actions.ts` (320 linhas) com `// wrap-exempt:` (pré-auth público visitor anônimo, sem session pra wrapServerAction):
+    - `requestSmsCode({phone, captchaToken})` verifica Turnstile → invalida OTP ativo anterior do mesmo telefone → gera código + hash + envia SMS (mock dev) → persiste OTP. Anti-enumeration: validation errors silenciosos `{ok:true, sent:false}`. Em dev mock retorna `devOnlyCode` pro dev testar; NUNCA em prod.
+    - `verifySmsCode({phone, code})` busca OTP mais recente → checa used_at/expires_at/attempts (max 5 → invalida) → `verifyOtpCode` constant-time → incrementa attempts em falha → marca used_at em sucesso. Retorna `{ok:true, otpId, phone}` pra próxima etapa.
+    - `signupPatient({name, cpf, phone, email, password, smsOtpId, acceptedTerms, acceptedPrivacy, enableMfa, locale})` **STUB** — re-valida OTP usado recente (anti-replay; usedAge < 30d) + retorna `{ok:false, code:'SCHEMA_PENDING', message, plannedSchema:{decision:'opção C — passport_global_identities separada'}}` até ADR persons-without-tenant ser decidido.
+  - UI público `apps/web/app/cadastro/`:
+    - `page.tsx` Server Component (90 linhas) — header + invite banner quando `?invite=<token>` + form 2-step client + nota "O que você ganha" + nota warning "backbone Sprint 02b — completo em Sprint 02b2"
+    - `cadastro-form.tsx` Client Component (260 linhas) com 4 steps (`phone` / `verify` / `details` / `done`):
+      - Step phone: input E.164 + placeholder Turnstile widget + submit chama requestSmsCode
+      - Step verify: input código 6 dígitos + banner amarelo "🛠 Modo dev: SMS provider em mock — código: XXXXXX" quando devOnlyCode presente
+      - Step details: name + CPF + email + password + checkbox enableMfa + 2 checkboxes obrigatórios (acceptedTerms + acceptedPrivacy) + `<ConfirmDialog>` (regra 45 reusa Sprint 02c catálogo) antes do signup + mostra stub result quando ok=false
+      - Step done: stub success card (acionado em Sprint 02b2 quando signup real)
+  - **Resultado:**
+    - ✓ typecheck 11/11
+    - ✓ lint-custom 713 + 2 css clean (9 rules)
+    - ✓ docs-check 0/0
+    - ✓ tests @repo/security 32 verdes
+  - **Sprint 02b2 (futuro) completa Path B**:
+    - **ADR persons-without-tenant** — schema `persons.tenant_id` NOT NULL atual. 3 opções avaliadas no comment do file:
+      - (A) tenant pivot fixo `system-passport-pivot` UUID seed
+      - (B) refactor `tenant_id` pra nullable + RLS adaptado
+      - (C) tabela `passport_global_identities` separada como pivot global ← preferência
+    - Implementar `signupPatient` real conforme ADR — INSERT identity + hash senha (BetterAuth/Lucia decisão Sprint 01a sub) + opt-in MFA TOTP wizard + recovery codes
+    - Cron `expire-passport-signup-otps` 24h cleanup (preserva used_at por 30d audit antes do delete permanente)
+    - Provisionar Cloudflare Turnstile (site key + secret) + Twilio sandbox + envelope encryption credentials via `LOGIFIT_DATA_KEY` ADR 0073
+    - Widget Turnstile real no client (carregar `<script src="https://challenges.cloudflare.com/turnstile/v0/api.js">`)
+    - RIPD `docs/compliance/ripd/v1.0-passport-signup.md` (regra 29 + ADR 0054) com DPO sign-off antes de feature flag prod
+    - Rate limit Redis 3 requests/IP/15min via `packages/security/rate-limits.ts` (regra 36)
+    - WhatsApp OTP como segundo canal (Twilio WhatsApp Business API) com fallback se SMS falhar
+    - E2E Playwright fluxo completo (Turnstile sandbox + Twilio test mode)
+    - Feature flag `passport_signup_v1`
+    - Quando paciente vier de `?invite=<token>`, vincular automaticamente após signup (Path A+B híbrido)
 
 - **2026-05-18 — Fechamento Path A entregue (`done (02a core)`).**
   - Função SQL `has_cross_tenant_access(reader_user_id, reader_tenant_id, passport_id, module, category)` em `packages/db/src/policies/0055_has_cross_tenant_access.sql` retorna bool combinando: vínculo ativo + módulo ativo + data_levels cobre categoria + 4 limites duros sempre FALSE (`financeiro`/`prontuario_cfm_bruto`/`terceiros_mencionados`/`workspace`). STABLE, GRANT EXECUTE pra `logifit_app`. Caller padrão: Server Action chama antes de ler dado clínico cross-tenant + grava `patient_data_access_log` (lint `cross-tenant-read-must-log` enforça).

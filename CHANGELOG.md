@@ -6,6 +6,96 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 02b backbone Path B — cadastro proativo /cadastro (done 02b backbone) 2026-05-19
+
+Continua Sprint 02 (que ficou em `02a` após fechamento Path A em 2026-05-18). Sprint 02b entrega o **backbone do Path B** (cadastro proativo `/cadastro` — visitor anônimo cria conta LogiFit sem invite) sem depender de credenciais externas reais via provider abstrato com mock em dev.
+
+**2 providers abstratos** em `packages/security/src/`:
+
+- `captcha.ts` (95l) — `verifyCaptcha({token, remoteIp?})` retorna `{valid, provider, action?, errorCodes?}`. Estratégia:
+  - Sem `TURNSTILE_SECRET_KEY` → mock dev (aceita qualquer token não-vazio)
+  - Com `TURNSTILE_SECRET_KEY` → POST Cloudflare Turnstile siteverify
+  - Em prod sem secret → throw (config inválida — melhor falhar que aceitar mock)
+  - Inclui `// safe-fetch-exempt:` comment justificando — fetch direto pro endpoint canônico do provider (não passa por URL arbitrária do user)
+
+- `sms-otp.ts` (135l) — utilitários SHA-256 + OTP generator + Twilio sender:
+  - `generateOtpCode()` 6 dígitos via `crypto.randomInt(0, 1_000_000)` — secure random (não Math.random)
+  - `hashOtpCode(code)` SHA-256 hex — nunca grava plain
+  - `verifyOtpCode(plain, hash)` constant-time anti-timing-attack (XOR acc loop)
+  - `sendSmsOtp({phone, code, locale?})` retorna `{sent, provider, messageSid?, errorMessage?}`
+  - 3 templates SMS pt-BR/en-US/es-419: `"Seu código LogiFit é XXXXXX. Válido por 5 minutos. Não compartilhe com ninguém."`
+  - Sem `TWILIO_*` credentials → mock dev (loga código no console)
+  - Com credentials → POST Twilio Messages API Basic auth (URLSearchParams body)
+  - Em prod sem credentials → throw
+
+**Schema novo `passport_signup_otps`** em `packages/db/src/schema/passport-signup.ts`:
+
+- Sem `tenant_id` nem `member_id` — pré-auth global (visitor anônimo)
+- Campos: `id` + `phone` (E.164) + `code_hash` (SHA-256) + `expires_at` (now + 5min default) + `used_at` (marcado em verify) + `attempts` (rate limit 5 antes invalidar) + `request_ip` + `sms_provider` + `sms_message_sid` + `created_at`
+- 2 indexes: `phone+created_at desc` (lookup quente) + `expires_at` (cleanup cron Sprint 02b2)
+- **Sem RLS** — acesso direto via `pool.query` do Server Action pré-auth
+- Migration `0042_passport_signup_otps.sql`
+- Policy `0056_passport_signup_otps.sql` apenas `GRANT SELECT, INSERT, UPDATE ON passport_signup_otps TO logifit_app` (sem ENABLE RLS)
+- Retenção: cleanup 24h via cron Sprint 02b2 (`expire-passport-signup-otps`); OTPs `used_at` preservados 30d pra audit
+
+**3 Server Actions** em `apps/web/app/cadastro/actions.ts` (320l) com `// wrap-exempt:` comment (pré-auth público visitor anônimo, sem session — wrapServerAction não cabe):
+
+- `requestSmsCode({phone, captchaToken})`:
+  1. Verify Turnstile via `verifyCaptcha` — VALIDATION_ERROR se inválido
+  2. Rate limit por telefone — encontra OTP ativo não-expirado e marca `used_at` (revoga implícito, permite novo legítimo)
+  3. `generateOtpCode()` + `hashOtpCode` + `expiresAt = now + 5min`
+  4. `sendSmsOtp({phone, code})` — mock dev / Twilio prod
+  5. Persist `passport_signup_otps` (sempre — mesmo se sms.sent=false, serve audit)
+  6. Retorna `{ok:true, sent, otpId, expiresAt, devOnlyCode?}` (devOnlyCode só em provider=mock)
+  7. Anti-enumeration: validation errors retornam silenciosos `{ok:true, sent:false}` (não revela quem está cadastrado)
+
+- `verifySmsCode({phone, code})`:
+  1. Busca OTP mais recente não-usado pra phone
+  2. Checa `used_at` (CONFLICT já utilizado) / `expires_at` (NOT_FOUND expirado) / `attempts >= MAX_VERIFY_ATTEMPTS=5` (RATE_LIMITED — marca used_at pra forçar novo)
+  3. `verifyOtpCode(plain, hash)` constant-time
+  4. Em falha: incrementa attempts + retorna VALIDATION_ERROR genérico (não revela "código quase certo")
+  5. Em sucesso: marca `used_at = now()`
+  6. Retorna `{ok:true, otpId, phone}` pra próxima etapa
+
+- `signupPatient({name, cpf, phone, email, password, smsOtpId, acceptedTerms, acceptedPrivacy, enableMfa, locale})` **STUB**:
+  - Re-valida OTP usado recentemente (anti-replay — usedAge < 30d + phone match)
+  - Retorna `{ok:false, code:'SCHEMA_PENDING', message:'Sprint 02b2 — depende ADR persons-without-tenant', plannedSchema:{decision:'opção C — passport_global_identities separada'}}`
+  - Toda validação rola normalmente (Zod + Turnstile + OTP) — só o INSERT final fica bloqueado até ADR
+
+**Página pública `/cadastro`** em `apps/web/app/cadastro/`:
+
+- `page.tsx` Server Component (90l) — header + invite banner quando `?invite=<token>` (Path A→B híbrido) + `<CadastroForm>` client + nota "O que você ganha" (acessa histórico em qualquer empresa parceira; alertas cross-prescription; revoga acesso anytime; notas privadas + financeiro nunca cruzam) + warning "backbone Sprint 02b — completo em Sprint 02b2"
+- `cadastro-form.tsx` Client Component (260l) com 4 steps `phone` → `verify` → `details` → `done`:
+  - **Step phone**: input E.164 com pattern `\+[1-9][0-9]{6,14}` + placeholder Turnstile widget ("Sprint 02b2 carrega widget real") + submit chama requestSmsCode com mock token
+  - **Step verify**: input código 6 dígitos com `inputMode="numeric"` + `replace(/\D/g, '')` sanitization + **banner amarelo "🛠 Modo dev: SMS provider em mock — código: XXXXXX"** quando devOnlyCode presente
+  - **Step details**: name + CPF + email + password (min 8) + checkbox enableMfa (recomendado TOTP) + 2 checkboxes obrigatórios (acceptedTerms + acceptedPrivacy LGPD) + `<ConfirmDialog>` (regra 45 + ADR 0089 reusa Sprint 02c catálogo) antes do signup + mostra stub result warning quando ok=false
+  - **Step done**: success card (acionado em Sprint 02b2 quando signup real)
+
+**Resultado:**
+
+- ✓ typecheck 11/11 packages verde
+- ✓ lint-custom 713 + 2 css clean (9 rules) — 3 SAs `cadastro/actions.ts` com `// wrap-exempt:` justificado
+- ✓ docs-check 0/0
+- ✓ tests @repo/security 32 verdes (providers novos sem testes ainda — Sprint 02b2)
+- Backbone Path B funcional em dev — testar manualmente: `pnpm dev` → `/cadastro` → digita +5511999999999 → recebe OTP em console → step verify aceita → step details mostra stub explicativo
+
+**Sprint 02b2 (futuro) completa Path B:**
+
+- **ADR `persons-without-tenant`** decisão entre 3 opções avaliadas no comment do file:
+  - (A) tenant pivot fixo `system-passport-pivot` UUID seed
+  - (B) refactor `persons.tenant_id` pra nullable + RLS adaptado
+  - (C) tabela `passport_global_identities` separada como pivot global ← **preferência**
+- Implementar `signupPatient` real conforme ADR — INSERT identity + hash senha (BetterAuth/Lucia decisão Sprint 01a sub) + opt-in MFA TOTP setup wizard + recovery codes
+- Cron `expire-passport-signup-otps` 24h cleanup (preserva used_at por 30d audit antes do delete permanente)
+- Provisionar Cloudflare Turnstile (site key + secret) + Twilio sandbox + envelope encryption credentials via `LOGIFIT_DATA_KEY` ADR 0073
+- Widget Turnstile real no client (carregar `<script src="https://challenges.cloudflare.com/turnstile/v0/api.js">`)
+- RIPD `docs/compliance/ripd/v1.0-passport-signup.md` (regra 29 + ADR 0054) com DPO sign-off antes de feature flag prod
+- Rate limit Redis 3 requests/IP/15min via `packages/security/rate-limits.ts` (regra 36)
+- WhatsApp OTP como segundo canal (Twilio WhatsApp Business API) com fallback se SMS falhar
+- E2E Playwright fluxo completo (Turnstile sandbox + Twilio test mode)
+- Feature flag `passport_signup_v1`
+- Path A+B híbrido: quando visitor vem de `?invite=<token>`, vincular automaticamente após signup
+
 ### Build — Sprint 02 fechamento Path A — passaporte cross-tenant (done 02a core) 2026-05-18
 
 Fecha Sprint 02 (CRM unificado) de 70% → 100% via Path A do passaporte cross-tenant (ADR 0077 + regra 42). Faixas A+B+C já estavam entregues desde 2026-05-12 (núcleo CRM + 4 schemas + 12 RLS + 10 SAs + UI completa); este commit entrega o 30% restante real (não só docs): **função SQL `has_cross_tenant_access()`** + **8 Server Actions de passport** + **landing invite público** + **API Route metadata anti-fraude**. Path B (cadastro proativo `/cadastro` + Turnstile + SMS Twilio) adiado pra Sprint 02b — depende dependências externas (Twilio sandbox + Turnstile Sprint 00 + ADR persons-without-tenant).

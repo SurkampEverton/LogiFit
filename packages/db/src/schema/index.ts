@@ -35,6 +35,9 @@ export * from './consents'
 // Sprint 01b Faixa B — passaporte cross-tenant (regra 42 + ADR 0077)
 export * from './passport'
 
+// Sprint 02b Path B — passport_signup_otps (cadastro proativo /cadastro pré-auth OTP SMS)
+export * from './passport-signup'
+
 // Sprint 02 Faixa A — CRM unificado: members + member_events + member_notes + member_tags (ADR 0011 esperado)
 export * from './members'
 
