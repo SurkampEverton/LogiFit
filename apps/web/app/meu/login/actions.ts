@@ -24,7 +24,7 @@
 
 import { pool } from '@repo/db/client'
 import { ApiException } from '@repo/errors'
-import { verifyPassword } from '@repo/security'
+import { decryptSecret, verifyPassword, verifyTotp } from '@repo/security'
 import { z } from 'zod'
 import { createPassportSession, setPassportCookie } from '../../lib/passport-session'
 
@@ -59,9 +59,10 @@ export async function loginPassport(input: unknown) {
     id: string
     password_hash: string
     mfa_enrolled_at: Date | null
+    mfa_totp_secret_encrypted: string | null
     deactivated_at: Date | null
   }>(
-    `SELECT id, password_hash, mfa_enrolled_at, deactivated_at
+    `SELECT id, password_hash, mfa_enrolled_at, mfa_totp_secret_encrypted, deactivated_at
      FROM passport_global_identities
      WHERE lower(email) = lower($1)
      LIMIT 1`,
@@ -102,15 +103,29 @@ export async function loginPassport(input: unknown) {
         request_id: '',
       })
     }
-    // Sprint 02b3 completo: decrypt identity.mfa_totp_secret_encrypted via
-    // decryptSecret + valida via otplib.authenticator.verify({ token: totp,
-    // secret: decrypted, window: 1 }).
-    // MVP placeholder: aceita '000000' como bypass (dev only) — Sprint 02b3
-    // completo conecta otplib real.
-    if (totp !== '000000') {
+    // Decifra secret + valida TOTP via @repo/security verifyTotp (RFC 6238)
+    if (!identity.mfa_totp_secret_encrypted) {
+      // mfa_enrolled_at setado mas secret faltando = inconsistente
+      throw new ApiException({
+        code: 'INTERNAL_ERROR',
+        message: 'Setup MFA corrompido — contate suporte',
+        request_id: '',
+      })
+    }
+    let secretBase32: string
+    try {
+      secretBase32 = decryptSecret(identity.mfa_totp_secret_encrypted)
+    } catch {
+      throw new ApiException({
+        code: 'INTERNAL_ERROR',
+        message: 'Falha ao decifrar secret TOTP',
+        request_id: '',
+      })
+    }
+    if (!verifyTotp(totp, secretBase32)) {
       throw new ApiException({
         code: 'UNAUTHORIZED',
-        message: 'TOTP inválido',
+        message: 'Credenciais inválidas',
         request_id: '',
       })
     }
