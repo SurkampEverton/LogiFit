@@ -55,6 +55,7 @@ import {
   verifyOtpCode,
 } from '@repo/security'
 import { z } from 'zod'
+import { createPassportSession, setPassportCookie } from '../lib/passport-session'
 
 const PhoneSchema = z
   .string()
@@ -423,6 +424,26 @@ export async function signupPatient(input: unknown) {
     }
   }
 
+  // 8. Cria session passport automática pós-signup (ADR 0094 Sprint 02b3).
+  //    Paciente sai do /cadastro já logado em passport_global_sessions.
+  //    Cookie lf_passport_session setado (path /meu).
+  //    MFA verified = false pq TOTP wizard ainda não rodou (mesmo com enableMfa).
+  //    Sprint 02b3 completo: se enableMfa, redireciona pra /cadastro/mfa-setup
+  //    onde wizard ativa TOTP + marca mfa_verified_at antes da session de fato
+  //    valer pra ações de alto risco.
+  try {
+    const { token: refreshToken } = await createPassportSession(passportGlobalId, {
+      mfaVerified: false,
+    })
+    await setPassportCookie(refreshToken)
+  } catch (err) {
+    // Identity criada mas session falhou — paciente terá que logar manualmente
+    console.warn(
+      '[signupPatient] criação automática de session falhou:',
+      err instanceof Error ? err.message : err,
+    )
+  }
+
   return {
     ok: true as const,
     passportGlobalId,
@@ -430,10 +451,14 @@ export async function signupPatient(input: unknown) {
     recoveryCodes: recoveryCodesPlainForUI,
     /** Tenants vinculados automaticamente quando vier de /i/[token] (Path A+B híbrido) */
     linkedTenants,
-    /** Sprint 02b3 redireciona pra /meu/login (member portal vai refatorar pra resolver passport_global_identity_id em vez de member_sessions atual). */
-    redirectUrl: '/meu/login',
+    /** Sprint 02b3 — session já criada; redireciona pro dashboard do paciente
+     *  (Sprint 02b3 completo: enableMfa=true vai pra /cadastro/mfa-setup primeiro). */
+    redirectUrl: parsed.data.enableMfa ? '/cadastro/mfa-setup' : '/meu',
     note:
-      'Sprint 02b2 partial — identity global criada. Login flow (/meu/login resolver passport_global_identity_id) e wizard MFA TOTP entram em Sprint 02b3.',
+      'Sprint 02b3 partial — identity global criada + session lf_passport_session ativa. ' +
+      (parsed.data.enableMfa
+        ? 'Sprint 02b3 completo ativa wizard TOTP em /cadastro/mfa-setup.'
+        : 'Login direto em /meu funcional.'),
   }
 }
 
