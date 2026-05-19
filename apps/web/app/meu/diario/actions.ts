@@ -68,6 +68,7 @@ export const logMeal = wrapMemberAction(
     returnTo: '/meu/diario/novo',
     resourceType: 'meal_log_entries',
     schema: LogMealSchema,
+    eventKind: 'meu.diary.meal_logged',
   },
   async (input, { session }) => {
     const {
@@ -254,6 +255,7 @@ export const deleteDiaryEntry = wrapMemberAction(
     returnTo: '/meu/diario',
     resourceType: 'meal_log_entries',
     schema: EntryIdSchema,
+    eventKind: 'meu.diary.meal_deleted',
   },
   async (input, { session }) => {
     const r = await pool.query(

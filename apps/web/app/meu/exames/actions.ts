@@ -30,6 +30,7 @@ export const selfUploadExam = wrapMemberAction(
     returnTo: '/meu/exames/upload',
     resourceType: 'exam_documents',
     schema: UploadExamSchema,
+    eventKind: 'meu.exam.self_uploaded',
   },
   async (input, { session }) => {
     const r = await pool.query<{ id: string }>(

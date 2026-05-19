@@ -38,6 +38,7 @@ import { persons } from './persons'
 
 // Tipos de evento canônicos (Sprint 02 — kinds básicos; verticais ampliam)
 export const memberEventKindEnum = pgEnum('member_event_kind', [
+  // Staff-side member lifecycle (Sprint 02 Faixa A)
   'member.created',
   'member.updated',
   'member.archived',
@@ -45,7 +46,25 @@ export const memberEventKindEnum = pgEnum('member_event_kind', [
   'member.note_added',
   'member.tag_added',
   'member.tag_removed',
-  // Sprint 03+ amplia: agenda.booked, evolucao.created, invoice.paid, etc
+  // Member portal actions (Sprint 02c2 wrapMemberAction audit Sprint 02d3)
+  // — paciente é actor (actor_user_id NULL pra distinguir de staff)
+  'meu.appointment.cancelled', // Sprint 26 cancelMyAppointment
+  'meu.session.revoked', // Sprint 26 revokeMySession
+  'meu.consent.updated', // Sprint 26 updateMyConsent
+  'meu.cross_prescription_alert.acknowledged', // Sprint 26 acknowledgeCrossPrescriptionAlert
+  'meu.incident.acknowledged', // Sprint 26 acknowledgeIncident
+  'meu.cross_tenant_access.exported', // Sprint 26 exportCrossTenantAccessLog (LGPD art. 18 V)
+  'meu.exam.self_uploaded', // Sprint 33 selfUploadExam
+  'meu.device.connected', // Sprint 32 startConnection (após complete)
+  'meu.device.disconnected', // Sprint 32 disconnect
+  'meu.device.consent_granted', // Sprint 32 grantDeviceConsent
+  'meu.device.consent_revoked', // Sprint 32 revokeDeviceConsent
+  'meu.device.csv_imported', // Sprint 32 importInBodyCsv
+  'meu.diary.meal_logged', // Sprint 31 logMeal
+  'meu.diary.meal_deleted', // Sprint 31 deleteDiaryEntry
+  'meu.mobile.push_token_registered', // Sprint 35a registerPushToken
+  'meu.mobile.push_token_revoked', // Sprint 35a revokeMyPushToken
+  // Sprint 03+ amplia verticais: agenda.booked, evolucao.created, invoice.paid, etc
 ])
 
 // Visibilidade de note — controle granular regra 42

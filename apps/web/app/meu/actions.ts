@@ -279,6 +279,7 @@ export const cancelMyAppointment = wrapMemberAction(
     returnTo: '/meu/agenda',
     resourceType: 'appointments',
     schema: CancelAppointmentSchema,
+    eventKind: 'meu.appointment.cancelled',
   },
   async (input, { session }) => {
     // 1. Buscar appointment + tenant vertical
@@ -359,6 +360,7 @@ export const revokeMySession = wrapMemberAction(
     returnTo: '/meu/perfil',
     resourceType: 'member_sessions',
     schema: RevokeSessionSchema,
+    eventKind: 'meu.session.revoked',
   },
   async (input, { session }) => {
     const r = await pool.query(
@@ -380,6 +382,7 @@ export const updateMyConsent = wrapMemberAction(
     returnTo: '/meu/privacidade',
     resourceType: 'member_consents',
     schema: UpdateConsentSchema,
+    eventKind: 'meu.consent.updated',
   },
   async (input, { session }) => {
     // Revoga consent atual da mesma purpose (se existir)
@@ -432,6 +435,7 @@ export const acknowledgeCrossPrescriptionAlert = wrapMemberAction(
     action: 'cross_prescription_alert.acknowledge',
     returnTo: '/meu/privacidade/alertas-cruzados',
     schema: AcknowledgeAlertSchema,
+    eventKind: 'meu.cross_prescription_alert.acknowledged',
   },
   async (input, _ctx) => {
     // Sprint 26c: UPDATE cross_prescription_alerts SET acknowledged_at = now()
@@ -459,6 +463,7 @@ export const acknowledgeIncident = wrapMemberAction(
     action: 'incident.acknowledge',
     returnTo: '/meu/privacidade/incidentes',
     schema: AcknowledgeIncidentSchema,
+    eventKind: 'meu.incident.acknowledged',
   },
   async (input, _ctx) => {
     // Sprint 26c: UPDATE security_incident_notifications SET viewed_at = now()
@@ -491,6 +496,7 @@ export const exportCrossTenantAccessLog = wrapMemberAction(
     returnTo: '/meu/privacidade/acessos',
     resourceType: 'data_subject_requests',
     schema: ExportAccessLogSchema,
+    eventKind: 'meu.cross_tenant_access.exported',
   },
   async (input, { session }) => {
     const exportId = randomUUID()

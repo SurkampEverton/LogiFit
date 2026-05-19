@@ -135,6 +135,7 @@ export const completeConnection = wrapMemberAction(
     returnTo: '/meu/dispositivos',
     resourceType: 'device_connections',
     schema: CompleteConnectionSchema,
+    eventKind: 'meu.device.connected',
   },
   async (input, { session }) => {
     // Busca connection pending do mesmo provider
@@ -193,6 +194,7 @@ export const disconnect = wrapMemberAction(
     returnTo: '/meu/dispositivos',
     resourceType: 'device_connections',
     schema: DisconnectSchema,
+    eventKind: 'meu.device.disconnected',
   },
   async (input, { session }) => {
     const r = await pool.query<{
@@ -326,6 +328,7 @@ export const importInBodyCsv = wrapMemberAction(
     returnTo: '/meu/dispositivos/importar',
     resourceType: 'device_readings',
     schema: ImportCsvSchema,
+    eventKind: 'meu.device.csv_imported',
   },
   async (input, { session }) => {
     // 1. Garante connection file_import existe
@@ -405,6 +408,7 @@ export const grantDeviceConsent = wrapMemberAction(
     returnTo: '/meu/dispositivos/consent',
     resourceType: 'device_consents',
     schema: GrantConsentSchema,
+    eventKind: 'meu.device.consent_granted',
   },
   async (input, { session }) => {
     // Revoga consent anterior do mesmo provider (1 ativo por par)
@@ -441,6 +445,7 @@ export const revokeDeviceConsent = wrapMemberAction(
     returnTo: '/meu/dispositivos/consent',
     resourceType: 'device_consents',
     schema: RevokeConsentSchema,
+    eventKind: 'meu.device.consent_revoked',
   },
   async (input, { session }) => {
     const r = await pool.query(

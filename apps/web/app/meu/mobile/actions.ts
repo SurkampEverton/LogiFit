@@ -54,6 +54,7 @@ export const registerPushToken = wrapMemberAction(
     returnTo: '/meu/mobile/push',
     resourceType: 'mobile_push_tokens',
     schema: RegisterPushTokenSchema,
+    eventKind: 'meu.mobile.push_token_registered',
   },
   async (input, { session }) => {
     // Revoga tokens anteriores do mesmo device (unique constraint força)
@@ -130,6 +131,7 @@ export const revokeMyPushToken = wrapMemberAction(
     returnTo: '/meu/mobile/push',
     resourceType: 'mobile_push_tokens',
     schema: RevokeTokenSchema,
+    eventKind: 'meu.mobile.push_token_revoked',
   },
   async (input, { session }) => {
     const r = await pool.query(
