@@ -26,6 +26,18 @@ export interface MemberSessionClaims {
   sessionId: string
   /** Persona ativa derivada do tenant (academia/fisio/nutri/etc) — Sprint 26b: lookup real */
   vertical: 'academia' | 'fisio' | 'nutri' | 'multi'
+  /**
+   * Identidade global do paciente (Sprint 02b2 + ADR 0093). Setada quando
+   * paciente fez signup proativo `/cadastro` ou aceitou invite vinculando à
+   * identity global. Quando presente, `withMemberContext` também seta
+   * `app.passport_global_id` na connection (RLS de `passport_global_identities`
+   * + cross-tenant lookups Sprint 26b+).
+   *
+   * Atualmente Sprint 02b3 partial — member_sessions ainda não tem coluna
+   * passport_global_identity_id. Em Sprint 02b3 completo, login flow popula
+   * via SELECT JOIN persons.passport_global_identity_id.
+   */
+  passportGlobalId?: string
 }
 
 /**
@@ -43,10 +55,15 @@ export async function getMemberSession(): Promise<MemberSessionClaims | null> {
     tenant_id: string
     expires_at: Date
     revoked_at: Date | null
+    passport_global_id: string | null
   }>(
-    `SELECT id, member_id, tenant_id, expires_at, revoked_at
-     FROM member_sessions
-     WHERE refresh_token_hash = $1
+    `SELECT ms.id, ms.member_id, ms.tenant_id, ms.expires_at, ms.revoked_at,
+            -- Sprint 02b2 bridge: resolve identity global via persons FK (nullable)
+            p.passport_global_identity_id AS passport_global_id
+     FROM member_sessions ms
+     INNER JOIN members m ON m.id = ms.member_id
+     INNER JOIN persons p ON p.id = m.person_id
+     WHERE ms.refresh_token_hash = $1
      LIMIT 1`,
     [hash],
   )
@@ -65,6 +82,7 @@ export async function getMemberSession(): Promise<MemberSessionClaims | null> {
     tenantId: row.tenant_id,
     sessionId: row.id,
     vertical: 'multi', // Sprint 26b: lookup tenant.verticals
+    passportGlobalId: row.passport_global_id ?? undefined,
   }
 }
 
@@ -105,6 +123,10 @@ export async function clearMemberCookie(): Promise<void> {
 
 /**
  * Executa `fn` com `app.tenant_id` + `app.member_id` setados (RLS member).
+ *
+ * Sprint 02b2 (ADR 0093): também seta `app.passport_global_id` quando
+ * `claims.passportGlobalId` presente — ativa RLS self-only em
+ * `passport_global_identities` (policy 0057).
  */
 export async function withMemberContext<T>(
   claims: MemberSessionClaims,
@@ -114,11 +136,17 @@ export async function withMemberContext<T>(
   try {
     await client.query("SELECT set_config('app.tenant_id', $1, false)", [claims.tenantId])
     await client.query("SELECT set_config('app.member_id', $1, false)", [claims.memberId])
+    if (claims.passportGlobalId) {
+      await client.query("SELECT set_config('app.passport_global_id', $1, false)", [
+        claims.passportGlobalId,
+      ])
+    }
     return await fn()
   } finally {
     try {
       await client.query("SELECT set_config('app.tenant_id', '', false)")
       await client.query("SELECT set_config('app.member_id', '', false)")
+      await client.query("SELECT set_config('app.passport_global_id', '', false)")
     } catch {
       /* swallow */
     }

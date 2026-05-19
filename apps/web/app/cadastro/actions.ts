@@ -44,6 +44,7 @@
 import { pool } from '@repo/db/client'
 import { ApiException } from '@repo/errors'
 import {
+  encryptSecret,
   generateOtpCode,
   generateRecoveryCodes,
   hashOtpCode,
@@ -336,10 +337,20 @@ export async function signupPatient(input: unknown) {
   if (parsed.data.enableMfa) {
     const plain = generateRecoveryCodes(10)
     const codesPayload = plain.map((c) => ({ hash: hashRecoveryCode(c), used_at: null }))
-    // Sprint 02b3 cifra com envelope encryption (LOGIFIT_DATA_KEY ADR 0073).
-    // MVP grava jsonb plain — TODO marcado no comment + lint custom Sprint 02b3.
-    // mfa-exempt: MVP — Sprint 02b3 plugar encryptJsonWithDataKey
-    recoveryCodesEncrypted = JSON.stringify(codesPayload)
+    // Envelope encryption AES-256-GCM via LOGIFIT_DATA_KEY (ADR 0073).
+    // Em dev requer .env.local com LOGIFIT_DATA_KEY=`openssl rand -base64 32`.
+    try {
+      recoveryCodesEncrypted = encryptSecret(JSON.stringify(codesPayload))
+    } catch (err) {
+      throw new ApiException({
+        code: 'INTERNAL_ERROR',
+        message:
+          'Servidor não configurou LOGIFIT_DATA_KEY — MFA indisponível. ' +
+          'Configure pra ativar MFA, ou cadastre sem MFA e ative depois.',
+        request_id: '',
+        details: { reason: err instanceof Error ? err.message : 'unknown' },
+      })
+    }
     recoveryCodesPlainForUI = plain
   }
 
