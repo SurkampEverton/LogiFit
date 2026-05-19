@@ -3,7 +3,7 @@
 - **Área:** geral
 - **Início:** planejado (depois do Sprint 01b)
 - **Fim planejado:** +3 semanas
-- **Status:** **done (02a + 02b backbone)** 2026-05-18/19 — Faixas A+B+C (2026-05-12) + fechamento Path A (passport actions + landing invite + has_cross_tenant_access SQL fn — 2026-05-18) + Sprint 02b backbone Path B (Captcha+SMS providers abstratos + passport_signup_otps schema + /cadastro 2-step UI + requestSmsCode/verifySmsCode funcionais + signupPatient stub — 2026-05-19). Sprint 02b2 completa signup real quando ADR persons-without-tenant for decidido + Twilio/Turnstile credentials prod provisionadas
+- **Status:** **done (02a + 02b + 02b2 + 02b3 partials)** 2026-05-18/19 — Faixas A+B+C (2026-05-12) + Path A (2026-05-18 — passport actions + landing invite + has_cross_tenant_access SQL fn) + Sprint 02b backbone Path B (2026-05-19 — Captcha+SMS providers + passport_signup_otps + /cadastro 2-step UI + signupPatient stub) + **Sprint 02b2 partial** (2026-05-19 — ADR 0093 Accepted + schema passport_global_identities + signupPatient real substitui stub + helpers password-hash scrypt + recovery-codes Crockford SHA-256) + **Sprint 02b3 partial** (2026-05-19 — envelope encryption recovery codes ativo + tests password/recovery/captcha/sms-otp/totp 121 verdes + member-session bridge + Path A+B híbrido auto-accept invite + ADR 0094 Accepted + schema passport_global_sessions + helper passport-session + /meu/login Form email+password 2-tabs + loginPassport SA + cron expire-passport-global-sessions + wizard MFA TOTP RFC 6238 standalone + loginPassport TOTP real). Sprint 02b3 fechamento (futuro): email confirmação AWS SES + QR code visual + E2E + feature flag + rate limit Redis.
 - **Item do roadmap:** #4
 
 ## Goal
@@ -234,6 +234,72 @@ Consumidores no MVP: timeline UI via Realtime (mesmo tenant). Fase 2+ (cross-ale
 - [ ] Importador CSV para migração de cliente
 
 ## Log
+
+- **2026-05-19 — Sprint 02b3 partial entregue (6 commits — `done (02b3 partial)`).**
+  - **ADR 0093 + 0094 Accepted** — 2 decisões arquiteturais que destravaram implementação:
+    - [ADR 0093](../decisions/0093-passport-global-identities.md) — tabela `passport_global_identities` separada como pivot global do paciente (opção C de 4 avaliadas; A=tenant pivot fixo, B=tenant_id nullable, D=BetterAuth global todas REJEITADAS)
+    - [ADR 0094](../decisions/0094-passport-global-sessions.md) — tabela `passport_global_sessions` dedicada com cookie `lf_passport_session` separado (opção A de 4; B=member_sessions nullable, C=bifurcação view, D=BetterAuth REJEITADAS)
+  - **Schema novo `passport_global_identities`** (migration `0044_passport_global_identities.sql` + policy `0057_*.sql` FORCE RLS + self-select via `app.passport_global_id`):
+    - Identidade global SEM tenant_id; campos: name + cpf_normalized UNIQUE + email UNIQUE (lower) + phone E.164 + email/phone_verified_at + birth_date + sex + password_hash scrypt + mfa_totp_secret_encrypted AES-256-GCM + recovery_codes_encrypted + accepted_terms/privacy_at + ripd_version_signup + signup_path + signup_ip + signup_otp_id FK + lifecycle (last_login_at, deactivated_at)
+    - ALTER `persons` ADD nullable `passport_global_identity_id` FK bridge
+    - 5 indexes: UNIQUE cpf + UNIQUE lower(email) + phone + partial active + signup_otp_id
+  - **Schema novo `passport_global_sessions`** (migration `0045_*.sql` + policy `0058_*.sql` GRANT-only — auth table sem RLS, padrão member_sessions ADR 0088):
+    - id + passport_global_identity_id FK CASCADE + refresh_token_hash UNIQUE SHA-256 + expires_at 30d + device_label + ip + mfa_verified_at + last_seen_at + revoked_at + revoked_reason (`user_logout` / `admin_revoke` / `password_change` / `mfa_change` / `session_rotation` / `expired`)
+    - 4 indexes: UNIQUE hash + identity (created_at DESC) + partial active (revoked IS NULL) + partial cleanup
+  - **4 helpers novos em `packages/security/src/`** (zero deps externas — regra 46 OK):
+    - `password-hash.ts` (130l): scrypt Node nativo OWASP 2024 params (N=16384, r=8, p=1, keylen=64, salt=32) + `hashPassword`/`verifyPassword` constant-time + `needsRehash` rotação gradual — 15 unit tests
+    - `recovery-codes.ts` (130l): `generateRecoveryCodes(n=10)` alfabeto Crockford reduzido (sem I/L/O/U) ~58 bits per code + `hashRecoveryCode` SHA-256 + `findUnusedMatchingCode` constant-time scan anti-timing-leak + `markRecoveryCodeUsed` imutável + `countAvailableRecoveryCodes` — 26 unit tests
+    - `totp.ts` (180l): TOTP RFC 6238 standalone via `node:crypto` HMAC-SHA1 — `generateTotpSecret()` 20 bytes random base32 + `verifyTotp(token, secret, opts)` window ±1 step constant-time + `generateTotpUri(secret, account, issuer)` otpauth://totp format compatible Google Auth/Authy/1Password/Bitwarden — 17 unit tests
+    - Tests `captcha.test.ts` (9) + `sms-otp.test.ts` (22) preenchem gap Sprint 02b backbone
+    - Total @repo/security **121 tests verdes** (era 32 antes da sessão)
+  - **`signupPatient` real** substitui stub Sprint 02b backbone (apps/web/app/cadastro/actions.ts):
+    1. Re-valida OTP anti-replay (used_at < 30d + phone match)
+    2. CPF normalizado 11 dígitos
+    3. Detecta duplicação CPF/email (anti-enumeration genérico)
+    4. `hashPassword` scrypt
+    5. Se `enableMfa=true`: `generateRecoveryCodes(10)` + hash + **`encryptSecret` LOGIFIT_DATA_KEY ADR 0073** (envelope encryption ativa — sem mais TODO mfa-exempt)
+    6. INSERT identity com signup_path canônico (`proactive` / `proactive_then_invite`)
+    7. **Path A+B híbrido**: se `inviteToken` presente, `acceptInviteAfterSignup` helper interno cria persons espelho no tenant emissor com `passport_global_identity_id` FK + UPDATE link status=`active` + UPDATE modules status=`active`. Failure-tolerant.
+    8. **Cria passport session automática** pós-INSERT — `createPassportSession` + `setPassportCookie` (paciente sai de `/cadastro` já logado)
+  - **Helper `apps/web/app/lib/passport-session.ts`** (210l): `getPassportSession()`/`requirePassportSession(returnTo)`/`requirePassportMfa(claims, maxAgeMs)`/`createPassportSession(id, opts)`/`revokePassportSession(id, reason)`/`setPassportCookie`/`clearPassportCookie`/`withPassportContext` seta `app.passport_global_id` na conn (ativa RLS policy 0057)/`markPassportSessionMfaVerified` pós-TOTP
+  - **Helper `apps/web/app/lib/active-session.ts`**: `getActiveSession()` orchestrator (passport first via cookie `lf_passport_session` → member fallback via cookie `lf_member_session` Sprint 26) retorna discriminated union `{kind: 'passport'|'member'}`. Migration path Fase 1-3 ADR 0094.
+  - **Helper `member-session.ts` refactor**: `MemberSessionClaims` ganha optional `passportGlobalId` + `getMemberSession` JOIN persons resolve FK (Sprint 02b2 bridge) + `withMemberContext` seta `app.passport_global_id` quando claims tem valor
+  - **UI `/meu/login` com 2 abas** (Sprint 26 magic link legacy + Sprint 02b3 Senha):
+    - `page.tsx` Server Component resolve tenant slug via headers ADR 0065
+    - `login-tabs.tsx` Client switcher Senha (default) / Magic link com underline ativo
+    - `password-form.tsx` 2-step (credentials → mfa) — detecta `MFA_RECENT_REQUIRED` code + abre step TOTP
+  - **Server Action `loginPassport`** (apps/web/app/meu/login/actions.ts):
+    1. SELECT identity por `lower(email)` + `mfa_totp_secret_encrypted` — fail-closed em deactivated
+    2. `verifyPassword` scrypt constant-time — anti-enumeration "Credenciais inválidas"
+    3. Se `mfa_enrolled_at` setado: exige `totp` (sem → MFA_RECENT_REQUIRED frontend abre step) + `decryptSecret` + `verifyTotp` window ±1
+    4. `createPassportSession` + `setPassportCookie`
+    5. Update `last_login_at` fire-and-forget
+    + `logoutPassport` tolerante (`getPassportSession` em vez de require — idempotente)
+  - **Wizard MFA TOTP** `/cadastro/mfa-setup` — 3 Server Actions:
+    - `enrollTotp()`: gera secret + cifra + grava `mfa_totp_secret_encrypted` (sem marcar `mfa_enrolled_at`) + retorna `{secret plain, uri otpauth://}`. Idempotente.
+    - `confirmTotp({code})`: `decryptSecret` + `verifyTotp` + se OK marca `mfa_enrolled_at` + `generateRecoveryCodes(10)` + cifra + grava + `markPassportSessionMfaVerified`. Retorna 10 recovery codes plain (única chance).
+    - `cancelTotpEnroll()`: limpa secret se não confirmou
+  - UI wizard 3-step (Server Component `requirePassportSession` + Client `wizard.tsx`):
+    - Step `init`: "Por que ativar MFA?" + botão "Começar setup" / "Pular"
+    - Step `scan`: URI otpauth:// em `<pre>` (Sprint 02b4 renderiza QR via lib client) + secret manual formatted (grupos 4-4-4-...) + input código TOTP 6 dígitos
+    - Step `done`: banner amarelo recovery codes + botão "Copiar todos" via `navigator.clipboard` + "Salvei → ir pra minha conta"
+    - Cancel button `<ConfirmDialog>` regra 45 reusa Sprint 02c catálogo
+  - **Cron `expire-passport-global-sessions`** (apps/web/app/api/jobs/): daily 03:35 UTC = 00:35 SP, `timingSafeEqual` auth + cleanup 2-fase (UPDATE expired→revoked preserva audit; DELETE revoked há >30d retention LGPD art. 18 V)
+  - **wrapMemberAction audit log automático** (Sprint 02d3 — commit `7923969`): migration `0043_member_event_meu_kinds.sql` ADD VALUE 15 novos kinds `meu.*` (appointment.cancelled / session.revoked / consent.updated / cross_prescription_alert.acknowledged / incident.acknowledged / cross_tenant_access.exported / exam.self_uploaded / device.* 5x / diary.* 2x / mobile.* 2x). 21 SAs portal ativadas com `eventKind` — INSERT member_events fire-and-forget após handler success com `actor_user_id=NULL` (distingue de staff). `setAuditPayload` no context + sanitizeArgs redact PII.
+  - **wrapMemberAction migration batch** (Sprint 02c2 + 02d-1 + 02d-2): 21 SAs do `/meu/*` migradas pra helper canônico — meu/actions.ts (6 SAs core), meu/exames (1), meu/dispositivos (8), meu/diario (4), meu/mobile (3 + 1 exempt pré-auth). 3 SAs pré-auth/tolerantes ficam com `// wrap-exempt:` (requestMagicLink + verifyMagicLink + logoutMember).
+  - **Lint custom maturity** (Sprint 02c cleanup): cross-tenant-read-must-log REAL bidirecional (gate-sem-audit + audit-sem-gate ambos pegam — regra 42 enforcement ativo); docs/rules.md regra 42 atualizada com nota explícita; cleanup `no-window-alert` 4→0 + `no-hardcoded-design-token` 400→0 + `no-unwrapped-action` 29→0 (refinou regex + reconheceu padrão member portal). Lint 9/9 rules clean.
+  - **Validação:**
+    - ✓ typecheck 11/11 packages
+    - ✓ lint-custom 733 + 2 css clean (9 rules)
+    - ✓ docs-check 0/0
+    - ✓ tests @repo/security 121 verdes (era 32 antes da sessão — +89)
+    - ✓ 21 SAs portal com audit automático em `member_events`
+  - **Sprint 02b3 fechamento restante** (precisam credentials externas ou trabalho longo):
+    - Email confirmação via `@repo/email` (AWS SES credentials) → `email_verified_at` update
+    - QR code visual render (lib `qrcode.js` ~30KB ou SVG próprio Reed-Solomon ~500l)
+    - E2E Playwright fluxo completo signup proativo → MFA setup → login com TOTP → tenant linking
+    - Feature flag `passport_signup_v1`
+    - Rate limit Redis 5 attempts/IP/15min em `loginPassport` via `auth_attempts` Sprint 01a
 
 - **2026-05-19 — Sprint 02b backbone Path B entregue (`done (02b backbone)`).**
   - 2 providers abstratos em `packages/security/src/`:
