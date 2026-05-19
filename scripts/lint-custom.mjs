@@ -236,12 +236,13 @@ function checkNoHardcodedToastMessage(file, lines) {
 const RE_USE_SERVER = /^\s*['"]use server['"]/m
 const RE_EXPORTED_ASYNC = /^export\s+(?:async\s+function|const\s+\w+\s*=\s*async)/
 /**
- * Aceita 3 wrappers canônicos:
+ * Aceita 4 wrappers canônicos:
  *   - `wrapAction(` — base agnóstica (jobs/CLI sem session) ADR 0071
  *   - `wrapServerAction(` — staff (apps/web/app/lib/wrap-action.ts) ADR 0071
- *   - `wrapMemberAction(` — portal do paciente (apps/web/app/lib/wrap-member-action.ts) Sprint 02c2 ADR 0088
+ *   - `wrapMemberAction(` — portal do paciente legacy (apps/web/app/lib/wrap-member-action.ts) Sprint 02c2 ADR 0088
+ *   - `wrapPassportAction(` — identidade global do paciente (apps/web/app/lib/wrap-passport-action.ts) Sprint 02b3 ADR 0094
  */
-const RE_WRAP_ACTION = /\bwrap(?:Server|Member)?Action\s*\(/
+const RE_WRAP_ACTION = /\bwrap(?:Server|Member|Passport)?Action\s*\(/
 const RE_REQUIRE_MEMBER_SESSION = /\brequireMemberSession\s*\(/
 const RE_WITH_MEMBER_CONTEXT = /\bwithMemberContext\s*\(/
 const ACTION_FILE_PATTERN = /\.(action|server)\.ts$/
