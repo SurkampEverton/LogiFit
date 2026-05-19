@@ -39,6 +39,9 @@ export function CadastroForm({ inviteToken }: Props) {
   const [err, setErr] = useState<string | null>(null)
   const [stubResult, setStubResult] = useState<string | null>(null)
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null)
+  const [linkedTenants, setLinkedTenants] = useState<
+    Array<{ tenantId: string; linkId: string; tenantName: string }>
+  >([])
 
   async function handleRequestOtp(e: React.FormEvent) {
     e.preventDefault()
@@ -111,11 +114,14 @@ export function CadastroForm({ inviteToken }: Props) {
           acceptedPrivacy: true,
           enableMfa,
           locale: 'pt-BR',
+          // Path A+B híbrido: passa token quando paciente veio de /i/[token]
+          inviteToken: inviteToken ?? null,
         })) as
           | {
               ok: true
               passportGlobalId: string
               recoveryCodes: string[] | null
+              linkedTenants: Array<{ tenantId: string; linkId: string; tenantName: string }>
               redirectUrl: string
               note?: string
             }
@@ -126,14 +132,15 @@ export function CadastroForm({ inviteToken }: Props) {
           return
         }
         if (r.recoveryCodes) setRecoveryCodes(r.recoveryCodes)
+        if (r.linkedTenants && r.linkedTenants.length > 0) {
+          setLinkedTenants(r.linkedTenants)
+        }
         setStep('done')
       } catch (e) {
         setErr(e instanceof Error ? e.message : 'Erro inesperado')
       }
     })
   }
-
-  void inviteToken // Sprint 02b2: associa invite ao novo persons
 
   if (step === 'phone') {
     return (
@@ -400,6 +407,36 @@ export function CadastroForm({ inviteToken }: Props) {
         Sua identidade global no LogiFit foi criada. Sprint 02b3 ativa o login em
         <code>/meu/login</code> resolvendo passport_global_identity_id.
       </p>
+
+      {linkedTenants.length > 0 ? (
+        <div
+          style={{
+            marginTop: 'var(--ev-space-md)',
+            padding: 'var(--ev-space-md)',
+            background: 'var(--ev-success-soft, var(--ev-surface-muted))',
+            borderLeft: '4px solid var(--ev-success)',
+            borderRadius: 'var(--ev-radius-sm)',
+          }}
+        >
+          <h3 style={{ marginTop: 0 }}>🔗 Convite aceito automaticamente</h3>
+          <p style={{ fontSize: 'var(--ev-text-sm)' }}>
+            Path A+B híbrido detectou seu invite e vinculou sua conta a:
+          </p>
+          <ul style={{ marginTop: 'var(--ev-space-2)' }}>
+            {linkedTenants.map((t) => (
+              <li key={t.linkId}>
+                <strong>{t.tenantName}</strong>{' '}
+                <code style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
+                  ({t.linkId.slice(0, 8)}…)
+                </code>
+              </li>
+            ))}
+          </ul>
+          <p style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
+            Após login, gerencie compartilhamento em <code>/meu/privacidade</code>.
+          </p>
+        </div>
+      ) : null}
 
       {recoveryCodes && recoveryCodes.length > 0 ? (
         <div

@@ -90,6 +90,14 @@ const SignupPatientSchema = z.object({
   enableMfa: z.boolean().default(false),
   /** Locale do SMS (default pt-BR) */
   locale: z.enum(['pt-BR', 'en-US', 'es-419']).default('pt-BR'),
+  /**
+   * Token de invite quando paciente veio de `/i/[token]` (Path A+B híbrido).
+   * Quando presente, após criar identidade global, auto-aceita o invite:
+   * cria persons espelho no tenant emissor + ativa patient_company_links
+   * + ativa patient_link_modules. MVP: token == link.id UUID; Sprint 02b2
+   * refina pra opaque signed token.
+   */
+  inviteToken: z.string().uuid().optional().nullable(),
 })
 
 /** Tempo de vida do OTP — 5 minutos */
@@ -382,21 +390,152 @@ export async function signupPatient(input: unknown) {
       'v1.0', // terms_version — Sprint 02b3 promove pra fetch de tabela
       'v1.0', // privacy_version
       'v1.0-passport-signup', // ripd_version_signup
-      'proactive', // signup_path
+      // signup_path: 'proactive_then_invite' quando veio de /i/[token] — Path A+B híbrido
+      parsed.data.inviteToken ? 'proactive_then_invite' : 'proactive',
       otpRow.id,
     ],
   )
 
   const passportGlobalId = ins.rows[0]!.id
 
+  // 7. Path A+B híbrido: se inviteToken presente, auto-aceita o invite
+  //    (cria persons espelho no tenant emissor + ativa link + modules).
+  //    Failure-tolerant: se invite inválido/expirado, identity global continua
+  //    criada (paciente pode aceitar invites depois manualmente).
+  const linkedTenants: Array<{ tenantId: string; linkId: string; tenantName: string }> = []
+  if (parsed.data.inviteToken) {
+    try {
+      const linked = await acceptInviteAfterSignup({
+        inviteToken: parsed.data.inviteToken,
+        passportGlobalId,
+        patientName: parsed.data.name,
+        patientCpfNormalized: cpfNormalized,
+        patientEmail: parsed.data.email,
+        patientPhone: parsed.data.phone,
+      })
+      if (linked) linkedTenants.push(linked)
+    } catch (err) {
+      // Log warning mas não falha o signup — identidade global já criada
+      console.warn(
+        '[signupPatient] auto-accept invite falhou (signup OK):',
+        err instanceof Error ? err.message : err,
+      )
+    }
+  }
+
   return {
     ok: true as const,
     passportGlobalId,
     /** Recovery codes (única chance — usuário precisa salvar). Null se MFA não habilitado no signup. */
     recoveryCodes: recoveryCodesPlainForUI,
+    /** Tenants vinculados automaticamente quando vier de /i/[token] (Path A+B híbrido) */
+    linkedTenants,
     /** Sprint 02b3 redireciona pra /meu/login (member portal vai refatorar pra resolver passport_global_identity_id em vez de member_sessions atual). */
     redirectUrl: '/meu/login',
     note:
       'Sprint 02b2 partial — identity global criada. Login flow (/meu/login resolver passport_global_identity_id) e wizard MFA TOTP entram em Sprint 02b3.',
+  }
+}
+
+// ─── acceptInviteAfterSignup (helper interno do Path A+B híbrido) ──────
+
+/**
+ * Helper interno (não exportado pra fora do `'use server'`) — chamado
+ * apenas pelo signupPatient quando inviteToken vem de /i/[token].
+ *
+ * Diferente de `acceptPatientInvite` em `app/passport/actions.ts` que exige
+ * staff session, este helper roda pré-auth (paciente recém-criado sem
+ * member_session ainda). Valida o invite + cria persons espelho + ativa
+ * link/modules direto via `pool.query`.
+ *
+ * Failure-tolerant: caller (signupPatient) catch + log warning sem falhar
+ * signup. Paciente ainda tem identity global; pode aceitar invites depois.
+ */
+async function acceptInviteAfterSignup(params: {
+  inviteToken: string
+  passportGlobalId: string
+  patientName: string
+  patientCpfNormalized: string
+  patientEmail: string
+  patientPhone: string
+}): Promise<{ tenantId: string; linkId: string; tenantName: string } | null> {
+  // 1. Resolve invite — MVP: token == link.id UUID
+  const linkRows = await pool.query<{
+    id: string
+    tenant_id: string
+    person_id: string
+    tenant_name: string
+    status: string
+  }>(
+    `SELECT pcl.id, pcl.tenant_id, pcl.person_id, t.name AS tenant_name, pcl.status::text
+     FROM patient_company_links pcl
+     INNER JOIN tenants t ON t.id = pcl.tenant_id
+     WHERE pcl.id = $1
+       AND pcl.revoked_at IS NULL
+     LIMIT 1`,
+    [params.inviteToken],
+  )
+  const link = linkRows.rows[0]
+  if (!link) {
+    throw new Error('invite not found')
+  }
+  if (link.status !== 'pending') {
+    throw new Error(`invite status ${link.status} (esperado pending)`)
+  }
+
+  // 2. Cria persons espelho no tenant emissor com FK pra global identity
+  //    Acesso pré-auth via pool (sem RLS por tenant — Server Action sem session
+  //    nesta etapa; lint cross-tenant-read-must-log não dispara pq não chama
+  //    has_cross_tenant_access nem grava patient_data_access_log — esta operação
+  //    é setup inicial do vínculo, não leitura cross-tenant).
+  const personRows = await pool.query<{ id: string }>(
+    `INSERT INTO persons (
+       tenant_id, kind, name, document, email, phone,
+       passport_global_identity_id
+     ) VALUES (
+       $1, 'pf', $2, $3, $4, $5,
+       $6
+     )
+     ON CONFLICT (tenant_id, document) WHERE document IS NOT NULL
+     DO UPDATE SET
+       passport_global_identity_id = EXCLUDED.passport_global_identity_id,
+       updated_at = now()
+     RETURNING id`,
+    [
+      link.tenant_id,
+      params.patientName,
+      params.patientCpfNormalized,
+      params.patientEmail,
+      params.patientPhone,
+      params.passportGlobalId,
+    ],
+  )
+  const personId = personRows.rows[0]!.id
+
+  // 3. Atualiza link: status='active', accepted_at, person_id (caso seja UPSERT)
+  await pool.query(
+    `UPDATE patient_company_links
+     SET status = 'active',
+         accepted_at = now(),
+         person_id = $1,
+         updated_at = now()
+     WHERE id = $2`,
+    [personId, link.id],
+  )
+
+  // 4. Ativa todos os modules pending do link
+  await pool.query(
+    `UPDATE patient_link_modules
+     SET status = 'active',
+         activated_at = now(),
+         updated_at = now()
+     WHERE link_id = $1 AND status = 'pending'`,
+    [link.id],
+  )
+
+  return {
+    tenantId: link.tenant_id,
+    linkId: link.id,
+    tenantName: link.tenant_name,
   }
 }
