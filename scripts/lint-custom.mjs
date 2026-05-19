@@ -317,38 +317,79 @@ function checkHighRiskActionMfa(file, lines) {
 }
 
 // ───────────────────────────────────────────────────────────
-// 8. cross-tenant-read-must-log (regra 42)
-//    Detecta queries que tocam dado cross-tenant — heurística:
-//      - chamada a função `crossTenantQuery(...)`/`fetchFromOtherTenant(...)`/
-//        `readCrossTenant(...)` OU
-//      - SELECT/INSERT/UPDATE que referencia `origin_tenant_id` (coluna canônica
-//        da tabela `patient_data_access_log`)
-//    Exige `logCrossTenantAccess(...)` ou `auditCrossTenantRead(...)` no mesmo arquivo.
-//    No-op até primeiro caller real (Sprint 01b — passport links).
+// 8. cross-tenant-read-must-log (regra 42 + ADR 0077 — LGPD art. 11)
+//
+// Sprint 02 fechamento materializou o padrão real:
+//   - Função SQL `has_cross_tenant_access(reader_user, reader_tenant, passport,
+//     module, category)` em `packages/db/src/policies/0055_has_cross_tenant_access.sql`
+//     decide se leitura é permitida (gate fail-closed).
+//   - Tabela `patient_data_access_log` recebe audit forense de toda leitura
+//     que passou pelo gate (LGPD art. 11 — direito do titular saber quem
+//     leu seus dados).
+//
+// **Regra**: o par gate + audit DEVE andar junto. Detecta 2 violações:
+//   - Arquivo chama `has_cross_tenant_access(` mas NÃO grava `patient_data_access_log`
+//     → audit ausente (não dá pra provar o que foi lido)
+//   - Arquivo INSERT em `patient_data_access_log` mas NÃO chama `has_cross_tenant_access(`
+//     → log sem permissão checada (falsifica audit dizendo "lê permitido")
+//
+// Exempção: `// cross-tenant-log-exempt: <motivo>` no arquivo (raro — só
+//   pra jobs background que rodam read+log em arquivos separados).
+//
+// Ignora: tests, e2e, schema declarations, migrations, policies SQL (definem
+//   mas não chamam), high-risk-actions.ts (catalog).
 // ───────────────────────────────────────────────────────────
-const RE_CROSS_TENANT_QUERY =
-  /\b(crossTenantQuery|fetchFromOtherTenant|readCrossTenant)\s*\(/
-const RE_ORIGIN_TENANT_COL = /\borigin_tenant_id\b/
-const RE_LOG_CROSS_TENANT = /\b(logCrossTenantAccess|auditCrossTenantRead)\s*\(/
+const RE_HAS_CROSS_TENANT_ACCESS = /\bhas_cross_tenant_access\s*\(/
+// Match Drizzle insert `db.insert(patientDataAccessLog)` OR raw SQL `INSERT INTO patient_data_access_log`
+const RE_ACCESS_LOG_WRITE =
+  /\b(?:patientDataAccessLog|INSERT\s+INTO\s+patient_data_access_log)\b/i
 function checkCrossTenantReadMustLog(file, lines) {
   if (file.includes('.test.')) return
   if (file.includes('e2e')) return
-  if (file.includes('schema')) return // schema declarations are OK
+  if (file.includes('schema')) return
+  if (file.includes('policies')) return
   if (file.includes('migration')) return
   if (file.includes('high-risk-actions.ts')) return
-  const content = lines.join('\n')
-  const triggers = RE_CROSS_TENANT_QUERY.test(content) || RE_ORIGIN_TENANT_COL.test(content)
-  if (!triggers) return
-  if (RE_LOG_CROSS_TENANT.test(content)) return
-  if (content.includes('// cross-tenant-log-exempt:')) return
-  // Report first occurrence
+
+  // Scan linha-a-linha, ignorando comments (pra não pegar menção em docstring)
+  let callsGate = false
+  let writesLog = false
+  let firstGateLine = -1
+  let firstLogLine = -1
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
     if (isCommentLine(line)) continue
-    if (RE_CROSS_TENANT_QUERY.test(line) || RE_ORIGIN_TENANT_COL.test(line)) {
-      report('cross-tenant-read-must-log', file, i + 1, line)
-      return
+    if (RE_HAS_CROSS_TENANT_ACCESS.test(line)) {
+      callsGate = true
+      if (firstGateLine === -1) firstGateLine = i
     }
+    if (RE_ACCESS_LOG_WRITE.test(line)) {
+      writesLog = true
+      if (firstLogLine === -1) firstLogLine = i
+    }
+  }
+
+  if (!callsGate && !writesLog) return
+  if (callsGate && writesLog) return // par completo OK
+
+  // Exempção (procura na linha imediatamente acima da gate/log call ou em comment file-level)
+  const exemptAnchor = firstGateLine >= 0 ? firstGateLine : firstLogLine
+  if (hasExemption(lines, exemptAnchor, '// cross-tenant-log-exempt:')) return
+
+  if (callsGate && !writesLog) {
+    report(
+      'cross-tenant-read-must-log',
+      file,
+      firstGateLine + 1,
+      `${lines[firstGateLine]}  (gate has_cross_tenant_access sem INSERT em patient_data_access_log)`,
+    )
+  } else if (writesLog && !callsGate) {
+    report(
+      'cross-tenant-read-must-log',
+      file,
+      firstLogLine + 1,
+      `${lines[firstLogLine]}  (INSERT em patient_data_access_log sem chamar has_cross_tenant_access)`,
+    )
   }
 }
 
