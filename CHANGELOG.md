@@ -6,6 +6,80 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — ADR 0097 — Email sender por categoria + branding configurável por tier 2026-05-20
+
+Complementa [ADR 0096](docs/decisions/0096-email-brevo-substitui-aws-ses.md) (provider Brevo) com a decisão de **quem é o sender** (from address) de cada email — distinção que o ADR 0096 não fez. Surgiu de pergunta do fundador "mas isso não deveria ser por parte da empresa tenant?".
+
+**Problema identificado:**
+- ADR 0096 implicitamente assumia que todo email viria de `no-reply@logifit.com.br`
+- Mas tem 2 categorias de email com naturezas LGPD distintas (controlador vs operador)
+- Misturar quebra branding do tenant + confunde paciente (parece phishing) + contamina deliverability agregada
+
+**Categoria 1 — Plataforma LogiFit (LogiFit é controlador LGPD):**
+- Cadastro/confirmação email global (`passport_global_identities`)
+- Magic link login `/meu/login`
+- MFA setup confirmation + alertas de segurança
+- Trial expirando (cobrança SaaS)
+- LGPD requests da identidade global
+- System alerts internos pro DPO
+
+**Categoria 2 — Comunicação do tenant (tenant é controlador LGPD):**
+- Convite profissional pro paciente ("Dr. João te convida pra Clínica Vital")
+- Welcome ao se vincular ao tenant
+- Confirmação/lembrete de agendamento
+- Fatura emitida/vencendo/paga (Sprint 04 Asaas)
+- Régua de cobrança escalonada (Sprint 13)
+- Notificação de evolução/prontuário (Sprint 20+)
+- Cross-alert lesão → adaptação treino (Sprint 27)
+
+**Decisão — Modelo C híbrido por tier comercial:**
+
+| Tier | R$/mês | Categoria 1 | Categoria 2 |
+|---|---|---|---|
+| Solo / Solo Combo | 49 / 69 | LogiFit | Fallback (from LogiFit + Reply-To tenant + "X via LogiFit") |
+| Starter | 99 | LogiFit | Fallback (mesma estrutura) |
+| Pro | 199 | LogiFit | **Domínio próprio opcional** via DNS verification |
+| Business | 449 | LogiFit | Domínio próprio (1 por company multi-CNPJ) |
+| Enterprise | ~1.199+ | LogiFit | White-label completo (signature HTML + per-unit overrides + templates) |
+
+**Por que Pro libera (não Starter):** Starter é autônomo PJ/MEI que geralmente ainda não tem domínio próprio profissional (~70% usam Gmail/Hotmail); Pro é primeira tier "estabelecida" (10 profs, 500 members) com identidade jurídica + site. Vira diferenciador comercial Starter→Pro.
+
+**Schema canônico** `tenant_email_settings` (definido no ADR; sem migration ainda):
+- `contact_email` (Reply-To em fallback) + `display_name` ("Clínica Vital" pra `From-Name`)
+- `from_domain` + `from_local_part` (NULL pra Solo/Starter)
+- `verification_status` enum `fallback / pending / verified / failed / expired`
+- `spf_record` + `dkim_selector` + `dkim_record` + `dmarc_record` (retornados por Brevo)
+- `signature_html jsonb` por locale (Enterprise white-label)
+- `per_unit_overrides jsonb` (Business+ com multi-unit)
+
+**Fluxo DNS verification (Pro+):**
+1. `/app/settings/email` (gate por tier) → admin tenant configura `from_domain`
+2. Server Action `requestEmailDomainVerification` → Brevo API `POST /senders/domains` → retorna 3 records (SPF + DKIM + DMARC)
+3. UI mostra records pro admin adicionar no DNS
+4. Server Action `checkEmailDomainVerification` (botão "verificar") → Brevo `GET /senders/domains/{domain}` → atualiza status
+5. Cron daily `verify-email-domains` revalida `pending` + `verified` (DNS pode mudar)
+6. Quando `verified` → envios usam from real; senão fallback automático (nunca falha por verificação)
+
+**Provider abstrato impact** (`@repo/email` futuro):
+- `sendTransactional` ganha parâmetro `category: 'platform' | 'tenant'` + opcional `tenantId`
+- Helper interno `resolveEmailSender(category, tenantId?)` antes da chamada Brevo decide from/reply-to
+- Categoria 1 sempre `no-reply@logifit.com.br`; Categoria 2 segue `tenant_email_settings` ou fallback
+
+**3 alternativas avaliadas** em tabela do ADR:
+- (A) Tudo LogiFit — REJEITADO (quebra branding; LGPD ambígua)
+- (B) Tudo tenant — REJEITADO (força DNS em Solo R$49 = fricção alta; LogiFit perde controle Categoria 1)
+- (C) Híbrido por categoria + tier — **ACEITO**
+
+**Refs cross-link:**
+- ADR 0096 ganha "Complementado por: ADR 0097"
+- Roadmap ganha entrada em "Decisões já fechadas (recente)"
+
+**Migração:** sem migration imediata; schema nasce em sprint dedicado (provável Sprint 02b5 ou Sprint 04+ junto com Asaas faturas que é o 1º uso massivo de Categoria 2). Backfill stub `verification_status='fallback'` por tenant existente.
+
+**Validação:**
+- ✓ docs-check 0/0 (sem links MD novos quebrados)
+- N/A typecheck/lint (sem mudança de código)
+
 ### Docs — ADR 0096 — Brevo substitui AWS SES como provider de email transacional 2026-05-20
 
 Decisão arquitetural do fundador 2026-05-20 — sair de AWS pra reduzir complexidade solo + custo opaco + sub-processor a menos. ADR criado no mesmo dia (regra 13).

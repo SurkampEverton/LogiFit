@@ -113,6 +113,7 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 - **TISS 4.01 ANS padrão vigente** — [ADR 0079](decisions/0079-tiss-401-ans-padrao-vigente.md) accepted 2026-04-25 (Ofício-Circular ANS nº 1/2026; pipeline atualização semestral; ADRs 0029/0030/0031/0042 detalham implementação)
 - **Lib `qrcode` pra render QR TOTP (regra 46)** — [ADR 0095](decisions/0095-qrcode-lib-mfa-totp.md) accepted 2026-05-20 (alternativa SVG Reed-Solomon próprio rejeitada por complexidade; render server-side via wrapper isolado `generateTotpQrSvg`; zero bundle JS no client)
 - **Brevo substitui AWS SES como provider de email transacional** — [ADR 0096](decisions/0096-email-brevo-substitui-aws-ses.md) accepted 2026-05-20 (substitui parcialmente ADR 0091 §"Email transacional: AWS SES"; tier free 300/dia cobre MVP sem custo; provider abstrato em `@repo/email` futuro; um sub-processor AWS a menos; mantém Cloudflare como provider multi-uso)
+- **Email sender por categoria + branding por tier comercial** — [ADR 0097](decisions/0097-email-sender-categoria-branding-por-tier.md) accepted 2026-05-20 (complementa ADR 0096; 2 categorias canônicas — Categoria 1 plataforma sempre LogiFit, Categoria 2 tenant com fallback Solo/Starter ou domínio próprio Pro+/Business ou white-label Enterprise; schema `tenant_email_settings` + cron `verify-email-domains` + DNS verification via Brevo)
 
 ## Decisões já fechadas
 

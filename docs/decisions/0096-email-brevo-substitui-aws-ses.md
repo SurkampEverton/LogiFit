@@ -3,6 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-05-20
 - **Supersedes (parcial):** [ADR 0091](0091-self-host-total-oracle-sp.md) — bloco "Email transacional: AWS SES" da decisão original
+- **Complementado por:** [ADR 0097](0097-email-sender-categoria-branding-por-tier.md) — define **quem é o sender** (from address) por categoria (plataforma vs tenant) + branding por tier comercial
 
 ## Context
 
