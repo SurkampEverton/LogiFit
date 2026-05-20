@@ -196,7 +196,7 @@ Em `apps/web/app/settings/users/actions.ts`:
     - **Cron daemon real** — Sprint 03+ (node-cron no container Next.js ou ofelia container separado, decisão fina Faixa 2 do Sprint 00 deixou em aberto).
     - **Cifra-com-chave-perdida em prontuario.content + assessments.notes** — Sprint 20 (prontuário fisio entrega tabelas; KEK rotation invalida acesso).
     - **Banner UI "trial expirado"** em `/app` layout — Sprint 02+ (CRM tem o primeiro layout interno).
-    - **Email "trial expira em 3 dias"** notification — Sprint 02+ (AWS SES + `@repo/email` package).
+    - **Email "trial expira em 3 dias"** notification — Sprint 02+ ([Brevo](../decisions/0096-email-brevo-substitui-aws-ses.md) + `@repo/email` package).
     - **`pii_eligible_for_anonymization bool` em colunas sensíveis** — não há colunas sensíveis Sprint 01a fora de `persons` (PJ não cabe na anonimização; PII canônica do paciente vem Sprint 02+). Convenção documentada aqui pra Sprint 02+ usar.
     - **Trigger automático em UPDATE** que rejeita tenants.subscription_status='anonymized' → outro estado — ADR 0066 §retenção forever (não pode ser revertido); Sprint 02+ adiciona check constraint.
   - **Validações end-to-end:**
@@ -240,7 +240,7 @@ Em `apps/web/app/settings/users/actions.ts`:
 - GlitchTip capture em wrapAction.
 - Particionamento real `audit_log` (regra 34 ativa quando volume justificar).
 - UI de MFA enrollment + recovery codes display (Faixa D fechamento UI ficou skeleton).
-- Email magic link real (AWS SES). Hoje só loga URL no console.
+- Email magic link real ([Brevo](../decisions/0096-email-brevo-substitui-aws-ses.md)). Hoje só loga URL no console.
 - Banner "trial expirado" no `/app` layout.
 - E2E Playwright completo (Sprint 02+ provisiona BetterAuth em ambiente E2E + helpers `loginAs`).
 

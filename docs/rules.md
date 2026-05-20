@@ -244,7 +244,7 @@ Sem ADR, sem dependência. CI bloqueia commit que adiciona import de SDK de prov
 | VPS hosting | Oracle Cloud OCI free tier (SP) | Free tier vitalício único do mercado; alternativa Hetzner pre-provisionada pra DR |
 | DNS + WAF + Captcha | Cloudflare free | Free tier real + DDoS mitigation + Turnstile imbatível |
 | Backup off-site | Cloudflare R2 (free tier 10GB) | Independente da infra Oracle; pay-as-you-go $0.015/GB-mês + zero egress fee; alternativa Backblaze B2 (mais barato pra <100GB) |
-| Email transacional | AWS SES | Self-host SMTP tem deliverability ruim por meses; SES tem reputação Amazon |
+| Email transacional | Brevo ([ADR 0096](decisions/0096-email-brevo-substitui-aws-ses.md) — substitui AWS SES) | Tier free 300/dia cobre MVP; self-host SMTP tem deliverability ruim por meses |
 | LLM | Vertex AI (Gemini Flash default) | Qualidade clínica; [ADR 0064](decisions/0064-ia-arquitetura-gemini-default-byok-rag.md); Ollama opcional fallback non-clinical |
 | Pagamentos | Asaas | Mercado BR; alternativas similares (Pagar.me/MercadoPago); direct-bank inviável |
 | Fiscal NFS-e/NF-e | Focus NFe | [ADR 0059](decisions/0059-ciclo-fiscal-emissao-focus-nfe.md) rejeita motor próprio (8-12 meses) |

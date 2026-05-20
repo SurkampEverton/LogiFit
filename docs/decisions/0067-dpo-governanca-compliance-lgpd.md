@@ -127,7 +127,7 @@ LogiFit mantém lista pública de sub-processores em `logifit.com.br/sub-process
 | **Groq** | IA STT (Whisper) | US | DPA + Cláusulas Padrão |
 | **Anthropic / OpenAI** | IA fallback/BYOK | US | DPA + Cláusulas Padrão (quando LogiFit usa como fallback) |
 | **Asaas** | Pagamentos | BR | DPA — dentro do BR |
-| **Resend** | Email transacional | US | DPA + Cláusulas Padrão |
+| **Brevo** (Sendinblue SAS) | Email transacional | FR (Paris) — UE | DPA + Cláusulas Padrão (GDPR-aligned; ver [ADR 0096](0096-email-brevo-substitui-aws-ses.md)) |
 | **Sentry / PostHog** | Observabilidade | US | DPA + Cláusulas Padrão |
 | **Logtail (Better Stack)** | Logs | US | DPA + Cláusulas Padrão |
 | **Focus NFe** | Emissão fiscal | BR | DPA — dentro do BR |

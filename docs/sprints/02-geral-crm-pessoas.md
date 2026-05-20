@@ -247,7 +247,7 @@ Consumidores no MVP: timeline UI via Realtime (mesmo tenant). Fase 2+ (cross-ale
     - ✓ docs-check 0/0
     - ✓ tests @repo/security 148 verdes (era 121 — +27 auth-rate-limit)
   - **Sprint 02b4 fechamento restante** (precisam credentials externas ou trabalho longo):
-    - Email confirmação via `@repo/email` (AWS SES) → `email_verified_at` update + change_email flow
+    - Email confirmação via `@repo/email` ([Brevo](../decisions/0096-email-brevo-substitui-aws-ses.md) — ADR 0096 substitui AWS SES) → `email_verified_at` update + change_email flow
     - E2E Playwright fluxo completo signup → MFA setup → login com TOTP + lockout enforcement
     - Feature flag `passport_signup_v1`
     - Redis sliding window real (regra 36 completa) substituindo auth_attempts polling
@@ -320,7 +320,7 @@ Consumidores no MVP: timeline UI via Realtime (mesmo tenant). Fase 2+ (cross-ale
     - ✓ tests @repo/security 121 verdes (era 32 antes da sessão — +89)
     - ✓ 21 SAs portal com audit automático em `member_events`
   - **Sprint 02b3 fechamento restante** (precisam credentials externas ou trabalho longo):
-    - Email confirmação via `@repo/email` (AWS SES credentials) → `email_verified_at` update
+    - Email confirmação via `@repo/email` ([Brevo](../decisions/0096-email-brevo-substitui-aws-ses.md) — ADR 0096 substitui AWS SES) → `email_verified_at` update
     - QR code visual render (lib `qrcode.js` ~30KB ou SVG próprio Reed-Solomon ~500l)
     - E2E Playwright fluxo completo signup proativo → MFA setup → login com TOTP → tenant linking
     - Feature flag `passport_signup_v1`

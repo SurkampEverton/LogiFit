@@ -44,14 +44,14 @@ Significando: pular Fase 1 inteira; rodar self-host total — **incluindo hosped
 │  Observabilidade erro: GlitchTip container (Sentry-API-compatível)   │
 │  Observabilidade logs: pino → stdout → Loki container + Grafana      │
 │  Realtime: PG LISTEN/NOTIFY + WebSocket próprio Next.js              │
-│  Email transacional: AWS SES (única dependência paid externa core)   │
+│  Email transacional: Brevo (free 300/dia — ver ADR 0096)             │
 │  Backup off-site: rclone diário pra Cloudflare R2 (free 10GB)        │
 │  Audit anchor WORM: pendente Sprint 19+ (avaliar S3 Object Lock      │
 │                     ou anchor próprio em VPS independente)           │
 │  DNS + WAF/DDoS: Cloudflare free                                     │
 │  Captcha: Cloudflare Turnstile free                                  │
 │  CI/CD: GitHub Actions → push imagem GHCR → Coolify pull             │
-│  Custo MVP: R$ 0 (R2 free 10GB + SES sandbox + Oracle free)          │
+│  Custo MVP: R$ 0 (R2 free 10GB + Brevo free 300/dia + Oracle free)   │
 │  Ops: médio (PG + Linux + Docker é território conhecido)             │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -80,7 +80,7 @@ Foi pareadas como par DR uma da outra — geographic redundancy zone. Operar pri
 | **Oracle Cloud OCI** (VPS) | Free tier vitalício SP; 4 OCPU + 24GB RAM cobre LogiFit até ~500 tenants | Hetzner CX22 Helsinki €5/mês (DR pre-provisionado) — runbook restore <4h |
 | **Cloudflare** (DNS + Turnstile + proxy) | Free tier real, infra crítica, DDoS mitigation | Registro.br + Caddy WAF + hCaptcha self-host |
 | **Cloudflare R2** (backup off-site) | Free tier 10GB cobre MVP; pay-as-you-go $0.015/GB-mês + **zero egress fee** = DR drills sem custo; S3-compatible (rclone); independente da infra Oracle (storage físico em CDN global, bucket separado com chaves dedicadas) | Backblaze B2 (mais barato pra <100GB; tem egress 3x storage); Hetzner Storage Box (€3.50/mês 1TB fixo — vale só se passar de 700GB) |
-| **AWS SES** (email transacional) | Self-host SMTP tem deliverability ruim por meses até reputação subir | Postal self-hosted (com 3-6 meses de warmup); ou Mailgun pago se SES virar problema |
+| **Brevo** (email transacional) | Self-host SMTP tem deliverability ruim por meses até reputação subir; substituiu AWS SES por [ADR 0096](0096-email-brevo-substitui-aws-ses.md) — tier free 300/dia cobre MVP sem custo | Resend pago $20/mês (50k); Postal self-hosted pós-warmup 3-6m; Mailgun se Brevo virar problema |
 | **GitHub** (SCM + Actions + GHCR) | CI gratuito generoso, ecosystem maduro, GHCR free pra repo público/privado pequeno | Forgejo/Gitea self-host + Drone/Woodpecker CI |
 | **Vertex AI (Gemini)** | Default LogiFit ([ADR 0064](0064-ia-arquitetura-gemini-default-byok-rag.md)); regra 32 | Ollama+Llama3 local cobre non-clinical; clínico precisa qualidade — mantido como external paga |
 | **Asaas** | Pagamentos brasileiros; alternativa similar (Pagar.me/MercadoPago); direct-bank inviável | Não realisticamente — mercado fechado |
@@ -182,7 +182,7 @@ ADR 0078 estabeleceu 8 regras de portabilidade pensadas pra **fugir de Supabase 
 
 ### Nova regra 46 — justificar dependência externa
 
-> **46.** Toda dependência externa nova (SaaS, API paga, serviço gerenciado de terceiro) exige ADR justificando: (a) por que self-host não atende; (b) qual o lock-in concreto; (c) qual o custo mensal estimado; (d) qual o plano de saída. Sem ADR, sem dependência. Externals já aprovados no MVP listados neste ADR (0091): Oracle Cloud, Cloudflare, Cloudflare R2, AWS SES, Vertex AI, Asaas, Focus NFe, WhatsApp BSP, GitHub.
+> **46.** Toda dependência externa nova (SaaS, API paga, serviço gerenciado de terceiro) exige ADR justificando: (a) por que self-host não atende; (b) qual o lock-in concreto; (c) qual o custo mensal estimado; (d) qual o plano de saída. Sem ADR, sem dependência. Externals já aprovados no MVP listados neste ADR (0091) + ADR 0096: Oracle Cloud, Cloudflare, Cloudflare R2, **Brevo** (substitui AWS SES — ADR 0096), Vertex AI, Asaas, Focus NFe, WhatsApp BSP, GitHub.
 
 ## Consequences
 
@@ -238,7 +238,7 @@ ADR 0078 estabeleceu 8 regras de portabilidade pensadas pra **fugir de Supabase 
 
 - **[ADR 0078](0078-hospedagem-duas-fases-mvp-supabase-pos-mvp-oracle.md)** — Status muda pra `Superseded by ADR 0091 (2026-04-27)`. Adicionar nota no topo apontando aqui. Conteúdo histórico preservado pra rastreabilidade.
 - **[ADR 0001](0001-stack-base.md)** — addendum: stack final é self-host total Oracle SP (não mais "Vercel + Supabase MVP"); reflete também ADR 0091
-- **[ADR 0067](0067-dpo-governanca-compliance-lgpd.md)** — sub-processors LogiFit revisados: remove Vercel + Supabase + Upstash; adiciona Oracle Cloud OCI, AWS SES; promove Cloudflare a multi-uso (DNS + R2 backup + Turnstile + Email Routing — 4 funções no mesmo provider); mantém Asaas + Focus NFe + Vertex AI + WhatsApp BSP + GitHub
+- **[ADR 0067](0067-dpo-governanca-compliance-lgpd.md)** — sub-processors LogiFit revisados: remove Vercel + Supabase + Upstash; adiciona Oracle Cloud OCI, **Brevo** (substitui AWS SES — [ADR 0096](0096-email-brevo-substitui-aws-ses.md)); promove Cloudflare a multi-uso (DNS + R2 backup + Turnstile + Email Routing inbound se preciso receber emails — 4 funções no mesmo provider); mantém Asaas + Focus NFe + Vertex AI + WhatsApp BSP + GitHub
 
 **Sprints ajustados:**
 

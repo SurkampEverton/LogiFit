@@ -155,7 +155,7 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 - [ ] Script `pnpm i18n:translate --target {locale}` (Claude-assistido) — versão básica que lê pt-BR de cada namespace e gera tradução do locale alvo via Anthropic SDK; revisão humana antes de commit; usado pelo runbook de adição de locale
 - [ ] Componente `<LocaleSwitcher>` em `packages/ui` — consome `LOCALES` + `LOCALE_NAMES` dinamicamente (zero hardcode de label)
 - [ ] Formatação de datas/números via `Intl` nativo wrapado em helpers de `packages/i18n`
-- [ ] **Templates AWS SES nascem multi-locale** — Sprint 01a (primeiro template de auth/recovery) e demais sprints com email seguem padrão `apps/web/src/messages/{locale}/email-{template}.json`; render no locale do destinatário via `persons.preferred_locale` com fallback `tenants.default_locale` (ADR 0052 §Escopo de impacto). Provider SES via `@aws-sdk/client-ses` em `packages/email/`; sandbox SES inicialmente (precisa request de production access pra enviar pra emails arbitrários)
+- [ ] **Templates de email nascem multi-locale** — Sprint 01a (primeiro template de auth/recovery) e demais sprints com email seguem padrão `apps/web/src/messages/{locale}/email-{template}.json`; render no locale do destinatário via `persons.preferred_locale` com fallback `tenants.default_locale` (ADR 0052 §Escopo de impacto). Provider [Brevo](../decisions/0096-email-brevo-substitui-aws-ses.md) (ADR 0096 substitui AWS SES) via `safeFetch` em `packages/email/` (tier free 300/dia cobre MVP; sem SDK pesado)
 - [ ] Runbook `docs/runbooks/adicionar-novo-locale.md` (esqueleto inicial em Sprint 00 — conteúdo amadurece conforme implementação avança)
 
 **RLS e qualidade:**
@@ -233,7 +233,7 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 - [ ] **OWASP ZAP automated scan weekly (ADR 0073)** — GitHub Action `zaproxy/action-baseline@v0.10.0` rodando contra ambiente staging (subdomínio `staging.logifit.com.br` apontando pra outra instance VPS ou container isolado no mesmo VPS); resultado SARIF anexado ao Security tab; alerts ≥medium criam issue automaticamente; agendado via cron `0 2 * * 1` (segunda 02:00 UTC)
 - [ ] **`scripts/owasp-check.ts`** em CI antes de release valida cada item OWASP Top 10 enforced (lista em ADR 0073)
 - [ ] Schema Drizzle `upload_scans` em `packages/db/schema/security.ts` + RLS por tenant_id
-- [ ] **Secret scanning** — Gitleaks pre-commit hook (`.husky/pre-commit`) + GitHub Actions step (`gitleaks/gitleaks-action`) com config customizada (`.gitleaks.toml`) para padrões LogiFit (`LF_KEY_*`, padrão GPG armored block, padrão Asaas API, padrão Focus NFe, padrão AWS SES SMTP password)
+- [ ] **Secret scanning** — Gitleaks pre-commit hook (`.husky/pre-commit`) + GitHub Actions step (`gitleaks/gitleaks-action`) com config customizada (`.gitleaks.toml`) para padrões LogiFit (`LF_KEY_*`, padrão GPG armored block, padrão Asaas API, padrão Focus NFe, padrão Brevo API key `xkeysib-*`)
 - [ ] **Dependabot** habilitado em `.github/dependabot.yml` — npm + GitHub Actions ecosystems, semanal, agrupamento por minor/patch
 - [ ] **OSV-scanner** em CI (`google/osv-scanner-action`) — bloqueia merge se vulnerabilidade `severity >= high` em deps de produção; cria issue em `moderate`
 - [ ] **SBOM** — script `pnpm sbom:generate` produz `sboms/v{version}.json` em CycloneDX format; commit em release tag

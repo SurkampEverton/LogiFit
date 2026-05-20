@@ -21,14 +21,14 @@ Sprint 26 entrega o portal do paciente (`/meu/*` + PWA) como o primeiro canal vo
 
 ### 1. Magic link por email (MVP); SMS adiado pra Sprint 26b
 
-`requestMagicLink({ email, tenantSlug })` gera token random 256-bit, persiste **apenas** o `SHA-256(token)` em `member_auth_tokens` com `expires_at = now() + interval '15 minutes'` e envia o token plano via email (AWS SES, dependência aprovada [ADR 0091](0091-self-host-total-oracle-sp.md)). Link é `https://{tenantSlug}.logifit.com.br/meu/login/verify?t=<token>`.
+`requestMagicLink({ email, tenantSlug })` gera token random 256-bit, persiste **apenas** o `SHA-256(token)` em `member_auth_tokens` com `expires_at = now() + interval '15 minutes'` e envia o token plano via email ([Brevo](0096-email-brevo-substitui-aws-ses.md), dependência aprovada [ADR 0096](0096-email-brevo-substitui-aws-ses.md) que substitui AWS SES do ADR 0091). Link é `https://{tenantSlug}.logifit.com.br/meu/login/verify?t=<token>`.
 
 **Por quê magic link:**
 - Sem senha = sem hash de senha = sem ataque de credenciais reusadas (paciente quase sempre reusa senha)
 - UX: usuário esquece senha → forgot password é um magic link forçado → vamos direto pra esse fluxo
 - Tem auditoria nativa (cada login é um token novo)
 
-**Por quê não SMS no MVP:** custo (~R$0,08/SMS via Twilio BR vs ~R$0,0001/email AWS SES) + dependência adicional. SMS volta em Sprint 26b como segundo canal opcional (paciente sem email ou com email errado).
+**Por quê não SMS no MVP:** custo (~R$0,08/SMS via Twilio BR vs **$0/email Brevo tier free 300/dia**, ou ~R$0,0001/email pago) + dependência adicional. SMS volta em Sprint 26b como segundo canal opcional (paciente sem email ou com email errado).
 
 **Por quê não senha:** mais código + risco de hash desatualizado + UX de troca de senha pesa. LogiFit prefere magic link como única identidade do member; senha eventualmente vira opcional como conveniência (Sprint 27+).
 
@@ -129,7 +129,7 @@ RLS em `0045_portal_member_rls.sql`: SELECT por `(tenant_id, member_id)` via `cu
 - Compatível com PWA (cookie httpOnly funciona standalone)
 
 ⚠️ **Trade-offs aceitos:**
-- Email deliverability é dependência crítica (AWS SES já aprovado [ADR 0091](0091-self-host-total-oracle-sp.md))
+- Email deliverability é dependência crítica ([Brevo](0096-email-brevo-substitui-aws-ses.md) aprovado [ADR 0096](0096-email-brevo-substitui-aws-ses.md) — substituiu AWS SES do ADR 0091)
 - Se paciente perde acesso ao email, perdeu acesso ao portal — Sprint 26c adiciona SMS como segundo canal + "fale com a recepção" como path manual fallback (recepção valida CPF + força create_session via admin)
 - Magic link via QR em link no WhatsApp tem UX boa, mas pré-condiciona WhatsApp Sprint 13 (que está done) — Sprint 26b conecta os dois (régua "novo magic link via WhatsApp")
 - Sem MFA: se atacante captura email pessoal do paciente, atacante entra. Decisão tomada conscientemente pela classe de risco (paciente vê dados próprios — dados clínicos sensíveis sim, mas não pode causar dano financeiro nem clínico — comparado a staff que pode causar ambos)
@@ -167,7 +167,8 @@ Proposed — promove pra **Accepted** quando Sprint 26 piloto em produção com 
 
 ## Referências
 
-- [ADR 0091 — Self-host total Oracle SP](0091-self-host-total-oracle-sp.md) — AWS SES como única dep externa aprovada pra email
+- [ADR 0091 — Self-host total Oracle SP](0091-self-host-total-oracle-sp.md) — stack self-host total; email originalmente AWS SES, substituído por Brevo via ADR 0096
+- [ADR 0096 — Brevo substitui AWS SES](0096-email-brevo-substitui-aws-ses.md) — provider de email transacional MVP
 - [ADR 0073 — Postura segurança defesa em profundidade](0073-postura-seguranca-defesa-em-profundidade.md) — regra 43 MFA (excluir paciente conscientemente)
 - [ADR 0077 — Passaporte cross-tenant paciente](0077-passaporte-paciente-vinculo-cross-tenant.md) — Sprint 26 portal estende o que Sprint 02 entregou
 - [ADR 0054 — LGPD art. 11 dados saúde](0054-lgpd-art11-dados-saude-ripd-versionado.md) — `member_consents` purposes derivam daqui
