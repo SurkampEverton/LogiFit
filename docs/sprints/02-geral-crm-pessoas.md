@@ -3,7 +3,7 @@
 - **Área:** geral
 - **Início:** planejado (depois do Sprint 01b)
 - **Fim planejado:** +3 semanas
-- **Status:** **done (02a + 02b + 02b2 + 02b3 + 02b4 partials)** 2026-05-18/19 — Faixas A+B+C (2026-05-12) + Path A (2026-05-18 — passport actions + landing invite + has_cross_tenant_access SQL fn) + Sprint 02b backbone Path B (2026-05-19 — Captcha+SMS providers + passport_signup_otps + /cadastro 2-step UI + signupPatient stub) + **Sprint 02b2 partial** (2026-05-19 — ADR 0093 Accepted + schema passport_global_identities + signupPatient real substitui stub + helpers password-hash scrypt + recovery-codes Crockford SHA-256) + **Sprint 02b3 partial** (2026-05-19 — envelope encryption recovery codes ativo + tests password/recovery/captcha/sms-otp/totp 121 verdes + member-session bridge + Path A+B híbrido auto-accept invite + ADR 0094 Accepted + schema passport_global_sessions + helper passport-session + /meu/login Form email+password 2-tabs + loginPassport SA + cron expire-passport-global-sessions + wizard MFA TOTP RFC 6238 standalone + loginPassport TOTP real) + **Sprint 02b4 partial** (2026-05-19 — wrapPassportAction helper + /meu suporta passport+member sessions + /meu/perfil 5 SAs passport+4 forms UI + getActiveSession refactor + helper auth-rate-limit em @repo/security 27 unit tests + gate loginPassport rate limit via auth_attempts/auth_lockouts + helper request-ip CF/forwarded + cron hard-delete-deactivated-passport LGPD 30d). Sprint 02b4 fechamento (futuro): email confirmação AWS SES + QR code visual + E2E + feature flag + Redis sliding window real.
+- **Status:** **done (02a + 02b + 02b2 + 02b3 + 02b4 partials)** 2026-05-18/20 — Faixas A+B+C (2026-05-12) + Path A (2026-05-18 — passport actions + landing invite + has_cross_tenant_access SQL fn) + Sprint 02b backbone Path B (2026-05-19 — Captcha+SMS providers + passport_signup_otps + /cadastro 2-step UI + signupPatient stub) + **Sprint 02b2 partial** (2026-05-19 — ADR 0093 Accepted + schema passport_global_identities + signupPatient real substitui stub + helpers password-hash scrypt + recovery-codes Crockford SHA-256) + **Sprint 02b3 partial** (2026-05-19 — envelope encryption recovery codes ativo + tests password/recovery/captcha/sms-otp/totp 121 verdes + member-session bridge + Path A+B híbrido auto-accept invite + ADR 0094 Accepted + schema passport_global_sessions + helper passport-session + /meu/login Form email+password 2-tabs + loginPassport SA + cron expire-passport-global-sessions + wizard MFA TOTP RFC 6238 standalone + loginPassport TOTP real) + **Sprint 02b4 partial** (2026-05-19 — wrapPassportAction helper + /meu suporta passport+member sessions + /meu/perfil 5 SAs passport+4 forms UI + getActiveSession refactor + helper auth-rate-limit em @repo/security 27 unit tests + gate loginPassport rate limit via auth_attempts/auth_lockouts + helper request-ip CF/forwarded + cron hard-delete-deactivated-passport LGPD 30d + **QR code visual MFA via lib qrcode server-side ADR 0095** 2026-05-20). Sprint 02b4 fechamento (futuro): email confirmação AWS SES + E2E + feature flag + Redis sliding window real.
 - **Item do roadmap:** #4
 
 ## Goal
@@ -247,11 +247,18 @@ Consumidores no MVP: timeline UI via Realtime (mesmo tenant). Fase 2+ (cross-ale
     - ✓ docs-check 0/0
     - ✓ tests @repo/security 148 verdes (era 121 — +27 auth-rate-limit)
   - **Sprint 02b4 fechamento restante** (precisam credentials externas ou trabalho longo):
-    - QR code visual no wizard MFA — SVG Reed-Solomon próprio (~500l) ou lib `qrcode` (~30KB regra 46 ADR)
     - Email confirmação via `@repo/email` (AWS SES) → `email_verified_at` update + change_email flow
     - E2E Playwright fluxo completo signup → MFA setup → login com TOTP + lockout enforcement
     - Feature flag `passport_signup_v1`
     - Redis sliding window real (regra 36 completa) substituindo auth_attempts polling
+
+- **2026-05-20 — Sprint 02b4 partial — QR code visual MFA ([ADR 0095](../decisions/0095-qrcode-lib-mfa-totp.md)).**
+  - **ADR 0095 Accepted** — lib `qrcode` justificada pela regra 46 (alternativa SVG Reed-Solomon próprio rejeitada por complexidade e risco operacional em UX de segurança crítica). Render **server-side** em Server Action → SVG injetado no HTML via `dangerouslySetInnerHTML`. **Zero bundle JS no client**.
+  - **Wrapper isolado** `apps/web/app/lib/qr-code.ts` — `generateTotpQrSvg(uri)` única função exposta, error correction M (15%), margin 1, width 200px, preto/branco puros (REQUISITO do algoritmo QR — `// design-token-exempt:` aplicado em wrapper). Outros usos (boletos, contratos) exigem extensão deliberada do wrapper — proibido import direto de `qrcode` em outros arquivos.
+  - **`enrollTotp` Server Action** ganha `qrSvg: string` no envelope além de `secret` + `uri`.
+  - **Wizard `/cadastro/mfa-setup` step `scan`** renderiza QR visual centralizado em wrapper branco + fallback "digite o secret manualmente" + `<details>` colapsado com URI otpauth:// pra debug.
+  - **Deps:** `qrcode@^1.5.4` + `@types/qrcode@^1.5.5` (devDep) — 30 packages add via pnpm.
+  - **Validação:** typecheck 11/11 + lint-custom 744 + 2 css clean (9 rules) + docs-check 0/0 + tests @repo/security 148 verdes.
 
 - **2026-05-19 — Sprint 02b3 partial entregue (6 commits — `done (02b3 partial)`).**
   - **ADR 0093 + 0094 Accepted** — 2 decisões arquiteturais que destravaram implementação:

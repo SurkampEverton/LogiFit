@@ -6,6 +6,50 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 02b4 partial — QR code visual MFA via lib qrcode server-side (ADR 0095) 2026-05-20
+
+Fecha um dos 5 itens "Sprint 02b4 fechamento restante" — QR code visual no wizard MFA destrava UX crítica (paciente escaneia em vez de copiar URI manualmente).
+
+**ADR 0095 Accepted** — `docs/decisions/0095-qrcode-lib-mfa-totp.md` justifica lib `qrcode` pela regra 46:
+- 2 opções avaliadas: (A) lib `qrcode` ~30KB MIT zero deps runtime vs (B) SVG Reed-Solomon próprio ~500l TS
+- **(A) aceita** — QR é algoritmo padrão ISO/IEC 18004:2015, não diferenciador competitivo; lib madura > risco de bug em UX de segurança
+- Justificativa regra 46: zero lock-in (lib stateless), zero custo ($0 MIT), plano de saída (substituir por SVG próprio se CVE crítico sem fix em 30d)
+- Escopo de uso restrito ao wrapper `apps/web/app/lib/qr-code.ts` — outros usos exigem extensão deliberada
+
+**Wrapper isolado `apps/web/app/lib/qr-code.ts`** (37 linhas):
+- `generateTotpQrSvg(uri: string): Promise<string>` única função exposta
+- Error correction M (15% recovery — balanço densidade/robustez câmera celular)
+- Margin 1 module + width 200px (caber em modal mobile)
+- Preto puro `#000000` sobre branco puro `#ffffff` (REQUISITO do algoritmo QR — `// design-token-exempt:` aplicado pra contraste máximo)
+- Retorna `<svg>...</svg>` standalone (sem `<?xml ?>` header — pra injetar via `dangerouslySetInnerHTML`)
+
+**`enrollTotp` Server Action** ganha campo `qrSvg: string` no envelope além de `secret` + `uri` existentes:
+- Render server-side via `await generateTotpQrSvg(uri)` antes do return
+- Wizard recebe SVG já gerado; injeta via `dangerouslySetInnerHTML` (SVG é seguro — gerado pelo nosso código, sem input externo no markup)
+
+**Wizard `/cadastro/mfa-setup` step `scan`** redesenhado:
+- Antes: `<pre>{uri}</pre>` (URI em monospace pra cópia manual)
+- Depois: QR code visual centralizado em wrapper branco (200x200px) + fallback "digite o secret manualmente" + `<details>` colapsado com URI otpauth:// pra debug
+- ARIA: `role="img"` + `aria-label="QR code para configurar autenticação em 2 fatores"` (a11y obrigatório)
+- Wrapper branco `#ffffff` no fundo (preserva contraste do QR no tema escuro — `// design-token-exempt:` justificado)
+
+**Deps:**
+- `qrcode@^1.5.4` em `apps/web/package.json` dependencies
+- `@types/qrcode@^1.5.5` em devDependencies
+- 30 packages add via `pnpm install` (sub-deps internas — `qrcode` em si zero deps runtime)
+
+**Validação:**
+- ✓ typecheck 11/11 packages
+- ✓ lint-custom 744 + 2 css clean (9 rules — `// design-token-exempt:` aplicado em 3 hex justificados pelo algoritmo QR)
+- ✓ docs-check 0/0
+- ✓ tests @repo/security 148 verdes (sem mudança — wrapper QR é trivial sobre lib; E2E Playwright planejado pro fechamento)
+
+**Sprint 02b4 fechamento restante** (precisam credentials externas ou trabalho longo):
+- Email confirmação via `@repo/email` (AWS SES) → `email_verified_at` update + change_email flow
+- E2E Playwright fluxo completo signup → MFA setup → login com TOTP + lockout enforcement
+- Feature flag `passport_signup_v1`
+- Redis sliding window real (regra 36 completa) substituindo auth_attempts polling
+
 ### Build — Sprint 02b4 partial — auth rate limit + hard-delete-deactivated cron 2026-05-19
 
 Continua Sprint 02b4 com 3 entregas — todas tractable sem credentials externas. Fecha 2 itens pendentes do "Sprint 02b3 fechamento restante" + 1 dependência do `deactivateAccount` SA.
