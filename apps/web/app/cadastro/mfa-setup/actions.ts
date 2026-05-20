@@ -30,6 +30,7 @@ import {
 } from '@repo/security'
 import { z } from 'zod'
 import { markPassportSessionMfaVerified } from '../../lib/passport-session'
+import { generateTotpQrSvg } from '../../lib/qr-code'
 import { wrapPassportAction } from '../../lib/wrap-passport-action'
 
 const ConfirmTotpSchema = z.object({
@@ -85,13 +86,15 @@ export const enrollTotp = wrapPassportAction(
       [encrypted, session.passportGlobalId],
     )
 
-    // 3. Gera URI pro QR code
+    // 3. Gera URI pro QR code + render SVG server-side (ADR 0095 — zero bundle JS client)
     const uri = generateTotpUri(secret, identity.email, 'LogiFit')
+    const qrSvg = await generateTotpQrSvg(uri)
 
     return {
       ok: true as const,
       secret,
       uri,
+      qrSvg,
       note:
         'Escaneie o QR code com seu app authenticator (Google Authenticator, Authy, 1Password). ' +
         'Em seguida, digite o código de 6 dígitos pra confirmar.',

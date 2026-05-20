@@ -1,15 +1,12 @@
 'use client'
 
 /**
- * MFA TOTP setup wizard — 3 steps (Sprint 02b3 ADR 0094).
+ * MFA TOTP setup wizard — 3 steps (Sprint 02b3 ADR 0094 + Sprint 02b4 ADR 0095).
  *
- * Step 1 "init": clica botão "Começar setup" → enrollTotp gera secret + URI
- * Step 2 "scan": mostra QR code (placeholder texto) + secret manual + input código
+ * Step 1 "init": clica botão "Começar setup" → enrollTotp gera secret + URI + SVG QR
+ * Step 2 "scan": mostra QR code visual (SVG server-side ADR 0095) + secret manual fallback + input código
  *   - Sub-step "verify": confirmTotp valida + retorna recovery codes
  * Step 3 "done": mostra recovery codes + redirect /meu
- *
- * Sprint 02b4 pode adicionar render QR real via lib client-side (qrcode.js
- * standalone ~10KB) — atualmente mostra URI como texto pra cópia manual.
  */
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
@@ -23,6 +20,7 @@ export function MfaSetupWizard() {
   const [step, setStep] = useState<Step>('init')
   const [secret, setSecret] = useState('')
   const [uri, setUri] = useState('')
+  const [qrSvg, setQrSvg] = useState('')
   const [code, setCode] = useState('')
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([])
   const [pending, startTransition] = useTransition()
@@ -33,7 +31,7 @@ export function MfaSetupWizard() {
     startTransition(async () => {
       try {
         const r = (await enrollTotp()) as
-          | { ok: true; secret: string; uri: string; note?: string }
+          | { ok: true; secret: string; uri: string; qrSvg: string; note?: string }
           | { ok: false; error?: { message?: string } }
         if ('ok' in r && !r.ok) {
           setErr(r.error?.message ?? 'Falha ao iniciar setup')
@@ -41,6 +39,7 @@ export function MfaSetupWizard() {
         }
         setSecret(r.secret)
         setUri(r.uri)
+        setQrSvg(r.qrSvg)
         setStep('scan')
       } catch (e) {
         setErr(e instanceof Error ? e.message : 'Erro inesperado')
@@ -141,25 +140,25 @@ export function MfaSetupWizard() {
             }}
           >
             <p style={{ marginTop: 0, fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
-              📱 Opção 1 — Escaneie o QR code do URI abaixo (use um gerador QR ou app que
-              aceite otpauth://):
+              📱 Opção 1 — Escaneie o QR code com a câmera do app authenticator:
             </p>
-            <pre
+            <div
               style={{
-                fontFamily: 'monospace',
-                fontSize: 'var(--ev-text-xs)',
-                padding: 'var(--ev-space-2)',
-                background: 'var(--ev-surface)',
+                display: 'flex',
+                justifyContent: 'center',
+                padding: 'var(--ev-space-md)',
+                // design-token-exempt: branco puro é wrapper do QR — preserva contraste do algoritmo no tema escuro.
+                background: '#ffffff',
                 borderRadius: 'var(--ev-radius-sm)',
-                overflow: 'auto',
-                wordBreak: 'break-all',
-                whiteSpace: 'pre-wrap',
               }}
-            >
-              {uri}
-            </pre>
+              aria-label="QR code para configurar autenticação em 2 fatores"
+              role="img"
+              // SVG gerado server-side (ADR 0095) — sem input externo no markup
+              // biome-ignore lint/security/noDangerouslySetInnerHtml: SVG server-side controlado
+              dangerouslySetInnerHTML={{ __html: qrSvg }}
+            />
             <p style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)', marginTop: 'var(--ev-space-md)' }}>
-              ⌨️ Opção 2 — Digite o secret manualmente no app:
+              ⌨️ Opção 2 — Não consegue escanear? Digite o secret manualmente no app:
             </p>
             <pre
               style={{
@@ -169,14 +168,32 @@ export function MfaSetupWizard() {
                 background: 'var(--ev-surface)',
                 borderRadius: 'var(--ev-radius-sm)',
                 letterSpacing: '0.1em',
+                wordBreak: 'break-all',
+                whiteSpace: 'pre-wrap',
               }}
             >
               {secret.match(/.{1,4}/g)?.join(' ')}
             </pre>
-            <p style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
-              🛠 Sprint 02b4 renderiza QR code visual (lib qrcode.js). Por enquanto: copie o
-              URI/secret pra app que aceite manual entry.
-            </p>
+            <details style={{ marginTop: 'var(--ev-space-2)' }}>
+              <summary style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)', cursor: 'pointer' }}>
+                Ver URI otpauth:// (debug)
+              </summary>
+              <pre
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: 'var(--ev-text-xs)',
+                  padding: 'var(--ev-space-2)',
+                  background: 'var(--ev-surface)',
+                  borderRadius: 'var(--ev-radius-sm)',
+                  overflow: 'auto',
+                  wordBreak: 'break-all',
+                  whiteSpace: 'pre-wrap',
+                  marginTop: 'var(--ev-space-2)',
+                }}
+              >
+                {uri}
+              </pre>
+            </details>
           </div>
         </section>
 
