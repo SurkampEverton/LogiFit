@@ -124,7 +124,7 @@ export default async function MeuPerfilPage() {
           </div>
           <p className="ev-portal-muted" style={{ fontSize: 'var(--ev-text-xs)' }}>
             Alterar nome/email/telefone entra em Sprint 02b5 (changeEmail exige
-            email confirmation flow via AWS SES).
+            email confirmation flow via Brevo — ADR 0096).
           </p>
         </section>
 

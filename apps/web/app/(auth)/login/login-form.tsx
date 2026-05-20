@@ -14,7 +14,7 @@ import { authClient } from '@repo/auth/client'
  *      → cookie `logifit.session_token` setado → redirect pra `returnTo` ou `/app`
  *
  * Sprint 01a Faixa B: log no servidor + Mailhog (dev). Faixa B fechamento
- * pluga email real (AWS SES).
+ * pluga email real (Brevo — ADR 0096 substitui AWS SES).
  */
 export function LoginForm({
   returnTo,

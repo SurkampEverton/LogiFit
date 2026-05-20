@@ -78,8 +78,9 @@ services:
 
   mailhog:
     # Captura emails transacionais em dev sem mandar pra fora.
-    # Em prod o app fala AWS SES (regra 46); aqui o adapter SMTP aponta pra cá
-    # quando NODE_ENV=development e SMTP_HOST está setado (.env.example).
+    # Em prod o app fala Brevo (ADR 0096 substitui AWS SES; regra 46);
+    # aqui o adapter SMTP aponta pra cá quando NODE_ENV=development
+    # e SMTP_HOST está setado (.env.example).
     image: mailhog/mailhog:latest
     container_name: logifit-mailhog
     restart: unless-stopped

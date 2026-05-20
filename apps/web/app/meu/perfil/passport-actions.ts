@@ -15,7 +15,7 @@
  *   - listMyPassportSessions() — sem MFA (read-only audit)
  *
  * **changeEmail** adiada — exige envio de email confirmação pra new address
- * (AWS SES dependency). Sprint 02b3 completo.
+ * (Brevo dependency — ADR 0096 substitui AWS SES). Sprint 02b3 completo.
  *
  * **Sprint 02b5+**: 2FA via WebAuthn passkey (alternativa a TOTP), recovery
  * codes regeneration cron, account merge (paciente tem 2 identities por engano).

@@ -4,7 +4,7 @@
  * Configurada pra LogiFit:
  *   - Adapter Drizzle apontando pro nosso `pool` (`@repo/db/client`)
  *   - Schema com prefixo `auth_` (coexiste com nossa `users` table)
- *   - Magic link via email (provider Mailhog em dev, AWS SES em prod)
+ *   - Magic link via email (provider Mailhog em dev, Brevo em prod — ADR 0096)
  *   - twoFactor (TOTP + WebAuthn passkey)
  *   - Cookie name `logifit_session` (default seria `better-auth.session`)
  *   - JWT custom claims via plugin `customSession` (Faixa C — RBAC + JWT)
@@ -107,7 +107,7 @@ export const auth = betterAuth({
   plugins: [
     magicLink({
       // Em dev: log no console + Mailhog captura o email
-      // Em prod (Sprint 02+): substituir por AWS SES via @repo/email
+      // Em prod (Sprint 02+): substituir por Brevo via @repo/email (ADR 0096)
       sendMagicLink: async ({ email, url, token: _token }) => {
         // Sprint 01a placeholder — log no servidor. Mailhog inbox em dev
         // ainda não está plugado; troca real fica pra final da Faixa B.
