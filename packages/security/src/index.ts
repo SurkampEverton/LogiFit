@@ -1,4 +1,5 @@
 export * from './access-qr'
+export * from './auth-rate-limit'
 export * from './captcha'
 export * from './envelope-crypto'
 export * from './high-risk-actions'
