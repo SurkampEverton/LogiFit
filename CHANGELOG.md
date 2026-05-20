@@ -6,6 +6,52 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — ADR 0096 — Brevo substitui AWS SES como provider de email transacional 2026-05-20
+
+Decisão arquitetural do fundador 2026-05-20 — sair de AWS pra reduzir complexidade solo + custo opaco + sub-processor a menos. ADR criado no mesmo dia (regra 13).
+
+**ADR 0096 Accepted** — `docs/decisions/0096-email-brevo-substitui-aws-ses.md` justifica Brevo (ex-Sendinblue) pela regra 46:
+- Supersede parcial do [ADR 0091](docs/decisions/0091-self-host-total-oracle-sp.md) — bloco "Email transacional: AWS SES" trocado
+- 5 alternativas avaliadas em tabela comparativa: Brevo / AWS SES / Resend / Mailjet / MailerSend
+- **Brevo aceita** — 300 emails/dia FREE forever (~9k/mês) cobre MVP sem cartão de crédito; API REST direto via `safeFetch` (sem SDK pesado); presença forte BR; DPA gratuito; HQ Paris/FR (UE GDPR-aligned)
+- Por que AWS SES rejeitada: sandbox bloqueia primeiro envio até "production access" (24h+); custo opaco em bill consolidada; IAM + V4 signing complexo; +1 sub-processor AWS desnecessário; zero outros usos AWS na stack
+- Justificativa regra 46: zero lock-in (provider abstrato `EmailProvider` interface), zero custo MVP, plano de saída (Resend pago ou Postal self-hosted pós-warmup)
+
+**Estratégia de implementação** (`@repo/email` futuro):
+- Provider abstrato pattern (mesma do `@repo/security/captcha.ts` + `sms-otp.ts`)
+- `BrevoEmailProvider` default + `SmtpEmailProvider` dev local Mailhog + `MockEmailProvider` test
+- Endpoint: `POST https://api.brevo.com/v3/smtp/email` com header `api-key: <BREVO_API_KEY>`
+- Sem SDK Node — `safeFetch()` direto com allowlist `['api.brevo.com']` + `// safe-fetch-exempt:` comment
+
+**Templates de email vivem no app** (NÃO no Brevo) — `packages/email/templates/*.tsx` via `@react-email/components` ou MJML compilado. Preserva versionamento Git + i18n via next-intl + lock-in mínimo.
+
+**Tracking de open/click desativado por default** — LGPD art. 11 (dado comportamental sensível em mailing transacional). Configurar `disableTracking: true` em todas chamadas.
+
+**Sync docs (13 arquivos atualizados):**
+- `CLAUDE.md` — bloco "Stack" + regra 46 lista de externals
+- `docs/decisions/0091-self-host-total-oracle-sp.md` — 4 refs (diagrama ASCII + tabela externals + regra 46 + nota ADR 0067)
+- `docs/decisions/0067-dpo-governanca-compliance-lgpd.md` — sub-processor "Resend US" → "Brevo (Sendinblue SAS) FR Paris UE"
+- `docs/decisions/0088-portal-member-magic-link-auth.md` — 4 refs (magic link provider + custo/email + trade-offs + Referências)
+- `docs/rules.md` — tabela "stack escolhida" linha email
+- `docs/sprints/00-setup-infra.md` — 2 refs (templates multi-locale + Gitleaks patterns)
+- `docs/sprints/01a-identidade-e-topology.md` — 2 refs (trial email + magic link real)
+- `docs/sprints/02-geral-crm-pessoas.md` — 2 refs (Sprint 02b3 + 02b4 fechamento restante)
+- `docs/roadmap.md` — adiciona ADR 0096 em "Decisões já fechadas (recente)"
+- `.env.example` — bloco `AWS_SES_*` (3 vars) vira `BREVO_API_KEY` + `EMAIL_FROM_NAME` adicional
+- `docker-compose.yml` — comentário Mailhog atualizado
+- `apps/web/app/meu/perfil/page.tsx` — comentário UI confirmação email
+- `apps/web/app/meu/perfil/passport-actions.ts` — comentário changeEmail
+- `apps/web/app/(auth)/login/login-form.tsx` — comentário login form
+- `packages/auth/src/server.ts` — 2 comentários (header doc + sendMagicLink stub)
+
+**Validação:**
+- ✓ typecheck 11/11 packages
+- ✓ lint-custom 744 + 2 css clean (9 rules)
+- ✓ docs-check 0/0
+- ✓ tests @repo/security 148 verdes (nenhuma mudança de código com testes)
+
+**Spinoff observado (não fechado nesta entrega):** Tabela "Sub-processors" do ADR 0067 (linhas 124-138) está desincronizada do ADR 0091 — ainda lista Supabase + Vercel + Sentry + PostHog + Logtail + Upstash, todos removidos. Linha do email foi atualizada nesta entrega. Sincronizar a tabela inteira fica como spinoff task (vai além do escopo "trocar AWS SES por Brevo").
+
 ### Build — Sprint 02b4 partial — QR code visual MFA via lib qrcode server-side (ADR 0095) 2026-05-20
 
 Fecha um dos 5 itens "Sprint 02b4 fechamento restante" — QR code visual no wizard MFA destrava UX crítica (paciente escaneia em vez de copiar URI manualmente).
