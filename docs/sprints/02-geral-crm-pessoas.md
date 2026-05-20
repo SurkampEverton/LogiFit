@@ -3,7 +3,7 @@
 - **Área:** geral
 - **Início:** planejado (depois do Sprint 01b)
 - **Fim planejado:** +3 semanas
-- **Status:** **done (02a + 02b + 02b2 + 02b3 partials)** 2026-05-18/19 — Faixas A+B+C (2026-05-12) + Path A (2026-05-18 — passport actions + landing invite + has_cross_tenant_access SQL fn) + Sprint 02b backbone Path B (2026-05-19 — Captcha+SMS providers + passport_signup_otps + /cadastro 2-step UI + signupPatient stub) + **Sprint 02b2 partial** (2026-05-19 — ADR 0093 Accepted + schema passport_global_identities + signupPatient real substitui stub + helpers password-hash scrypt + recovery-codes Crockford SHA-256) + **Sprint 02b3 partial** (2026-05-19 — envelope encryption recovery codes ativo + tests password/recovery/captcha/sms-otp/totp 121 verdes + member-session bridge + Path A+B híbrido auto-accept invite + ADR 0094 Accepted + schema passport_global_sessions + helper passport-session + /meu/login Form email+password 2-tabs + loginPassport SA + cron expire-passport-global-sessions + wizard MFA TOTP RFC 6238 standalone + loginPassport TOTP real). Sprint 02b3 fechamento (futuro): email confirmação AWS SES + QR code visual + E2E + feature flag + rate limit Redis.
+- **Status:** **done (02a + 02b + 02b2 + 02b3 + 02b4 partials)** 2026-05-18/19 — Faixas A+B+C (2026-05-12) + Path A (2026-05-18 — passport actions + landing invite + has_cross_tenant_access SQL fn) + Sprint 02b backbone Path B (2026-05-19 — Captcha+SMS providers + passport_signup_otps + /cadastro 2-step UI + signupPatient stub) + **Sprint 02b2 partial** (2026-05-19 — ADR 0093 Accepted + schema passport_global_identities + signupPatient real substitui stub + helpers password-hash scrypt + recovery-codes Crockford SHA-256) + **Sprint 02b3 partial** (2026-05-19 — envelope encryption recovery codes ativo + tests password/recovery/captcha/sms-otp/totp 121 verdes + member-session bridge + Path A+B híbrido auto-accept invite + ADR 0094 Accepted + schema passport_global_sessions + helper passport-session + /meu/login Form email+password 2-tabs + loginPassport SA + cron expire-passport-global-sessions + wizard MFA TOTP RFC 6238 standalone + loginPassport TOTP real) + **Sprint 02b4 partial** (2026-05-19 — wrapPassportAction helper + /meu suporta passport+member sessions + /meu/perfil 5 SAs passport+4 forms UI + getActiveSession refactor + helper auth-rate-limit em @repo/security 27 unit tests + gate loginPassport rate limit via auth_attempts/auth_lockouts + helper request-ip CF/forwarded + cron hard-delete-deactivated-passport LGPD 30d). Sprint 02b4 fechamento (futuro): email confirmação AWS SES + QR code visual + E2E + feature flag + Redis sliding window real.
 - **Item do roadmap:** #4
 
 ## Goal
@@ -234,6 +234,24 @@ Consumidores no MVP: timeline UI via Realtime (mesmo tenant). Fase 2+ (cross-ale
 - [ ] Importador CSV para migração de cliente
 
 ## Log
+
+- **2026-05-19 — Sprint 02b4 partial entregue (5 commits — `done (02b4 partial)`).**
+  - Sessão anterior (commits b9754d6/eaa5393/0c37a9a/7057d2d) entregou: wrapPassportAction helper canônico (128l com overload schema/no-schema + opt-in MFA gate + lint reconhece wrap(Server|Member|Passport)?Action regex) + /meu suporta passport+member sessions via getActiveSession discriminated union + /meu/perfil refactor 2-branch (kind='passport' renderiza dados + 5 forms passport vs kind='member' preserva Sprint 26 legacy) + 5 SAs em apps/web/app/meu/perfil/passport-actions.ts (changePassword + regenerateRecoveryCodes + revokeMyPassportSession + deactivateAccount com mfaMaxAgeMs 5min + listMyPassportSessions read-only) + 4 forms client (ChangePasswordForm + RegenerateRecoveryCodesButton + PassportSessionRevokeButton + DeactivateAccountForm com email confirmation anti-clique-acidental).
+  - **Sessão atual** (commits pendentes): fecha 3 gaps Sprint 02b4 sem credentials externas:
+    - **Helper `auth-rate-limit.ts` em `@repo/security`** (155l + 27 unit tests cobrindo 9 sub-suites). Constantes ADR 0073 camada 2 canônicas (15min window / 5 falhas / 30min lockout / 3 IP captcha). Pure functions testáveis sem DB (`countRecentFailures`/`shouldLockout`/`shouldRequireCaptcha`) + I/O layer (`recordAuthAttempt` tolerante + `checkAuthLockout` por email OR ip + `evaluateLockout` Promise.all email+ip queries + idempotent INSERT lockout). PoolLike interface facilita mock testing. Total tests @repo/security **148 verdes** (era 121 → +27).
+    - **Gate em `loginPassport`** (apps/web/app/meu/login/actions.ts): etapa 0 pre-check lockout → RATE_LIMITED com retry-after em min; recordAuthAttempt em 5 paths (success + `unknown_email` / `user_disabled` / `wrong_password` / `mfa_failed`); evaluateLockout via helper interno `recordFailure(reason)` em falhas; `MFA_RECENT_REQUIRED` exempted (paciente vai retornar com TOTP). Helper novo `apps/web/app/lib/request-ip.ts` (`getClientIp` precedência CF→Caddy→XFF→unknown sentinel). Wrap-exempt comment compactado em 1 linha (lint só olha 1 linha acima — ajuste mecânico).
+    - **Cron `hard-delete-deactivated-passport`** (apps/web/app/api/jobs/hard-delete-deactivated-passport/route.ts): daily ~03:50 UTC (após expire-passport-global-sessions reduz contention). DELETE identities WHERE `deactivated_at < now() - 30 days` (LGPD art. 18 VI + janela reativação 30d documentada no SA `deactivateAccount`). FK CASCADE limpa sessions automaticamente; persons bridge orfã (FK nullable sem `.references()` constraint, design ADR 0093 — dado clínico tenant-scoped persiste 20a Lei 13.787). Auth `Bearer $CRON_SECRET` via `timingSafeEqual` mesmo padrão `expire-passport-global-sessions`. Retorna count + log JSON estruturado.
+  - **Validação:**
+    - ✓ typecheck 11/11 packages
+    - ✓ lint-custom 743 + 2 css clean (9 rules)
+    - ✓ docs-check 0/0
+    - ✓ tests @repo/security 148 verdes (era 121 — +27 auth-rate-limit)
+  - **Sprint 02b4 fechamento restante** (precisam credentials externas ou trabalho longo):
+    - QR code visual no wizard MFA — SVG Reed-Solomon próprio (~500l) ou lib `qrcode` (~30KB regra 46 ADR)
+    - Email confirmação via `@repo/email` (AWS SES) → `email_verified_at` update + change_email flow
+    - E2E Playwright fluxo completo signup → MFA setup → login com TOTP + lockout enforcement
+    - Feature flag `passport_signup_v1`
+    - Redis sliding window real (regra 36 completa) substituindo auth_attempts polling
 
 - **2026-05-19 — Sprint 02b3 partial entregue (6 commits — `done (02b3 partial)`).**
   - **ADR 0093 + 0094 Accepted** — 2 decisões arquiteturais que destravaram implementação:

@@ -6,6 +6,45 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 02b4 partial — auth rate limit + hard-delete-deactivated cron 2026-05-19
+
+Continua Sprint 02b4 com 3 entregas — todas tractable sem credentials externas. Fecha 2 itens pendentes do "Sprint 02b3 fechamento restante" + 1 dependência do `deactivateAccount` SA.
+
+**Helper `auth-rate-limit.ts` em `@repo/security`** (155 linhas + 27 unit tests):
+- Constantes canônicas ADR 0073 camada 2: `AUTH_FAILURE_WINDOW_MS` 15min, `AUTH_LOCKOUT_THRESHOLD` 5, `AUTH_LOCKOUT_DURATION_MS` 30min, `AUTH_CAPTCHA_THRESHOLD_IP` 3
+- Pure functions testáveis sem DB: `countRecentFailures(rows, now, windowMs)` + `shouldLockout(count, threshold)` + `shouldRequireCaptcha(countByIp, threshold)`
+- I/O layer com `PoolLike` interface (facilita mock testing): `recordAuthAttempt({email, ip, success, ...})` — INSERT auth_attempts tolerante (logs em falha, não propaga) + `checkAuthLockout({email, ip})` — SELECT auth_lockouts WHERE locked_until > now() AND (email OR ip) + `evaluateLockout({email, ip})` — count failures email/ip via Promise.all + cria auth_lockouts se threshold; idempotente (skip se lockout ativo já existe)
+- Tests: 27 verdes (countRecentFailures 6 + shouldLockout 3 + shouldRequireCaptcha 2 + recordAuthAttempt 3 + checkAuthLockout 3 + evaluateLockout 6 + constants 4) — total @repo/security **148 verdes** (era 121 → +27)
+
+**Gate em `loginPassport`** (apps/web/app/meu/login/actions.ts):
+- 6 etapas (era 5): adiciona etapa 0 pre-check `checkAuthLockout` → throw RATE_LIMITED com message "tente novamente em N min" quando lockout ativo
+- Resolve IP via novo helper `apps/web/app/lib/request-ip.ts` (getClientIp) — precedência Cloudflare `cf-connecting-ip` → Caddy `x-real-ip` → genérico `x-forwarded-for` (primeiro IP) → sentinel `unknown`
+- `recordAuthAttempt` em todos paths (success + 4 failures: `unknown_email`/`user_disabled`/`wrong_password`/`mfa_failed`)
+- `evaluateLockout` apenas em failures (helper interno `recordFailure(reason)` encapsula record+evaluate)
+- `MFA_RECENT_REQUIRED` NÃO conta como falha — paciente vai retornar com TOTP, não incrementa attempts
+- Wrap-exempt comment movido pra linha imediatamente acima do `export async function` (lint `no-unwrapped-action` só olha 1 linha; ajuste mecânico)
+
+**Cron `hard-delete-deactivated-passport`** (apps/web/app/api/jobs/hard-delete-deactivated-passport/route.ts):
+- Daily ~03:50 UTC (00:50 SP) — após `expire-passport-global-sessions` (03:35) pra reduzir contention
+- Hard delete `passport_global_identities` WHERE `deactivated_at < now() - 30 days` (LGPD art. 18 VI direito de exclusão + janela de reativação 30d via privacidade@logifit.com.br documentada no SA `deactivateAccount`)
+- FK CASCADE em `passport_global_sessions.passport_global_identity_id` limpa sessions automaticamente — counter sessions cascateadas via JOIN pre-DELETE
+- Persons bridge orfã (FK nullable sem `.references()` constraint, design ADR 0093) — paciente "vira" member soft-deleted nos tenants linkados; dado clínico persiste pelos 20a Lei 13.787
+- Auth `Bearer $CRON_SECRET` via `timingSafeEqual` mesmo padrão `expire-passport-global-sessions`
+- Retorna `{identities_deleted, sessions_cascade_deleted, remaining_deactivated_within_grace}` + log JSON estruturado
+
+**Validação:**
+- ✓ typecheck 11/11 packages
+- ✓ lint-custom 743 + 2 css clean (9 rules)
+- ✓ docs-check 0/0
+- ✓ tests @repo/security 148 verdes (+27 auth-rate-limit)
+
+**Sprint 02b4 fechamento restante** (precisam credentials externas ou trabalho longo):
+- QR code visual no wizard MFA (`/cadastro/mfa-setup`) — SVG Reed-Solomon próprio (~500l) ou lib `qrcode` (~30KB regra 46 ADR)
+- Email confirmação via `@repo/email` (AWS SES) → `email_verified_at` update + change_email flow
+- E2E Playwright fluxo completo signup proativo → MFA setup → login com TOTP + lockout enforcement
+- Feature flag `passport_signup_v1`
+- Redis sliding window real (regra 36 completa) substituindo auth_attempts polling
+
 ### Build — Sprint 02b3 partial — Path A+B híbrido + envelope encryption + tests providers (commits a0ad676 + 9e674f3 + 1ed8ef3 + 1824ebb) 2026-05-19
 
 Continua Sprint 02 com 4 entregas Sprint 02b3 partial — todas tractable sem credentials externas (Twilio/Turnstile/SES adiados pra Sprint 02b3 completo):
