@@ -1,0 +1,4 @@
+# SBOMs gerados localmente ficam fora do git por padrão.
+# Pra commitar uma versão de release, force `git add -f sboms/vX.Y.Z.json`.
+*.json
+!.gitignore

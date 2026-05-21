@@ -11,6 +11,7 @@
  */
 import { ApiException, type ApiResult, err, ok } from './api-error'
 import { fingerprint } from './fingerprint'
+import { logBoundaryError } from './logger'
 import { translate } from './translators'
 
 export interface WrapActionContext {
@@ -72,16 +73,13 @@ export function wrapAction<TArgs, TData>(
       // TODO Sprint 01a: insert system_alerts (async, fire-and-forget)
       // TODO Sprint 01a: append audit_log (regra 5 + 39 hash chain)
 
-      console.error(
-        JSON.stringify({
-          level: 'error',
-          request_id: requestId,
-          module: ctx.module,
-          code: error.code,
-          fingerprint: error.fingerprint,
-          message: error.message,
-        }),
-      )
+      logBoundaryError({
+        request_id: requestId,
+        module: ctx.module,
+        code: error.code,
+        fingerprint: error.fingerprint,
+        message: error.message,
+      })
       return err(error)
     }
   }

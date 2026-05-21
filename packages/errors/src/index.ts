@@ -1,5 +1,6 @@
 export * from './api-error'
 export * from './fingerprint'
+export * from './logger'
 export * from './sanitize'
 export * from './translators'
 export * from './wrap-action'

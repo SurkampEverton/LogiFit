@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+#
+# Pre-commit hook canônico do LogiFit (Sprint 00 Faixa 4).
+#
+# Roda checks rápidos antes de cada commit:
+#   - biome check (lint + format) em arquivos staged
+#   - lint:custom (regex-based, < 200ms)
+#   - i18n:check (paridade catalogs)
+#
+# NÃO roda typecheck nem testes (lentos demais pra pre-commit).
+# CI completo roda em .github/workflows/ci.yml.
+#
+# Ativar uma vez:
+#   git config core.hooksPath .githooks
+#
+# Pular em emergência (NÃO faça isso em main):
+#   git commit --no-verify
+#
+set -eu
+
+# Skip se não tem nada staged
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR)
+if [ -z "$STAGED_FILES" ]; then
+  exit 0
+fi
+
+echo "[pre-commit] biome check + lint:custom + i18n:check"
+
+# Biome check só nos arquivos staged
+STAGED_TS_JS=$(echo "$STAGED_FILES" | grep -E '\.(ts|tsx|js|jsx|json|jsonc)$' || true)
+if [ -n "$STAGED_TS_JS" ]; then
+  echo "$STAGED_TS_JS" | xargs pnpm exec biome check --no-errors-on-unmatched
+fi
+
+# Lint custom regex (sempre roda — < 200ms)
+node scripts/lint-custom.mjs
+
+# i18n check só se mexeu em messages/ ou código que pode adicionar t() keys
+if echo "$STAGED_FILES" | grep -qE '(messages/|\.tsx?$)'; then
+  node scripts/i18n-check.mjs
+fi
+
+echo "[pre-commit] OK"

@@ -5,6 +5,7 @@
  */
 import { ApiException, type ApiErrorCode } from './api-error'
 import { fingerprint } from './fingerprint'
+import { logBoundaryError } from './logger'
 import { translate } from './translators'
 
 const HTTP_STATUS: Record<ApiErrorCode, number> = {
@@ -68,16 +69,13 @@ export function wrapApiHandler(ctx: WrapApiContext, handler: ApiHandler): ApiHan
               }
             })()
 
-      console.error(
-        JSON.stringify({
-          level: 'error',
-          request_id: requestId,
-          module: ctx.module,
-          code: errorPayload.code,
-          fingerprint: errorPayload.fingerprint,
-          message: errorPayload.message,
-        }),
-      )
+      logBoundaryError({
+        request_id: requestId,
+        module: ctx.module,
+        code: errorPayload.code,
+        fingerprint: errorPayload.fingerprint,
+        message: errorPayload.message,
+      })
 
       const headers: Record<string, string> = { 'x-request-id': requestId }
       if (errorPayload.retry_after_ms !== undefined) {

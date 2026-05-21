@@ -6,6 +6,7 @@
  */
 import { ApiException } from './api-error'
 import { fingerprint } from './fingerprint'
+import { logBoundaryError } from './logger'
 import { translate } from './translators'
 
 export interface WrapJobContext {
@@ -36,21 +37,18 @@ export function wrapJob<TArgs>(
 
       // TODO Faixa 3: GlitchTip capture
       // TODO Sprint 01a: insert system_alerts + retry com backoff exponencial
-      console.error(
-        JSON.stringify({
-          level: 'error',
-          job: ctx.jobName,
-          request_id: requestId,
-          module: ctx.module,
+      logBoundaryError({
+        job: ctx.jobName,
+        request_id: requestId,
+        module: ctx.module,
+        code: errorPayload.code,
+        fingerprint: fingerprint({
           code: errorPayload.code,
-          fingerprint: fingerprint({
-            code: errorPayload.code,
-            module: ctx.module,
-            signal: ctx.jobName,
-          }),
-          message: errorPayload.message,
+          module: ctx.module,
+          signal: ctx.jobName,
         }),
-      )
+        message: errorPayload.message,
+      })
       throw e
     }
   }

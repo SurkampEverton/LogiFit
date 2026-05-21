@@ -30,7 +30,9 @@
     "db:rls-check": "dotenv -e .env.local -- pnpm --filter @repo/db db:rls-check",
     "storage:bootstrap": "pnpm --filter @repo/storage bootstrap",
     "test:smoke": "pnpm --filter @app/web exec playwright test e2e/smoke",
-    "test:critical": "pnpm --filter @app/web exec playwright test e2e/critical"
+    "test:critical": "pnpm --filter @app/web exec playwright test e2e/critical",
+    "sbom:generate": "node scripts/sbom-generate.mjs",
+    "hooks:install": "git config core.hooksPath .githooks"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

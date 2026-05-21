@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@repo/errors": "workspace:*",
+    "@repo/i18n": "workspace:*",
     "sonner": "^1.7.0"
   },
   "peerDependencies": {
