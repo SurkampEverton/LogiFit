@@ -1,6 +1,10 @@
 # Runbook — Setup credentials passport_signup_v1 (Brevo + Twilio + Turnstile)
 
-> Provisionamento de **3 providers externos** necessários pra ativar o fluxo de cadastro proativo do paciente (`/cadastro` Path B — Sprint 02b3 + ADR 0093). Após este runbook, basta habilitar `feature_flags.passport_signup_v1` pra liberar a feature em prod.
+> Provisionamento de **3 providers externos** necessários pra ativar o fluxo de cadastro **proativo** do paciente (`/cadastro` Path B — Sprint 02b3 + ADR 0093). Após este runbook, basta habilitar `feature_flags.passport_signup_v1` pra liberar a feature em prod.
+
+> **⚠️ MVP early-stage não precisa deste runbook agora.** O **Path A invite-link** (profissional cadastra paciente → invite via email → paciente clica → cadastro com OTP **por email**, não SMS) já funciona 100% **só com Brevo** (passo 1). Twilio (passo 2) e Turnstile (passo 3) só são necessários pra **growth feature** de signup proativo direto-ao-paciente em `/cadastro`, sem clínica intermediária. Adiar até validar demanda real.
+
+> **Custo Twilio:** R$ 5-7/mês (número BR) + R$ 0,30-0,40 por SMS enviado. **Não é gratuito** em prod — apenas trial inicial $15 de créditos.
 
 - **Quando usar:** ativar pela primeira vez OU substituir provider (ex: Brevo → Resend)
 - **Severidade típica:** p2 (planejado; não emergência)
