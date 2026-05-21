@@ -83,6 +83,7 @@ export function InviteRowActions({
       toast.fromApiError(result.error)
       return
     }
+    // toast-exempt: i18n migration cross-app pendente (sprint dedicado pós-MVP)
     toast.success('Convite cancelado')
     router.refresh()
   }
@@ -109,6 +110,7 @@ export function InviteRowActions({
       toast.fromApiError(result.error)
       return
     }
+    // toast-exempt: i18n migration cross-app pendente (sprint dedicado pós-MVP)
     toast.success('Vínculo revogado')
     router.refresh()
   }
