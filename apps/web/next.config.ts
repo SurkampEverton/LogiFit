@@ -41,6 +41,7 @@ const nextConfig: NextConfig = {
     '@repo/auth',
     '@repo/cnpj',
     '@repo/db',
+    '@repo/email',
     '@repo/errors',
     '@repo/i18n',
     '@repo/security',
