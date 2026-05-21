@@ -6,6 +6,22 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 02b9 partial: passaporte UX + form pessoas + fixes que destravavam cadastro 2026-05-21
+
+Fechamento do Sprint 02b9 (partial) consolidando UX hardening do passaporte cross-tenant + form de cadastro de pessoa + 2 fixes root cause que travavam o cadastro real. Atualiza trio canônico ([sprint doc](docs/sprints/02-geral-crm-pessoas.md) + [roadmap](docs/roadmap.md) + este CHANGELOG).
+
+**Entregue:**
+
+- **Passaporte ganha hub navegável** — `/app/passport` landing (4 stat cards + breakdown por módulo + atalhos) e `/app/passport/invites` lista filtrável (status + módulos + responsável + creation_path) com `InviteRowActions` (client island) pra copy-link e share WhatsApp em pending. Fallback graceful regra 45 quando clipboard API indisponível.
+- **Form `/app/pessoas/new` ganha todos os campos do schema** (`displayName`, `birthDate`, `sex` LGPD art. 11, `address` completo, `notes`). Antes só CPF/CNPJ + Nome + Email + Telefone. Auto-fill CNPJ expandido pra popular CEP/número/complemento.
+- **Endpoint `GET /api/cep/{cep}`** proxia ViaCEP via `safeFetch` regra 37. Autofill ao blur dos 8 dígitos preenche logradouro/bairro/cidade/UF respeitando o que operador já digitou.
+- **Fix root cause "Erro interno"** que travava `createPerson`/`createMember`/`addNote`/`addTag`/`createRegistration` — `unrecognized configuration parameter "app.tenant_id"`. Causa: `db.insert()` do Drizzle pega outra conexão do pool, sem o setting do `withSessionContext`. Fix: passa `ctx.session.logifit.tenantId` literal nos 5 INSERTs.
+- **Fix CNPJ lookup** — orquestrador agora aciona fallback ReceitaWS também em `NOT_FOUND` (caso real: SOUZA CRUZ filial 0041 → BrasilAPI 404 + ReceitaWS 200). [ADR 0048](docs/decisions/0048-busca-cnpj-provider-abstrato.md) atualizado com seção "Revisão 2026-05-21".
+
+**Validação:** typecheck 12/12 packages verde. Biome clean nos 9 arquivos tocados (formato + organizeImports + 3 fixes lint: `useConst`, `noUnusedImports`, `noUnusedTemplateLiteral`).
+
+**Pendente Sprint 02 fechamento:** Faixa D `/pessoas/new` (PromptDialog CNPJ suspenso + toast.fromApiError + LocaleSwitcher); passport `/invites` (paginação cursor + filtro módulo/responsável + revogação inline + drill-down detail).
+
 ### Added — Passaporte cross-tenant ganha landing + lista de invites 2026-05-21
 
 Antes só existia `/app/passport/invites/new`. Agora o módulo Passaporte (ADR 0077 / regra 42) tem um hub navegável.
