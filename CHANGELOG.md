@@ -6,6 +6,38 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Test — Smoke E2E /meu/* portal routes (24 rotas) 2026-05-21
+
+Pega o spinoff task flagrado durante o middleware fix (commit `d922e7e`) — varre TODAS as páginas protegidas do portal do paciente pra detectar quebras de session/render similares ao bug do middleware.
+
+**Spec `apps/web/e2e/smoke/meu-portal-routes.spec.ts`** (90l):
+- Itera 24 rotas estáticas em `/meu/*` (excluindo login/verify pré-auth + dynamic params)
+- Cada rota = 1 test que `page.goto(rota)` com cookie passport real
+- Asserta HTTP 200 (não 500 server error)
+- Asserta `page.url()` não contém `/login` (cookie/middleware OK)
+- `beforeAll` cria 1 identity passport com session + MFA verified compartilhada entre testes (1 INSERT vs N na re-run)
+- `afterAll` cleanup + `closePassportPool` libera conexões
+
+**Rotas cobertas** (24 = todas `/meu/*/page.tsx` exceto login):
+- `/meu` dashboard
+- `/meu/agenda` + `/meu/agenda/novo`
+- `/meu/alertas` + `/meu/convidar` + `/meu/qr` + `/meu/recibos` + `/meu/sessoes` + `/meu/treino`
+- `/meu/diario` + `/meu/diario/novo`
+- `/meu/dispositivos` + `/meu/dispositivos/historico` + `/meu/dispositivos/importar`
+- `/meu/exames` + `/meu/exames/upload`
+- `/meu/financeiro`
+- `/meu/perfil` + `/meu/perfil/email-trocado`
+- `/meu/privacidade` + 4 subpaths (acessos / alertas-cruzados / compartilhamento / incidentes)
+
+**Bug parsing TS encontrado durante implementação** — comment JSDoc `/meu/*/page.tsx` fazia o parser SWC interpretar `*/` como fechamento de block comment. Substituído por "page.tsx em /meu" no header doc. Tomar nota: blocks JSDoc não podem conter `*/` literal (mesmo em path).
+
+**Validação:**
+- ✓ typecheck 12/12 packages
+- ✓ lint-custom 780 + 2 css clean (9 rules)
+- ⚠️ E2E rodar diferido — Docker Desktop caiu durante a sessão; spec compila + lint passa mas resultado de execução real fica pra próxima sessão com infra OK
+
+**Próximo run** (quando Docker voltar): `DATABASE_URL=postgresql://postgres:postgres@localhost:5434/logifit pnpm --filter @app/web exec playwright test e2e/smoke/meu-portal-routes.spec.ts --project=chromium-desktop`. Espera-se algumas falhas em rotas que dependem de queries específicas (e.g., `/meu/alertas` pode esperar `member_id` real; `/meu/diario` pode falhar sem `food_log_*` rows). Cada falha = bug catalogado pra fix sprint dedicado.
+
 ### Build — Sprint 02b5 fechamento — cron expire + 7 E2E specs + fix middleware /meu/* 2026-05-21
 
 Triplo entrega fecha **todos os 3 candidatos Sprint 02b5 abertos** + descobre/corrige bug crítico no middleware.
