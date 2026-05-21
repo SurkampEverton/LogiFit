@@ -6,6 +6,46 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 02b5 — resendPassportEmailVerification + refactor helper 2026-05-21
+
+Fecha 2º item dos candidatos Sprint 02b5 — paciente pode reenviar o email de confirmação que recebeu no signup (caso tenha perdido, ido pra spam, ou clicado antes de logar).
+
+**Refactor — helper compartilhado `lib/dispatch-email-verification.ts`** (novo):
+- Move a função `dispatchEmailVerification` que vivia inline em `cadastro/actions.ts` (helper privado do `signupPatient`) pra módulo compartilhado
+- Mesma side effect: gera token kind='signup' (default) + INSERT em `passport_email_verification_tokens` + envia via `@repo/email` category 'platform'
+- Retorna `{sent, provider}` ao invés de void — caller pode customizar UX baseado em sucesso/falha de SMTP
+- Failure-tolerant mantido (audit log estruturado em erro, não throw)
+- 2 callers refatorados pra importar do helper:
+  - `signupPatient` (passo 9 — automático pós-INSERT identity)
+  - `resendPassportEmailVerification` (novo abaixo)
+
+**Server Action `resendPassportEmailVerification`** (`wrapPassportAction` requireMfa=**false**):
+- **Sem MFA gate** intencional — paciente pode estar com `email_verified_at IS NULL` e querer reenviar ANTES mesmo de conseguir login completo; exigir MFA aqui criaria UX paradoxal (precisa do email pra ter login MFA, mas precisa de MFA pra reenviar email)
+- Idempotência: se `email_verified_at` já setado, retorna `{ok: true, alreadyVerified: true}` sem gerar novo token + UX informa "Seu email já está confirmado"
+- Cooldown 5min: nenhum token kind='signup' ativo (`used_at IS NULL`) <5min pra esta identity. Excedido → `RATE_LIMITED` com retry-after em segundos
+- Falha SMTP retorna `{sent: false}` com nota amigável — não vaza erro técnico
+- Resposta sucesso inclui `provider` (mock/smtp/brevo-smtp) pra debug futuro
+
+**UI `resend-verification-button.tsx`** (novo client component):
+- Renderizado condicionalmente em `/meu/perfil` quando `email_verified_at IS NULL`
+- 3 estados: idle / success (badge verde com mensagem persistente) / error (vermelho + auto-dismiss 5s pra permitir nova tentativa)
+- Distingue success.alreadyVerified (badge azul ℹ️) vs success.sent (badge verde ✓)
+- Acessibilidade: button disabled durante pending
+
+**`/meu/perfil` page atualizada**:
+- Após o badge de status (✓ verificado / ⚠ não verificado), se `!email_verified_at` renderiza `<ResendVerificationButton>` antes do form de troca de email
+- Hierarquia visual respeitada: reenviar é ação mais comum/menos crítica → vem primeiro; trocar email é mais sensível → vem depois
+
+**Validação:**
+- ✓ typecheck 12/12 packages
+- ✓ lint-custom 775 + 2 css clean (9 rules)
+- ✓ docs-check 0/0
+
+**Sprint 02b5 candidatos restantes**:
+- Cron `expire-passport-email-verification-tokens` daily (DELETE used>30d + expired>7d ambos kinds — pequena janela LGPD audit retention)
+- E2E Playwright spec dedicado pro change_email (similar ao smoke .mjs)
+- E2E Playwright spec resend (cooldown enforcement + alreadyVerified path)
+
 ### Build — Sprint 02b5 — change_email flow completo 2026-05-20 (noite tarde)
 
 Fecha primeiro item dos candidatos Sprint 02b5 abertos — paciente pode trocar email da conta global passport com proteções de alta sensibilidade.
