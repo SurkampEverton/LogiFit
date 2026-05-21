@@ -56,6 +56,7 @@ import {
 } from '@repo/security'
 import { z } from 'zod'
 import { dispatchEmailVerification } from '../lib/dispatch-email-verification'
+import { isFeatureEnabled } from '../lib/feature-flags'
 import {
   hashEmailVerificationToken,
   verifyEmailVerificationAgainstRow,
@@ -272,6 +273,18 @@ export async function verifySmsCode(input: unknown) {
  */
 // wrap-exempt: pré-auth público visitor anônimo (sem session); cria a identidade global (ADR 0093)
 export async function signupPatient(input: unknown) {
+  // Feature flag gate (ADR 0098) — cadastro proativo só habilita quando flag
+  // passport_signup_v1 = true. Default fail-closed (flag inexistente = false).
+  // Operador habilita via SQL direto (MVP) ou UI admin futura.
+  if (!(await isFeatureEnabled('passport_signup_v1'))) {
+    throw new ApiException({
+      code: 'FORBIDDEN',
+      message:
+        'Cadastro proativo ainda não está disponível. Peça à sua clínica ou academia que envie um convite, ou acesse via app.logifit.com.br depois que linkar com uma empresa.',
+      request_id: '',
+    })
+  }
+
   const parsed = SignupPatientSchema.safeParse(input)
   if (!parsed.success) {
     throw new ApiException({
