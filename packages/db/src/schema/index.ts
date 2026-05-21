@@ -44,6 +44,9 @@ export * from './passport-identity'
 // Sprint 02b3 — passport_global_sessions (sessões dedicadas pra paciente passport — ADR 0094)
 export * from './passport-session'
 
+// Sprint 02b4 fechamento — passport_email_verification_tokens (email confirmation pós-signup)
+export * from './passport-email-verification'
+
 // Sprint 02 Faixa A — CRM unificado: members + member_events + member_notes + member_tags (ADR 0011 esperado)
 export * from './members'
 
