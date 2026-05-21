@@ -17,8 +17,13 @@
  *     derivada dos timestamps + cobre histórico de canais de notificação
  *     (email enviado / WhatsApp dispatched / etc — hoje só Sprint 02b8
  *     persiste em log estruturado)
- *   - histórico de leituras cross-tenant via `patient_data_access_log`
- *     (regra 42) — quem leu, o quê, quando
+ *   - paginação do histórico de acessos (atual hard-cap 50)
+ *
+ * Sprint 02c.3 (atual): histórico de leituras cross-tenant via
+ *   `patient_data_access_log` (regra 42). RLS permite leitura quando
+ *   tenant atual é reader OU source (ver `0012_passport_rls.sql`); aqui
+ *   filtramos por `source_tenant_id = sessão` (somos a fonte) +
+ *   `passport_passport_id = link.passport_passport_id` (este paciente).
  *
  * **RLS:** `set_config app.tenant_id` antes de SELECT + filtro explícito
  * `WHERE l.tenant_id = $1` (defesa em profundidade).
@@ -47,6 +52,7 @@ interface ModuleDetail {
 
 interface InviteDetail {
   id: string
+  passportPassportId: string
   status: 'pending' | 'active' | 'revoked'
   creationPath: 'reactive' | 'proactive'
   createdAt: string
@@ -60,6 +66,20 @@ interface InviteDetail {
   patientDocument: string | null
   invitedByName: string | null
   modules: ModuleDetail[]
+}
+
+interface AccessLogRow {
+  recordedAt: string
+  readerTenantId: string
+  readerTenantName: string | null
+  readerUserId: string
+  readerUserName: string | null
+  moduleType: string
+  category: string
+  resourceType: string | null
+  resourceId: string | null
+  requestId: string
+  ip: string | null
 }
 
 const MODULE_LABELS: Record<string, string> = {
@@ -204,6 +224,7 @@ export default async function PassportInviteDetailPage({
   const client = await pool.connect()
   let invite: InviteDetail | null = null
   let tenantName = 'sua clínica'
+  let accessLog: AccessLogRow[] = []
   try {
     await client.query("SELECT set_config('app.tenant_id', $1, false)", [session.logifit.tenantId])
 
@@ -216,6 +237,7 @@ export default async function PassportInviteDetailPage({
     const linkRes = await client.query<InviteDetail>(
       `SELECT
          l.id,
+         l.passport_passport_id AS "passportPassportId",
          l.status::text AS status,
          l.creation_path AS "creationPath",
          l.created_at AS "createdAt",
@@ -263,6 +285,41 @@ export default async function PassportInviteDetailPage({
       [id, session.logifit.tenantId],
     )
     invite = linkRes.rows[0] ?? null
+
+    // Histórico de leituras cross-tenant (regra 42): traz acessos onde
+    // NOSSO tenant foi a fonte (`source_tenant_id = $1`) deste paciente
+    // específico (`passport_passport_id = $2`). RLS permite leitura quando
+    // tenant atual é reader OU source (ver `0012_passport_rls.sql`).
+    //
+    // Hard-cap 50 — paginação dedicada Sprint 02d+ se virar problema.
+    // JOINs em tenants/users são best-effort (RLS pode bloquear tenant
+    // externo → name NULL, mostramos uuid truncado na UI).
+    if (invite) {
+      const logRes = await client.query<AccessLogRow>(
+        `SELECT
+           pdal.recorded_at AS "recordedAt",
+           pdal.reader_tenant_id AS "readerTenantId",
+           reader_t.name AS "readerTenantName",
+           pdal.reader_user_id AS "readerUserId",
+           reader_p.name AS "readerUserName",
+           pdal.module_type::text AS "moduleType",
+           pdal.category,
+           pdal.resource_type AS "resourceType",
+           pdal.resource_id AS "resourceId",
+           pdal.request_id AS "requestId",
+           pdal.ip
+         FROM patient_data_access_log pdal
+         LEFT JOIN tenants reader_t ON reader_t.id = pdal.reader_tenant_id
+         LEFT JOIN users reader_u ON reader_u.id = pdal.reader_user_id
+         LEFT JOIN persons reader_p ON reader_p.id = reader_u.person_id
+         WHERE pdal.source_tenant_id = $1
+           AND pdal.passport_passport_id = $2
+         ORDER BY pdal.recorded_at DESC
+         LIMIT 50`,
+        [session.logifit.tenantId, invite.passportPassportId],
+      )
+      accessLog = logRes.rows
+    }
   } finally {
     await client.query("SELECT set_config('app.tenant_id', '', false)").catch(() => {})
     client.release()
@@ -444,6 +501,105 @@ export default async function PassportInviteDetailPage({
             </li>
           ))}
         </ol>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-medium">
+          Histórico de acessos cross-tenant ({accessLog.length})
+        </h2>
+        <p className="text-xs" style={{ color: 'var(--ev-text-muted)' }}>
+          Todas as leituras feitas por outros tenants sobre este paciente (regra 42 +{' '}
+          <a
+            href="/docs/decisions/0077-passaporte-paciente-vinculo-cross-tenant.md"
+            className="underline"
+          >
+            ADR 0077
+          </a>
+          ). Append-only, retenção 5 anos. Limite 50 entradas mais recentes.
+        </p>
+        {accessLog.length === 0 ? (
+          <p
+            className="rounded-md border border-dashed p-4 text-sm"
+            style={{ borderColor: 'var(--ev-border)', color: 'var(--ev-text-muted)' }}
+          >
+            Nenhum acesso cross-tenant registrado.
+          </p>
+        ) : (
+          <div
+            className="overflow-x-auto rounded-md border"
+            style={{ borderColor: 'var(--ev-border)', background: 'var(--ev-surface)' }}
+          >
+            <table className="w-full text-xs">
+              <thead>
+                <tr
+                  className="border-b text-left"
+                  style={{ borderColor: 'var(--ev-border)', color: 'var(--ev-text-muted)' }}
+                >
+                  <th className="px-3 py-2 font-medium">Data/hora</th>
+                  <th className="px-3 py-2 font-medium">Tenant leitor</th>
+                  <th className="px-3 py-2 font-medium">Usuário</th>
+                  <th className="px-3 py-2 font-medium">Módulo · Categoria</th>
+                  <th className="px-3 py-2 font-medium">Recurso</th>
+                  <th className="px-3 py-2 font-medium">request_id</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accessLog.map((ev) => (
+                  <tr
+                    key={ev.requestId + ev.recordedAt}
+                    className="border-b last:border-b-0"
+                    style={{ borderColor: 'var(--ev-border)' }}
+                  >
+                    <td className="px-3 py-2 tabular-nums">{formatDateTime(ev.recordedAt)}</td>
+                    <td className="px-3 py-2">
+                      {ev.readerTenantName ?? (
+                        <span style={{ color: 'var(--ev-text-muted)' }}>
+                          {ev.readerTenantId.slice(0, 8)}…
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      {ev.readerUserName ?? (
+                        <span style={{ color: 'var(--ev-text-muted)' }}>
+                          {ev.readerUserId.slice(0, 8)}…
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      {MODULE_LABELS[ev.moduleType] ?? ev.moduleType}
+                      {' · '}
+                      <span style={{ color: 'var(--ev-text-muted)' }}>{ev.category}</span>
+                    </td>
+                    <td className="px-3 py-2" style={{ color: 'var(--ev-text-muted)' }}>
+                      {ev.resourceType ? (
+                        <>
+                          {ev.resourceType}
+                          {ev.resourceId && (
+                            <span style={{ fontFamily: 'var(--ev-mono, ui-monospace)' }}>
+                              {' '}
+                              ({ev.resourceId.slice(0, 8)}…)
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td
+                      className="px-3 py-2"
+                      style={{
+                        color: 'var(--ev-text-muted)',
+                        fontFamily: 'var(--ev-mono, ui-monospace)',
+                      }}
+                    >
+                      {ev.requestId.slice(0, 8)}…
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </main>
   )

@@ -12,11 +12,13 @@
  *   - `?module=academia|personal_training|fisioterapia|nutricao|pilates`
  *   - `?q=<nome>` busca por nome do paciente (ILIKE substring, mín. 1 char,
  *     máx. 80, metachars `%` e `_` strip-ados pra evitar wildcard injection)
- *
- * Sprint 02c+ restante:
- *   - paginação cursor-based (atual hard-cap 100)
- *   - filtro por profissional responsável (autocomplete cross-module)
- *   - drill-down pra detalhe do invite com timeline de eventos
+ *   - `?cursor=<b64>` paginação cursor (Sprint 02c.1) — base64url JSON
+ *     `{createdAt, id}`. Ordem estável: `ORDER BY l.created_at DESC, l.id DESC`
+ *     + WHERE `(l.created_at, l.id) < (cursor.createdAt, cursor.id)`.
+ *     LIMIT PAGE_SIZE+1 detecta se há próxima página sem COUNT extra.
+ *   - `?responsible=<userId>` filtro por responsável técnico (Sprint 02c.2)
+ *     — dropdown lista DISTINCT responsáveis do tenant (hard-cap 200;
+ *     autocomplete dedicado quando passar disso).
  *
  * **RLS:** `set_config app.tenant_id` antes de SELECT; defesa em profundidade
  * com `WHERE l.tenant_id = $1` explícito.
@@ -109,13 +111,53 @@ function buildFilterUrl(parts: {
   status?: 'pending' | 'active' | 'revoked' | 'all'
   module?: ModuleKey | 'all'
   q?: string
+  cursor?: string
+  responsible?: string
 }): string {
   const sp = new URLSearchParams()
   if (parts.status && parts.status !== 'all') sp.set('status', parts.status)
   if (parts.module && parts.module !== 'all') sp.set('module', parts.module)
   if (parts.q) sp.set('q', parts.q)
+  if (parts.responsible) sp.set('responsible', parts.responsible)
+  if (parts.cursor) sp.set('cursor', parts.cursor)
   const qs = sp.toString()
   return qs ? `/app/passport/invites?${qs}` : '/app/passport/invites'
+}
+
+const PAGE_SIZE = 25
+
+interface Cursor {
+  createdAt: string
+  id: string
+}
+
+function encodeCursor(cursor: Cursor): string {
+  return Buffer.from(JSON.stringify(cursor), 'utf8').toString('base64url')
+}
+
+function decodeCursor(raw: string | undefined): Cursor | null {
+  if (!raw) return null
+  try {
+    const json = Buffer.from(raw, 'base64url').toString('utf8')
+    const parsed = JSON.parse(json) as unknown
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'createdAt' in parsed &&
+      'id' in parsed &&
+      typeof (parsed as Cursor).createdAt === 'string' &&
+      typeof (parsed as Cursor).id === 'string' &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        (parsed as Cursor).id,
+      ) &&
+      !Number.isNaN(new Date((parsed as Cursor).createdAt).getTime())
+    ) {
+      return parsed as Cursor
+    }
+  } catch {
+    // cursor inválido (b64 ou json malformado) — ignora e mostra primeira página
+  }
+  return null
 }
 
 function formatRelative(date: string | null): string {
@@ -133,10 +175,21 @@ function formatRelative(date: string | null): string {
   return d.toLocaleDateString('pt-BR')
 }
 
+interface ResponsibleOption {
+  userId: string
+  name: string
+}
+
 export default async function PassportInvitesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; module?: string; q?: string }>
+  searchParams: Promise<{
+    status?: string
+    module?: string
+    q?: string
+    cursor?: string
+    responsible?: string
+  }>
 }) {
   const session = await requireFullSession('/app/passport/invites')
   const params = await searchParams
@@ -154,10 +207,17 @@ export default async function PassportInvitesPage({
   // Limita pra evitar abuso (ilike com %% em string longa é caro) e remove
   // metachars do ilike (% e _) — busca literal por substring no nome.
   const qFilter = qRaw.length > 0 && qRaw.length <= 80 ? qRaw.replace(/[%_]/g, '') : ''
+  const cursor = decodeCursor(params.cursor)
+  const responsibleFilter =
+    params.responsible &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.responsible)
+      ? params.responsible
+      : ''
 
   const client = await pool.connect()
-  let rows: InviteRow[] = []
+  let rows: Array<InviteRow & { createdAt: string }> = []
   let tenantName = 'sua clínica'
+  let responsibleOptions: ResponsibleOption[] = []
   try {
     await client.query("SELECT set_config('app.tenant_id', $1, false)", [session.logifit.tenantId])
 
@@ -167,11 +227,28 @@ export default async function PassportInvitesPage({
     )
     if (tRes.rows[0]?.name) tenantName = tRes.rows[0].name
 
-    const res = await client.query<InviteRow>(
+    // Lista de responsáveis técnicos que aparecem em pelo menos 1 module
+    // do tenant — alimenta o dropdown de filtro. Hard-cap 200 (tenant grande
+    // ganha autocomplete dedicado Sprint 02c+ — TODO).
+    const respRes = await client.query<ResponsibleOption>(
+      `SELECT DISTINCT u.id AS "userId", p.name AS name
+       FROM patient_link_modules m
+       INNER JOIN patient_company_links l ON l.id = m.link_id
+       INNER JOIN users u ON u.id = m.responsible_professional_user_id
+       INNER JOIN persons p ON p.id = u.person_id
+       WHERE l.tenant_id = $1
+       ORDER BY p.name ASC
+       LIMIT 200`,
+      [session.logifit.tenantId],
+    )
+    responsibleOptions = respRes.rows
+
+    const res = await client.query<InviteRow & { createdAt: string }>(
       `SELECT
          l.id,
          l.status::text AS status,
          l.creation_path AS "creationPath",
+         l.created_at AS "createdAt",
          l.invited_at AS "invitedAt",
          l.accepted_at AS "acceptedAt",
          l.revoked_at AS "revokedAt",
@@ -204,10 +281,28 @@ export default async function PassportInvitesPage({
            SELECT 1 FROM patient_link_modules mf
            WHERE mf.link_id = l.id AND mf.module::text = $4
          ))
+         AND (
+           $5::timestamptz IS NULL
+           OR (l.created_at, l.id) < ($5::timestamptz, $6::uuid)
+         )
+         AND ($7::text = '' OR EXISTS (
+           SELECT 1 FROM patient_link_modules mr
+           WHERE mr.link_id = l.id
+             AND mr.responsible_professional_user_id = $7::uuid
+         ))
        GROUP BY l.id, p.id, inviter_p.id
-       ORDER BY l.created_at DESC
-       LIMIT 100`,
-      [session.logifit.tenantId, statusFilter, qFilter, moduleFilter],
+       ORDER BY l.created_at DESC, l.id DESC
+       LIMIT $8::int`,
+      [
+        session.logifit.tenantId,
+        statusFilter,
+        qFilter,
+        moduleFilter,
+        cursor?.createdAt ?? null,
+        cursor?.id ?? null,
+        responsibleFilter,
+        PAGE_SIZE + 1, // +1 pra detectar se há próxima página
+      ],
     )
     rows = res.rows
   } finally {
@@ -215,7 +310,19 @@ export default async function PassportInvitesPage({
     client.release()
   }
 
-  const totalByStatus = rows.reduce<Record<string, number>>((acc, r) => {
+  // N+1 detection: se trouxemos PAGE_SIZE+1 rows, sabemos que há próxima página.
+  // Removemos a última (que era só pra detectar) e geramos cursor da PAGE_SIZE-ésima.
+  const hasMore = rows.length > PAGE_SIZE
+  const visibleRows = hasMore ? rows.slice(0, PAGE_SIZE) : rows
+  const lastVisible = visibleRows[visibleRows.length - 1]
+  const nextCursor =
+    hasMore && lastVisible
+      ? encodeCursor({ createdAt: lastVisible.createdAt, id: lastVisible.id })
+      : null
+
+  // Contagens da página atual (não global) — usadas nos badges dos pills de status.
+  // Pra contagem global ver `/app/passport` landing (queries dedicadas).
+  const totalByStatus = visibleRows.reduce<Record<string, number>>((acc, r) => {
     acc[r.status] = (acc[r.status] ?? 0) + 1
     return acc
   }, {})
@@ -322,6 +429,37 @@ export default async function PassportInvitesPage({
             ))}
           </select>
         </div>
+        {responsibleOptions.length > 0 && (
+          <div className="space-y-1">
+            <label
+              htmlFor="filter-responsible"
+              className="block text-xs font-medium uppercase tracking-wide"
+              style={{ color: 'var(--ev-text-muted)' }}
+            >
+              Responsável
+            </label>
+            <select
+              id="filter-responsible"
+              name="responsible"
+              defaultValue={responsibleFilter}
+              className="rounded-md border px-3 py-2 text-sm"
+              style={{
+                borderColor: 'var(--ev-border)',
+                background: 'var(--ev-input-bg, var(--ev-surface))',
+                color: 'var(--ev-text)',
+                minHeight: 'var(--ev-touch-min, 44px)',
+                maxWidth: '240px',
+              }}
+            >
+              <option value="">Todos</option>
+              {responsibleOptions.map((r) => (
+                <option key={r.userId} value={r.userId}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="flex gap-2">
           <button
             type="submit"
@@ -334,7 +472,7 @@ export default async function PassportInvitesPage({
           >
             Filtrar
           </button>
-          {(qFilter || moduleFilter !== 'all') && (
+          {(qFilter || moduleFilter !== 'all' || responsibleFilter) && (
             <Link
               href={buildFilterUrl({ status: statusFilter })}
               className="inline-flex items-center rounded-md border px-3 py-2 text-sm font-medium"
@@ -354,7 +492,7 @@ export default async function PassportInvitesPage({
       <nav className="flex flex-wrap gap-2" aria-label="Filtrar convites por status">
         {STATUS_FILTERS.map((f) => {
           const isActive = statusFilter === f.key
-          const count = f.key === 'all' ? rows.length : (totalByStatus[f.key] ?? 0)
+          const count = f.key === 'all' ? visibleRows.length : (totalByStatus[f.key] ?? 0)
           return (
             <Link
               key={f.key}
@@ -362,6 +500,7 @@ export default async function PassportInvitesPage({
                 status: f.key as 'pending' | 'active' | 'revoked' | 'all',
                 module: moduleFilter,
                 q: qFilter,
+                responsible: responsibleFilter,
               })}
               className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium"
               style={{
@@ -388,7 +527,7 @@ export default async function PassportInvitesPage({
         })}
       </nav>
 
-      {rows.length === 0 ? (
+      {visibleRows.length === 0 ? (
         <div
           className="rounded-md border border-dashed p-8 text-center text-sm"
           style={{
@@ -396,7 +535,7 @@ export default async function PassportInvitesPage({
             color: 'var(--ev-text-muted)',
           }}
         >
-          {qFilter || moduleFilter !== 'all'
+          {qFilter || moduleFilter !== 'all' || responsibleFilter
             ? 'Nenhum convite encontrado com os filtros aplicados. '
             : statusFilter === 'all'
               ? 'Nenhum convite criado ainda. '
@@ -417,7 +556,7 @@ export default async function PassportInvitesPage({
             background: 'var(--ev-surface)',
           }}
         >
-          {rows.map((r) => {
+          {visibleRows.map((r) => {
             const inviteUrl = buildInviteUrl(r.id)
             const whatsappShareUrl =
               r.status === 'pending' && r.patientPhone
@@ -536,6 +675,47 @@ export default async function PassportInvitesPage({
             )
           })}
         </ul>
+      )}
+
+      {nextCursor && (
+        <div className="flex justify-center pt-4">
+          <Link
+            href={buildFilterUrl({
+              status: statusFilter,
+              module: moduleFilter,
+              q: qFilter,
+              responsible: responsibleFilter,
+              cursor: nextCursor,
+            })}
+            className="inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium"
+            style={{
+              borderColor: 'var(--ev-border)',
+              background: 'var(--ev-surface)',
+              color: 'var(--ev-text)',
+              minHeight: 'var(--ev-touch-min, 44px)',
+            }}
+            aria-label="Carregar próxima página de convites"
+          >
+            Carregar mais →
+          </Link>
+        </div>
+      )}
+
+      {cursor && (
+        <div className="flex justify-center">
+          <Link
+            href={buildFilterUrl({
+              status: statusFilter,
+              module: moduleFilter,
+              q: qFilter,
+              responsible: responsibleFilter,
+            })}
+            className="text-sm hover:underline"
+            style={{ color: 'var(--ev-text-muted)' }}
+          >
+            ← Voltar ao início
+          </Link>
+        </div>
       )}
     </main>
   )
