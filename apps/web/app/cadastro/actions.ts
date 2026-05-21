@@ -42,7 +42,6 @@
  */
 
 import { pool } from '@repo/db/client'
-import { sendTransactional } from '@repo/email'
 import { ApiException } from '@repo/errors'
 import {
   encryptSecret,
@@ -56,12 +55,8 @@ import {
   verifyOtpCode,
 } from '@repo/security'
 import { z } from 'zod'
+import { dispatchEmailVerification } from '../lib/dispatch-email-verification'
 import {
-  renderEmailVerificationHtml,
-  renderEmailVerificationText,
-} from '../lib/email-templates/email-verification'
-import {
-  generateEmailVerificationToken,
   hashEmailVerificationToken,
   verifyEmailVerificationAgainstRow,
 } from '../lib/passport-email-verification'
@@ -588,69 +583,6 @@ async function acceptInviteAfterSignup(params: {
     tenantId: link.tenant_id,
     linkId: link.id,
     tenantName: link.tenant_name,
-  }
-}
-
-// ─── dispatchEmailVerification (helper interno) ─────────────────────────
-
-/**
- * Helper interno: gera token + grava + envia email de confirmação.
- *
- * Chamado por:
- *   - `signupPatient` (passo 9 — automático pós-INSERT identity)
- *   - `resendPassportEmailVerification` (Sprint 02b5 — UI reenvio)
- *   - `changePassportEmail` (Sprint 02b5 — confirma novo email antes de trocar)
- *
- * Categoria `platform` — LogiFit é controlador LGPD da identidade global.
- */
-async function dispatchEmailVerification(params: {
-  passportGlobalId: string
-  email: string
-  patientName: string
-  requestIp?: string | null
-}): Promise<void> {
-  // 1. Gera token + hash
-  const link = generateEmailVerificationToken()
-
-  // 2. Grava token (snapshot do email pra anti-race contra change_email)
-  await pool.query(
-    `INSERT INTO passport_email_verification_tokens
-       (passport_global_identity_id, email, token_hash, expires_at, request_ip)
-     VALUES ($1, $2, $3, $4, $5)`,
-    [params.passportGlobalId, params.email, link.tokenHash, link.expiresAt, params.requestIp ?? null],
-  )
-
-  // 3. Envia email (Brevo prod / Mailhog dev / Mock test)
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.logifit.com.br'
-  const verifyUrl = `${baseUrl}/api/cadastro/verify-email?t=${link.token}`
-
-  const result = await sendTransactional({
-    to: params.email,
-    toName: params.patientName,
-    subject: 'Confirme seu email — LogiFit',
-    htmlBody: renderEmailVerificationHtml({
-      patientName: params.patientName,
-      verifyUrl,
-    }),
-    textBody: renderEmailVerificationText({
-      patientName: params.patientName,
-      verifyUrl,
-    }),
-    category: 'platform',
-  })
-
-  if (!result.ok) {
-    // Não vaza erro pro caller — paciente terá UX de "verifique seu email"
-    // mesmo se SMTP falhou. Audit log estruturado pra Loki.
-    console.error(
-      JSON.stringify({
-        level: 'error',
-        event: 'email_verification_send_failed',
-        provider: result.provider,
-        errorCode: result.errorCode,
-        passportGlobalIdPrefix: params.passportGlobalId.slice(0, 8),
-      }),
-    )
   }
 }
 
