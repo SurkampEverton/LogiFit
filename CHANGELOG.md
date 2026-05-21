@@ -6,6 +6,27 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 00.Q: GlitchTip SDK no Next.js (~99%) 2026-05-21
+
+Último item de código do Sprint 00. Configura `@sentry/nextjs` apontando pro GlitchTip self-host (`errors.logifit.com.br` rodando desde Faixa 3). Sem DSN env, todas as chamadas são no-op — zero overhead em dev sem GlitchTip configurado.
+
+**Entregue:**
+
+- **4 configs Sentry/GlitchTip:** `apps/web/instrumentation.ts` (entrypoint Next 15), `sentry.client.config.ts` (browser), `sentry.server.config.ts` (Node + capture hook), `sentry.edge.config.ts` (middleware).
+- **`next.config.ts` wrap** com `withSentryConfig({ sourcemaps:{disable:true}, silent:true, disableLogger:true })` — GlitchTip não consome sourcemaps.
+- **Capture hook injetável em `@repo/errors`** (`packages/errors/src/capture.ts`): `setCaptureHook` + `captureFromBoundary`. Desacopla generic package de SDK Next-specific. 3 wrappers (`wrap-action`/`wrap-api-handler`/`wrap-job`) chamam pra `INTERNAL_ERROR`/`SERVICE_UNAVAILABLE`/`AI_PROVIDER_ERROR` — `VALIDATION_ERROR` etc não vão pro GlitchTip (ruído).
+- **Env vars (`.env.example`):** `NEXT_PUBLIC_SENTRY_DSN` + `SENTRY_DSN` (server fallback) + `SENTRY_ENV`/`SENTRY_RELEASE`.
+- **Runbook `docs/runbooks/glitchtip-setup.md`** — criar projeto no painel, copiar DSN, smoke test, configurar alerta email, troubleshooting.
+
+**Validação:** typecheck 12/12 verde + 199/199 tests `@repo/security`.
+
+**Próximo passo (fundador):** criar projeto LogiFit/web no painel `errors.logifit.com.br` + copiar DSN + setar `NEXT_PUBLIC_SENTRY_DSN` em Coolify env vars.
+
+**Sprint 00 restante (~1%):** 3 itens bloqueados por input externo:
+- Backup R2 (token Cloudflare + par GPG)
+- DNS `security@logifit.com.br` Email Routing
+- HSTS Preload List submission
+
 ### Build — Sprint 00 fechamento Faixa 4 (~98%): 11 pendências limpas 2026-05-21
 
 Fechamento do Sprint 00 (Faixa 4 + 11 pendências cross-faixa). Atualiza trio canônico ([sprint doc](docs/sprints/00-setup-infra.md) + [roadmap](docs/roadmap.md) + este CHANGELOG).

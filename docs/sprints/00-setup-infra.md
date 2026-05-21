@@ -2,7 +2,7 @@
 
 - **Início:** 2026-04-27
 - **Fim planejado:** **+5 semanas (~2026-06-01)** (revisado 2026-04-27 — [ADR 0091](../decisions/0091-self-host-total-oracle-sp.md) self-host total amplia escopo: bootstrap Oracle Cloud Vinhedo + Coolify + observabilidade self-host (GlitchTip/Loki/Grafana) + MinIO + runbook DR drill substituindo "subir Supabase CLI". Revisão anterior 2026-04-25 já tinha levado pra 4 semanas; +1 semana absorve self-host total. Excede regra 9 (3 semanas) com justificativa explícita em ADR 0091).
-- **Status:** **done (~98%)** 2026-05-21 — Faixas 1+2+3+4 entregues (ver Log abaixo). Restante: GlitchTip SDK no Next.js + 3 itens bloqueados por input externo do fundador (backup R2 credentials, DNS security@, HSTS preload submission).
+- **Status:** **done (~99%)** 2026-05-21 — Faixas 1+2+3+4 entregues + GlitchTip SDK plugado (Sprint 00.Q). Restante: 3 itens bloqueados por input externo do fundador (backup R2 credentials, DNS security@, HSTS preload submission).
 - **Item do roadmap:** #1
 
 ## Goal
@@ -290,6 +290,15 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 - [ ] Integração Translation Memory (TM) para reuso de tradução cross-sprint
 
 ## Log
+
+- **2026-05-21 (tarde) — Sprint 00.Q: GlitchTip SDK plugado no Next.js (~99%).**
+  - **4 configs Sentry/GlitchTip em `apps/web/`** — `instrumentation.ts` (entrypoint Next 15 carrega config por runtime), `sentry.client.config.ts` (browser, tracesSampleRate 0.1 prod, replay desabilitado pois GlitchTip não suporta), `sentry.server.config.ts` (Node runtime + conecta `setCaptureHook(@repo/errors) → Sentry.captureException` com tags tenant_id/request_id/module/code/fingerprint), `sentry.edge.config.ts` (Edge middleware minimalista).
+  - **`next.config.ts` wrap** em `withSentryConfig(..., { sourcemaps: { disable: true }, silent: !SENTRY_AUTH_TOKEN, disableLogger: true })` — GlitchTip não consome sourcemaps (feature Sentry-only), então skip pra evitar 404s no build.
+  - **Capture hook injetável em `@repo/errors`** — `packages/errors/src/capture.ts` exporta `setCaptureHook` + `captureFromBoundary`. Desacopla `@repo/errors` (generic) de `@sentry/nextjs` (Next-specific). 3 wrappers (`wrap-action`/`wrap-api-handler`/`wrap-job`) chamam `captureFromBoundary` automaticamente pra códigos `INTERNAL_ERROR`/`SERVICE_UNAVAILABLE`/`AI_PROVIDER_ERROR` — `VALIDATION_ERROR` e similares NÃO vão pro GlitchTip (ruído).
+  - **Env vars (`.env.example`):** `NEXT_PUBLIC_SENTRY_DSN` (DSN público), `SENTRY_DSN` (alternativa só-server fallback), `SENTRY_ENV`, `SENTRY_RELEASE`. Sem DSN setada, `setCaptureHook` nunca é chamado e wrappers seguem só logando via pino + retornando envelope ApiError — **zero overhead em dev sem GlitchTip**.
+  - **Runbook `docs/runbooks/glitchtip-setup.md`** — cobre criar organização + projeto no painel `errors.logifit.com.br`, copiar DSN, setar env vars, smoke test (endpoint `/api/test-sentry`), configurar alerta por email pra `INTERNAL_ERROR`, monitorar quotas, troubleshooting comum.
+  - **Próximo passo (fundador):** criar projeto LogiFit/web no painel + copiar DSN + setar `NEXT_PUBLIC_SENTRY_DSN` em Coolify env vars do container `logifit-web`.
+  - **Validação:** typecheck 12/12 verde + 199/199 tests `@repo/security`.
 
 - **2026-05-21 — Sprint 00 fechamento Faixa 4 (~98%): 11 pendências limpas + checklist atualizado.**
   - **Segurança (regra 38):** `packages/security/src/scan-upload.ts` MVP real substitui stub `pending`. Magic bytes inline (10 formatos sem dep: PDF/PNG/JPG/GIF/WebP/MP4/ZIP/WAV/MP3/OGG), allowlist mime+ext por bucket, size cap, embed detection regex (PDF JavaScript/OpenAction/Launch/EmbeddedFile; Office vbaProject.bin/macros/), SHA-256 hash. 6 buckets canônicos com policy individual; bucket desconhecido fail-closed. 28 unit tests verdes em `scan-upload.test.ts`. **Tests `@repo/security` totais: 199 verdes** (era 171 — +28).
