@@ -1,0 +1,24 @@
+{
+  "name": "@repo/email",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Email transacional via SMTP (ADR 0096) — provider abstrato + Brevo SMTP prod + Mailhog dev + mock test",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.16"
+  },
+  "devDependencies": {
+    "@repo/config": "workspace:*",
+    "@types/nodemailer": "^6.4.17",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.5"
+  }
+}
