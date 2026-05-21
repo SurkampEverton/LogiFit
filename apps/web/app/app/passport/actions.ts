@@ -795,3 +795,101 @@ export const getCrossTenantSummary = wrapServerAction(
     }
   },
 )
+
+// ─── sendPatientInviteSimple (UI helper — Sprint 02b8) ──────────────────
+
+/**
+ * Wrapper simplificado de `sendPatientInvite` pra UI staff (`/app/passport/invites/new`).
+ *
+ * Resolve `passportPassportId` automaticamente:
+ *   1. Se person tem `passport_global_identity_id` (Sprint 02b2 ADR 0093) → usa esse
+ *   2. Senão, gera UUID determinístico via SHA-256(cpf_normalized) primeiros 16 bytes
+ *      → preserva idempotência cross-tenant (mesmo CPF = mesmo passportId em N tenants)
+ *
+ * Constrói `modules` array com dataLevels defaults sensatos por módulo (academia
+ * libera treino + antropometria; fisio/nutri liberam clínico também).
+ *
+ * Retorna mesma estrutura de `sendPatientInvite` (linkId + inviteUrl + emailSent
+ * + whatsappShareUrl) — UI consome diretamente pra renderizar os 3 botões.
+ */
+const SendInviteSimpleSchema = z.object({
+  personId: z.string().uuid(),
+  moduleKind: ModuleEnum,
+  responsibleProfessionalUserId: z.string().uuid(),
+})
+
+const DEFAULT_DATA_LEVELS_BY_MODULE: Record<ModuleKind, z.infer<typeof DataLevelsSchema>> = {
+  academia: { identidade: true, antropometria: true, treino: true, clinico: false },
+  personal_training: { identidade: true, antropometria: true, treino: true, clinico: false },
+  pilates: { identidade: true, antropometria: false, treino: true, clinico: false },
+  fisioterapia: { identidade: true, antropometria: true, treino: true, clinico: true },
+  nutricao: { identidade: true, antropometria: true, treino: false, clinico: true },
+}
+
+export const sendPatientInviteSimple = wrapServerAction(
+  {
+    module: 'passport',
+    action: 'invite.send_simple',
+    resourceType: 'patient_company_links',
+  },
+  async (input: z.infer<typeof SendInviteSimpleSchema>, _ctx) => {
+    const parsed = SendInviteSimpleSchema.parse(input)
+
+    // Resolve passportPassportId — passport_global_identity_id existente OU hash(cpf)
+    const r = await pool.query<{
+      passport_global_identity_id: string | null
+      document: string | null
+    }>(
+      `SELECT passport_global_identity_id, document
+         FROM persons WHERE id = $1 LIMIT 1`,
+      [parsed.personId],
+    )
+    const row = r.rows[0]
+    if (!row) {
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Paciente não encontrado',
+        request_id: '',
+      })
+    }
+
+    let passportPassportId: string
+    if (row.passport_global_identity_id) {
+      passportPassportId = row.passport_global_identity_id
+    } else if (row.document) {
+      // Hash CPF determinístico — mesmo CPF gera mesmo UUID v4 em qualquer
+      // tenant (cross-tenant ADR 0077). SHA-256 primeiros 16 bytes em formato UUID.
+      const cpfClean = row.document.replace(/\D/g, '')
+      const hash = await import('node:crypto').then((c) =>
+        c.createHash('sha256').update(`logifit-passport:${cpfClean}`).digest('hex'),
+      )
+      passportPassportId = [
+        hash.slice(0, 8),
+        hash.slice(8, 12),
+        '4' + hash.slice(13, 16), // version 4
+        ((parseInt(hash.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + hash.slice(17, 20),
+        hash.slice(20, 32),
+      ].join('-')
+    } else {
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: 'Paciente sem CPF cadastrado — não dá pra gerar passportId determinístico',
+        request_id: '',
+      })
+    }
+
+    // Chama sendPatientInvite com payload completo
+    const dataLevels = DEFAULT_DATA_LEVELS_BY_MODULE[parsed.moduleKind]
+    return sendPatientInvite({
+      passportPassportId,
+      personId: parsed.personId,
+      modules: [
+        {
+          module: parsed.moduleKind,
+          responsibleProfessionalUserId: parsed.responsibleProfessionalUserId,
+          dataLevels,
+        },
+      ],
+    })
+  },
+)
