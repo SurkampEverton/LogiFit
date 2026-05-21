@@ -6,6 +6,72 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 02b5 — change_email flow completo 2026-05-20 (noite tarde)
+
+Fecha primeiro item dos candidatos Sprint 02b5 abertos — paciente pode trocar email da conta global passport com proteções de alta sensibilidade.
+
+**Schema (migration 0047):**
+- `ALTER TABLE passport_email_verification_tokens ADD COLUMN kind` ('signup' | 'change_email', default 'signup' pra compat com Sprint 02b4)
+- `ADD COLUMN new_email` (target em kind='change_email'; NULL em kind='signup')
+- Check constraint cross-column: `signup` exige `new_email IS NULL`; `change_email` exige `new_email IS NOT NULL`
+- Index `kind, expires_at` pra filtro cron cleanup futuro
+- Schema Drizzle atualizado: novos campos + type `PassportEmailVerificationKind`
+
+**Server Action `requestPassportEmailChange`** (`wrapPassportAction` requireMfa=true):
+- **3 gates de alta sensibilidade**: MFA recente <15min + re-verify password atual + cooldown 24h entre requests
+- Anti-enumeration em newEmail duplicado (erro genérico "se você possui outra conta, use ela")
+- Detecta no-op (newEmail == current)
+- Cooldown error retorna `RATE_LIMITED` com retry-after em horas
+- INSERT token kind='change_email' com snapshot do email atual
+- Envia confirmação **pro NOVO email** via `sendTransactional` category 'platform'
+- Failure-tolerant: SMTP fail loga estruturado mas não bloqueia (anti-enumeration uniforme)
+
+**Server Action `confirmPassportEmailChange`** (pré-auth, paciente clica link do email novo):
+- JOIN `passport_email_verification_tokens` (kind='change_email') + `passport_global_identities` em 1 query (snapshot vs current email + new_email + identity name)
+- 5 failure modes: invalid_format / used / expired / current email mismatch (já trocou via outro request) / deactivated_at (conta inativa)
+- Re-check disponibilidade do new_email no momento do confirm (race contra outro signup raro mas defesa)
+- Transação: UPDATE token.used_at + identity.email=new_email + email_verified_at=now() (já confirmamos posse do new pelo clique no link)
+- **Notifica email ANTIGO** via fire-and-forget `sendTransactional` ("⚠ Email da sua conta foi alterado pra j***@example.com — não foi você? Contate privacidade@logifit.com.br") — alerta de segurança crítico LGPD
+
+**2 templates novos em `email-change.ts`**:
+- `renderEmailChangeConfirmationHtml/Text` — pro NOVO email com botão "Confirmar troca de email"
+- `renderEmailChangeNotificationHtml/Text` — pro email ANTIGO com novo email mascarado (`j***@example.com` em vez de email completo — preserva privacidade caso este email seja compartilhado) + box de aviso amarelo "Não foi você? Entre em contato"
+
+**Route handler GET `/api/meu/perfil/email/confirm-change?t=<token>`**:
+- Redireciona pra `/meu/perfil/email-trocado` (sucesso) ou `/cadastro/email-erro?reason=<código>` (falha — reusa página de erro do Sprint 02b4 pra UX consistente)
+- Mapeia ApiException.code pra `reason` URL-safe sem expor stack trace
+
+**UI:**
+- Nova page `/meu/perfil/email-trocado/page.tsx` — confirmação amigável + botão "Voltar pro meu perfil"
+- Novo client component `change-email-form.tsx` — form expandível com 2 inputs (current password + new email) + UX de erro inline (MFA_RECENT_REQUIRED tem mensagem específica)
+- `/meu/perfil` page atualizada: badge "✓ verificado" / "⚠ não verificado" ao lado do email + form `ChangeEmailForm` integrado
+- SELECT do `passport_global_identities` ganha `email_verified_at`
+
+**Smoke test `scripts/test-change-email-smoke.mjs`** (sem deps externas — psql via `docker exec` + fetch nativo):
+- Cria identity passport via SQL bypass RLS
+- Gera token kind='change_email' + grava
+- GET `/api/meu/perfil/email/confirm-change?t=<token>` → asserta redirect 307 + location email-trocado
+- SELECT identity → confirma email == NEW_EMAIL + email_verified_at setado
+- Mailhog API → confirma notificação chegou no OLD email
+- Cleanup automático
+
+**Validado em dev real:**
+- Token confirmado, identity atualizada de `change-old-...@logifit.test` → `change-new-...@logifit.test`
+- `email_verified_at = 2026-05-21 02:54:14.7646+00` (setado pelo confirm)
+- Email de notificação chegou no OLD address com subject `⚠ Email da sua conta LogiFit foi alterado` (MIME-encoded UTF-8 OK)
+- Redirect HTTP 307 pra `/meu/perfil/email-trocado` correto
+
+**Validação:**
+- ✓ typecheck 12/12 packages
+- ✓ lint-custom 773 + 2 css clean (9 rules)
+- ✓ docs-check 0/0
+- ✓ smoke test change_email passou end-to-end
+
+**Sprint 02b5 candidatos restantes** (não fechados):
+- UI `/meu/perfil` botão "reenviar email confirmação signup" → SA `resendPassportEmailVerification`
+- Cron `expire-passport-email-verification-tokens` daily (DELETE used>30d + expired>7d ambos kinds)
+- E2E Playwright spec dedicado pro change_email (similar ao smoke .mjs)
+
 ### Build — 3 entregas Sprint 02b4/02b5 + E2E Playwright magic link 2026-05-20 (noite)
 
 Triplo entrega autônoma em modo Auto fechando 3 dos 4 itens "Sprint 02b4 fechamento restante" das pendências históricas:
