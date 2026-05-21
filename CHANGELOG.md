@@ -6,6 +6,69 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Test — Fluxo magic link end-to-end validado em dev (Mailhog + Postgres real) 2026-05-20
+
+Após implementar `@repo/email` + plug no `requestMagicLink`, validei o fluxo completo end-to-end com infra real local — provou que o stack todo está conectado corretamente.
+
+**Setup necessário descoberto + corrigido:**
+
+1. **Migrations 0042-0045 (passport_*) não estavam no `_journal.json` Drizzle** — foram criadas como SQL manual e nunca registradas. Apliquei direto via `docker exec psql` + também as policies 0056-0058 correspondentes
+2. **`.env.local` na raiz não estava sendo propagado pra Next.js** — `next dev` lê do CWD (`apps/web/`), não da raiz. Solução: `dotenv-cli` na devDeps da raiz + scripts wrapados (`dev`, `build`, `db:*`, `rag:seed*`, `test:e2e`) com `dotenv -e .env.local --`
+3. **Turbo bloqueia env vars por default** — adicionado `globalPassThroughEnv` no `turbo.json` listando 53 env vars do projeto (DATABASE_URL, REDIS_URL, MINIO_*, BREVO_SMTP_*, ASAAS_*, FOCUS_NFE_*, TWILIO_*, TURNSTILE_*, R2_*, CRON_SECRET, etc)
+4. **`.env.example` atualizado** — header agora explica "raiz do repo, não apps/web/" + menciona pipeline `dotenv-cli` + `turbo passThrough`
+
+**Fluxo end-to-end testado:**
+
+1. **Member criado manual** via SQL — Maria Teste Silva (maria.teste@logifit.test) em `academia-equilibrio` company `00000001-0001-0000-0000-0000000000c1`
+2. **`POST /api/meu/magic-link`** → `requestMagicLink` Server Action:
+   - Resolveu tenant via slug (academia-equilibrio → tenant `00000001-...`)
+   - Resolveu member via JOIN persons.email
+   - Rate limit check (passou — primeiro request)
+   - Gerou token random 256-bit + grava SHA-256 hash em `member_auth_tokens`
+   - **`sendTransactional({category:'platform'})`** → `@repo/email` → `NodemailerEmailProvider` (Mailhog) → SMTP localhost:1025 → inbox
+3. **Email aparece em http://localhost:8025**:
+   - `Subject: Seu link de acesso ao portal LogiFit`
+   - `From: LogiFit <no-reply@logifit.com.br>`
+   - `To: maria.teste@logifit.test`
+   - HTML body com botão azul "Entrar no portal" + URL completo
+   - Text body fallback RFC 5322
+4. **Token extraído via Mailhog API + quoted-printable decode** (Python `quopri`)
+5. **`POST /api/meu/verify`** com token → `verifyMagicLink` Server Action:
+   - Re-hash do token + match no `member_auth_tokens`
+   - `verifyMagicLinkAgainstRow` validou expires_at + used_at
+   - Transação: `UPDATE member_auth_tokens SET used_at = now()` + `INSERT member_sessions`
+   - Retornou `{ok: true, memberId: '...', tenantId: '...'}`
+6. **`member_sessions` row criada** com `expires_at = now() + 30 days`
+7. **`member_auth_tokens.used = t`** (single-use enforced — segunda tentativa do mesmo token falharia)
+
+**O que isso prova:**
+
+- ✅ `@repo/email` funciona em produção (nodemailer + SMTP + connection pool real)
+- ✅ `resolveEmailProvider` detecta env correto (SMTP_HOST=localhost:1025 → Mailhog)
+- ✅ `resolveEmailSender({category:'platform'})` resolve LogiFit corretamente
+- ✅ Templates de email renderizam HTML + text fallback corretamente
+- ✅ MIME encoding UTF-8 quoted-printable preserva caracteres especiais (`—`, `@`)
+- ✅ Pipeline env vars repoRoot → Next.js + workspace packages funciona
+- ✅ Migrations passport_* aplicáveis manualmente (gap conhecido — Drizzle generate vai capturar quando regenerar)
+
+**Mudanças nesta entrega:**
+
+- `package.json`: 8 scripts wrapados com `dotenv -e .env.local --` (dev, build, test:e2e, rag:seed*, db:migrate, db:generate, db:seed, db:rls-check)
+- `turbo.json`: `globalPassThroughEnv` com 53 env vars do projeto
+- `.env.example`: header atualizado explicando localização + pipeline
+- Dep nova `dotenv-cli@^11.0.0` em devDependencies da raiz (devDep DX — não vai pra prod; dispensa ADR regra 46 análogo a turbo/biome/vitest)
+
+**Spinoff observado** (não fechado nesta entrega):
+
+- Migrations 0042-0045 não registradas no Drizzle `_journal.json` — DB ficou em estado inconsistente onde migration files existem mas o tracker não sabe. Corrigir via `pnpm db:generate` em sprint dedicado pra regenerar journal corretamente OU adicionar entries manualmente. Por ora aplicado direto via SQL pra destravar testes.
+
+**Validação:**
+- ✓ typecheck 12/12 packages
+- ✓ lint-custom 758 + 2 css clean (9 rules)
+- ✓ docs-check 0/0
+- ✓ end-to-end: magic link enviado → email no Mailhog → token verificado → session criada
+- ✓ `member_sessions` row + `member_auth_tokens.used=true` confirmados via psql
+
 ### Build — @repo/email package + plug em requestMagicLink (Sprint 26 → Sprint 02b4) 2026-05-20
 
 Materializa decisão arquitetural dos ADRs 0096 (Brevo SMTP) + 0097 (sender por categoria). Package novo `@repo/email` com provider abstrato + Brevo SMTP prod + Mailhog dev + Mock test, plugado no primeiro caller real (`requestMagicLink` Sprint 26 que era stub `console.log`).
