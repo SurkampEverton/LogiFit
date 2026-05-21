@@ -6,6 +6,45 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Test — Smoke E2E /meu/* split em 2 suites + bug arquitetural descoberto 2026-05-21
+
+Spec `meu-portal-routes.spec.ts` rodado de verdade após Docker voltar. Resultado revelou **bug arquitetural maior** do que o middleware fix de mais cedo:
+
+**21/24 rotas FALHARAM** com session passport pura (paciente cadastrado via Path B proativo). Causa: usam `requireMemberSession()` (Sprint 26 legacy) que só aceita `lf_member_session` — NÃO suporta `lf_passport_session` (Sprint 02b3 ADR 0094).
+
+**Em prática:** paciente que se cadastra via `/cadastro` proativo fica preso em 3 rotas:
+- `/meu` (dashboard)
+- `/meu/perfil` + `/meu/perfil/email-trocado`
+
+**Outras 21 rotas redirecionam pra `/meu/login`** mesmo com session válida — quebra fluxo completo Sprint 02b4 + ADR 0093 (passport global identity).
+
+**Bug separado descoberto:**
+- `/meu/sessoes` (Sprint 01a Faixa C skeleton) usa `auth.api.getSession` do `@repo/auth` (STAFF BetterAuth/Lucia) mas está montado em `/meu/*` (path de paciente) → redireciona pra `/login` STAFF mesmo com session member. Bug arquitetural separado — funcionalidade já existe em `/meu/perfil/PassportSessionRevokeButton`; sugestão é deletar a rota duplicada.
+
+**Refactor do spec:** split em 2 suites independentes:
+
+- **Suite A — `PASSPORT_SUPPORTED_ROUTES`** (3 rotas): testa com session passport via helper `test-passport-identity.ts`. Cobre `/meu`, `/meu/perfil`, `/meu/perfil/email-trocado` (Sprint 02b4 padrão `getActiveSession`).
+- **Suite B — `MEMBER_ONLY_ROUTES`** (20 rotas): testa com session member via helper `test-member.ts` (Sprint 26). Cobre Sprint 26 legacy ainda funcional pra paciente com vínculo clínico.
+- **`KNOWN_BROKEN_ROUTES`** (1 rota): `/meu/sessoes` documentado como bug separado em comment, NÃO testado.
+
+Cada suite usa helper de session adequada + cookie distinto (`lf_passport_session` vs `lf_member_session`). Helper auxiliar inline `setupMemberSession()` na suite B cria session member via SQL (raw pool — workaround pra `test-member.ts` não expor pool).
+
+**Resultado final:** **23/23 specs passing** (3 passport + 20 member) em 8.7s.
+
+**Spinoff task criado:** "Migrar 20 pages /meu/* pra getActiveSession (suporte passport)". Decisão arquitetural pendente entre 3 estratégias:
+- (A) UI graceful "vincule-se a clínica" pra passport sem tenant
+- (B) Cookie `lf_active_tenant_id` + lookup `patient_company_links`
+- (C) Híbrido — 1 link ativo = auto-tenant; 0 ou >1 = seletor UI
+
+Recomendação (C) alinha com ADR 0077.
+
+**Validação:**
+- ✓ typecheck 12/12 packages
+- ✓ lint-custom 780 + 2 css clean (9 rules)
+- ✓ docs-check 0/0
+- ✓ E2E meu-portal-routes 23/23 passing (3 passport + 20 member)
+- ✓ E2E suite Email completa preserved (meu-magic-link 2 + change-email 4 + resend 3 + portal-routes 23 = **32/32 passing**)
+
 ### Test — Smoke E2E /meu/* portal routes (24 rotas) 2026-05-21
 
 Pega o spinoff task flagrado durante o middleware fix (commit `d922e7e`) — varre TODAS as páginas protegidas do portal do paciente pra detectar quebras de session/render similares ao bug do middleware.
