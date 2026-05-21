@@ -44,6 +44,10 @@ import {
   renderPassportInviteHtml,
   renderPassportInviteText,
 } from '../../lib/email-templates/passport-invite'
+import {
+  buildInviteUrl,
+  buildPatientWhatsappShareUrl,
+} from '../../lib/passport-invite-share'
 import { wrapServerAction } from '../../lib/wrap-action'
 
 // ─── Zod schemas ────────────────────────────────────────────────────────
@@ -213,122 +217,100 @@ export const sendPatientInvite = wrapServerAction(
       modules: parsed.modules.map((m) => m.module),
     })
 
-    // Sprint 02b8: dispatch automático email + botão WhatsApp pro paciente.
-    // Failure-tolerant — invite já foi criado no DB; staff pode reenviar
-    // depois (Sprint 02b9 adiciona Server Action `resendInvite`).
-    void dispatchPassportInviteEmail({
-      linkId,
-      personId: parsed.personId,
-      tenantId,
-      modules: parsed.modules.map((m) => m.module),
-    }).catch((err) => {
-      console.warn(
-        JSON.stringify({
-          level: 'warn',
-          event: 'passport_invite_email_dispatch_failed',
-          linkIdPrefix: linkId.slice(0, 8),
-          error: err instanceof Error ? err.message : 'unknown',
-        }),
-      )
-    })
+    // Sprint 02b8: resolve canais de envio (3 vias — email auto, WhatsApp
+    // staff-shared, copy link manual). Caller UI decide quais botões mostrar.
+    const inviteUrl = buildInviteUrl(linkId)
+    const moduleKeys = parsed.modules.map((m) => m.module)
 
-    return { ok: true as const, linkId }
+    // Resolve person (email + phone) + tenant.name em 1 query
+    const ctx = await pool.query<{
+      person_email: string | null
+      person_name: string
+      person_phone: string | null
+      tenant_name: string
+    }>(
+      `SELECT p.email AS person_email, p.name AS person_name, p.phone AS person_phone,
+              t.name AS tenant_name
+         FROM persons p
+         INNER JOIN tenants t ON t.id = p.tenant_id
+         WHERE p.id = $1 AND p.tenant_id = $2
+         LIMIT 1`,
+      [parsed.personId, tenantId],
+    )
+    const personCtx = ctx.rows[0]
+
+    // Email automático (só se person.email existe e SMTP configurado)
+    let emailSent: boolean | null = null
+    if (personCtx?.person_email) {
+      try {
+        const r = await sendTransactional({
+          to: personCtx.person_email,
+          toName: personCtx.person_name,
+          subject: `Convite — ${personCtx.tenant_name} quer vincular sua conta LogiFit`,
+          htmlBody: renderPassportInviteHtml({
+            patientName: personCtx.person_name,
+            tenantName: personCtx.tenant_name,
+            modules: moduleKeys,
+            inviteUrl,
+            tenantWhatsapp: process.env.NEXT_PUBLIC_LOGIFIT_WHATSAPP_NUMBER ?? null,
+          }),
+          textBody: renderPassportInviteText({
+            patientName: personCtx.person_name,
+            tenantName: personCtx.tenant_name,
+            modules: moduleKeys,
+            inviteUrl,
+            tenantWhatsapp: process.env.NEXT_PUBLIC_LOGIFIT_WHATSAPP_NUMBER ?? null,
+          }),
+          category: 'tenant',
+          tenantId,
+        })
+        emailSent = r.ok
+        if (!r.ok) {
+          console.error(
+            JSON.stringify({
+              level: 'error',
+              event: 'passport_invite_email_send_failed',
+              provider: r.provider,
+              errorCode: r.errorCode,
+              linkIdPrefix: linkId.slice(0, 8),
+            }),
+          )
+        }
+      } catch (err) {
+        emailSent = false
+        console.warn(
+          JSON.stringify({
+            level: 'warn',
+            event: 'passport_invite_email_dispatch_failed',
+            linkIdPrefix: linkId.slice(0, 8),
+            error: err instanceof Error ? err.message : 'unknown',
+          }),
+        )
+      }
+    }
+
+    // WhatsApp share URL pro staff (mensagem pré-formatada em nome da clínica
+    // direcionada AO número do paciente). Se phone vazio, fica null e UI
+    // mostra só o botão "Copy link".
+    const whatsappShareUrl = personCtx?.person_phone
+      ? buildPatientWhatsappShareUrl({
+          patientPhone: personCtx.person_phone,
+          patientName: personCtx.person_name,
+          tenantName: personCtx.tenant_name,
+          modules: moduleKeys,
+          inviteUrl,
+        })
+      : null
+
+    return {
+      ok: true as const,
+      linkId,
+      inviteUrl,
+      emailSent,
+      whatsappShareUrl,
+    }
   },
 )
-
-// ─── dispatchPassportInviteEmail (helper interno) ──────────────────────
-
-/**
- * Envia email de invite pro paciente via `@repo/email` (categoria 'tenant').
- *
- * Resolve em 1 query JOIN: persons.email + persons.name + tenants.name +
- * tenants.contact_email (Reply-To futuro Sprint 02b9 quando tenant_email_settings
- * for ativado — ADR 0097). Por enquanto reply_to fica genérico LogiFit.
- *
- * Failure-tolerant: caller (sendPatientInvite) faz `void ... .catch()`. Audit
- * estruturado JSON pra Loki em falha, sem expor erro pro staff caller.
- */
-async function dispatchPassportInviteEmail(params: {
-  linkId: string
-  personId: string
-  tenantId: string
-  modules: string[]
-}): Promise<void> {
-  // 1. Resolve email + nome do paciente + nome do tenant em 1 query
-  const r = await pool.query<{
-    person_email: string | null
-    person_name: string
-    tenant_name: string
-  }>(
-    `SELECT
-       p.email AS person_email,
-       p.name AS person_name,
-       t.name AS tenant_name
-     FROM persons p
-     INNER JOIN tenants t ON t.id = p.tenant_id
-     WHERE p.id = $1 AND p.tenant_id = $2
-     LIMIT 1`,
-    [params.personId, params.tenantId],
-  )
-  const row = r.rows[0]
-  if (!row || !row.person_email) {
-    // Sem email no person — não dá pra enviar. Staff vê o link no UI e
-    // copia manualmente (Sprint 02b9 adiciona fluxo SMS fallback).
-    console.warn(
-      JSON.stringify({
-        level: 'warn',
-        event: 'passport_invite_no_email',
-        personIdPrefix: params.personId.slice(0, 8),
-        tenantIdPrefix: params.tenantId.slice(0, 8),
-      }),
-    )
-    return
-  }
-
-  // 2. Constrói URL do invite
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.logifit.com.br'
-  const inviteUrl = `${baseUrl}/i/${params.linkId}`
-
-  // 3. WhatsApp do tenant (Sprint 02b9: ler de tenant_branding quando schema
-  // tiver coluna whatsapp_e164; MVP usa env global LogiFit como fallback)
-  const tenantWhatsapp = process.env.NEXT_PUBLIC_LOGIFIT_WHATSAPP_NUMBER ?? null
-
-  // 4. Envia email via @repo/email (categoria 'tenant' — tenant é controlador
-  // LGPD do dado clínico que será vinculado; ADR 0097)
-  const result = await sendTransactional({
-    to: row.person_email,
-    toName: row.person_name,
-    subject: `Convite — ${row.tenant_name} quer vincular sua conta LogiFit`,
-    htmlBody: renderPassportInviteHtml({
-      patientName: row.person_name,
-      tenantName: row.tenant_name,
-      modules: params.modules,
-      inviteUrl,
-      tenantWhatsapp,
-    }),
-    textBody: renderPassportInviteText({
-      patientName: row.person_name,
-      tenantName: row.tenant_name,
-      modules: params.modules,
-      inviteUrl,
-      tenantWhatsapp,
-    }),
-    category: 'tenant',
-    tenantId: params.tenantId,
-  })
-
-  if (!result.ok) {
-    console.error(
-      JSON.stringify({
-        level: 'error',
-        event: 'passport_invite_email_send_failed',
-        provider: result.provider,
-        errorCode: result.errorCode,
-        linkIdPrefix: params.linkId.slice(0, 8),
-      }),
-    )
-  }
-}
 
 // ─── acceptPatientInvite ───────────────────────────────────────────────
 // Paciente clica em /i/[linkId], faz login/cadastro e aceita.
