@@ -6,6 +6,71 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — @repo/email package + plug em requestMagicLink (Sprint 26 → Sprint 02b4) 2026-05-20
+
+Materializa decisão arquitetural dos ADRs 0096 (Brevo SMTP) + 0097 (sender por categoria). Package novo `@repo/email` com provider abstrato + Brevo SMTP prod + Mailhog dev + Mock test, plugado no primeiro caller real (`requestMagicLink` Sprint 26 que era stub `console.log`).
+
+**Package novo `packages/email/`** (`@repo/email`):
+- `package.json` + `tsconfig.json` + `vitest.config.ts` (mesma config que `@repo/security` — coverage 80% threshold)
+- `types.ts` — `EmailProvider` interface + `SendTransactionalInput/Result` (envelope wrapAction-compatível) + `EmailCategory` ('platform' | 'tenant') + `ResolvedSender`
+- `resolve-sender.ts` (MVP do ADR 0097) — `resolveEmailSender(input)` puro sobre env:
+  - Categoria `platform` → sempre `EMAIL_FROM` + `EMAIL_FROM_NAME` (LogiFit)
+  - Categoria `tenant` → exige `tenantId` (throw senão) + fallback LogiFit + preserva `replyTo` do caller
+  - Schema `tenant_email_settings` futuro (sprint dedicado pós-MVP) evolui esta função pra consultar DB
+- `mock-provider.ts` — `MockEmailProvider` pra tests: grava em `recordedEmails[]` + counter pra `messageId` único + `clear()` entre tests
+- `nodemailer-provider.ts` — `NodemailerEmailProvider` única class pra Brevo prod E Mailhog dev (config injetada via construtor):
+  - `nodemailer.createTransport({host, port, secure, auth, pool: true, maxConnections: 5})` — connection pool TCP
+  - `sendTransactional` resolve sender → `transport.sendMail({from, replyTo, to, subject, html, text})`
+  - Classificador de erros: `EAUTH` → `auth_failed`, `ECONNECTION/ESOCKET/ETIMEDOUT/ECONNREFUSED` → `connection_failed`, `EENVELOPE` → `invalid_recipient`, `EMESSAGE` → `invalid_message`, `EDNS` → `dns_failed`, default → `send_failed:<code>`
+  - `close()` idempotente pra shutdown gracioso
+- `resolve-provider.ts` — `resolveEmailProvider()` singleton process-wide:
+  - `NODE_ENV=test` → `MockEmailProvider`
+  - `SMTP_HOST/PORT` + não-prod → `NodemailerEmailProvider` (Mailhog)
+  - `BREVO_SMTP_*` completo → `NodemailerEmailProvider` (Brevo prod, providerName 'brevo-smtp')
+  - Prod sem nenhum SMTP → **throw fail-loud** (canal crítico LGPD; mock em prod é violação)
+  - Dev sem Mailhog + sem Brevo → `MockEmailProvider` (não bloqueia dev)
+  - `resetEmailProvider()` pra forçar recriação em tests
+- `send.ts` — `sendTransactional(input)` wrapper sobre singleton (DX)
+- `index.ts` — barrel export
+
+**Deps:** `nodemailer@^6.9.16` + `@types/nodemailer@^6.4.17` (devDep) — 2 packages add via pnpm.
+
+**Tests 29 verdes** (1 file por modulo + edge cases):
+- `resolve-sender.test.ts` (7): platform default + env override + replyTo + tenant sem tenantId throw + tenant fallback + replyTo do tenant
+- `mock-provider.test.ts` (5): recorded + counter unique + clear + sender_resolution_failed + preserva fields
+- `nodemailer-provider.test.ts` (8): happy path jsonTransport + preserva campos + EAUTH/ECONNREFUSED/EENVELOPE/EWHATEVER classification + sender_resolution_failed + close()
+- `resolve-provider.test.ts` (9): test mode + Mailhog dev + Brevo prod + dev fallback mock + prod throw + prod incomplete throw + singleton + reset + Brevo prefere over Mailhog em prod
+
+**Plug em `apps/web/app/meu/actions.ts` `requestMagicLink`** — primeiro caller real:
+- Antes: passo 5 era `console.log(magicLinkUrl)` em dev + nada em prod (stub Sprint 26)
+- Depois: `sendTransactional({to, subject, htmlBody, textBody, category: 'platform'})`
+- Failure-tolerant: erro de envio NÃO vaza pro caller (anti-enumeration) — apenas log estruturado JSON pra Loki investigar (`event: magic_link_send_failed`, `errorCode`, `provider`, `tenantSlug`, `emailHashPrefix` — NÃO logamos email do paciente)
+- Token já foi gravado antes do envio; rate limit window protege contra retries
+- Categoria `platform` justificada — magic link é canal de auth da plataforma; LogiFit é controlador LGPD da identidade (ADR 0097)
+
+**Templates extraídos pra `apps/web/app/lib/email-templates/magic-link.ts`**:
+- `renderMagicLinkHtml(input)` + `renderMagicLinkText(input)` — HTML inline + texto fallback (RFC 5322)
+- Templates de email **não suportam CSS custom properties** (Outlook/Gmail/iOS Mail) — cores precisam ser inline literal (`#2563eb`, `#1a1a1a`, etc)
+- Lint `no-hardcoded-design-token` ganha exceção `EMAIL_TEMPLATES_PATH = /[\\/]email-templates[\\/]/` — análogo à exceção `PDF_PATH` (PDF renderer mesma limitação técnica)
+- Sprint dedicado futuro migra pra `packages/email/templates/*.tsx` com `@react-email/components` (compila pra inline HTML com DX melhor + i18n)
+
+**Workspace dep:** `@app/web/package.json` ganha `"@repo/email": "workspace:*"` em dependencies (ordenado alfabético entre `@repo/db` e `@repo/errors`).
+
+**Validação:**
+- ✓ typecheck 12/12 packages (era 11/11 — ganhei `@repo/email`)
+- ✓ lint-custom 757 + 2 css clean (9 rules — exceção `EMAIL_TEMPLATES_PATH` adicionada)
+- ✓ docs-check 0/0
+- ✓ tests @repo/email 29 verdes
+- ✓ tests @repo/security 148 verdes (sem mudança — wrapper QR não tem unit test próprio; E2E Playwright planejado)
+- ✓ `git status` confirma `.env.local` NÃO trackado (protegido `.gitignore` linhas 21-23)
+
+**Pronto pra integrar em mais callers** (não fechado nesta entrega):
+- `confirmTotp` (Sprint 02b3) — manda recovery codes por email opcional
+- `enrollTotp` (Sprint 02b3) — manda alerta "MFA ativado em sua conta"
+- `signupPatient` (Sprint 02b2) — manda confirmação de cadastro pra `email_verified_at`
+- `loginPassport` (Sprint 02b3) — manda alerta "login de IP novo" (segurança)
+- Sprint 04 Asaas — todas notificações de fatura (Categoria 2, tenant context)
+
 ### Docs — ADR 0096 revisado — Brevo via SMTP em vez de API REST v3 2026-05-20 (tarde)
 
 Revisão da decisão de transport do ADR 0096 (originalmente API REST v3 via `safeFetch`) pra **SMTP via `nodemailer`** (`smtp-relay.brevo.com:587`). Mantém Brevo como provider (decisão 0096 original); muda apenas como o app fala com Brevo.
