@@ -6,6 +6,65 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — 3 entregas Sprint 02b4/02b5 + E2E Playwright magic link 2026-05-20 (noite)
+
+Triplo entrega autônoma em modo Auto fechando 3 dos 4 itens "Sprint 02b4 fechamento restante" das pendências históricas:
+
+**(a) Email confirmation pós-signup (`verifyPassportEmail` + signupPatient integrado)**
+- Migration `0046_passport_email_verification.sql` + policy `0059_*.sql` (GRANT-only, auth table sem RLS, padrão `member_auth_tokens` Sprint 26)
+- Schema Drizzle `packages/db/src/schema/passport-email-verification.ts` — `passportEmailVerificationTokens` com `passport_global_identity_id` FK CASCADE + `email` snapshot (anti-race change_email) + `token_hash` SHA-256 + `expires_at` 24h + `used_at` single-use + `request_ip` audit
+- Helper `apps/web/app/lib/passport-email-verification.ts` (90l): `generateEmailVerificationToken()` (random 32 bytes base64url + SHA-256) + `hashEmailVerificationToken()` + `verifyEmailVerificationAgainstRow()` com 4 failure modes (`invalid_format` / `used` / `expired` / `email_mismatch`)
+- Template `apps/web/app/lib/email-templates/email-verification.ts` (HTML + text fallback RFC 5322; cores inline conforme exceção lint EMAIL_TEMPLATES_PATH)
+- `signupPatient` ganha passo 9 — `dispatchEmailVerification()` failure-tolerant fire-and-forget após session criada (não bloqueia signup se SMTP fail)
+- Server Action pré-auth `verifyPassportEmail({token})` — JOIN passport_email_verification_tokens + passport_global_identities, valida 4 conditions (formato / used / expired / email_mismatch), transação UPDATE token used_at + identity email_verified_at, idempotente (já-verified retorna ok+alreadyVerified)
+- Route handler GET `/api/cadastro/verify-email?t=<token>` — redireciona pra `/cadastro/email-confirmado` (sucesso) ou `/cadastro/email-erro?reason=<código>` (falha — mensagem amigável sem stack trace)
+- 2 páginas UI mínimas: `email-confirmado/page.tsx` + `email-erro/page.tsx` com 5 reasons mapeados pra mensagens human-readable + botões "Ir pro portal" + "Pedir novo link"
+
+**(b) Redis sliding window real (regra 36 completa)**
+- Dep nova `ioredis@^5.4.1` em `@repo/security` (justificada implicitamente — Redis self-hosted já é stack core ADR 0091; ioredis é cliente padrão de mercado, MIT, mantido)
+- `packages/security/src/redis-rate-limit.ts` (300l) — sliding window via Redis ZSET:
+  - `getRedisClient()` singleton lazy com retry strategy exponencial 100ms→2s cap, 5 retries; failure mode = null (caller fallback SQL)
+  - `recordFailureSlidingWindow()` pipeline atômico ZADD score=ts member=ts+random / ZREMRANGEBYSCORE purge antigos / ZCOUNT count restantes / PEXPIRE windowMs+lockoutDuration
+  - `countFailuresSlidingWindow()` pre-check sem registrar (pra `shouldRequireCaptcha`)
+  - `clearFailuresSlidingWindow()` DEL key (login success zera)
+  - `setLockoutFlag()` SET PX NX (idempotente — true só na 1ª vez)
+  - `getLockoutFlag()` retorna `string reason | null não-ativo | undefined Redis-down` (distingue 3 estados)
+  - `evaluateLockoutRedis()` registra falha em email+ip ZSETs em paralelo + seta flags lockout se threshold atingido
+  - `checkLockoutRedis()` lê flags email+ip; bloqueia se qualquer ativo
+  - Chaves canônicas: `rl:auth:email:{lowercase}` / `rl:auth:ip:{ip}` / `rl:lockout:email:{lowercase}` / `rl:lockout:ip:{ip}`
+- 23 unit tests em `redis-rate-limit.test.ts` cobrindo: getRedisClient sem URL / cache attempted / chaves canônicas case / 7 ops Redis-down (null/false/undefined) / 7 ops com fake client mocado (pipeline + SET PX NX + GET + DEL) / 3 failure modes (exec null / throw / quit cascade)
+- `loginPassport` (Sprint 02b3) refactored — Redis primeiro + SQL fallback:
+  - Passo 0 pre-check: `checkLockoutRedis` → se null fallback `checkAuthLockout` SQL
+  - `recordFailure` interno: SEMPRE INSERT `auth_attempts` (LGPD audit log) + `evaluateLockoutRedis` → se null fallback `evaluateLockout` SQL
+  - Passo 6 login success: `clearFailuresSlidingWindow` pra email + ip (zera contadores)
+- Total tests @repo/security **171 verdes** (era 148, +23 redis-rate-limit)
+
+**(c) E2E Playwright smoke do fluxo magic link end-to-end**
+- 2 helpers reusáveis em `apps/web/e2e/helpers/`:
+  - `mailhog.ts` (130l) — `listInbox` / `deleteAllMessages` / `waitForMessage({to, subject, timeout})` polling 200ms / `extractUrlFromBody` regex + `decodeQuotedPrintable` RFC 2045 / `decodeMimeHeader` RFC 2047 (Q/B encoded-words)
+  - `test-member.ts` (110l) — `createTestMember({email, name, document})` bypass RLS via SET row_security=off + INSERT person+member em `academia-equilibrio`; idempotente (DELETE existing antes); `deleteTestMember(member)` tolerante; `closePool()` cleanup
+- Spec `apps/web/e2e/smoke/meu-magic-link.spec.ts` (130l) — 2 tests:
+  - **Happy path**: setup member → clear inbox → POST `/api/meu/magic-link` → assert {ok, sent} → wait Mailhog inbox → assert From=LogiFit + Subject contém "link de acesso" → extract token via quoted-printable decode → POST `/api/meu/verify` → assert {ok, memberId, tenantId}
+  - **Single-use enforcement**: pede outro token → verifica 1× sucesso → tenta verificar 2× → assert 500 + mensagem "já utilizado/expirado/inválido"
+- `playwright.config.ts` corrigido: `baseURL` 3000→3100 + `webServer.url` 3000→3100 (alinha com `next dev --port 3100`)
+
+**Validação:**
+- ✓ typecheck 12/12 packages
+- ✓ lint-custom 769 + 2 css clean (9 rules)
+- ✓ docs-check 0/0
+- ✓ tests @repo/security 171 verdes (+23)
+- ✓ tests @repo/email 29 verdes (sem mudança)
+- ✓ E2E Playwright 2/2 chromium-desktop (2.1s)
+
+**Próximos passos** (Sprint 02b4 fechamento — 1 item restante):
+- Feature flag `passport_signup_v1` — sistema de feature flags não existe no projeto; decisão arquitetural (DB table próprio? lib externa? env var simples?)
+
+**Sprint 02b5 candidatos abertos**:
+- UI `/meu/perfil` botão "reenviar email de confirmação" → SA `resendPassportEmailVerification`
+- `change_email` flow com dispatch automático de email pro novo endereço
+- Cron `expire-passport-email-verification-tokens` daily (DELETE used>30d + expired>7d)
+- E2E spec adicional: signup proativo full → email confirmação → click verify → session ativa
+
 ### Test — Fluxo magic link end-to-end validado em dev (Mailhog + Postgres real) 2026-05-20
 
 Após implementar `@repo/email` + plug no `requestMagicLink`, validei o fluxo completo end-to-end com infra real local — provou que o stack todo está conectado corretamente.
