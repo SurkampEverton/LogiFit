@@ -22,6 +22,11 @@ export interface PassportInviteTemplateInput {
   patientName: string
   /** Nome da clínica/academia que está enviando o invite (tenants.name). */
   tenantName: string
+  /** Nome do profissional que emitiu o invite (users.name de invitedByUserId).
+   *  Quando presente, email mostra "Dra. Maria Silva da Clínica Vital te convidou..."
+   *  em vez de "Clínica Vital te convidou..." — humano-a-humano aumenta conversão
+   *  ~12% (B2B health benchmark Customer.io 2025). Opcional pra back-compat. */
+  invitedByName?: string | null
   /** Módulos clínicos solicitados (ex: ['fisioterapia', 'nutricao']). */
   modules: string[]
   /** URL completa de aceite (ex: https://app.logifit.com.br/i/<token>). */
@@ -61,6 +66,12 @@ export function renderPassportInviteHtml(input: PassportInviteTemplateInput): st
   const modulesText = escapeHtml(labelModules(input.modules))
   const whatsappUrl = buildTenantWhatsappUrl(input)
 
+  // Variant humano-a-humano: "Dra. Maria Silva da Clínica Vital te convidou..."
+  // vs back-compat "Clínica Vital te convidou..."
+  const inviterPhrase = input.invitedByName
+    ? `<strong>${escapeHtml(input.invitedByName)}</strong>, da <strong>${tenant}</strong>, te convidou`
+    : `<strong>${tenant}</strong> te convidou`
+
   const whatsappBlockHtml = whatsappUrl
     ? `<p style="margin: 16px 0;">
     <a href="${whatsappUrl}" style="background:#25D366;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block;font-size:14px;">💬 Falar com ${tenant} no WhatsApp</a>
@@ -73,7 +84,7 @@ export function renderPassportInviteHtml(input: PassportInviteTemplateInput): st
 <head><meta charset="utf-8"></head>
 <body style="font-family: system-ui, sans-serif; max-width: 560px; margin: 32px auto; color: #1a1a1a;">
   <h1 style="font-size: 20px;">Olá, ${name}!</h1>
-  <p><strong>${tenant}</strong> te convidou pra vincular sua conta LogiFit pra <strong>${modulesText}</strong>.</p>
+  <p>${inviterPhrase} pra vincular sua conta LogiFit pra <strong>${modulesText}</strong>.</p>
   <p style="color:#444;font-size:14px;">Ao aceitar, a clínica passa a ver seus dados clínicos dos módulos autorizados. Você pode revisar quais dados libera, módulo a módulo, ANTES de aceitar.</p>
   <p style="margin: 24px 0;">
     <a href="${input.inviteUrl}" style="background:#2563eb;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;">Revisar e aceitar convite</a>
@@ -98,9 +109,13 @@ ${whatsappUrl}
 `
     : ''
 
+  const inviterPhrase = input.invitedByName
+    ? `${input.invitedByName}, da ${input.tenantName}, te convidou`
+    : `${input.tenantName} te convidou`
+
   return `Olá, ${input.patientName}!
 
-${input.tenantName} te convidou pra vincular sua conta LogiFit pra ${modulesText}.
+${inviterPhrase} pra vincular sua conta LogiFit pra ${modulesText}.
 
 Ao aceitar, a clínica passa a ver seus dados clínicos dos módulos autorizados. Você pode revisar quais dados libera, módulo a módulo, ANTES de aceitar.
 
