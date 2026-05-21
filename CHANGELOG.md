@@ -6,6 +6,79 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 02b5 fechamento — cron expire + 7 E2E specs + fix middleware /meu/* 2026-05-21
+
+Triplo entrega fecha **todos os 3 candidatos Sprint 02b5 abertos** + descobre/corrige bug crítico no middleware.
+
+**(1) Cron `expire-passport-email-verification-tokens`** (Sprint 02b5 #1):
+- Route handler `apps/web/app/api/jobs/expire-passport-email-verification-tokens/route.ts`
+- Schedule sugerido daily ~03:55 UTC = 00:55 SP (depois de hard-delete-deactivated-passport reduz contention CASCADE)
+- 2 critérios de limpeza:
+  - **`used_at < now() - 30 days`** — audit retention LGPD art. 18 V cobre janela suficiente; >30d valor de audit mínimo
+  - **`used_at IS NULL AND expires_at < now() - 7 days`** — TTL original 24h; janela extra 7d preserva audit de tokens nunca clicados (paciente pediu mas nunca abriu — pode indicar bug/spam)
+- Cobre **ambos kinds** ('signup' Sprint 02b4 + 'change_email' Sprint 02b5)
+- Auth: `Authorization: Bearer $CRON_SECRET` via `timingSafeEqual` (mesmo padrão `hard-delete-deactivated-passport` + `expire-passport-global-sessions`)
+- Retorna `{used_deleted, expired_unused_deleted, remaining_total}` + log JSON estruturado
+
+**(2) E2E Playwright `change-email.spec.ts`** (Sprint 02b5 #2):
+- 4 tests cobrindo `confirmPassportEmailChange` (pré-auth — route handler GET):
+  1. Happy path: token kind='change_email' → confirm → DB email atualizado + email_verified_at setado + notificação Mailhog OLD email
+  2. Token expirado (ttlHours: -1) → redirect `/cadastro/email-erro` + DB inalterado
+  3. Token inválido (não existe no DB) → redirect erro sem 500
+  4. Token kind='signup' (Sprint 02b4) **NÃO funciona** pra change_email — isolamento por kind validado
+- Helper novo `test-passport-identity.ts` (200l) — `createTestPassportIdentity({emailVerified, withSession, mfaVerified})` + `insertEmailVerificationToken({kind, newEmail, ttlHours})` + `readIdentity(id)` + `countEmailVerificationTokens({id, kind})`
+- Bypass RLS via `SET row_security = off`; FK CASCADE limpa tokens/sessions automaticamente no `deleteTestPassportIdentity`
+
+**(3) E2E Playwright `resend-email-verification.spec.ts`** (Sprint 02b5 #3):
+- 3 tests cobrindo `resendPassportEmailVerification` (Server Action via UI click):
+  1. Happy path: paciente não verificado → click botão → DB +1 token kind='signup' + Mailhog email
+  2. Idempotência: paciente verificado → botão NÃO renderiza (UI condicional) + badge "✓ verificado" visível
+  3. Cooldown: 2ª chamada em <5min → DB count permanece 1 (RATE_LIMITED bloqueia INSERT)
+- Cookie passport session setado via `context.addCookies({url: 'http://localhost:3100/meu'})` (compat com path `/meu` do `setPassportCookie`)
+- Polling DB ao invés de esperar render React (mais robusto que UI-based assertions)
+
+**🐛 Bug crítico descoberto + corrigido — middleware `/meu/*` bloqueava paciente:**
+
+Durante implementação do E2E resend, descoberto que `apps/web/middleware.ts` checava cookie `logifit.session_token` (STAFF) pra TODAS rotas em `/app/*` E `/meu/*`. Como paciente passport usa `lf_passport_session` (Sprint 02b3) ou `lf_member_session` (Sprint 26), **TODA navegação dentro de `/meu/*` (perfil, agenda, financeiro, etc) redirecionava pra `/login` (staff) em produção**.
+
+Antes:
+```ts
+const PROTECTED_PATH_PREFIXES = ['/app', '/meu']
+const SESSION_COOKIE_NAME = 'logifit.session_token'
+// Single check pra ambos prefixes — checava cookie staff em /meu/*
+```
+
+Depois (`apps/web/middleware.ts`):
+- `/app/*` → cookie staff `logifit.session_token` → redirect `/login`
+- `/meu/*` → cookie member OU passport (`lf_member_session` OU `lf_passport_session`) → redirect `/meu/login`
+- `MEU_PUBLIC_PATHS = ['/meu/login', '/meu/cadastro']` exceções (pré-auth — login flow + signup proativo)
+
+Esse fix foi essencial pro E2E resend funcionar mas tinha impacto MAIOR — `/meu/perfil`, `/meu/agenda`, `/meu/financeiro` em prod **nunca tinham sido testadas com session real do paciente** (smoke .mjs e E2E meu-magic-link usavam só API endpoints, não navegação UI). Spinoff worth: rodar smoke completa Sprint 26 portal pra detectar outras quebras similares.
+
+**Validação:**
+- ✓ typecheck 12/12 packages
+- ✓ lint-custom 779 + 2 css clean (9 rules)
+- ✓ docs-check 0/0
+- ✓ E2E suite Email completa: **9/9 specs passing** (meu-magic-link 2 + change-email 4 + resend 3) em 6.0s
+- ✓ Bug middleware confirmado via DEBUG output (URL após cookie set ia pra `/login` antes do fix; agora `/meu/perfil` correto)
+
+**Sprint 02b4/02b5 fechamento — STATUS**:
+
+| Item | Status |
+|---|---|
+| ✅ QR code visual MFA (ADR 0095) | done |
+| ✅ Decisão email provider (ADR 0096 + 0097) | done |
+| ✅ `@repo/email` package + plug magic link | done |
+| ✅ Email confirmation `signupPatient` | done |
+| ✅ Redis sliding window real | done |
+| ✅ E2E Playwright magic link | done |
+| ✅ `change_email` flow + UI + smoke | done |
+| ✅ `resendPassportEmailVerification` SA + UI | done |
+| ✅ Cron `expire-passport-email-verification-tokens` | done |
+| ✅ E2E Playwright change_email + resend | done |
+| 🐛 Bug middleware `/meu/*` cookie staff | fixed |
+| 🔵 Feature flag `passport_signup_v1` | aberto — sistema de feature flags não existe ainda |
+
 ### Build — Sprint 02b5 — resendPassportEmailVerification + refactor helper 2026-05-21
 
 Fecha 2º item dos candidatos Sprint 02b5 — paciente pode reenviar o email de confirmação que recebeu no signup (caso tenha perdido, ido pra spam, ou clicado antes de logar).
