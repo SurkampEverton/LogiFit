@@ -18,6 +18,7 @@ import { redirect } from 'next/navigation'
 import { pool } from '@repo/db/client'
 import { getActiveSession } from '../../lib/active-session'
 import { withMemberContext } from '../../lib/member-session'
+import { ChangeEmailForm } from './change-email-form'
 import { ChangePasswordForm } from './change-password-form'
 import { DeactivateAccountForm } from './deactivate-account-form'
 import { LogoutButton } from './logout-button'
@@ -56,13 +57,15 @@ export default async function MeuPerfilPage() {
     const idRes = await pool.query<{
       name: string
       email: string
+      email_verified_at: Date | null
       phone: string
       cpf_normalized: string
       mfa_enrolled_at: Date | null
       created_at: Date
       last_login_at: Date | null
     }>(
-      `SELECT name, email, phone, cpf_normalized, mfa_enrolled_at, created_at, last_login_at
+      `SELECT name, email, email_verified_at, phone, cpf_normalized,
+              mfa_enrolled_at, created_at, last_login_at
        FROM passport_global_identities WHERE id = $1 LIMIT 1`,
       [session.passport.passportGlobalId],
     )
@@ -109,6 +112,30 @@ export default async function MeuPerfilPage() {
               <div className="ev-portal-muted">Email</div>
               <div>{identity.email}</div>
             </div>
+            {identity.email_verified_at ? (
+              <span
+                style={{
+                  fontSize: 'var(--ev-text-xs)',
+                  color: 'var(--ev-success)',
+                  marginLeft: 'auto',
+                }}
+              >
+                ✓ verificado
+              </span>
+            ) : (
+              <span
+                style={{
+                  fontSize: 'var(--ev-text-xs)',
+                  color: 'var(--ev-warning)',
+                  marginLeft: 'auto',
+                }}
+              >
+                ⚠ não verificado
+              </span>
+            )}
+          </div>
+          <div style={{ marginTop: 'var(--ev-space-2)' }}>
+            <ChangeEmailForm currentEmail={identity.email} />
           </div>
           <div className="ev-portal-list-item">
             <div>
@@ -123,8 +150,8 @@ export default async function MeuPerfilPage() {
             </div>
           </div>
           <p className="ev-portal-muted" style={{ fontSize: 'var(--ev-text-xs)' }}>
-            Alterar nome/email/telefone entra em Sprint 02b5 (changeEmail exige
-            email confirmation flow via Brevo — ADR 0096).
+            Alterar nome/telefone entra em Sprint 02b5+ (requer flow de
+            confirmação adicional).
           </p>
         </section>
 

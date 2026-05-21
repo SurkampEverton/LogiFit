@@ -22,6 +22,7 @@
  */
 
 import { pool } from '@repo/db/client'
+import { sendTransactional } from '@repo/email'
 import { ApiException } from '@repo/errors'
 import {
   decryptSecret,
@@ -32,6 +33,16 @@ import {
   verifyPassword,
 } from '@repo/security'
 import { z } from 'zod'
+import {
+  renderEmailChangeConfirmationHtml,
+  renderEmailChangeConfirmationText,
+  renderEmailChangeNotificationHtml,
+  renderEmailChangeNotificationText,
+} from '../../lib/email-templates/email-change'
+import {
+  generateEmailVerificationToken,
+  hashEmailVerificationToken,
+} from '../../lib/passport-email-verification'
 import { wrapPassportAction } from '../../lib/wrap-passport-action'
 
 const ChangePasswordSchema = z
@@ -53,6 +64,16 @@ const DeactivateAccountSchema = z.object({
   /** Paciente confirma digitando o email — anti-clique-acidental */
   confirmEmail: z.string().email().max(255),
 })
+
+const RequestEmailChangeSchema = z.object({
+  /** Senha atual — re-verify pra alta sensibilidade (MFA recente sozinho não basta) */
+  currentPassword: z.string().min(8).max(128),
+  /** Novo email target */
+  newEmail: z.string().email().max(255),
+})
+
+/** Cooldown entre requests de change_email — 24h pra evitar abuso */
+const EMAIL_CHANGE_COOLDOWN_MS = 24 * 60 * 60 * 1000
 
 // ─── changePassword ────────────────────────────────────────────────────
 
@@ -315,3 +336,335 @@ export const deactivateAccount = wrapPassportAction(
     }
   },
 )
+
+// ─── requestPassportEmailChange ────────────────────────────────────────
+
+/**
+ * Solicita troca de email da identidade global passport (Sprint 02b5).
+ *
+ * **Alta sensibilidade — 3 gates:**
+ *   1. MFA recente <15min (via wrapPassportAction requireMfa)
+ *   2. Re-verify password (caller passa current password — confirma posse)
+ *   3. Cooldown 24h entre requests (anti-abuse)
+ *
+ * Fluxo:
+ *   1. Verifica password atual
+ *   2. Detecta duplicação (newEmail já em uso por outro identity)
+ *   3. Cooldown: nenhum request de change_email <24h pra esta identity
+ *   4. Gera token + INSERT kind='change_email' + new_email
+ *   5. Envia email de **confirmação pro NOVO email** (paciente clica pra ativar)
+ *
+ * NÃO atualiza `email` ainda — só após paciente clicar link pelo novo endereço
+ * (`confirmPassportEmailChange`). Old email recebe notificação só depois.
+ */
+export const requestPassportEmailChange = wrapPassportAction(
+  {
+    module: 'meu.perfil',
+    action: 'email.change.request',
+    returnTo: '/meu/perfil',
+    resourceType: 'passport_global_identities',
+    requireMfa: true,
+    schema: RequestEmailChangeSchema,
+  },
+  async (input, { session }) => {
+    const newEmailLower = input.newEmail.toLowerCase()
+
+    // 1. Lookup identity (current email + password_hash)
+    const r = await pool.query<{
+      id: string
+      email: string
+      name: string
+      password_hash: string
+    }>(
+      `SELECT id, email, name, password_hash
+       FROM passport_global_identities
+       WHERE id = $1 AND deactivated_at IS NULL
+       LIMIT 1`,
+      [session.passportGlobalId],
+    )
+    const identity = r.rows[0]
+    if (!identity) {
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Identidade não encontrada',
+        request_id: '',
+      })
+    }
+
+    // 2. Se newEmail é igual ao atual, no-op
+    if (identity.email.toLowerCase() === newEmailLower) {
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: 'O novo email é igual ao atual',
+        request_id: '',
+      })
+    }
+
+    // 3. Verifica password atual (re-auth de alta sensibilidade)
+    const passwordOk = await verifyPassword(input.currentPassword, identity.password_hash)
+    if (!passwordOk) {
+      throw new ApiException({
+        code: 'UNAUTHORIZED',
+        message: 'Senha atual incorreta',
+        request_id: '',
+      })
+    }
+
+    // 4. Detecta newEmail em uso por outro identity ativo
+    //    (anti-enumeration: erro genérico — não revela "email existe ou não")
+    const dup = await pool.query<{ id: string }>(
+      `SELECT id FROM passport_global_identities
+       WHERE lower(email) = $1 AND deactivated_at IS NULL AND id != $2
+       LIMIT 1`,
+      [newEmailLower, identity.id],
+    )
+    if (dup.rows.length > 0) {
+      throw new ApiException({
+        code: 'CONFLICT',
+        message:
+          'Não foi possível usar este email. Se você possui outra conta com este endereço, use ela.',
+        request_id: '',
+      })
+    }
+
+    // 5. Cooldown: nenhuma change_email request <24h pra esta identity
+    const recent = await pool.query<{ created_at: Date }>(
+      `SELECT created_at FROM passport_email_verification_tokens
+       WHERE passport_global_identity_id = $1 AND kind = 'change_email'
+         AND created_at > now() - interval '24 hours'
+       ORDER BY created_at DESC LIMIT 1`,
+      [identity.id],
+    )
+    if (recent.rows.length > 0) {
+      const ageMs = Date.now() - recent.rows[0]!.created_at.getTime()
+      const retryAfterHours = Math.ceil((EMAIL_CHANGE_COOLDOWN_MS - ageMs) / (60 * 60 * 1000))
+      throw new ApiException({
+        code: 'RATE_LIMITED',
+        message: `Você já solicitou troca de email recentemente. Tente novamente em ${retryAfterHours}h.`,
+        request_id: '',
+      })
+    }
+
+    // 6. Gera token + INSERT kind='change_email'
+    const link = generateEmailVerificationToken()
+    await pool.query(
+      `INSERT INTO passport_email_verification_tokens
+         (passport_global_identity_id, email, kind, new_email, token_hash, expires_at, request_ip)
+       VALUES ($1, $2, 'change_email', $3, $4, $5, $6)`,
+      [
+        identity.id,
+        identity.email, // snapshot do email atual
+        input.newEmail,
+        link.tokenHash,
+        link.expiresAt,
+        null, // request_ip — Sprint 02b6 popula via getClientIp se quiser
+      ],
+    )
+
+    // 7. Envia confirmação pro NOVO email
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.logifit.com.br'
+    const confirmUrl = `${baseUrl}/api/meu/perfil/email/confirm-change?t=${link.token}`
+
+    const result = await sendTransactional({
+      to: input.newEmail,
+      toName: identity.name,
+      subject: 'Confirme seu novo email — LogiFit',
+      htmlBody: renderEmailChangeConfirmationHtml({
+        patientName: identity.name,
+        newEmail: input.newEmail,
+        confirmUrl,
+      }),
+      textBody: renderEmailChangeConfirmationText({
+        patientName: identity.name,
+        newEmail: input.newEmail,
+        confirmUrl,
+      }),
+      category: 'platform',
+    })
+
+    if (!result.ok) {
+      // Log audit sem expor pro caller (UX uniforme)
+      console.error(
+        JSON.stringify({
+          level: 'error',
+          event: 'email_change_confirmation_send_failed',
+          provider: result.provider,
+          errorCode: result.errorCode,
+          identityIdPrefix: identity.id.slice(0, 8),
+        }),
+      )
+    }
+
+    return {
+      ok: true as const,
+      note:
+        `Enviamos um link de confirmação pro novo email. Clique no link de lá pra ativar a troca. ` +
+        `O link expira em 24 horas. Você só pode pedir uma nova troca a cada 24 horas.`,
+    }
+  },
+)
+
+// ─── confirmPassportEmailChange (PRÉ-AUTH) ─────────────────────────────
+
+const ConfirmEmailChangeSchema = z.object({
+  token: z.string().min(8).max(256),
+})
+
+/**
+ * Confirma troca de email — paciente clica link recebido no NOVO email.
+ *
+ * Pré-auth (sem session — paciente pode estar deslogado ou em outro device).
+ *
+ * Fluxo:
+ *   1. Lookup token kind='change_email' + JOIN identity
+ *   2. Valida (4 modes): invalid_format / used / expired / current email mismatch
+ *   3. Verifica se new_email ainda está disponível (outro identity pode ter
+ *      reservado entre request e confirm)
+ *   4. Transação: marca token used + UPDATE identity.email = new_email +
+ *      email_verified_at = now() (já confirmamos posse do new)
+ *   5. Notifica email ANTIGO (alerta de segurança "email foi alterado pra X")
+ */
+// wrap-exempt: pré-auth público (paciente clica link sem session)
+export async function confirmPassportEmailChange(input: unknown) {
+  const parsed = ConfirmEmailChangeSchema.safeParse(input)
+  if (!parsed.success) {
+    throw new ApiException({
+      code: 'VALIDATION_ERROR',
+      message: 'Token inválido',
+      request_id: '',
+    })
+  }
+  const { token } = parsed.data
+  const tokenHash = hashEmailVerificationToken(token)
+
+  // 1. Lookup token + identity em 1 query
+  const r = await pool.query<{
+    token_id: string
+    snapshot_email: string
+    new_email: string
+    expires_at: Date
+    used_at: Date | null
+    identity_id: string
+    current_email: string
+    identity_name: string
+    deactivated_at: Date | null
+  }>(
+    `SELECT
+       t.id AS token_id,
+       t.email AS snapshot_email,
+       t.new_email,
+       t.expires_at,
+       t.used_at,
+       i.id AS identity_id,
+       i.email AS current_email,
+       i.name AS identity_name,
+       i.deactivated_at
+     FROM passport_email_verification_tokens t
+     INNER JOIN passport_global_identities i ON i.id = t.passport_global_identity_id
+     WHERE t.token_hash = $1 AND t.kind = 'change_email'
+     LIMIT 1`,
+    [tokenHash],
+  )
+  const row = r.rows[0]
+  if (!row || !row.new_email) {
+    throw new ApiException({
+      code: 'NOT_FOUND',
+      message: 'Link de troca de email inválido',
+      request_id: '',
+    })
+  }
+  if (row.deactivated_at) {
+    throw new ApiException({
+      code: 'NOT_FOUND',
+      message: 'Conta desativada — não é possível trocar email',
+      request_id: '',
+    })
+  }
+  if (row.used_at) {
+    throw new ApiException({
+      code: 'CONFLICT',
+      message: 'Link já utilizado — troca de email já foi feita',
+      request_id: '',
+    })
+  }
+  if (Date.now() > row.expires_at.getTime()) {
+    throw new ApiException({
+      code: 'NOT_FOUND',
+      message: 'Link expirado — solicite novamente a troca em /meu/perfil',
+      request_id: '',
+    })
+  }
+  // Snapshot mismatch: email atual da identity != snapshot do token =
+  // já trocou pra outro depois desse request
+  if (row.current_email.toLowerCase() !== row.snapshot_email.toLowerCase()) {
+    throw new ApiException({
+      code: 'CONFLICT',
+      message: 'Email da conta foi alterado por outro request — solicite nova troca',
+      request_id: '',
+    })
+  }
+
+  const oldEmail = row.current_email
+  const newEmail = row.new_email
+  const patientName = row.identity_name
+
+  // 2. Re-check disponibilidade do new_email (outro identity pode ter
+  //    pego entre request e confirm — race muito raro mas defesa)
+  const dup = await pool.query<{ id: string }>(
+    `SELECT id FROM passport_global_identities
+     WHERE lower(email) = lower($1) AND deactivated_at IS NULL AND id != $2
+     LIMIT 1`,
+    [newEmail, row.identity_id],
+  )
+  if (dup.rows.length > 0) {
+    throw new ApiException({
+      code: 'CONFLICT',
+      message:
+        'Não foi possível ativar este email — outro usuário começou a usar entre o pedido e o clique. Solicite nova troca.',
+      request_id: '',
+    })
+  }
+
+  // 3. Transação: marca used + UPDATE email + email_verified_at
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    await client.query(
+      `UPDATE passport_email_verification_tokens SET used_at = now() WHERE id = $1`,
+      [row.token_id],
+    )
+    await client.query(
+      `UPDATE passport_global_identities
+       SET email = $1, email_verified_at = now(), updated_at = now()
+       WHERE id = $2`,
+      [newEmail, row.identity_id],
+    )
+    await client.query('COMMIT')
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
+
+  // 4. Notifica email ANTIGO (alerta de segurança, fire-and-forget)
+  void sendTransactional({
+    to: oldEmail,
+    toName: patientName,
+    subject: '⚠ Email da sua conta LogiFit foi alterado',
+    htmlBody: renderEmailChangeNotificationHtml({ patientName, newEmail }),
+    textBody: renderEmailChangeNotificationText({ patientName, newEmail }),
+    category: 'platform',
+  }).catch((err) => {
+    console.warn(
+      '[confirmPassportEmailChange] notificação old email falhou:',
+      err instanceof Error ? err.message : err,
+    )
+  })
+
+  return {
+    ok: true as const,
+    newEmail,
+    passportGlobalId: row.identity_id,
+  }
+}
