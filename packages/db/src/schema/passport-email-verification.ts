@@ -21,6 +21,9 @@ import { sql } from 'drizzle-orm'
 import { index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { passportGlobalIdentities } from './passport-identity'
 
+/** Kind do token — Sprint 02b5 adicionou 'change_email' além do 'signup' original */
+export type PassportEmailVerificationKind = 'signup' | 'change_email'
+
 export const passportEmailVerificationTokens = pgTable(
   'passport_email_verification_tokens',
   {
@@ -31,6 +34,18 @@ export const passportEmailVerificationTokens = pgTable(
 
     /** Snapshot do email no momento da geração — protege race contra change_email */
     email: text('email').notNull(),
+
+    /**
+     * Kind: 'signup' (confirmação pós-cadastro) ou 'change_email' (troca de email).
+     * Default 'signup' pra compat com Sprint 02b4 (que não passava o campo).
+     */
+    kind: text('kind').notNull().default('signup'),
+
+    /**
+     * Novo email target em kind='change_email'. NULL em kind='signup'.
+     * Check constraint no DB enforça consistência.
+     */
+    newEmail: text('new_email'),
 
     /** SHA-256 do token plain (nunca grava plain) */
     tokenHash: text('token_hash').notNull(),
@@ -57,6 +72,8 @@ export const passportEmailVerificationTokens = pgTable(
     index('passport_email_verification_active_idx')
       .on(t.passportGlobalIdentityId, t.expiresAt)
       .where(sql`${t.usedAt} IS NULL`),
+    /** Filtro por kind (cron cleanup pode separar comportamento) */
+    index('passport_email_verification_kind_idx').on(t.kind, t.expiresAt),
   ],
 )
 
