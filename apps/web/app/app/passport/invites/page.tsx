@@ -1,18 +1,22 @@
 /**
- * `/app/passport/invites` — lista de invites cross-tenant emitidos pelo tenant (Sprint 02b9).
+ * `/app/passport/invites` — lista de invites cross-tenant emitidos pelo tenant (Sprint 02b9+).
  *
  * Completa o loop UX: staff cria invite em `/new` → vê aqui o que foi criado,
  * status atual (pending/active/revoked), módulos solicitados, profissional
- * responsável, há quanto tempo foi enviado. Pra pending tem ações inline
- * (copiar link + compartilhar WhatsApp) pra re-disparar pelo canal preferido.
+ * responsável, há quanto tempo foi enviado. Ações inline:
+ *   - `pending`: Copiar link · WhatsApp share · Cancelar convite (ConfirmDialog)
+ *   - `active`:  Revogar vínculo (PromptDialog pra motivo)
  *
- * Filtros via querystring `?status=pending|active|revoked` (default `all`).
+ * Filtros via querystring:
+ *   - `?status=pending|active|revoked` (default `all`)
+ *   - `?module=academia|personal_training|fisioterapia|nutricao|pilates`
+ *   - `?q=<nome>` busca por nome do paciente (ILIKE substring, mín. 1 char,
+ *     máx. 80, metachars `%` e `_` strip-ados pra evitar wildcard injection)
  *
- * Sprint 02b9+:
- * - paginação cursor-based (atual hard-cap 100)
- * - filtro por módulo + por profissional responsável
- * - revogação inline (chama `cancelPatientInvite` action)
- * - drill-down pra detalhe do invite com timeline de eventos
+ * Sprint 02c+ restante:
+ *   - paginação cursor-based (atual hard-cap 100)
+ *   - filtro por profissional responsável (autocomplete cross-module)
+ *   - drill-down pra detalhe do invite com timeline de eventos
  *
  * **RLS:** `set_config app.tenant_id` antes de SELECT; defesa em profundidade
  * com `WHERE l.tenant_id = $1` explícito.
@@ -61,6 +65,15 @@ const MODULE_LABELS: Record<string, string> = {
   pilates: '🧘 Pilates',
 }
 
+const MODULE_KEYS = [
+  'academia',
+  'personal_training',
+  'fisioterapia',
+  'nutricao',
+  'pilates',
+] as const
+type ModuleKey = (typeof MODULE_KEYS)[number]
+
 const STATUS_LABELS: Record<string, string> = {
   active: 'Ativo',
   pending: 'Pendente',
@@ -92,6 +105,19 @@ function statusBadgeStyle(status: string): React.CSSProperties {
   }
 }
 
+function buildFilterUrl(parts: {
+  status?: 'pending' | 'active' | 'revoked' | 'all'
+  module?: ModuleKey | 'all'
+  q?: string
+}): string {
+  const sp = new URLSearchParams()
+  if (parts.status && parts.status !== 'all') sp.set('status', parts.status)
+  if (parts.module && parts.module !== 'all') sp.set('module', parts.module)
+  if (parts.q) sp.set('q', parts.q)
+  const qs = sp.toString()
+  return qs ? `/app/passport/invites?${qs}` : '/app/passport/invites'
+}
+
 function formatRelative(date: string | null): string {
   if (!date) return '—'
   const d = new Date(date)
@@ -110,7 +136,7 @@ function formatRelative(date: string | null): string {
 export default async function PassportInvitesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>
+  searchParams: Promise<{ status?: string; module?: string; q?: string }>
 }) {
   const session = await requireFullSession('/app/passport/invites')
   const params = await searchParams
@@ -119,6 +145,15 @@ export default async function PassportInvitesPage({
   )
     ? (params.status as 'pending' | 'active' | 'revoked')
     : 'all'
+  const moduleFilter: ModuleKey | 'all' = (MODULE_KEYS as readonly string[]).includes(
+    params.module ?? '',
+  )
+    ? (params.module as ModuleKey)
+    : 'all'
+  const qRaw = (params.q ?? '').trim()
+  // Limita pra evitar abuso (ilike com %% em string longa é caro) e remove
+  // metachars do ilike (% e _) — busca literal por substring no nome.
+  const qFilter = qRaw.length > 0 && qRaw.length <= 80 ? qRaw.replace(/[%_]/g, '') : ''
 
   const client = await pool.connect()
   let rows: InviteRow[] = []
@@ -164,10 +199,15 @@ export default async function PassportInvitesPage({
        LEFT JOIN persons resp_p ON resp_p.id = resp_u.person_id
        WHERE l.tenant_id = $1
          AND ($2::text = 'all' OR l.status::text = $2)
+         AND ($3::text = '' OR p.name ILIKE '%' || $3 || '%')
+         AND ($4::text = 'all' OR EXISTS (
+           SELECT 1 FROM patient_link_modules mf
+           WHERE mf.link_id = l.id AND mf.module::text = $4
+         ))
        GROUP BY l.id, p.id, inviter_p.id
        ORDER BY l.created_at DESC
        LIMIT 100`,
-      [session.logifit.tenantId, statusFilter],
+      [session.logifit.tenantId, statusFilter, qFilter, moduleFilter],
     )
     rows = res.rows
   } finally {
@@ -222,6 +262,95 @@ export default async function PassportInvitesPage({
         </Link>
       </header>
 
+      <form
+        method="GET"
+        action="/app/passport/invites"
+        className="flex flex-wrap items-end gap-3"
+        aria-label="Buscar e filtrar convites"
+      >
+        {/* Preserva status atual ao submeter — `?status=` já vem dos pills abaixo */}
+        {statusFilter !== 'all' && <input type="hidden" name="status" value={statusFilter} />}
+        <div className="flex-1 min-w-[200px] space-y-1">
+          <label
+            htmlFor="filter-q"
+            className="block text-xs font-medium uppercase tracking-wide"
+            style={{ color: 'var(--ev-text-muted)' }}
+          >
+            Buscar paciente
+          </label>
+          <input
+            id="filter-q"
+            name="q"
+            type="search"
+            defaultValue={qFilter}
+            placeholder="Nome ou parte do nome"
+            maxLength={80}
+            className="block w-full rounded-md border px-3 py-2 text-sm"
+            style={{
+              borderColor: 'var(--ev-border)',
+              background: 'var(--ev-input-bg, var(--ev-surface))',
+              color: 'var(--ev-text)',
+              minHeight: 'var(--ev-touch-min, 44px)',
+            }}
+          />
+        </div>
+        <div className="space-y-1">
+          <label
+            htmlFor="filter-module"
+            className="block text-xs font-medium uppercase tracking-wide"
+            style={{ color: 'var(--ev-text-muted)' }}
+          >
+            Módulo
+          </label>
+          <select
+            id="filter-module"
+            name="module"
+            defaultValue={moduleFilter}
+            className="rounded-md border px-3 py-2 text-sm"
+            style={{
+              borderColor: 'var(--ev-border)',
+              background: 'var(--ev-input-bg, var(--ev-surface))',
+              color: 'var(--ev-text)',
+              minHeight: 'var(--ev-touch-min, 44px)',
+            }}
+          >
+            <option value="all">Todos</option>
+            {MODULE_KEYS.map((k) => (
+              <option key={k} value={k}>
+                {MODULE_LABELS[k] ?? k}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            className="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium"
+            style={{
+              background: 'var(--ev-primary)',
+              color: 'var(--ev-primary-foreground, white)',
+              minHeight: 'var(--ev-touch-min, 44px)',
+            }}
+          >
+            Filtrar
+          </button>
+          {(qFilter || moduleFilter !== 'all') && (
+            <Link
+              href={buildFilterUrl({ status: statusFilter })}
+              className="inline-flex items-center rounded-md border px-3 py-2 text-sm font-medium"
+              style={{
+                borderColor: 'var(--ev-border)',
+                background: 'var(--ev-surface)',
+                color: 'var(--ev-text)',
+                minHeight: 'var(--ev-touch-min, 44px)',
+              }}
+            >
+              Limpar
+            </Link>
+          )}
+        </div>
+      </form>
+
       <nav className="flex flex-wrap gap-2" aria-label="Filtrar convites por status">
         {STATUS_FILTERS.map((f) => {
           const isActive = statusFilter === f.key
@@ -229,9 +358,11 @@ export default async function PassportInvitesPage({
           return (
             <Link
               key={f.key}
-              href={
-                f.key === 'all' ? '/app/passport/invites' : `/app/passport/invites?status=${f.key}`
-              }
+              href={buildFilterUrl({
+                status: f.key as 'pending' | 'active' | 'revoked' | 'all',
+                module: moduleFilter,
+                q: qFilter,
+              })}
               className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium"
               style={{
                 borderColor: isActive ? 'var(--ev-primary)' : 'var(--ev-border)',
@@ -265,9 +396,11 @@ export default async function PassportInvitesPage({
             color: 'var(--ev-text-muted)',
           }}
         >
-          {statusFilter === 'all'
-            ? 'Nenhum convite criado ainda. '
-            : `Nenhum convite ${STATUS_LABELS[statusFilter]?.toLowerCase() ?? statusFilter}. `}
+          {qFilter || moduleFilter !== 'all'
+            ? 'Nenhum convite encontrado com os filtros aplicados. '
+            : statusFilter === 'all'
+              ? 'Nenhum convite criado ainda. '
+              : `Nenhum convite ${STATUS_LABELS[statusFilter]?.toLowerCase() ?? statusFilter}. `}
           <Link
             href="/app/passport/invites/new"
             className="font-medium hover:underline"
