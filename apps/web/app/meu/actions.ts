@@ -23,8 +23,13 @@
  */
 
 import { pool } from '@repo/db/client'
+import { sendTransactional } from '@repo/email'
 import { ApiException } from '@repo/errors'
 import { randomUUID } from 'node:crypto'
+import {
+  renderMagicLinkHtml,
+  renderMagicLinkText,
+} from '../lib/email-templates/magic-link'
 import {
   decideCancellation,
   generateMagicLink,
@@ -156,16 +161,45 @@ export async function requestMagicLink(input: unknown) {
     [tenantId, memberId, link.tokenHash, link.expiresAt, null],
   )
 
-  // 5. Envio do email (Sprint 26b: integra com @repo/email/SES; MVP só registra)
-  // Por enquanto: token plano vai em log estruturado pra dev testar local
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(
-      `[meu] magic link → ${email}: https://${tenantSlug}.logifit.com.br/meu/login/verify?t=${link.token}${redirectTo ? `&to=${encodeURIComponent(redirectTo)}` : ''}`,
+  // 5. Envio do email via @repo/email (ADR 0096 + 0097 — provider SMTP)
+  //    Dev: Mailhog (localhost:1025) — ver inbox em http://localhost:8025
+  //    Prod: Brevo SMTP (smtp-relay.brevo.com:587)
+  //    Test: MockEmailProvider (recordedEmails pra assertions)
+  //
+  //    Category 'platform' — magic link é canal de AUTH da plataforma
+  //    (LogiFit é controlador LGPD da identidade global, ADR 0097)
+  const verifyUrl =
+    `https://${tenantSlug}.logifit.com.br/meu/login/verify?t=${link.token}` +
+    (redirectTo ? `&to=${encodeURIComponent(redirectTo)}` : '')
+
+  const emailResult = await sendTransactional({
+    to: email,
+    subject: 'Seu link de acesso ao portal LogiFit',
+    htmlBody: renderMagicLinkHtml({ tenantSlug, verifyUrl }),
+    textBody: renderMagicLinkText({ tenantSlug, verifyUrl }),
+    category: 'platform',
+  })
+
+  if (!emailResult.ok) {
+    // Falha de envio NÃO vaza pro caller (anti-enumeration + UX) —
+    // já gravamos o token; tentativa subsequente do paciente reusa rate limit window.
+    // Log estruturado vai pra Loki via console.error pra DPO investigar.
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        event: 'magic_link_send_failed',
+        provider: emailResult.provider,
+        errorCode: emailResult.errorCode,
+        tenantSlug,
+        // NÃO logamos email do paciente — apenas hash pra rastrear em audit
+        emailHashPrefix: link.tokenHash.slice(0, 8),
+      }),
     )
   }
 
   return { ok: true, sent: true }
 }
+
 
 // ─── verifyMagicLink (PRÉ-AUTH) ─────────────────────────────────────────
 /**

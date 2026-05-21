@@ -144,6 +144,8 @@ function checkNoRawFetch(file, lines) {
 //   - Arquivos `seed-*.ts` / `seed*.ts` (cores de dado por tenant, não tema)
 //   - Arquivos `*.test.ts` / `*.test.tsx` (fixtures)
 //   - Pasta `**/pdf/**` (PDF renderer não suporta CSS custom properties)
+//   - Pasta `**/email-templates/**` (clients de email — Outlook/Gmail/iOS Mail
+//     não suportam CSS custom properties; cores inline literal são exigência)
 //   - Arquivos `manifest.webmanifest*` (PWA manifest JSON, não CSS)
 //   - Linhas com `.default('#...')` (Drizzle/Zod default em schema/validator)
 //   - Linhas com `themeColor` / `theme_color` / `background_color` (Next.js
@@ -155,6 +157,7 @@ const TOKENS_FILE = /packages[\\/]ui[\\/]src[\\/]tokens\.css$/
 const APP_GLOBALS = /apps[\\/]web[\\/]app[\\/]globals\.css$/
 const SEED_FILE = /[\\/]seed[a-zA-Z0-9_-]*\.ts$/
 const PDF_PATH = /[\\/]pdf[\\/]/
+const EMAIL_TEMPLATES_PATH = /[\\/]email-templates[\\/]/
 const MANIFEST_PATH = /manifest\.webmanifest/
 const RE_DEFAULT_CALL = /\.default\(\s*['"]#[0-9A-Fa-f]{3,8}['"]/
 const RE_THEME_COLOR_KEYS = /\b(themeColor|theme_color|background_color)\s*:\s*['"]#/
@@ -163,6 +166,7 @@ function checkNoHardcodedDesignToken(file, lines) {
   if (APP_GLOBALS.test(file)) return
   if (SEED_FILE.test(file)) return
   if (PDF_PATH.test(file)) return
+  if (EMAIL_TEMPLATES_PATH.test(file)) return
   if (MANIFEST_PATH.test(file)) return
   if (file.includes('.test.')) return
   for (let i = 0; i < lines.length; i++) {
