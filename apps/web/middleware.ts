@@ -21,8 +21,21 @@ const COOKIE_LOCALE_MAX_AGE = 60 * 60 * 24 * 365
  *   - Camada de defesa em profundidade: o pior caso (cookie presente mas
  *     sessão invalidada no DB) entra em /app/* e Server Component redireciona.
  */
-const PROTECTED_PATH_PREFIXES = ['/app', '/meu']
+// Rotas protegidas e cookies aceitos por prefix:
+//   - /app/*  → staff session (logifit.session_token Sprint 01a)
+//   - /meu/*  → member session OU passport global session (Sprint 26 + 02b3)
+//
+// /meu/login + /meu/login/verify + /meu/cadastro são exceções (pré-auth)
+// — listadas em `MEU_PUBLIC_PATHS` abaixo. Outras /meu/* exigem session.
 const SESSION_COOKIE_NAME = 'logifit.session_token'
+const MEMBER_COOKIE_NAME = 'lf_member_session'
+const PASSPORT_COOKIE_NAME = 'lf_passport_session'
+
+const APP_PROTECTED_PREFIX = '/app'
+const MEU_PROTECTED_PREFIX = '/meu'
+
+/** Sub-paths de /meu/* que NÃO exigem session (login flow, etc). */
+const MEU_PUBLIC_PATHS = ['/meu/login', '/meu/cadastro']
 
 function generateNonce(): string {
   const bytes = new Uint8Array(16)
@@ -65,14 +78,26 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // ─── Guard de sessão pra rotas protegidas ─────────────────────────────
-  // Cookie ausente → redirect /login com `returnTo` query
-  const isProtected = PROTECTED_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-  if (isProtected) {
+  // Staff /app/* → cookie staff. Member portal /meu/* → cookie member OU
+  // passport (Sprint 26 + 02b3). /meu/login + /meu/cadastro são públicas.
+
+  if (pathname.startsWith(APP_PROTECTED_PREFIX)) {
     const hasSession = request.cookies.has(SESSION_COOKIE_NAME)
     if (!hasSession) {
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('returnTo', pathname + request.nextUrl.search)
       return NextResponse.redirect(loginUrl)
+    }
+  } else if (pathname.startsWith(MEU_PROTECTED_PREFIX)) {
+    const isPublic = MEU_PUBLIC_PATHS.some((prefix) => pathname.startsWith(prefix))
+    if (!isPublic) {
+      const hasMemberSession =
+        request.cookies.has(MEMBER_COOKIE_NAME) || request.cookies.has(PASSPORT_COOKIE_NAME)
+      if (!hasMemberSession) {
+        const loginUrl = new URL('/meu/login', request.url)
+        loginUrl.searchParams.set('returnTo', pathname + request.nextUrl.search)
+        return NextResponse.redirect(loginUrl)
+      }
     }
   }
 
