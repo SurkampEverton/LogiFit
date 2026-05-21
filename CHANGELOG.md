@@ -6,6 +6,64 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 02b6 — migração 20 pages pra requireMemberOrPassport + remoção /meu/sessoes legacy 2026-05-21
+
+Fecha bug arquitetural descoberto na sessão anterior — todas as 24 rotas do portal `/meu/*` agora suportam session passport (Sprint 02b3 ADR 0094) E session member (Sprint 26) com UX graceful pra paciente sem vínculo clínico.
+
+**Estratégia adotada — opção A** (UX graceful, simples) das 3 do spinoff:
+- Paciente passport sem vínculo → renderiza `<PassportNeedsLink>` (banner amigável "vincule-se a uma clínica" com CTAs pra `/meu/convidar` e `/meu/privacidade/compartilhamento`)
+- Paciente member (com vínculo) → fluxo Sprint 26 preservado byte-a-byte
+- Opção B (cookie `lf_active_tenant_id`) e Opção C (híbrida — 1 link = auto-resolve, >1 = seletor) ficam pra Sprint 02b7+ quando UX real demandar
+
+**Helper novo `apps/web/app/lib/require-member-or-passport.ts`**:
+- `requireMemberOrPassport(returnTo)` retorna discriminated union:
+  - `{kind: 'member', claims: MemberSessionClaims}` — comportamento Sprint 26 inalterado
+  - `{kind: 'passport_needs_link', passportGlobalId, passportSessionId}` — paciente passport sem vínculo
+- Session ausente → redirect `/meu/login` (mesma lógica de `requireMemberSession`)
+- Roadmap Sprint 02b7+ evolui pra opção (C) híbrida quando schema `patient_company_links` lookup + cookie tenant ativo ficar pronto
+
+**Componente novo `apps/web/app/meu/_components/passport-needs-link.tsx`**:
+- Banner ev-card centralizado "🔗 Precisa de vínculo com uma empresa"
+- Mensagem específica por feature (`"seus treinos"`, `"sua agenda"`, etc)
+- 2 CTAs: "Convidar empresa" → `/meu/convidar`; "Gerenciar meus vínculos" → `/meu/privacidade/compartilhamento`
+- Prop `hideLinkButtons?: boolean` esconde CTAs em pages que JÁ SÃO destinos dos botões (evita loop em `/meu/convidar` e `/meu/privacidade/*`)
+- Inclui texto fallback "Sua conta global está ativa — edite em /meu/perfil" pra reassurance
+
+**20 pages migradas via script Node `scripts/migrate-meu-pages.mjs`** (UTF-8 preserved):
+- 14 pages tipo A (usam `withMemberContext + claims`): agenda, alertas, diário, dispositivos+historico+importar, exames+upload, financeiro, qr, recibos, treino, privacidade/alertas-cruzados, agenda/novo, diário/novo
+- 5 pages tipo B (privacy + convidar — `hideLinkButtons=true`): convidar, privacidade overview, privacidade/acessos, privacidade/compartilhamento, privacidade/incidentes
+- 1 page já migrada antes (treino — pilot manual via Edit tool)
+
+**`/meu/sessoes` deprecated** (Sprint 01a Faixa C skeleton bug arquitetural):
+- Originalmente usava `auth.api.getSession` STAFF (`@repo/auth` BetterAuth) montado em `/meu/*` (path paciente) — redirecionava pra `/login` (staff)
+- Funcionalidade já existia em `/meu/perfil` (`PassportSessionRevokeButton` + `RevokeSessionButton`)
+- Substituído por `redirect('/meu/perfil')` server-side pra preservar URLs antigos (bookmarks, emails legacy)
+- Sprint 02b7+ pode deletar de vez
+
+**Bug PowerShell encoding descoberto + workaround:**
+Primeira tentativa de batch migration usou PowerShell `Set-Content -Encoding UTF8` que **corrompeu acentos** em todos os 19 arquivos editados (`ã` → `Ã£`, `—` → `â€"`, etc — UTF-8 lido como Latin-1). Detectado via grep antes de typecheck rodar. Revertido via `git checkout HEAD --` + refeito via Node `fs.writeFileSync(..., 'utf8')` que respeita encoding corretamente. Script `scripts/migrate-meu-pages.mjs` versionado pra futura referência (refactor similar).
+
+**E2E spec atualizado** (`apps/web/e2e/smoke/meu-portal-routes.spec.ts`):
+- Removida lista `KNOWN_BROKEN_ROUTES` (era 1 rota `/meu/sessoes`)
+- `PASSPORT_SUPPORTED_ROUTES`: cresceu de 3 → 24 rotas
+- `MEMBER_ONLY_ROUTES`: agora redundante mas mantido pra regressão Sprint 26 (20 rotas)
+- Suite total: **45/45 passing** (24 passport + 20 member + 1 sessoes covered em ambos)
+
+**Suite Email + portal completa: 54/54 specs passing em 23.9s**:
+- meu-magic-link (2) + change-email (4) + resend (3) + portal-routes (45)
+
+**Validação:**
+- ✓ typecheck 12/12 packages
+- ✓ lint-custom 782 + 2 css clean (9 rules)
+- ✓ docs-check 0/0
+- ✓ E2E 54/54 specs passing
+
+**Status fechamento bug arquitetural /meu/***:
+- ✅ Bug middleware (commit `d922e7e`)
+- ✅ Bug Sprint 26 legacy → migração 20 pages (este commit)
+- ✅ Bug `/meu/sessoes` STAFF auth → redirect pra perfil
+- ✅ E2E coverage completa (45 specs cobrindo passport + member)
+
 ### Test — Smoke E2E /meu/* split em 2 suites + bug arquitetural descoberto 2026-05-21
 
 Spec `meu-portal-routes.spec.ts` rodado de verdade após Docker voltar. Resultado revelou **bug arquitetural maior** do que o middleware fix de mais cedo:

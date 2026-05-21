@@ -39,18 +39,48 @@ import {
  * Nao testa: conteudo visual, interatividade, fluxos completos.
  */
 
-/** Rotas que ja foram migradas pra getActiveSession (passport-aware). */
+/**
+ * Sprint 02b6 (commit deste batch): TODAS as 24 rotas migradas pra
+ * `requireMemberOrPassport` — paciente passport puro vê `<PassportNeedsLink>`
+ * graceful (HTTP 200) em vez de redirect login. Paciente member vê fluxo
+ * Sprint 26 preservado.
+ *
+ * `/meu/sessoes` agora é redirect pra `/meu/perfil` (funcionalidade
+ * consolidada lá). Playwright segue redirect por default → renderiza
+ * `/meu/perfil` 200 OK.
+ *
+ * Suite A (passport_supported) varre TODAS — testa o caso passport (200 OK
+ * com banner "vincule-se"). Suite B (member) também varre TODAS — testa o
+ * caso member (200 OK com conteúdo real).
+ */
 const PASSPORT_SUPPORTED_ROUTES = [
   '/meu',
+  '/meu/agenda',
+  '/meu/agenda/novo',
+  '/meu/alertas',
+  '/meu/convidar',
+  '/meu/diario',
+  '/meu/diario/novo',
+  '/meu/dispositivos',
+  '/meu/dispositivos/historico',
+  '/meu/dispositivos/importar',
+  '/meu/exames',
+  '/meu/exames/upload',
+  '/meu/financeiro',
   '/meu/perfil',
   '/meu/perfil/email-trocado',
+  '/meu/privacidade',
+  '/meu/privacidade/acessos',
+  '/meu/privacidade/alertas-cruzados',
+  '/meu/privacidade/compartilhamento',
+  '/meu/privacidade/incidentes',
+  '/meu/qr',
+  '/meu/recibos',
+  '/meu/sessoes',
+  '/meu/treino',
 ]
 
-/**
- * Rotas que ainda usam requireMemberSession (Sprint 26 legacy).
- * Falham com session passport pura — precisam de session member (paciente
- * vinculado a tenant). Spinoff Sprint 02b6 migra pra getActiveSession.
- */
+/** Suite B agora redundante — mantida pra detectar regressão em fluxo Sprint 26. */
 const MEMBER_ONLY_ROUTES = [
   '/meu/agenda',
   '/meu/agenda/novo',
@@ -71,6 +101,7 @@ const MEMBER_ONLY_ROUTES = [
   '/meu/privacidade/incidentes',
   '/meu/qr',
   '/meu/recibos',
+  '/meu/sessoes',
   '/meu/treino',
 ]
 
