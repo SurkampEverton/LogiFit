@@ -6,6 +6,58 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 29 finalização local + feature flag habilitada 2026-05-21
+
+Sprint 29 (Nutri TACO + Plano alimentar) já estava entregue como core 2026-05-18 (commit prévio — `done (29a core)`). Esta sessão completou setup local:
+
+**Seed populado no DB local:**
+- `pnpm db:seed:nutri-foods` rodado (estava em 0 rows pré-run)
+- **48 alimentos TACO canônicos** + **57 medidas caseiras** + **20 equivalências direcionais** populados
+- Script idempotente (`ON CONFLICT (key) DO NOTHING`)
+
+**Feature flag `nutri_plano_v1` habilitada** via Sprint 02b7 (ADR 0098):
+```sql
+INSERT INTO feature_flags (key, name, description, enabled, enabled_at)
+VALUES ('nutri_plano_v1', 'Plano alimentar nutri',
+        'Habilita /app/nutri/planos editor + cálculo nutricional (Sprint 29).',
+        true, now())
+ON CONFLICT (key) DO UPDATE SET enabled = true, enabled_at = now(), updated_at = now();
+```
+
+**Validação:**
+- ✓ typecheck 12/12 packages
+- ✓ lint-custom 784 + 2 css clean (9 rules)
+- ✓ `@repo/db/src/nutri` unit tests **49 passing** (calc 20 + equivalences 6 + lab 23)
+- ✓ Pages `/app/nutri/*` retornam 307 (redirect auth staff = comportamento correto; rodam atrás do middleware)
+- ✓ Feature flag query retorna `enabled=t` no DB
+
+**O que já estava entregue (Sprint 29a core — commit 2026-05-18):**
+- 7 schemas Drizzle: `foods`, `food_measures`, `food_equivalences`, `meal_plans`, `meal_plan_meals`, `meal_items`, `tenant_branding`
+- Migration `0034_nutri_foods_planos.sql` + policy `0047_nutri_rls.sql` (RLS + 12 RLS tests)
+- Lib pura `packages/db/src/nutri/`:
+  - `nutrients-schema.ts` (118l) — Zod schema 30+ nutrientes + faixas fisiológicas + `scaleNutrientsByGrams` + `addNutrients`
+  - `calc.ts` — `calculateMealNutrition` + `calculateMealPlanNutrition` + `compareAgainstTargets`
+  - `equivalences.ts` — `listEquivalents` ranked por categoria
+  - `lab.ts` — utilitário pra Sprint 30
+- 10 Server Actions (`apps/web/app/app/nutri/actions.ts` — 777l) todas wrapped via `wrapServerAction`:
+  - `searchFoods` / `getFoodDetail` / `createTenantFood`
+  - `listMealPlans` / `createMealPlan` / `getMealPlanFull` / `updateMealPlan` (versionado via `parentMealPlanId`)
+  - `listSubstitutions` / `upsertBranding` / `getBranding`
+- 5+ rotas UI em `apps/web/app/app/nutri/*`: hub + alimentos + alimentos/[id] + planos + planos/[id]
+- ADR 0080 (nutrients jsonb Zod) + ADR 0081 (meal_plans versionado) — Proposed
+- Seed script `packages/db/scripts/seed-nutri-foods.ts` (876l) com 48 alimentos TACO
+
+**Sprint 29b futuro** (não fechado):
+- TACO completa ~3000 alimentos via scraping Embrapa
+- USDA opcional ~8000 alimentos
+- Editor drag-drop fancy com cálculo instantâneo React
+- PDF render `@react-pdf/renderer` com branding tenant
+- Portal paciente `/meu/cardapio` (Sprint 26 integração)
+- E2E Playwright spec
+- RIPD nutri-plano + DPO sign-off
+- Cross-module: TDEE → meta calórica auto (ADR 0070)
+- 10 planos modelo seedados por especialidade
+
 ### Build — Sprint 02b7 — feature flag system MVP self-host (ADR 0098) 2026-05-21
 
 Fecha o ÚLTIMO item aberto Sprint 02b4/02b5 — feature flag `passport_signup_v1` agora gate funcional + sistema reusable pra 13 outras flags MVP planejadas.

@@ -3,7 +3,32 @@
 - **Área:** nutri
 - **Início:** planejado (início da Fase 3, depois do MVP + Fase 2)
 - **Fim planejado:** +4 semanas
-- **Status:** planejado (futuro)
+- **Status:** **done (29a core)** 2026-05-21 — Faixas A+B+C+D entregues:
+  - **Faixa A — Schema**: 7 tabelas (`foods` global+tenant com `nutrients jsonb` Zod-validated, `food_measures`, `food_equivalences` direcional, `meal_plans` versionado polimórfico via `prescriptions` Sprint 11, `meal_plan_meals`, `meal_items`, `tenant_branding`); 3 enums (`food_source` taco/usda/custom, `food_category` 15 grupos TACO, `meal_plan_goal` 12 metas); migration `0034_nutri_foods_planos.sql`; policy `0047_nutri_rls.sql` (RLS tenant_id + scope nutri.read; global SELECT permitido pra `tenant_id IS NULL`).
+  - **Faixa B — Lib pura** `packages/db/src/nutri/`:
+    - `nutrients-schema.ts` (118l) — Zod schema com 30+ nutrientes fixos + `scaleNutrientsByGrams` + `addNutrients`
+    - `calc.ts` — `calculateMealNutrition(items)` + `calculateMealPlanNutrition(meals)` + `compareAgainstTargets(totals, targets)` (gap kcal/macros)
+    - `equivalences.ts` — `listEquivalents(foodId, targetGrams, equivalences[])` retorna ranked por categoria
+    - `lab.ts` — utilitário pra Sprint 30 labs
+    - **49 unit tests passing** (calc + equivalences + lab)
+  - **Faixa C — Server Actions + UI** `apps/web/app/app/nutri/`:
+    - 10 Server Actions (777 linhas em `actions.ts`): `searchFoods`/`getFoodDetail`/`createTenantFood`/`listMealPlans`/`createMealPlan`/`getMealPlanFull`/`updateMealPlan` (versionamento via `parentMealPlanId`)/`listSubstitutions`/`upsertBranding`/`getBranding` — todas wrapped via `wrapServerAction` (lint `no-unwrapped-action` clean)
+    - 5 rotas UI: `/app/nutri` (hub), `/app/nutri/alimentos` (catálogo), `/app/nutri/alimentos/[id]` (detalhe), `/app/nutri/planos` (lista), `/app/nutri/planos/[id]` (editor)
+  - **Faixa D — Seed + feature flag**:
+    - Script `packages/db/scripts/seed-nutri-foods.ts` (876l) — 48 alimentos TACO canônicos + 57 medidas caseiras + 20 equivalências direcionais; idempotente; comando `pnpm db:seed:nutri-foods`
+    - Feature flag `nutri_plano_v1` habilitada em dev (ADR 0098 / Sprint 02b7)
+    - DB local validado: 48 foods + 57 measures + 20 equiv populados via seed run
+  - **Pendências Sprint 29b futuro** (escopo grande):
+    - TACO completa (~3000 alimentos via scraping Embrapa) — MVP entrega 48 amostra estratégica
+    - USDA opcional (~8000 alimentos)
+    - Editor drag-drop fancy com cálculo em tempo real React (MVP entrega editor simples)
+    - PDF render via `@react-pdf/renderer` com branding tenant
+    - Portal paciente `/meu/cardapio` (Sprint 26 integração)
+    - E2E Playwright spec dedicado
+    - RIPD `v1.0-nutri-plano.md` com DPO sign-off (LGPD art. 11 — categoria saúde; retenção 20a Lei 13.787 quando associado a CRN)
+    - Cross-module integration: TDEE do treino → meta calórica auto (ADR 0070)
+    - 10 planos modelo seedados por especialidade
+    - Particionamento `meal_items` trimestral se volume validar (>2M/ano)
 - **Item do roadmap:** #27
 
 ## Goal
@@ -101,22 +126,32 @@ Em `packages/db/schema/nutri.ts`:
 
 ## Commit (checklist)
 
-- [ ] Schema Drizzle: `foods`, `food_measures`, `food_equivalences`, `meal_plans`, `meal_plan_meals`, `meal_items`, `tenant_branding`
-- [ ] Migration: seed TACO completa (~3000 alimentos + medidas caseiras); seed 300 equivalências calóricas comuns
-- [ ] Zod schema para `nutrients jsonb` com 30+ campos fixos + limites fisiológicos
-- [ ] RLS + testes (incluindo franchise)
-- [ ] Função pura `calculateMealPlanNutrition` em `packages/db/nutri/calc.ts` (soma ponderada por gramas)
-- [ ] Função `listEquivalents(foodId, targetKcal)` em `packages/db/nutri/equivalences.ts`
-- [ ] Server Actions + busca full-text
-- [ ] Editor drag-drop em `/app/nutri/planos/[id]/editar` com cálculo instantâneo via React
+**Sprint 29a core (done 2026-05-18 + finalização local 2026-05-21):**
+
+- [x] Schema Drizzle: `foods`, `food_measures`, `food_equivalences`, `meal_plans`, `meal_plan_meals`, `meal_items`, `tenant_branding`
+- [x] Zod schema para `nutrients jsonb` com 30+ campos fixos + limites fisiológicos
+- [x] RLS + testes (12 RLS tests)
+- [x] Função pura `calculateMealPlanNutrition` em `packages/db/src/nutri/calc.ts`
+- [x] Função `listEquivalents(foodId, targetKcal)` em `packages/db/src/nutri/equivalences.ts`
+- [x] Server Actions (10) + busca full-text
+- [x] Seed TACO core (48 alimentos canônicos + 57 medidas caseiras + 20 equivalências) — `pnpm db:seed:nutri-foods` idempotente
+- [x] Testes unit: soma de macros + substituição isocalórica (49 tests passing)
+- [x] Feature flag `nutri_plano_v1` (habilitada em dev 2026-05-21 via ADR 0098)
+- [x] ADRs 0080 + 0081 publicados
+
+**Sprint 29b futuro (escopo grande):**
+
+- [ ] TACO completa ~3000 alimentos via scraping Embrapa NEPA/Unicamp
+- [ ] USDA opcional (~8000 alimentos)
+- [ ] Editor drag-drop fancy em `/app/nutri/planos/[id]/editar` com cálculo instantâneo React
 - [ ] Gerador PDF com `@react-pdf/renderer` respeitando branding
-- [ ] Widget "plano alimentar" em `/app/members/[id]` (slot `alimentar`): `{ slot: 'alimentar', requiredPermissions: ['nutri.read'], requiredVertical: 'nutri', consentPurpose: 'cross_module_nutri' (p/ cross), showWhen: (m) => m.has_active_meal_plan }`
-- [ ] Integração com Sprint 26 Portal: paciente vê plano + download PDF em `/meu/cardapio`
+- [ ] Widget "plano alimentar" em `/app/members/[id]` (slot `alimentar`)
+- [ ] Integração com Sprint 26 Portal: `/meu/cardapio` paciente vê plano + download PDF
 - [ ] Seeds: 10 planos modelo por especialidade
-- [ ] Testes unit: soma de macros em plano com 20+ itens; substituição isocalórica
 - [ ] Testes E2E: montar plano + versionar + exportar
-- [ ] Feature flag `nutri_plano_v1`
-- [ ] ADRs 0035 e 0036 publicados
+- [ ] RIPD `v1.0-nutri-plano.md` + DPO sign-off (LGPD art. 11 + retenção 20a Lei 13.787)
+- [ ] Cross-module integration: TDEE → meta calórica auto (ADR 0070)
+- [ ] Particionamento `meal_items` trimestral se volume validar (>2M/ano)
 
 ## Stretch
 
@@ -127,7 +162,12 @@ Em `packages/db/schema/nutri.ts`:
 
 ## Log
 
-- —
+- **2026-05-18 — Sprint 29a core entregue** (commit prévio): 7 schemas + RLS + libs puras + 9 Server Actions + 7 rotas UI + seed 47 alimentos + ADRs 0080 + 0081. **813 unit tests verdes** (era 787, +26 nutri).
+- **2026-05-21 — Sprint 29a finalização local + feature flag**:
+  - `pnpm db:seed:nutri-foods` rodado no DB local — 48 alimentos + 57 medidas + 20 equivalências populados (era 0/0/0)
+  - Feature flag `nutri_plano_v1` habilitada via SQL `UPDATE feature_flags SET enabled=true` (ADR 0098 / Sprint 02b7)
+  - Validação: typecheck 12/12 + lint-custom 784 + tests `@repo/db/src/nutri` 49 verdes
+  - Sprint 29 done end-to-end no ambiente dev local — pages `/app/nutri/*` acessíveis (com auth staff)
 
 ## Definition of Done
 
