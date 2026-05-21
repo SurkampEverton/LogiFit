@@ -432,7 +432,13 @@ export default async function PassportInvitesPage({
             return (
               <li key={r.id} className="px-4 py-4 space-y-3">
                 <div className="flex flex-wrap items-baseline gap-2">
-                  <span className="font-medium text-base">{r.patientName}</span>
+                  <Link
+                    href={`/app/passport/invites/${r.id}`}
+                    className="font-medium text-base hover:underline"
+                    style={{ color: 'var(--ev-text)' }}
+                  >
+                    {r.patientName}
+                  </Link>
                   <span
                     className="rounded-full px-2 py-0.5 text-xs font-medium"
                     style={statusBadgeStyle(r.status)}
@@ -451,6 +457,14 @@ export default async function PassportInvitesPage({
                       auto-cadastro
                     </span>
                   )}
+                  <Link
+                    href={`/app/passport/invites/${r.id}`}
+                    className="ml-auto text-xs hover:underline"
+                    style={{ color: 'var(--ev-primary)' }}
+                    aria-label={`Ver detalhes do convite de ${r.patientName}`}
+                  >
+                    Detalhes →
+                  </Link>
                 </div>
 
                 {(r.patientEmail || r.patientPhone) && (
