@@ -6,6 +6,29 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 00 fechamento Faixa 4 (~98%): 11 pendências limpas 2026-05-21
+
+Fechamento do Sprint 00 (Faixa 4 + 11 pendências cross-faixa). Atualiza trio canônico ([sprint doc](docs/sprints/00-setup-infra.md) + [roadmap](docs/roadmap.md) + este CHANGELOG).
+
+**Entregue em 1 commit (`afaaf65`):**
+
+- **Segurança (regra 38):** `packages/security/src/scan-upload.ts` MVP real substituindo stub `pending`. Magic bytes inline (PDF/PNG/JPG/GIF/WebP/MP4/ZIP/WAV/MP3/OGG sem dep externa), allowlist mime+ext por bucket, size cap, embed detection regex (PDF JavaScript/OpenAction/Launch; Office vbaProject.bin/macros/), SHA-256 hash. 6 buckets canônicos com policy individual; bucket desconhecido fail-closed. 28 unit tests; **`@repo/security` agora 199 tests verdes** (era 171).
+- **Observabilidade (regra 33):** `packages/errors/src/logger.ts` — pino structured logger com redact LGPD automático (cpf/cnpj/email/senha/token/secret), base fields (service/env), timestamp ISO, opt-in pino-pretty em dev. Plugado em `wrap-action`/`wrap-api-handler`/`wrap-job` substituindo `console.error(JSON.stringify(...))`. Promtail já captura stdout dos containers Docker → Loki self-host (`monitor.logifit.com.br`).
+- **Componentes UI responsivos (ADR 0063 + 0062):** 6 componentes novos em `packages/ui/` — `<LocaleSwitcher>` (i18n/), `<Breadcrumbs>` (nav/ com colapso mobile), `<ResponsiveModal>` (bottom-sheet mobile ↔ centered desktop), `<ResponsiveTable>` (table ↔ CardList), `<ResponsiveForm>` + `<StickyFooter>`, `<CommandPalette>` scaffolding com hook + atalho Ctrl/Cmd+K (Sprint 07 conecta `search_index`).
+- **Testes / coverage (regra 18 + ADR 0090):** `apps/web/e2e/helpers/db.ts` `twoConnectionsTest()` real substituindo stub "not implemented yet" — abre 2 PoolClients pg com `app.tenant_id` distinto, valida UUID, cleanup garantido. T6 funcional. Coverage gate em `@repo/errors` 80% + `@repo/ai` 60% (6/9 packages com gate).
+- **Scripts / hooks:** `.githooks/pre-commit` bash puro sem husky (biome staged + lint:custom + i18n:check) — ativar via `pnpm hooks:install`. `scripts/sbom-generate.mjs` via `npx @cyclonedx/cdxgen` → `sboms/v<version>.json` (gitignored, opt-in commit em release).
+- **CI:** `.github/workflows/owasp-zap.yml` baseline scan weekly (seg 02:00 UTC) contra `staging.logifit.com.br`. SARIF → Security tab + issue auto pra alerts ≥medium. SHAs pinados (CI hardening).
+- **README atualizado:** estrutura monorepo (12 packages), comandos por categoria, quick start 4 passos.
+
+**Validação:** typecheck 12/12 + biome clean + 199/199 tests `@repo/security`.
+
+**Sprint 00 restante:**
+- **1 item dev:** GlitchTip SDK no Next.js (`@sentry/nextjs` config apontando DSN `errors.logifit.com.br`) — Sprint 01a Faixa A absorve.
+- **3 itens bloqueados por input externo do fundador:**
+  - Backup Camada 2 R2 off-site — aguarda token Cloudflare R2 + par GPG `backup@logifit.com.br`
+  - DNS `security@logifit.com.br` Cloudflare Email Routing
+  - HSTS Preload List submission `logifit.com.br` ao `hstspreload.org`
+
 ### Build — Sprint 02c partial: passaporte fecha loop UX (revogação + filtros + paginação + drill-down + audit) 2026-05-21
 
 Fechamento do Sprint 02c (partial) — fecha o loop UX completo do passaporte cross-tenant após o Sprint 02b9. Atualiza trio canônico ([sprint doc](docs/sprints/02-geral-crm-pessoas.md) + [roadmap](docs/roadmap.md) + este CHANGELOG).

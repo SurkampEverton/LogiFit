@@ -2,7 +2,7 @@
 
 - **Início:** 2026-04-27
 - **Fim planejado:** **+5 semanas (~2026-06-01)** (revisado 2026-04-27 — [ADR 0091](../decisions/0091-self-host-total-oracle-sp.md) self-host total amplia escopo: bootstrap Oracle Cloud Vinhedo + Coolify + observabilidade self-host (GlitchTip/Loki/Grafana) + MinIO + runbook DR drill substituindo "subir Supabase CLI". Revisão anterior 2026-04-25 já tinha levado pra 4 semanas; +1 semana absorve self-host total. Excede regra 9 (3 semanas) com justificativa explícita em ADR 0091).
-- **Status:** **doing** (Faixa 1)
+- **Status:** **done (~98%)** 2026-05-21 — Faixas 1+2+3+4 entregues (ver Log abaixo). Restante: GlitchTip SDK no Next.js + 3 itens bloqueados por input externo do fundador (backup R2 credentials, DNS security@, HSTS preload submission).
 - **Item do roadmap:** #1
 
 ## Goal
@@ -290,6 +290,33 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 - [ ] Integração Translation Memory (TM) para reuso de tradução cross-sprint
 
 ## Log
+
+- **2026-05-21 — Sprint 00 fechamento Faixa 4 (~98%): 11 pendências limpas + checklist atualizado.**
+  - **Segurança (regra 38):** `packages/security/src/scan-upload.ts` MVP real substitui stub `pending`. Magic bytes inline (10 formatos sem dep: PDF/PNG/JPG/GIF/WebP/MP4/ZIP/WAV/MP3/OGG), allowlist mime+ext por bucket, size cap, embed detection regex (PDF JavaScript/OpenAction/Launch/EmbeddedFile; Office vbaProject.bin/macros/), SHA-256 hash. 6 buckets canônicos com policy individual; bucket desconhecido fail-closed. 28 unit tests verdes em `scan-upload.test.ts`. **Tests `@repo/security` totais: 199 verdes** (era 171 — +28).
+  - **Observabilidade (regra 33):** `packages/errors/src/logger.ts` — pino structured logger com redact LGPD (cpf/cnpj/email/senha/token/secret), base fields (service/env), timestamp ISO, opt-in pino-pretty em dev via `LF_PINO_PRETTY=1`. Substitui `console.error(JSON.stringify(...))` em `wrap-action`/`wrap-api-handler`/`wrap-job`. Promtail já captura stdout dos containers Docker e empurra pro Loki self-host (`monitor.logifit.com.br`).
+  - **Componentes UI responsivos (ADR 0063):** 6 componentes novos em `packages/ui/`:
+    - `<LocaleSwitcher>` em `i18n/` consumindo `LOCALES`/`LOCALE_NAMES` dinamicamente — sem dep de `next/*` (usa `window.location.reload()` em vez de `router.refresh()`)
+    - `<Breadcrumbs>` em `nav/` com colapso mobile automático quando ≥4 items (… + primeiro + último)
+    - `<ResponsiveModal>` em `layout/` — bottom-sheet mobile ↔ centered desktop via `<dialog>` HTML5 nativo
+    - `<ResponsiveTable>` — table desktop ↔ stacked CardList mobile, `priority: 'always'|'md'|'lg'` por coluna controla visibilidade
+    - `<ResponsiveForm>` + `<StickyFooter>` — grid 2-col lg+ ↔ stack 1-col mobile; footer sticky bottom com `safe-area-inset-bottom`
+    - `<CommandPalette>` scaffolding (ADR 0062) — overlay + input + slots via `<dialog>`, hook `useCommandPalette()`, atalho global Ctrl+K/Cmd+K, mock `onSearch` (Sprint 07 conecta `search_index` real)
+    - `@repo/i18n` adicionado como dep de `@repo/ui` (export type Locale)
+  - **Testes / coverage (regra 18 + ADR 0090):** `apps/web/e2e/helpers/db.ts` real substitui stub `not implemented`. Abre 2 `PoolClient` distintos via `pg.Pool`, seta `app.tenant_id` diferente em cada um, valida UUID e tenantA !== tenantB, cleanup no finally. T6 ADR 0090 funcional. Coverage gate em `packages/errors` (80% threshold) + `packages/ai` (60% baseline). **6 de 9 packages agora têm coverage gate** (db/email/security/storage já tinham 80%).
+  - **Scripts / hooks:** `.githooks/pre-commit` (bash puro, sem husky) — biome check em staged files + lint:custom + i18n:check condicional. Ativar via `pnpm hooks:install` (`git config core.hooksPath .githooks`). `scripts/sbom-generate.mjs` via `npx @cyclonedx/cdxgen` → `sboms/v<version>.json` (gitignored, opt-in commit em release tag).
+  - **CI:** `.github/workflows/owasp-zap.yml` baseline scan weekly (segunda 02:00 UTC) contra `staging.logifit.com.br`. SARIF → Security tab + issue auto pra alerts ≥medium. Manual trigger via `workflow_dispatch` com input `target_url`. SHAs pinados (actions/checkout@a1b2... regra de CI hardening).
+  - **README** atualizado: estrutura monorepo (12 packages explicados), comandos por categoria (dev/banco/testes/qualidade/release), quick start 4 passos, links pra docs principais (CLAUDE.md, arquitetura, rules, roadmap, runbooks, compliance).
+  - **Validação:**
+    - ✓ typecheck 12/12 packages
+    - ✓ biome check clean
+    - ✓ tests `@repo/security` 199 verdes (era 171 — +28 scan-upload)
+    - ✓ tests outros packages preservados
+  - **Pendente Sprint 00 (1 item dev):** GlitchTip SDK no Next.js — `@sentry/nextjs` config apontando DSN `errors.logifit.com.br` (servidor já rodando desde Faixa 3). Sprint 01a Faixa A pode pegar isso porque depende de Server Action real disparar capture.
+  - **Pendente Sprint 00 (3 itens bloqueados por input externo do fundador):**
+    - **Backup Camada 2 (R2 off-site)** — aguarda: (a) token API Cloudflare R2:Edit ou bucket criado manualmente, (b) par GPG `backup@logifit.com.br` em pen drive físico. Runbook `backup-r2.md` documenta ativação em ~5min após credentials chegarem.
+    - **DNS `security@logifit.com.br`** — Cloudflare Email Routing → fundador inicialmente.
+    - **HSTS Preload List submission** — submeter `logifit.com.br` ao `hstspreload.org` após decisão de "preload forever".
+  - **Lints custom Sprint 00 entregues:** 8 ativos em `scripts/lint-custom.mjs` — `no-window-alert` · `no-raw-fetch` · `no-hardcoded-design-token` · `no-rejected-saas-import` · `no-hardcoded-toast-message` · `no-unwrapped-action` · `high-risk-action-must-require-recent-mfa` · `cross-tenant-read-must-log`. `no-unscanned-upload` planejado pra ativar quando primeiro upload real aterrissar (Sprint 01a+).
 
 - **2026-05-12 — Backup Camada 1 (local) ATIVA em prod.**
   - **`infra/backup-local.sh`** versionado + instalado em `/usr/local/bin/logifit-backup-local.sh` no VPS. Faz `pg_dump -Fc` cifrado por gzip das DBs `logifit` + `glitchtip` pra `/data/backups/postgres/` (chmod 700 root-only). Retention 30d via `find -mtime +30 -delete`. Sem GPG (mesmo trust boundary do DB).
