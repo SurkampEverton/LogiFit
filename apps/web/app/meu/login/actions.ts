@@ -29,9 +29,14 @@
 import { pool } from '@repo/db/client'
 import { ApiException } from '@repo/errors'
 import {
+  authFailuresEmailKey,
+  authFailuresIpKey,
   checkAuthLockout,
+  checkLockoutRedis,
+  clearFailuresSlidingWindow,
   decryptSecret,
   evaluateLockout,
+  evaluateLockoutRedis,
   recordAuthAttempt,
   verifyPassword,
   verifyTotp,
@@ -73,24 +78,39 @@ export async function loginPassport(input: unknown) {
   const ip = await getClientIp()
   const userAgent = (await headers()).get('user-agent') ?? null
 
-  // 0. Pre-check lockout — bloqueia ANTES de qualquer crypto/DB load
-  const lockout = await checkAuthLockout({ email: emailLower, ip, pool })
-  if (lockout.locked) {
-    const retryAfterMs = lockout.lockedUntil
-      ? Math.max(0, lockout.lockedUntil.getTime() - Date.now())
-      : 0
+  // 0. Pre-check lockout — Redis flag primeiro (O(1) read), fallback SQL.
+  //    Redis indisponível → null → SQL polling (regra 36 mantém proteção).
+  const redisLockout = await checkLockoutRedis({ email: emailLower, ip })
+  if (redisLockout?.locked) {
     throw new ApiException({
       code: 'RATE_LIMITED',
       message:
-        'Muitas tentativas falharam. Conta bloqueada temporariamente — tente novamente em ' +
-        Math.ceil(retryAfterMs / 60_000) +
-        ' min.',
+        'Muitas tentativas falharam. Conta bloqueada temporariamente — aguarde alguns minutos.',
       request_id: '',
     })
   }
+  if (redisLockout === null) {
+    // Redis indisponível: fallback SQL polling
+    const lockout = await checkAuthLockout({ email: emailLower, ip, pool })
+    if (lockout.locked) {
+      const retryAfterMs = lockout.lockedUntil
+        ? Math.max(0, lockout.lockedUntil.getTime() - Date.now())
+        : 0
+      throw new ApiException({
+        code: 'RATE_LIMITED',
+        message:
+          'Muitas tentativas falharam. Conta bloqueada temporariamente — tente novamente em ' +
+          Math.ceil(retryAfterMs / 60_000) +
+          ' min.',
+        request_id: '',
+      })
+    }
+  }
 
-  // Helper interno pra registrar falha + avaliar lockout
+  // Helper interno pra registrar falha + avaliar lockout (Redis primeiro,
+  // SQL audit log SEMPRE — auth_attempts é canal LGPD art. 18 V retenção 90d).
   async function recordFailure(reason: string): Promise<void> {
+    // 1. SEMPRE INSERT audit em auth_attempts (LGPD audit trail)
     await recordAuthAttempt({
       email: emailLower,
       ip,
@@ -99,7 +119,12 @@ export async function loginPassport(input: unknown) {
       failureReason: reason,
       pool,
     })
-    await evaluateLockout({ email: emailLower, ip, pool })
+    // 2. Redis sliding window pra decisão de lockout em tempo real
+    const redisEval = await evaluateLockoutRedis({ email: emailLower, ip })
+    if (redisEval === null) {
+      // Redis indisponível: fallback SQL polling
+      await evaluateLockout({ email: emailLower, ip, pool })
+    }
   }
 
   // 1. Lookup identity por email (case-insensitive)
@@ -203,7 +228,7 @@ export async function loginPassport(input: unknown) {
       )
     })
 
-  // 6. Registra success em auth_attempts (fire-and-forget via tolerância interna)
+  // 6. Registra success em auth_attempts + limpa contadores Redis (login OK)
   await recordAuthAttempt({
     email: emailLower,
     ip,
@@ -211,6 +236,11 @@ export async function loginPassport(input: unknown) {
     success: true,
     pool,
   })
+  // Limpa sliding window Redis (best-effort — falha não bloqueia login OK)
+  await Promise.all([
+    clearFailuresSlidingWindow(authFailuresEmailKey(emailLower)),
+    clearFailuresSlidingWindow(authFailuresIpKey(ip)),
+  ])
 
   return {
     ok: true as const,

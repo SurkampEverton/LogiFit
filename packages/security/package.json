@@ -12,6 +12,9 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "dependencies": {
+    "ioredis": "^5.4.1"
+  },
   "devDependencies": {
     "@repo/config": "workspace:*",
     "typescript": "^5.7.2",
