@@ -6,6 +6,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fixed — Server Actions de INSERT falhavam com "Erro interno; estamos investigando" 2026-05-21
+
+`createPerson`, `createMember`, `addNote`, `addTag`, `createRegistration` lançavam `unrecognized configuration parameter "app.tenant_id"` na hora de cadastrar (UI mostrava "Erro interno" via genericTranslator).
+
+Causa: `withSessionContext` reserva um `PoolClient` e seta `app.tenant_id` nele, mas o handler chama `db.insert(...)` do Drizzle, que pega **outra** conexão do pool — sem o setting. O `sql\`current_setting('app.tenant_id')::uuid\`` (sem missing_ok) então quebrava com exception não-traduzida.
+
+Fix mínimo: passa `ctx.session.logifit.tenantId` literal nos 5 INSERTs em vez de depender do setting. RLS continua satisfeita porque o role `postgres` da aplicação dev tem `BYPASSRLS=t`. Refactor estrutural (Drizzle-em-tx via AsyncLocalStorage) fica como follow-up — comentário `// why:` em `pessoas/actions.ts` documenta o débito.
+
 ### Build — Seeds completas + 14/15 feature flags habilitadas em dev 2026-05-21
 
 Continuação do trabalho de finalização local Sprint 29 — expandido pra TODAS as 19 sprints "done" do roadmap. Sem mudança de código; apenas hidratação do DB local + ativação de flags pra refletir estado funcional do MVP+Fase 2+Fase 3.

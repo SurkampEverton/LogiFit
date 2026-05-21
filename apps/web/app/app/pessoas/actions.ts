@@ -1,5 +1,12 @@
 'use server'
 
+import { lookupCnpj } from '@repo/cnpj'
+import type { CnpjData } from '@repo/cnpj'
+import { db } from '@repo/db/client'
+import { parseDocument } from '@repo/db/persons'
+import { persons } from '@repo/db/schema'
+import type { PersonInsert, PersonRow } from '@repo/db/schema'
+import { ApiException } from '@repo/errors'
 /**
  * Server Actions de persons — Sprint 01a Faixa F: migradas pra `wrapServerAction()`.
  *
@@ -10,15 +17,8 @@
  *   4. audit_log fire-and-forget (regra 5 + hash chain regra 39)
  *   5. envelope ADR 0071 ({ ok, data | error })
  */
-import { and, eq, ilike, isNull, or, sql } from 'drizzle-orm'
+import { and, eq, ilike, isNull, or } from 'drizzle-orm'
 import { z } from 'zod'
-import { lookupCnpj } from '@repo/cnpj'
-import type { CnpjData } from '@repo/cnpj'
-import { db } from '@repo/db/client'
-import { parseDocument } from '@repo/db/persons'
-import { persons } from '@repo/db/schema'
-import type { PersonInsert, PersonRow } from '@repo/db/schema'
-import { ApiException } from '@repo/errors'
 import { wrapServerAction } from '../../lib/wrap-action'
 
 // ─── searchPersons ────────────────────────────────────────────────────────
@@ -41,10 +41,7 @@ export const searchPersons = wrapServerAction(
     if (input.query) {
       const q = input.query
       const queryDigits = q.replace(/\D/g, '')
-      const orParts = [
-        ilike(persons.name, `%${q}%`),
-        ilike(persons.displayName, `%${q}%`),
-      ]
+      const orParts = [ilike(persons.name, `%${q}%`), ilike(persons.displayName, `%${q}%`)]
       if (queryDigits.length >= 3) {
         orParts.push(ilike(persons.document, `%${queryDigits}%`))
       }
@@ -114,7 +111,10 @@ const createPersonInputSchema = z.object({
   document: z.string().trim().optional(),
   name: z.string().trim().min(2).max(200).optional(),
   displayName: z.string().trim().max(200).optional(),
-  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  birthDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   sex: z.string().trim().max(50).optional(),
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().trim().max(50).optional(),
@@ -135,10 +135,7 @@ const createPersonInputSchema = z.object({
 
 export const createPerson = wrapServerAction(
   { module: 'persons', action: 'person.create', resourceType: 'persons' },
-  async (
-    rawInput: z.input<typeof createPersonInputSchema>,
-    ctx,
-  ): Promise<PersonRow> => {
+  async (rawInput: z.input<typeof createPersonInputSchema>, ctx): Promise<PersonRow> => {
     const input = createPersonInputSchema.parse(rawInput)
 
     let kind: 'pf' | 'pj' | null = null
@@ -193,7 +190,11 @@ export const createPerson = wrapServerAction(
       const [row] = await db
         .insert(persons)
         .values({
-          tenantId: sql`current_setting('app.tenant_id')::uuid`,
+          // why: `withSessionContext` seta `app.tenant_id` numa conexão reservada,
+          // mas `db.insert(...)` pega outra conexão do pool. Logo `current_setting()`
+          // sem missing_ok lançava `unrecognized configuration parameter`. Passa o
+          // tenantId direto do session enquanto refactor pro Drizzle-em-tx fica pendente.
+          tenantId: ctx.session.logifit.tenantId,
           kind,
           name: finalName,
           displayName: input.displayName ?? autoFilled.displayName ?? null,
@@ -237,10 +238,7 @@ const archivePersonInputSchema = z.object({
 
 export const archivePerson = wrapServerAction(
   { module: 'persons', action: 'person.archive', resourceType: 'persons' },
-  async (
-    rawInput: z.input<typeof archivePersonInputSchema>,
-    ctx,
-  ): Promise<PersonRow> => {
+  async (rawInput: z.input<typeof archivePersonInputSchema>, ctx): Promise<PersonRow> => {
     const input = archivePersonInputSchema.parse(rawInput)
 
     const [row] = await db

@@ -9,14 +9,11 @@
  *
  * Trigger BEFORE INSERT verifica `kind=pf` (ADR 0047) — só pessoa física.
  */
-import { and, eq, sql } from 'drizzle-orm'
-import { z } from 'zod'
 import { db } from '@repo/db/client'
-import {
-  professionalRegistrations,
-  type ProfessionalRegistrationRow,
-} from '@repo/db/schema'
+import { type ProfessionalRegistrationRow, professionalRegistrations } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
+import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { wrapServerAction } from '../../../../lib/wrap-action'
 
 // ─── listRegistrations ────────────────────────────────────────────────────
@@ -25,10 +22,12 @@ const listInputSchema = z.object({
 })
 
 export const listRegistrations = wrapServerAction(
-  { module: 'persons.registrations', action: 'registration.list', resourceType: 'professional_registrations' },
-  async (
-    rawInput: z.input<typeof listInputSchema>,
-  ): Promise<ProfessionalRegistrationRow[]> => {
+  {
+    module: 'persons.registrations',
+    action: 'registration.list',
+    resourceType: 'professional_registrations',
+  },
+  async (rawInput: z.input<typeof listInputSchema>): Promise<ProfessionalRegistrationRow[]> => {
     const input = listInputSchema.parse(rawInput)
     const rows = await db
       .select()
@@ -51,8 +50,14 @@ const createInputSchema = z.object({
     .transform((s) => s.toUpperCase()),
   specialty: z.string().trim().max(100).optional(),
   cboCode: z.string().trim().max(10).optional(),
-  issuedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  issuedAt: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  validUntil: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 })
 
 export const createRegistration = wrapServerAction(
@@ -71,7 +76,7 @@ export const createRegistration = wrapServerAction(
       const [row] = await db
         .insert(professionalRegistrations)
         .values({
-          tenantId: sql`current_setting('app.tenant_id')::uuid`,
+          tenantId: ctx.session.logifit.tenantId,
           personId: input.personId,
           councilBody: input.councilBody,
           councilNumber: input.councilNumber,

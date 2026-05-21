@@ -218,7 +218,10 @@ export const createMember = wrapServerAction(
       const [row] = await db
         .insert(members)
         .values({
-          tenantId: sql`current_setting('app.tenant_id')::uuid`,
+          // why: ver pessoas/actions.ts — `current_setting` lança em conexão diferente
+          // da que `withSessionContext` configurou. Passa do session enquanto wrap-action
+          // não faz Drizzle-em-tx.
+          tenantId: ctx.session.logifit.tenantId,
           personId: input.personId,
           companyId: input.companyId,
           homeUnitId: input.homeUnitId ?? null,
@@ -387,7 +390,7 @@ export const addNote = wrapServerAction(
     const [row] = await db
       .insert(memberNotes)
       .values({
-        tenantId: sql`current_setting('app.tenant_id')::uuid`,
+        tenantId: ctx.session.logifit.tenantId,
         memberId: input.memberId,
         authorUserId: ctx.session.logifit.userId,
         body: input.body,
@@ -427,7 +430,7 @@ export const addTag = wrapServerAction(
     const input = tagInputSchema.parse(rawInput)
     try {
       await db.insert(memberTags).values({
-        tenantId: sql`current_setting('app.tenant_id')::uuid`,
+        tenantId: ctx.session.logifit.tenantId,
         memberId: input.memberId,
         tag: input.tag,
       })
