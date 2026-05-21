@@ -1,3 +1,4 @@
+import { pool } from '@repo/db/client'
 /**
  * `/app/passport/invites/new` — formulário de criação de invite cross-tenant (Sprint 02b8).
  *
@@ -13,7 +14,6 @@
  * preview da mensagem WhatsApp, branding tenant aplicado no preview.
  */
 import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { requireFullSession } from '../../../../lib/session'
 import { NewInviteForm } from './new-invite-form'
 
@@ -40,9 +40,7 @@ export default async function NewPassportInvitePage() {
   let patients: PatientOption[] = []
   let professionals: ProfessionalOption[] = []
   try {
-    await client.query("SELECT set_config('app.tenant_id', $1, false)", [
-      session.logifit.tenantId,
-    ])
+    await client.query("SELECT set_config('app.tenant_id', $1, false)", [session.logifit.tenantId])
 
     // Pacientes do tenant (members ativos com person)
     const pRes = await client.query<PatientOption>(
@@ -91,13 +89,17 @@ export default async function NewPassportInvitePage() {
             Passaporte
           </Link>
           {' / '}
-          <span>Novo convite</span>
+          <Link href="/app/passport/invites" style={{ color: 'inherit' }}>
+            Convites
+          </Link>
+          {' / '}
+          <span>Novo</span>
         </nav>
         <h1 className="text-3xl font-semibold tracking-tight">Convidar paciente</h1>
         <p style={{ color: 'var(--ev-text-muted)' }}>
-          Crie um convite pra vincular paciente da sua clínica/academia ao módulo
-          clínico desejado. O paciente recebe email automático (se cadastrado) e
-          você pode também enviar via WhatsApp direto.
+          Crie um convite pra vincular paciente da sua clínica/academia ao módulo clínico desejado.
+          O paciente recebe email automático (se cadastrado) e você pode também enviar via WhatsApp
+          direto.
         </p>
       </header>
 

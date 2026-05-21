@@ -6,6 +6,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — Passaporte cross-tenant ganha landing + lista de invites 2026-05-21
+
+Antes só existia `/app/passport/invites/new`. Agora o módulo Passaporte (ADR 0077 / regra 42) tem um hub navegável.
+
+- `/app/passport` — landing com 4 stat cards (Pendentes / Ativos / Revogados / Módulos ativos), breakdown de vínculos ativos por módulo (academia/personal/fisio/nutri/pilates) e atalhos pra criar/listar invites. Empty state com CTA pra criar o primeiro.
+- `/app/passport/invites` — lista de invites do tenant com filtros por status (`?status=pending|active|revoked|all`), badge color-coded por status, módulos solicitados com responsável técnico, `creation_path` (reactive/proactive) marcado quando paciente se cadastrou sozinho, e ações inline pra `pending`: copiar link + compartilhar via WhatsApp (`InviteRowActions` client island, regra 45 — sem `window.prompt` no fallback de clipboard).
+- Breadcrumb de `/new` ajustado pra navegar de volta pra lista.
+- `set_config('app.tenant_id')` antes dos SELECTs + filtro explícito `WHERE l.tenant_id = $1` (defesa em profundidade).
+- Hard-cap 100 linhas; paginação cursor-based, drill-down e revogação inline ficam pra Sprint 02c+.
+
 ### Added — Form de cadastro de pessoa ganha todos os campos do schema 2026-05-21
 
 `/app/pessoas/new` cobria só CPF/CNPJ + Nome + Email + Telefone. O schema `persons` (ADR 0047) já tem `displayName`, `birthDate`, `sex`, `address` completo e `notes`, mas só `address` chegava preenchido (via auto-fill CNPJ) — invisível. Operador não tinha como completar PF.
