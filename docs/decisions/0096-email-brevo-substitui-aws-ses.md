@@ -61,28 +61,73 @@ function resolveEmailProvider(): EmailProvider { ... }
 
 Mesma pattern do `@repo/security/captcha.ts` + `sms-otp.ts`: sem `BREVO_API_KEY` → mock dev (loga); com → Brevo real; em prod sem key → throw.
 
-### Endpoint Brevo
+### Transport: SMTP em vez de API REST (revisado 2026-05-20)
 
-API REST `https://api.brevo.com/v3/smtp/email` com header `api-key: <BREVO_API_KEY>`. Body JSON:
+**Decisão original (2026-05-20 manhã):** API REST `https://api.brevo.com/v3/smtp/email` com header `api-key: <BREVO_API_KEY>` via `safeFetch()` direto. Sem SDK.
 
-```json
-{
-  "sender": { "name": "LogiFit", "email": "no-reply@logifit.com.br" },
-  "to": [{ "email": "user@example.com", "name": "Nome" }],
-  "subject": "Confirme seu cadastro",
-  "htmlContent": "<html>...</html>",
-  "textContent": "..."
+**Revisão (2026-05-20 tarde):** mudar pra **SMTP via `nodemailer`** (`smtp-relay.brevo.com:587`). Razões:
+
+1. **Mesma interface dev e prod** — `nodemailer.createTransport({host, port, auth})` aponta pra Mailhog em dev (`localhost:1025`) e Brevo em prod (`smtp-relay.brevo.com:587`). Sem código condicional `if (NODE_ENV === 'production')` por provider — só env vars
+2. **Trocar de provider futuramente é env-only** — qualquer email provider tem endpoint SMTP (Resend, Postmark, Postal self-host); REST API é proprietária de cada um. Reduz lock-in real
+3. **Padrão IETF universal** — RFC 5321/5322 maduro há décadas; bugs de SMTP são raros, REST API novas têm edge cases
+4. **`nodemailer` é dep aceitável** — ~300KB, MIT, ~50M downloads/semana, zero deps runtime. Bem dentro do espírito da regra 46 (vs ~2MB do `@aws-sdk/client-ses` que motivou a saída do AWS)
+5. **Pragmatismo** — chave gerada pelo fundador no setup foi `xsmtpsib-...` (SMTP key, não API key v3); revisão alinha com isso em vez de pedir pra regenerar
+
+**Trade-off aceito:** SMTP tem +1 round-trip de protocolo handshake (~150-300ms a mais que REST). Volume MVP (~50-120/dia) torna isso irrelevante; reavaliar se virar batch sender de >100k/dia.
+
+### Endpoint Brevo SMTP
+
+```
+Host: smtp-relay.brevo.com
+Port: 587 (STARTTLS) ou 465 (SSL implícito)
+User: <email do login Brevo>
+Password: xsmtpsib-<hash>
+```
+
+Implementação `BrevoSmtpEmailProvider` em `packages/email/`:
+
+```ts
+import nodemailer from 'nodemailer'
+
+const transport = nodemailer.createTransport({
+  host: env.BREVO_SMTP_HOST,
+  port: Number(env.BREVO_SMTP_PORT),
+  secure: false,  // STARTTLS upgrade no port 587
+  auth: { user: env.BREVO_SMTP_USER, pass: env.BREVO_SMTP_PASSWORD },
+})
+
+class BrevoSmtpEmailProvider implements EmailProvider {
+  async sendTransactional(opts) {
+    const sender = resolveEmailSender(opts)  // ADR 0097
+    return transport.sendMail({
+      from: `"${sender.from_name}" <${sender.from_email}>`,
+      replyTo: sender.reply_to,
+      to: opts.to,
+      subject: opts.subject,
+      html: opts.htmlBody,
+      text: opts.textBody,
+    })
+  }
 }
 ```
 
-Sem SDK — `safeFetch()` direto pro endpoint canônico (mesma estratégia do Turnstile + Twilio em `@repo/security`). Hosts allowlist `['api.brevo.com']`. Lint `no-raw-fetch` exempted com `// safe-fetch-exempt:`.
+**Dev local** (`SMTP_HOST=localhost / SMTP_PORT=1025`): `SmtpEmailProvider` genérico aponta pro Mailhog — mesma interface `nodemailer.createTransport`, sem auth.
+
+**Sem `safeFetch` aqui** — SMTP é stateful TCP socket via `nodemailer` (não HTTP). Lint `no-raw-fetch` N/A.
 
 ### Justificativa regra 46
 
+**Brevo (SaaS):**
 - **(a) Por que self-host não atende:** Postal/MailCow self-hosted exigem 3-6 meses de warmup de IP pra construir reputação SPF/DKIM/DMARC; sem isso emails caem em spam. Custo de aprender + manter SMTP server (DMARC reports + bounce handling + suppression list) desproporcional ao volume MVP.
-- **(b) Lock-in concreto:** baixo — interface `EmailProvider` permite trocar Brevo→Resend→Postal em 1 arquivo (`brevo-provider.ts`). Templates podem viver no app (HTML/MJML compilado) em vez de Brevo Templates pra evitar lock-in maior.
+- **(b) Lock-in concreto:** **mínimo** com transport SMTP — qualquer provider tem endpoint SMTP (Resend, Postmark, Mailgun, Postal). Trocar Brevo→outro é alterar env vars (`BREVO_SMTP_HOST/USER/PASSWORD`) sem código. Templates vivem no app (HTML/MJML compilado) em vez de Brevo Templates pra evitar lock-in maior.
 - **(c) Custo mensal estimado:** **$0 enquanto < 300/dia** (~9k/mês). Ramp-up pro Brevo Lite $25/mês (20k/mês) só quando crescer pra >300 active members fazendo signup+login frequente.
-- **(d) Plano de saída:** se Brevo virar problema (deliverability cai / preço sobe / TOS muda), trocar por (1) Resend pago ou (2) Postal self-host pós-warmup. Esforço: 1 dia (novo provider class) + DNS records (SPF/DKIM novo provider).
+- **(d) Plano de saída:** se Brevo virar problema (deliverability cai / preço sobe / TOS muda), trocar por (1) Resend pago ou (2) Postal self-host pós-warmup. Esforço: 1 hora (trocar env vars + propagar DNS SPF/DKIM novo provider).
+
+**`nodemailer` (lib NPM):**
+- **(a) Por que self-host não atende:** N/A — lib local stateless, não SaaS. Alternativa "implementar SMTP do zero via `node:net`" é viável mas reimplementar RFC 5321 (HELO/AUTH/MAIL FROM/RCPT TO/DATA + STARTTLS handshake) é trabalho de dias com risco de bugs sutis em produção.
+- **(b) Lock-in concreto:** **zero** — `nodemailer` é wrapper de protocolo SMTP padrão; saída substituível por implementação `node:net` própria ou outra lib (mailparser, emailjs-smtp-client) sem mudar interface `EmailProvider`.
+- **(c) Custo mensal estimado:** $0 (MIT, ~50M downloads/semana, zero deps runtime, ~300KB).
+- **(d) Plano de saída:** se manutenção parar (>1 ano sem release) OU CVE crítico sem fix 30d, trocar por `emailjs-smtp-client` (alternativa MIT) ou implementação `node:net` própria. Escopo: 1 arquivo `brevo-smtp-provider.ts`.
 
 ### O que NÃO é decisão Brevo
 
@@ -97,8 +142,8 @@ Sem SDK — `safeFetch()` direto pro endpoint canônico (mesma estratégia do Tu
 - **Custo $0 no MVP** — libera credit card pra Asaas + Focus NFe + Vertex AI sem AWS na mistura
 - **Setup em 1 hora** — criar conta + verificar domínio + DNS records + API key; sem IAM
 - **Um sub-processor a menos** — DPO LogiFit lista Brevo no lugar de AWS; Cloudflare continua multi-uso (DNS + R2 + Turnstile + Email Routing inbound se precisar receber emails depois)
-- **Sem SDK pesado** — `safeFetch()` direto economiza ~2MB do bundle Node
-- **DX consistente** — mesmo padrão provider-abstrato + safeFetch que Turnstile/Twilio/IA
+- **Sem SDK pesado** — `nodemailer` ~300KB (vs ~2MB `@aws-sdk/client-ses`)
+- **DX consistente** — mesma interface SMTP em dev (Mailhog) e prod (Brevo); trocar provider futuramente é env-only
 
 ### Negativas
 

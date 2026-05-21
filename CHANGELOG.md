@@ -6,6 +6,40 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — ADR 0096 revisado — Brevo via SMTP em vez de API REST v3 2026-05-20 (tarde)
+
+Revisão da decisão de transport do ADR 0096 (originalmente API REST v3 via `safeFetch`) pra **SMTP via `nodemailer`** (`smtp-relay.brevo.com:587`). Mantém Brevo como provider (decisão 0096 original); muda apenas como o app fala com Brevo.
+
+**Trigger da revisão:** fundador gerou no painel Brevo uma chave SMTP (`xsmtpsib-...`) em vez de API key v3 (`xkeysib-...`). Revisão pragmática: aceitar SMTP key + atualizar ADR em vez de pedir pra regenerar.
+
+**Razões da revisão (5):**
+1. **Mesma interface dev/prod** — `nodemailer.createTransport({host, port, auth})` aponta pra Mailhog em dev (`localhost:1025`) e Brevo em prod (`smtp-relay.brevo.com:587`). Sem código condicional `if (NODE_ENV === 'production')` por provider — só env vars
+2. **Trocar de provider futuramente é env-only** — qualquer email provider tem endpoint SMTP (Resend, Postmark, Postal self-host); REST API é proprietária. Reduz lock-in real
+3. **Padrão IETF universal** — RFC 5321/5322 maduro há décadas; bugs de SMTP são raros vs REST API novas
+4. **`nodemailer` é dep aceitável** (regra 46) — ~300KB, MIT, ~50M downloads/semana, zero deps runtime. Bem menor que ~2MB `@aws-sdk/client-ses` que motivou saída do AWS
+5. **Pragmatismo** — alinha com a chave SMTP que o fundador já gerou
+
+**Trade-off aceito:** SMTP tem +1 round-trip de protocolo handshake (~150-300ms a mais que REST). Volume MVP (~50-120/dia) torna isso irrelevante; reavaliar se virar batch sender de >100k/dia.
+
+**Sync nos docs:**
+
+- `docs/decisions/0096-email-brevo-substitui-aws-ses.md` (revisado):
+  - Seção "Endpoint Brevo" reescrita pra "Transport: SMTP em vez de API REST (revisado 2026-05-20)" com 5 razões + exemplo `BrevoSmtpEmailProvider` via nodemailer
+  - Bullet "Sem SDK pesado" atualizado (nodemailer ~300KB em vez de safeFetch direto)
+  - Bullet "DX consistente" atualizado (mesma interface SMTP dev/prod)
+  - "Justificativa regra 46" expandida com bloco específico pra `nodemailer` (a/b/c/d da regra 46)
+- `.env.example`: bloco Brevo trocado de `BREVO_API_KEY` único pra `BREVO_SMTP_HOST/PORT/USER/PASSWORD` (4 vars) + nota explicando "mesma interface dev/prod"
+
+**Validação:**
+- ✓ docs-check 0/0
+- N/A typecheck/lint (sem código novo — `nodemailer` ainda não adicionado em deps até implementar `packages/email/`)
+
+**Implementação futura** (`@repo/email`):
+- `BrevoSmtpEmailProvider` (prod) — `nodemailer.createTransport` aponta pra `smtp-relay.brevo.com:587`
+- `SmtpEmailProvider` genérico (dev) — mesmo provider class apontando pra Mailhog `localhost:1025`
+- `MockEmailProvider` (tests) — loga em vez de mandar
+- Resolver `resolveEmailProvider()` decide por env var `NODE_ENV` + presença de credentials
+
 ### Docs — ADR 0097 — Email sender por categoria + branding configurável por tier 2026-05-20
 
 Complementa [ADR 0096](docs/decisions/0096-email-brevo-substitui-aws-ses.md) (provider Brevo) com a decisão de **quem é o sender** (from address) de cada email — distinção que o ADR 0096 não fez. Surgiu de pergunta do fundador "mas isso não deveria ser por parte da empresa tenant?".
