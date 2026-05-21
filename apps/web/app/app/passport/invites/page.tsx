@@ -375,10 +375,13 @@ export default async function PassportInvitesPage({
                   )}
                 </p>
 
-                {r.status === 'pending' && (
+                {r.status !== 'revoked' && (
                   <InviteRowActions
+                    inviteId={r.id}
+                    status={r.status}
                     inviteUrl={inviteUrl}
                     whatsappShareUrl={whatsappShareUrl}
+                    patientName={r.patientName}
                     compact
                   />
                 )}
