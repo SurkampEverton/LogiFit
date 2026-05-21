@@ -44,7 +44,32 @@ import {
 
 const DATABASE_URL = process.env.DATABASE_URL
 const AUTH_SECRET = process.env.AUTH_SECRET
-const APP_URL = process.env.APP_URL ?? 'http://localhost:3000'
+// APP_URL: tenta variantes (server-only > public > default dev). Next.js convention
+// é prefixar NEXT_PUBLIC_ pra vars que vão pro client; .env.local do projeto usa
+// NEXT_PUBLIC_APP_URL=http://localhost:3100 (server reusa).
+const APP_URL =
+  process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3100'
+
+// Lista canônica de origins confiáveis pro BetterAuth (bloqueia CSRF).
+// String list não suporta wildcard; pra subdomínios de tenant em dev
+// (ex: `academia-equilibrio.localhost:3100`) usamos função dinâmica abaixo.
+const TRUSTED_ORIGINS_STATIC = [APP_URL, 'http://localhost:3000', 'http://localhost:3100']
+
+/**
+ * Função de validação dinâmica — recebe Request e devolve lista de origins
+ * permitidos pra ESTA request. Permite wildcard `*.localhost:<port>` em dev
+ * (tenant via subdomínio ADR 0065) sem precisar enumerar cada slug.
+ */
+function resolveTrustedOrigins(request?: Request): (string | null | undefined)[] {
+  const result: (string | null | undefined)[] = [...TRUSTED_ORIGINS_STATIC]
+  if (request) {
+    const origin = request.headers.get('origin')
+    if (origin && /^http:\/\/[a-z0-9-]+\.localhost(?::\d+)?$/.test(origin)) {
+      result.push(origin)
+    }
+  }
+  return result
+}
 
 if (!DATABASE_URL) {
   throw new Error('AUTH: DATABASE_URL não definido — auth não pode iniciar')
@@ -93,6 +118,7 @@ export const auth = betterAuth({
   secret: AUTH_SECRET,
   baseURL: APP_URL,
   basePath: '/api/auth',
+  trustedOrigins: resolveTrustedOrigins,
 
   // Cookie LogiFit (soberania perpétua #2 — ADR 0091)
   advanced: {
