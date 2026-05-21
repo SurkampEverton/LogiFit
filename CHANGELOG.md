@@ -6,6 +6,70 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 02b7 — feature flag system MVP self-host (ADR 0098) 2026-05-21
+
+Fecha o ÚLTIMO item aberto Sprint 02b4/02b5 — feature flag `passport_signup_v1` agora gate funcional + sistema reusable pra 13 outras flags MVP planejadas.
+
+**ADR 0098 Accepted** — `docs/decisions/0098-feature-flags-mvp-self-host.md`:
+- 3 opções avaliadas:
+  - (A) Env vars + redeploy — REJEITADA (sem hot-toggle + sem audit)
+  - (B) GrowthBook/LaunchDarkly self-host — REJEITADA (complexidade desproporcional MVP; container novo + DB próprio; regra 46 ADR pesada)
+  - **(C) Tabela própria + helper + cache 60s — ACEITA** (zero infra nova; SQL trivial; sub-ms latência pós-warmup; evolução natural pra rollout/overrides via metadata jsonb)
+- Sub-decisão: cache process-local 60s TTL trade-off MVP single-instance Oracle Cloud; Sprint 02b8+ promove pra Redis pub/sub se virar bottleneck multi-instance
+
+**Schema `feature_flags`** (migration 0048):
+- `key` text PK (slug) + `name` + `description` + `enabled` bool + `enabled_at` timestamp + `metadata` jsonb (reservado pra rollout%, tenant_overrides, cohort) + `created_at` + `updated_at`
+- Sem `tenant_id` + sem RLS — table GLOBAL; auth via super_admin no app layer
+- Policy 0060 GRANT-only pra `logifit_app`
+- Schema Drizzle `packages/db/src/schema/feature-flags.ts` + barrel export
+
+**14 flags canônicas seedadas** (todas disabled — operador habilita quando feature pronta):
+- `passport_signup_v1` (Sprint 02b4 — este sprint fecha)
+- `genui_v1` (Sprint 28)
+- `device_hub_v1` (Sprint 32)
+- `diario_v1` + `teleconsulta_v1` + `teleconsulta_stt_v1` (Sprint 31)
+- `churn_v1` (Sprint 19)
+- `treinos_v1` (Sprint 11) + `avaliacoes_v1` (Sprint 12)
+- `fisio_prontuario_v1` (Sprint 20)
+- `adquirencia_v1` (Sprint 18)
+- `portal_member_v1` (Sprint 26)
+- `custos_v1` (Sprint 14)
+- `cross_alert_lesao_v1` (Sprint 27)
+
+**Helper `apps/web/app/lib/feature-flags.ts`** (105 linhas):
+- `isFeatureEnabled(key)` → boolean; default false (fail-closed) se flag inexistente OU DB indisponível
+- Cache Map TTL 60s in-memory
+- `invalidateFeatureFlag(key)` força refetch (UI admin futuro chama após toggle)
+- `clearFeatureFlagCache()` limpa tudo (tests + reload manual)
+- `getFeatureFlags(keys[])` paralelo pra layouts que checam múltiplas flags
+- Erro DB → log estruturado `feature_flag_lookup_failed` + retorna false (não propaga — flag não deve quebrar request)
+
+**Gate em `signupPatient`** (`apps/web/app/cadastro/actions.ts`):
+- 1ª linha do handler: `if (!(await isFeatureEnabled('passport_signup_v1'))) throw FORBIDDEN`
+- Mensagem amigável: "Cadastro proativo ainda não está disponível. Peça à sua clínica que envie um convite, ou acesse depois que linkar com uma empresa."
+- Operador habilita via SQL direto: `UPDATE feature_flags SET enabled=true, enabled_at=now() WHERE key='passport_signup_v1';`
+
+**Smoke test `scripts/test-feature-flag-smoke.mjs`**:
+- Valida schema + 14 seeds via psql
+- Toggle on/off + `enabled_at` audit automático
+- Sem dependência de Node helper (cobertura unit test fica spinoff — precisa mover helper pra @repo/security pra reusar vitest infra)
+- ✅ Smoke passou
+
+**Validação:**
+- ✓ typecheck 12/12 packages
+- ✓ lint-custom 784 + 2 css clean (9 rules)
+- ✓ docs-check 0/0
+- ✓ Smoke feature flag passou
+
+**Sprint 02b7+ candidatos** (não fechados):
+- UI admin `/app/super-admin/feature-flags` (table view + toggle button com Server Action `toggleFeatureFlag` requireRole='super_admin')
+- Audit log integration — toggle grava em `audit_log` com `action='feature_flag.toggled'`
+- Redis pub/sub pra invalidate cache multi-instance
+- Percentage rollout via `metadata.rollout_percentage` (hash userId % 100)
+- Tenant overrides via `metadata.tenant_overrides`
+- Unit test do helper (mover pra @repo/security ou setup vitest em @app/web)
+- E2E Playwright spec — flag off bloqueia signup; flag on libera
+
 ### Build — Sprint 02b6 — migração 20 pages pra requireMemberOrPassport + remoção /meu/sessoes legacy 2026-05-21
 
 Fecha bug arquitetural descoberto na sessão anterior — todas as 24 rotas do portal `/meu/*` agora suportam session passport (Sprint 02b3 ADR 0094) E session member (Sprint 26) com UX graceful pra paciente sem vínculo clínico.
