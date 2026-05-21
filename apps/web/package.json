@@ -21,6 +21,7 @@
     "@repo/i18n": "workspace:*",
     "@repo/security": "workspace:*",
     "@repo/ui": "workspace:*",
+    "@sentry/nextjs": "^8.45.0",
     "drizzle-orm": "^0.45.2",
     "next": "^15.1.0",
     "pg": "^8.13.1",

@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { withSentryConfig } from '@sentry/nextjs'
 import createNextIntlPlugin from 'next-intl/plugin'
 import type { NextConfig } from 'next'
 
@@ -54,4 +55,19 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default withNextIntl(nextConfig)
+// `withSentryConfig` adiciona instrumentation auto + ignora source maps em
+// build se não tem SENTRY_AUTH_TOKEN (GlitchTip self-host não consome sourcemaps).
+// Sem `NEXT_PUBLIC_SENTRY_DSN`, nada é capturado em runtime — config seguro
+// pra rodar em dev sem GlitchTip configurado.
+export default withSentryConfig(withNextIntl(nextConfig), {
+  // Não tenta upload de sourcemaps — GlitchTip self-host não suporta (Sentry-only)
+  sourcemaps: { disable: true },
+  // Silencia warnings sobre falta de SENTRY_AUTH_TOKEN — esperado em dev
+  silent: !process.env.SENTRY_AUTH_TOKEN,
+  // Reduz bundle no client desabilitando features que não precisamos
+  disableLogger: true,
+  // org + project só importam pra source map upload (desabilitado acima),
+  // mas SDK exige campos preenchidos pra carregar withSentryConfig
+  org: 'logifit',
+  project: 'web',
+})

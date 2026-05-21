@@ -1,4 +1,5 @@
 export * from './api-error'
+export * from './capture'
 export * from './fingerprint'
 export * from './logger'
 export * from './sanitize'

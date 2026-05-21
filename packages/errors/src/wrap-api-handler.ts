@@ -4,9 +4,16 @@
  * Status HTTP derivado do código do erro.
  */
 import { ApiException, type ApiErrorCode } from './api-error'
+import { captureFromBoundary } from './capture'
 import { fingerprint } from './fingerprint'
 import { logBoundaryError } from './logger'
 import { translate } from './translators'
+
+const CAPTURE_CODES = new Set([
+  'INTERNAL_ERROR',
+  'SERVICE_UNAVAILABLE',
+  'AI_PROVIDER_ERROR',
+])
 
 const HTTP_STATUS: Record<ApiErrorCode, number> = {
   VALIDATION_ERROR: 400,
@@ -76,6 +83,18 @@ export function wrapApiHandler(ctx: WrapApiContext, handler: ApiHandler): ApiHan
         fingerprint: errorPayload.fingerprint,
         message: errorPayload.message,
       })
+      if (CAPTURE_CODES.has(errorPayload.code)) {
+        captureFromBoundary(e, {
+          level: 'error',
+          tags: {
+            module: ctx.module,
+            request_id: requestId,
+            code: errorPayload.code,
+            fingerprint: errorPayload.fingerprint,
+          },
+          extra: { message: errorPayload.message },
+        })
+      }
 
       const headers: Record<string, string> = { 'x-request-id': requestId }
       if (errorPayload.retry_after_ms !== undefined) {

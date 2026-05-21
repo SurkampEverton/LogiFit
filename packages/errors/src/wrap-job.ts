@@ -5,9 +5,16 @@
  * Sprint 00: scaffolding. Sprint 01a integra retry + queue real.
  */
 import { ApiException } from './api-error'
+import { captureFromBoundary } from './capture'
 import { fingerprint } from './fingerprint'
 import { logBoundaryError } from './logger'
 import { translate } from './translators'
+
+const CAPTURE_CODES = new Set([
+  'INTERNAL_ERROR',
+  'SERVICE_UNAVAILABLE',
+  'AI_PROVIDER_ERROR',
+])
 
 export interface WrapJobContext {
   module: string
@@ -37,18 +44,32 @@ export function wrapJob<TArgs>(
 
       // TODO Faixa 3: GlitchTip capture
       // TODO Sprint 01a: insert system_alerts + retry com backoff exponencial
+      const jobFingerprint = fingerprint({
+        code: errorPayload.code,
+        module: ctx.module,
+        signal: ctx.jobName,
+      })
       logBoundaryError({
         job: ctx.jobName,
         request_id: requestId,
         module: ctx.module,
         code: errorPayload.code,
-        fingerprint: fingerprint({
-          code: errorPayload.code,
-          module: ctx.module,
-          signal: ctx.jobName,
-        }),
+        fingerprint: jobFingerprint,
         message: errorPayload.message,
       })
+      if (CAPTURE_CODES.has(errorPayload.code)) {
+        captureFromBoundary(e, {
+          level: 'error',
+          tags: {
+            job: ctx.jobName,
+            module: ctx.module,
+            request_id: requestId,
+            code: errorPayload.code,
+            fingerprint: jobFingerprint,
+          },
+          extra: { message: errorPayload.message },
+        })
+      }
       throw e
     }
   }

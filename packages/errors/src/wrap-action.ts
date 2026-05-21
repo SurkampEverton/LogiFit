@@ -10,9 +10,17 @@
  * `no-unwrapped-action` (Faixa 4) bloqueia commit caso contrário.
  */
 import { ApiException, type ApiResult, err, ok } from './api-error'
+import { captureFromBoundary } from './capture'
 import { fingerprint } from './fingerprint'
 import { logBoundaryError } from './logger'
 import { translate } from './translators'
+
+// Códigos que merecem ir pro GlitchTip (não enviamos VALIDATION_ERROR, etc).
+const CAPTURE_CODES = new Set([
+  'INTERNAL_ERROR',
+  'SERVICE_UNAVAILABLE',
+  'AI_PROVIDER_ERROR',
+])
 
 export interface WrapActionContext {
   /** Identifica o módulo (ex: 'agenda', 'financeiro.invoice') pra logging/alerts. */
@@ -80,6 +88,18 @@ export function wrapAction<TArgs, TData>(
         fingerprint: error.fingerprint,
         message: error.message,
       })
+      if (CAPTURE_CODES.has(error.code)) {
+        captureFromBoundary(e, {
+          level: 'error',
+          tags: {
+            module: ctx.module,
+            request_id: requestId,
+            code: error.code,
+            fingerprint: error.fingerprint,
+          },
+          extra: { message: error.message },
+        })
+      }
       return err(error)
     }
   }
