@@ -42,6 +42,7 @@
  */
 
 import { pool } from '@repo/db/client'
+import { sendTransactional } from '@repo/email'
 import { ApiException } from '@repo/errors'
 import {
   encryptSecret,
@@ -55,6 +56,15 @@ import {
   verifyOtpCode,
 } from '@repo/security'
 import { z } from 'zod'
+import {
+  renderEmailVerificationHtml,
+  renderEmailVerificationText,
+} from '../lib/email-templates/email-verification'
+import {
+  generateEmailVerificationToken,
+  hashEmailVerificationToken,
+  verifyEmailVerificationAgainstRow,
+} from '../lib/passport-email-verification'
 import { createPassportSession, setPassportCookie } from '../lib/passport-session'
 
 const PhoneSchema = z
@@ -444,6 +454,22 @@ export async function signupPatient(input: unknown) {
     )
   }
 
+  // 9. Dispara email de confirmação (Sprint 02b4 fechamento — LGPD).
+  //    Failure-tolerant: identity já criada; reenvio manual via SA
+  //    `resendPassportEmailVerification` (Sprint 02b5 UI).
+  try {
+    await dispatchEmailVerification({
+      passportGlobalId,
+      email: parsed.data.email,
+      patientName: parsed.data.name,
+    })
+  } catch (err) {
+    console.warn(
+      '[signupPatient] envio de email de confirmação falhou:',
+      err instanceof Error ? err.message : err,
+    )
+  }
+
   return {
     ok: true as const,
     passportGlobalId,
@@ -562,5 +588,196 @@ async function acceptInviteAfterSignup(params: {
     tenantId: link.tenant_id,
     linkId: link.id,
     tenantName: link.tenant_name,
+  }
+}
+
+// ─── dispatchEmailVerification (helper interno) ─────────────────────────
+
+/**
+ * Helper interno: gera token + grava + envia email de confirmação.
+ *
+ * Chamado por:
+ *   - `signupPatient` (passo 9 — automático pós-INSERT identity)
+ *   - `resendPassportEmailVerification` (Sprint 02b5 — UI reenvio)
+ *   - `changePassportEmail` (Sprint 02b5 — confirma novo email antes de trocar)
+ *
+ * Categoria `platform` — LogiFit é controlador LGPD da identidade global.
+ */
+async function dispatchEmailVerification(params: {
+  passportGlobalId: string
+  email: string
+  patientName: string
+  requestIp?: string | null
+}): Promise<void> {
+  // 1. Gera token + hash
+  const link = generateEmailVerificationToken()
+
+  // 2. Grava token (snapshot do email pra anti-race contra change_email)
+  await pool.query(
+    `INSERT INTO passport_email_verification_tokens
+       (passport_global_identity_id, email, token_hash, expires_at, request_ip)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [params.passportGlobalId, params.email, link.tokenHash, link.expiresAt, params.requestIp ?? null],
+  )
+
+  // 3. Envia email (Brevo prod / Mailhog dev / Mock test)
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.logifit.com.br'
+  const verifyUrl = `${baseUrl}/api/cadastro/verify-email?t=${link.token}`
+
+  const result = await sendTransactional({
+    to: params.email,
+    toName: params.patientName,
+    subject: 'Confirme seu email — LogiFit',
+    htmlBody: renderEmailVerificationHtml({
+      patientName: params.patientName,
+      verifyUrl,
+    }),
+    textBody: renderEmailVerificationText({
+      patientName: params.patientName,
+      verifyUrl,
+    }),
+    category: 'platform',
+  })
+
+  if (!result.ok) {
+    // Não vaza erro pro caller — paciente terá UX de "verifique seu email"
+    // mesmo se SMTP falhou. Audit log estruturado pra Loki.
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        event: 'email_verification_send_failed',
+        provider: result.provider,
+        errorCode: result.errorCode,
+        passportGlobalIdPrefix: params.passportGlobalId.slice(0, 8),
+      }),
+    )
+  }
+}
+
+// ─── verifyPassportEmail (PRÉ-AUTH) ─────────────────────────────────────
+
+const VerifyPassportEmailSchema = z.object({
+  token: z.string().min(8).max(256),
+})
+
+/**
+ * Verifica token de confirmação de email + marca `email_verified_at`.
+ *
+ * Idempotente: token usado → erro `used` (mas se identity já tem
+ * `email_verified_at`, mostra mensagem amigável).
+ *
+ * Failure modes:
+ *   - `invalid_format` — token corrompido/curto
+ *   - `expired` — passou 24h
+ *   - `used` — token já clicado
+ *   - `email_mismatch` — paciente trocou email entre request e clique
+ */
+// wrap-exempt: pré-auth público (paciente clica link direto do email sem session)
+export async function verifyPassportEmail(input: unknown) {
+  const parsed = VerifyPassportEmailSchema.safeParse(input)
+  if (!parsed.success) {
+    throw new ApiException({
+      code: 'VALIDATION_ERROR',
+      message: 'Token inválido',
+      request_id: '',
+    })
+  }
+  const { token } = parsed.data
+  const tokenHash = hashEmailVerificationToken(token)
+
+  // Lookup token + identity em uma query (JOIN pra pegar email atual)
+  const r = await pool.query<{
+    token_id: string
+    token_email: string
+    token_hash: string
+    expires_at: Date
+    used_at: Date | null
+    identity_id: string
+    current_email: string
+    email_verified_at: Date | null
+  }>(
+    `SELECT
+       t.id AS token_id,
+       t.email AS token_email,
+       t.token_hash,
+       t.expires_at,
+       t.used_at,
+       i.id AS identity_id,
+       i.email AS current_email,
+       i.email_verified_at
+     FROM passport_email_verification_tokens t
+     INNER JOIN passport_global_identities i ON i.id = t.passport_global_identity_id
+     WHERE t.token_hash = $1
+     LIMIT 1`,
+    [tokenHash],
+  )
+  const row = r.rows[0]
+  if (!row) {
+    throw new ApiException({
+      code: 'NOT_FOUND',
+      message: 'Link inválido ou expirado',
+      request_id: '',
+    })
+  }
+
+  // Idempotência: se já verificado antes (cliques duplicados pelo paciente),
+  // retorna sucesso ao invés de erro `used` — UX melhor
+  if (row.email_verified_at) {
+    return {
+      ok: true as const,
+      alreadyVerified: true,
+      passportGlobalId: row.identity_id,
+    }
+  }
+
+  const verify = verifyEmailVerificationAgainstRow(
+    token,
+    {
+      tokenHash: row.token_hash,
+      expiresAt: row.expires_at,
+      usedAt: row.used_at,
+      email: row.token_email,
+    },
+    row.current_email,
+  )
+  if (!verify.ok) {
+    throw new ApiException({
+      code: verify.reason === 'expired' ? 'NOT_FOUND' : 'VALIDATION_ERROR',
+      message:
+        verify.reason === 'expired'
+          ? 'Link expirado — solicite um novo (válido por 24h)'
+          : verify.reason === 'used'
+            ? 'Link já utilizado — sua conta já está confirmada'
+            : verify.reason === 'email_mismatch'
+              ? 'Email da conta foi alterado — solicite novo link de confirmação'
+              : 'Link inválido',
+      request_id: '',
+    })
+  }
+
+  // Transação: marca token used + UPDATE email_verified_at
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    await client.query(
+      `UPDATE passport_email_verification_tokens SET used_at = now() WHERE id = $1`,
+      [row.token_id],
+    )
+    await client.query(
+      `UPDATE passport_global_identities SET email_verified_at = now(), updated_at = now() WHERE id = $1`,
+      [row.identity_id],
+    )
+    await client.query('COMMIT')
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
+
+  return {
+    ok: true as const,
+    alreadyVerified: false,
+    passportGlobalId: row.identity_id,
   }
 }
