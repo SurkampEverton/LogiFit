@@ -6,6 +6,26 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 02c partial: passaporte fecha loop UX (revogação + filtros + paginação + drill-down + audit) 2026-05-21
+
+Fechamento do Sprint 02c (partial) — fecha o loop UX completo do passaporte cross-tenant após o Sprint 02b9. Atualiza trio canônico ([sprint doc](docs/sprints/02-geral-crm-pessoas.md) + [roadmap](docs/roadmap.md) + este CHANGELOG).
+
+**Entregue em 5 commits:**
+
+- **Faixa D parcial `/pessoas/new`** (`df25090`): `<ConfirmDialog>` (regra 45) bloqueia submit quando CNPJ está suspenso/baixado; `toast.fromApiError` (envelope ADR 0071) substitui `submitError` inline. Padrão reusa `confirm()` + `toast` de `@repo/ui/messages`.
+- **Revogação inline `/invites`** (`8deebfa`): botão "Cancelar convite" em pending chama `cancelPatientInvite` via ConfirmDialog; botão "Revogar vínculo" em active chama `revokePatientLink` via PromptDialog (validator motivo 2-500 chars). `toast.success`/`fromApiError` + `router.refresh()` pós-sucesso.
+- **Filtros adicionais `/invites`** (`f3f938c`, `ef5065e`): `?q=<nome>` busca ILIKE substring com anti-wildcard injection; `?module=<key>` filtra por EXISTS em `patient_link_modules`; `?responsible=<userId>` dropdown com DISTINCT responsáveis do tenant (hard-cap 200). Pills de status preservam todos os filtros via `buildFilterUrl()` helper. Botão "Limpar" detecta filtros ativos.
+- **Paginação cursor-based `/invites`** (`ef5065e`): substitui hard-cap 100 por cursor base64url JSON `{createdAt, id}`. SQL `WHERE (l.created_at, l.id) < ($5, $6)` + `LIMIT PAGE_SIZE+1` detecta próxima página sem COUNT extra. PAGE_SIZE = 25 mobile-first. UI "Carregar mais →" + "← Voltar ao início". Cursor inválido ignora silenciosamente.
+- **Drill-down `/invites/[id]`** (`26d3e17`): Page Server Component novo com header (status + auto-cadastro badge + InviteRowActions reusado) + seção Contato + seção Módulos (cards com responsável técnico via JOIN `professional_registrations` + dataLevels badges + timestamps individuais) + Linha do tempo cronológica derivada dos timestamps existentes. Validação UUID regex local antes da query (404 limpo). Lista ganha link "Detalhes →" + nome do paciente clicável.
+- **Histórico de acessos cross-tenant `/invites/[id]`** (`ef5065e`): seção nova lista `patient_data_access_log` filtrado por `source_tenant_id = sessão` + `passport_passport_id = link.passport_id` (RLS permite SELECT quando tenant é reader OR source — `0012_passport_rls.sql`). LEFT JOIN best-effort em tenants/users; uuid truncado se RLS bloqueia tenant externo. Hard-cap 50.
+
+**Validação:** typecheck 12/12 + biome clean nos 4 arquivos tocados.
+
+**Sprint 02 fechamento restante:**
+- **02c.4** schema dedicado `patient_link_events` particionado — AVALIADO, requer sprint dedicado (migration + RLS + helper + INSERT em 6-8 SAs + UPDATE timeline). Fazer parcial deixa histórico inconsistente.
+- **02c.5** Redis sliding window real — BLOQUEADO. Depende Sprint 00 materializar Redis container self-host.
+- **02c.6** LocaleSwitcher `/pessoas/new` — BLOQUEADO. Aplicação tem strings hardcoded cross-app; requer sprint i18n migration dedicado (regra 27 enforce).
+
 ### Build — Sprint 02b9 partial: passaporte UX + form pessoas + fixes que destravavam cadastro 2026-05-21
 
 Fechamento do Sprint 02b9 (partial) consolidando UX hardening do passaporte cross-tenant + form de cadastro de pessoa + 2 fixes root cause que travavam o cadastro real. Atualiza trio canônico ([sprint doc](docs/sprints/02-geral-crm-pessoas.md) + [roadmap](docs/roadmap.md) + este CHANGELOG).
