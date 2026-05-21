@@ -105,6 +105,23 @@ Cache é **global** (não por tenant) — mesmo CNPJ consultado por tenant A ser
 | Sem cache | Sobrecarrega API; UX mais lenta |
 | Cache sem TTL (eterno) | Empresa baixada cadastrada como ativa por anos |
 
+## Revisão 2026-05-21 — Fallback ativa também em `CNPJ_NOT_FOUND`
+
+A política original do orquestrador (`packages/cnpj/src/orchestrator.ts`) só acionava fallback em `CNPJ_PROVIDER_DOWN` ou `CNPJ_RATE_LIMITED`, partindo do pressuposto de que NOT_FOUND seria definitivo ("não é problema de provider, é CNPJ inexistente").
+
+**Caso real que invalidou o pressuposto:** `33.009.911/0041-26` (SOUZA CRUZ LTDA, filial 0041, ATIVA desde 1993).
+
+- BrasilAPI → **404**
+- ReceitaWS → **200** com dados completos
+
+BrasilAPI tem snapshot da base aberta da Receita que cobre todas matrizes mas é **incompleta para filiais altas**. UX: operador vê "CNPJ não encontrado na Receita Federal" para empresa real, abandona ou digita à mão.
+
+**Mudança:** `shouldFallback` agora inclui `CNPJ_NOT_FOUND`. `CNPJ_INVALID` continua sem fallback (formato local, não problema de provider).
+
+**Custo:** 1 request extra ao ReceitaWS para cada CNPJ verdadeiramente inexistente (digitação errada). Mitigado por cache 7d cobrindo ~95% dos hits repetidos + rate limit do ReceitaWS (3 req/min free) é suficiente para uso ocasional pós-fallback.
+
+**Sem mudança no contrato externo** — caller continua recebendo `CnpjLookupResult` no mesmo shape; só a probabilidade de `ok: true` aumenta.
+
 ## Related
 
 - Complementa [ADR 0047 — Cadastro central persons](0047-cadastro-central-persons.md)

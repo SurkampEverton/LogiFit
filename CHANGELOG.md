@@ -6,6 +6,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fixed — Lookup CNPJ retornava "não encontrado" para empresas reais 2026-05-21
+
+BrasilAPI tem snapshot da base aberta da Receita incompleta para filiais altas. CNPJ real `33.009.911/0041-26` (SOUZA CRUZ LTDA filial ATIVA) batia em BrasilAPI 404 e o orquestrador NÃO acionava fallback porque a política original só fallback em `PROVIDER_DOWN`/`RATE_LIMITED` ("NOT_FOUND é definitivo"). Operador via "CNPJ não encontrado na Receita Federal" pra empresa que existe.
+
+Fix: `shouldFallback` em `packages/cnpj/src/orchestrator.ts` agora inclui `CNPJ_NOT_FOUND`. ReceitaWS valida antes de retornar NOT_FOUND ao caller. `CNPJ_INVALID` (formato local) continua sem fallback. ADR 0048 atualizado com seção "Revisão 2026-05-21".
+
 ### Fixed — Server Actions de INSERT falhavam com "Erro interno; estamos investigando" 2026-05-21
 
 `createPerson`, `createMember`, `addNote`, `addTag`, `createRegistration` lançavam `unrecognized configuration parameter "app.tenant_id"` na hora de cadastrar (UI mostrava "Erro interno" via genericTranslator).

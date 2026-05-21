@@ -71,11 +71,16 @@ export async function lookupCnpj(
     return primaryResult
   }
 
-  // 4. Fallback — só se primary falhou com PROVIDER_DOWN ou RATE_LIMITED
-  //    NOT_FOUND / INVALID não tenta fallback (não é problema de provider).
+  // 4. Fallback — PROVIDER_DOWN, RATE_LIMITED ou NOT_FOUND.
+  //    NOT_FOUND incluído porque BrasilAPI tem base incompleta pra muitas filiais
+  //    (descoberto 2026-05-21 com CNPJ 33009911/0041-26 SOUZA CRUZ filial — BrasilAPI
+  //    404 + ReceitaWS 200). INVALID continua sem fallback (formato é local, não provider).
+  //    Custo: 1 request extra ao ReceitaWS pra cada CNPJ inexistente; mitigado por
+  //    cache 7d cobrindo ~95% dos hits repetidos.
   const shouldFallback =
     primaryResult.error.code === 'CNPJ_PROVIDER_DOWN' ||
-    primaryResult.error.code === 'CNPJ_RATE_LIMITED'
+    primaryResult.error.code === 'CNPJ_RATE_LIMITED' ||
+    primaryResult.error.code === 'CNPJ_NOT_FOUND'
 
   const fallback = options.fallback === undefined ? DEFAULT_FALLBACK : options.fallback
   if (shouldFallback && fallback) {
