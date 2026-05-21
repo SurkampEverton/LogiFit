@@ -24,6 +24,7 @@ import { DeactivateAccountForm } from './deactivate-account-form'
 import { LogoutButton } from './logout-button'
 import { PassportSessionRevokeButton } from './passport-session-revoke-button'
 import { RegenerateRecoveryCodesButton } from './regenerate-recovery-codes-button'
+import { ResendVerificationButton } from './resend-verification-button'
 import { RevokeSessionButton } from './revoke-session-button'
 
 export const dynamic = 'force-dynamic'
@@ -134,6 +135,11 @@ export default async function MeuPerfilPage() {
               </span>
             )}
           </div>
+          {!identity.email_verified_at ? (
+            <div style={{ marginTop: 'var(--ev-space-2)' }}>
+              <ResendVerificationButton currentEmail={identity.email} />
+            </div>
+          ) : null}
           <div style={{ marginTop: 'var(--ev-space-2)' }}>
             <ChangeEmailForm currentEmail={identity.email} />
           </div>

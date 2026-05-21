@@ -33,6 +33,7 @@ import {
   verifyPassword,
 } from '@repo/security'
 import { z } from 'zod'
+import { dispatchEmailVerification } from '../../lib/dispatch-email-verification'
 import {
   renderEmailChangeConfirmationHtml,
   renderEmailChangeConfirmationText,
@@ -74,6 +75,9 @@ const RequestEmailChangeSchema = z.object({
 
 /** Cooldown entre requests de change_email — 24h pra evitar abuso */
 const EMAIL_CHANGE_COOLDOWN_MS = 24 * 60 * 60 * 1000
+
+/** Cooldown entre reenvios de email de confirmação (kind='signup') — 5min */
+const EMAIL_VERIFICATION_RESEND_COOLDOWN_MS = 5 * 60 * 1000
 
 // ─── changePassword ────────────────────────────────────────────────────
 
@@ -668,3 +672,99 @@ export async function confirmPassportEmailChange(input: unknown) {
     passportGlobalId: row.identity_id,
   }
 }
+
+// ─── resendPassportEmailVerification ────────────────────────────────────
+
+/**
+ * Reenvia email de confirmação do signup (Sprint 02b5).
+ *
+ * **Sem MFA gate** (intencional) — paciente pode estar com `email_verified_at
+ * IS NULL` e querer reenviar antes mesmo de conseguir fazer login completo;
+ * exigir MFA aqui criaria UX paradoxal. Proteção: cooldown 5min + cap de
+ * tokens ativos via dispatchEmailVerification.
+ *
+ * Idempotente: se `email_verified_at` já está setado, retorna ok sem gerar
+ * novo token (paciente confirmou em outra session/dispositivo). UX informa.
+ *
+ * Cooldown: nenhum token kind='signup' ativo (used_at IS NULL) <5min
+ * pra esta identity. Excedido → RATE_LIMITED com retry-after em segundos.
+ */
+export const resendPassportEmailVerification = wrapPassportAction(
+  {
+    module: 'meu.perfil',
+    action: 'email.verification.resend',
+    returnTo: '/meu/perfil',
+    resourceType: 'passport_global_identities',
+    requireMfa: false,
+  },
+  async (_input: void, { session }) => {
+    // 1. Lookup identity (email atual + nome + status verificado)
+    const r = await pool.query<{
+      id: string
+      email: string
+      name: string
+      email_verified_at: Date | null
+    }>(
+      `SELECT id, email, name, email_verified_at
+       FROM passport_global_identities
+       WHERE id = $1 AND deactivated_at IS NULL
+       LIMIT 1`,
+      [session.passportGlobalId],
+    )
+    const identity = r.rows[0]
+    if (!identity) {
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Identidade não encontrada',
+        request_id: '',
+      })
+    }
+
+    // 2. Idempotência: já verificado → ok sem ação
+    if (identity.email_verified_at) {
+      return {
+        ok: true as const,
+        alreadyVerified: true,
+        note: 'Seu email já está confirmado. Não foi necessário reenviar.',
+      }
+    }
+
+    // 3. Cooldown 5min: nenhum token kind='signup' ativo <5min
+    const recent = await pool.query<{ created_at: Date }>(
+      `SELECT created_at FROM passport_email_verification_tokens
+       WHERE passport_global_identity_id = $1
+         AND kind = 'signup'
+         AND created_at > now() - interval '5 minutes'
+       ORDER BY created_at DESC LIMIT 1`,
+      [identity.id],
+    )
+    if (recent.rows.length > 0) {
+      const ageMs = Date.now() - recent.rows[0]!.created_at.getTime()
+      const retryAfterSec = Math.ceil(
+        (EMAIL_VERIFICATION_RESEND_COOLDOWN_MS - ageMs) / 1000,
+      )
+      throw new ApiException({
+        code: 'RATE_LIMITED',
+        message: `Aguarde ${retryAfterSec}s antes de pedir outro reenvio (anti-spam).`,
+        request_id: '',
+      })
+    }
+
+    // 4. Dispara email — failure-tolerant (não vaza erro pro caller)
+    const result = await dispatchEmailVerification({
+      passportGlobalId: identity.id,
+      email: identity.email,
+      patientName: identity.name,
+    })
+
+    return {
+      ok: true as const,
+      alreadyVerified: false,
+      sent: result.sent,
+      provider: result.provider,
+      note: result.sent
+        ? `Email de confirmação reenviado pra ${identity.email}. Verifique sua caixa de entrada (e spam) — o link expira em 24h.`
+        : 'Reenvio falhou — tente novamente em alguns minutos. Se persistir, contate privacidade@logifit.com.br.',
+    }
+  },
+)
