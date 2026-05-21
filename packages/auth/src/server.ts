@@ -21,7 +21,12 @@
  *   const session = await auth.api.getSession({ headers: request.headers })
  *   if (!session) return Response.redirect(new URL('/login', request.url))
  */
+import { sendTransactional } from '@repo/email'
 import { betterAuth } from 'better-auth'
+import {
+  renderMagicLinkAuthHtml,
+  renderMagicLinkAuthText,
+} from './email-templates/magic-link'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { toNextJsHandler } from 'better-auth/next-js'
 import { customSession, magicLink, twoFactor } from 'better-auth/plugins'
@@ -129,17 +134,23 @@ export const auth = betterAuth({
   // Email/password DESABILITADO no MVP — só magic link + OAuth + WebAuthn
   emailAndPassword: { enabled: false },
 
-  // Magic link via plugin
+  // Magic link via plugin — dispatch real via @repo/email (Sprint 02b8).
+  // Dev: SMTP_HOST=localhost:1025 → Mailhog captura.
+  // Prod: BREVO_SMTP_* setado → Brevo (ADR 0096).
   plugins: [
     magicLink({
-      // Em dev: log no console + Mailhog captura o email
-      // Em prod (Sprint 02+): substituir por Brevo via @repo/email (ADR 0096)
       sendMagicLink: async ({ email, url, token: _token }) => {
-        // Sprint 01a placeholder — log no servidor. Mailhog inbox em dev
-        // ainda não está plugado; troca real fica pra final da Faixa B.
-        console.log(`[auth] magic link para ${email}: ${url}`)
-        // Sprint 00b — Node block-buffera stdout quando piped (não TTY).
-        // Append síncrono em arquivo garante visibilidade imediata em dev solo.
+        // 1. Audit log JSON estruturado pra Loki — mantém visibilidade dev solo
+        console.log(
+          JSON.stringify({
+            level: 'info',
+            event: 'auth_magic_link_dispatched',
+            email,
+            url_prefix: url.slice(0, 80),
+          }),
+        )
+
+        // 2. Arquivo .magic-links.dev.log preserva audit dev quando Mailhog cai
         if (process.env.NODE_ENV !== 'production') {
           try {
             const fs = await import('node:fs')
@@ -150,6 +161,30 @@ export const auth = betterAuth({
           } catch {
             /* swallow — arquivo de debug não-bloqueante */
           }
+        }
+
+        // 3. Dispatch real via @repo/email (categoria 'platform' — staff
+        // session é controlador LogiFit; ADR 0097)
+        const result = await sendTransactional({
+          to: email,
+          subject: 'Entrar no LogiFit — seu link mágico',
+          htmlBody: renderMagicLinkAuthHtml({ email, url }),
+          textBody: renderMagicLinkAuthText({ email, url }),
+          category: 'platform',
+        })
+
+        if (!result.ok) {
+          // Erro NÃO propaga ao BetterAuth (anti-enumeration: caller sempre
+          // vê "Link enviado"). Audit log estruturado pra ops investigar.
+          console.error(
+            JSON.stringify({
+              level: 'error',
+              event: 'auth_magic_link_send_failed',
+              provider: result.provider,
+              errorCode: result.errorCode,
+              emailHashPrefix: email.slice(0, 4),
+            }),
+          )
         }
       },
       expiresIn: 60 * 15, // 15 minutos
@@ -274,3 +309,4 @@ export type Auth = typeof auth
  */
 export const nextJsHandler = (authInstance: Auth = auth) =>
   toNextJsHandler(authInstance.handler)
+
