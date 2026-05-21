@@ -1,5 +1,6 @@
 'use client'
 
+import { confirm, toast } from '@repo/ui/messages'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { createPerson } from '../actions'
@@ -10,15 +11,17 @@ import { createPerson } from '../actions'
  * UX:
  *   - Operador digita documento (CPF/CNPJ) — kind detectado pelos dígitos
  *   - CNPJ (14 dígitos) ao blur → `/api/pessoas/cnpj/{cnpj}` preenche
- *     name/displayName/email/phone/address; alerta se situação ≠ ativa
+ *     name/displayName/email/phone/address; alerta inline se situação ≠ ativa
+ *     e ConfirmDialog (regra 45) bloqueia submit pra não cadastrar empresa
+ *     baixada/suspensa sem ack explícito
  *   - CEP (8 dígitos) ao blur → `/api/cep/{cep}` preenche
  *     logradouro/bairro/cidade/uf (não sobrescreve o que operador já digitou)
  *   - Campos PF-only (`birthDate`, `sex`) só aparecem quando documento = CPF
  *   - `sex` é texto livre (LGPD art. 11: não inferir gênero)
- *   - Submit chama Server Action `createPerson`
+ *   - Submit chama Server Action `createPerson` — erro vai pra
+ *     `toast.fromApiError` (regra 45 + ADR 0071)
  *
- * Faixa D fechamento (ainda pendente): PromptDialog confirmação se situação
- * suspensa/baixada, LocaleSwitcher, toast.fromApiError (regra 45).
+ * Faixa D fechamento restante: LocaleSwitcher de placeholder.
  */
 interface AutoFillState {
   name: string
@@ -88,7 +91,6 @@ export function NewPersonForm() {
   const [cepStatus, setCepStatus] = useState<'idle' | 'fetching' | 'ok' | 'error'>('idle')
   const [cepMessage, setCepMessage] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const docDigits = document.replace(/\D/g, '')
   const detectedKind = docDigits.length === 11 ? 'pf' : docDigits.length === 14 ? 'pj' : null
@@ -172,8 +174,21 @@ export function NewPersonForm() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
+
+    // Gate regra 45: empresa não ativa precisa de ack explícito antes do INSERT
+    // (Receita Federal pode estar com info desatualizada, mas suspensa/baixada
+    // sem confirmação geralmente é erro do operador).
+    if (autoFilled && autoFilled.situacao !== 'ativa') {
+      const ok = await confirm({
+        title: `CNPJ com situação ${autoFilled.situacao}`,
+        body: `A Receita Federal marca esta empresa como ${autoFilled.situacao}. Cadastrar mesmo assim?`,
+        danger: true,
+        confirmLabel: 'Cadastrar mesmo assim',
+      })
+      if (!ok) return
+    }
+
     setSubmitting(true)
-    setSubmitError(null)
 
     const hasAddress = cep || logradouro || numero || complemento || bairro || cidade || uf
     const result = await createPerson({
@@ -201,7 +216,7 @@ export function NewPersonForm() {
 
     if (!result.ok) {
       setSubmitting(false)
-      setSubmitError(result.error.message)
+      toast.fromApiError(result.error)
       return
     }
 
@@ -538,15 +553,6 @@ export function NewPersonForm() {
           />
         </fieldset>
       </section>
-
-      {submitError && (
-        <div
-          role="alert"
-          className="rounded-md border border-[color:var(--ev-danger)] bg-[color:var(--ev-surface)] p-3 text-sm text-[color:var(--ev-danger)]"
-        >
-          {submitError}
-        </div>
-      )}
 
       <div className="flex gap-3 pt-2">
         <button
