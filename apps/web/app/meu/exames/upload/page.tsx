@@ -4,12 +4,16 @@
  * MVP: aceita storagePath manual (Sprint 33b: drag-drop + MinIO + scanUpload).
  */
 import Link from 'next/link'
-import { requireMemberSession } from '../../../lib/member-session'
+import { requireMemberOrPassport } from '../../../lib/require-member-or-passport'
+import { PassportNeedsLink } from '../../_components/passport-needs-link'
 
 export const dynamic = 'force-dynamic'
 
 export default async function UploadExamPage() {
-  await requireMemberSession('/meu/exames/upload')
+  const __ctx = await requireMemberOrPassport('/meu/exames/upload')
+  if (__ctx.kind === 'passport_needs_link') {
+    return <PassportNeedsLink feature="upload de exames" />
+  }
 
   return (
     <div className="ev-portal-page">

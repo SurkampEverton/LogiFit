@@ -4,13 +4,17 @@
  * MVP: textarea com paste do CSV. Sprint 32b: drag-drop + scanUpload regra 38.
  */
 import Link from 'next/link'
-import { requireMemberSession } from '../../../lib/member-session'
+import { requireMemberOrPassport } from '../../../lib/require-member-or-passport'
+import { PassportNeedsLink } from '../../_components/passport-needs-link'
 import { ImportCsvForm } from './form'
 
 export const dynamic = 'force-dynamic'
 
 export default async function ImportarPage() {
-  await requireMemberSession('/meu/dispositivos/importar')
+  const __ctx = await requireMemberOrPassport('/meu/dispositivos/importar')
+  if (__ctx.kind === 'passport_needs_link') {
+    return <PassportNeedsLink feature="importação de dispositivos" />
+  }
 
   return (
     <div className="ev-portal-page">

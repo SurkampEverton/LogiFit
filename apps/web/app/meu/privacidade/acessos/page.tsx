@@ -9,7 +9,9 @@
  */
 import Link from 'next/link'
 import { pool } from '@repo/db/client'
-import { requireMemberSession, withMemberContext } from '../../../lib/member-session'
+import { withMemberContext } from '../../../lib/member-session'
+import { requireMemberOrPassport } from '../../../lib/require-member-or-passport'
+import { PassportNeedsLink } from '../../_components/passport-needs-link'
 import { ExportLogForm } from './export-log-form'
 
 export const dynamic = 'force-dynamic'
@@ -50,7 +52,11 @@ function formatDateTime(d: Date): string {
 }
 
 export default async function AcessosPage() {
-  const session = await requireMemberSession('/meu/privacidade/acessos')
+  const ctx = await requireMemberOrPassport('/meu/privacidade/acessos')
+  if (ctx.kind === 'passport_needs_link') {
+    return <PassportNeedsLink feature="log de acessos" hideLinkButtons />
+  }
+  const session = ctx.claims
 
   const accesses = await withMemberContext(session, async () => {
     // Descobre passport do member

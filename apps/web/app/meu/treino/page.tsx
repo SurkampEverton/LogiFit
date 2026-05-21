@@ -8,7 +8,9 @@
  */
 import Link from 'next/link'
 import { pool } from '@repo/db/client'
-import { requireMemberSession, withMemberContext } from '../../lib/member-session'
+import { withMemberContext } from '../../lib/member-session'
+import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
+import { PassportNeedsLink } from '../_components/passport-needs-link'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,7 +50,11 @@ function formatDate(d: Date): string {
 }
 
 export default async function MeuTreinoPage() {
-  const session = await requireMemberSession('/meu/treino')
+  const ctx = await requireMemberOrPassport('/meu/treino')
+  if (ctx.kind === 'passport_needs_link') {
+    return <PassportNeedsLink feature="seus treinos" />
+  }
+  const session = ctx.claims
 
   const { prescription, items, sessions } = await withMemberContext(session, async () => {
     const presRes = await pool.query<ActivePrescription>(

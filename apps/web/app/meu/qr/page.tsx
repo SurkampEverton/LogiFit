@@ -8,7 +8,9 @@
  * Secret HMAC vem de `device_secrets` (Sprint 08) compartilhado por tenant.
  * Sprint 26c: secret rotativo por device (multi-catraca tenant).
  */
-import { requireMemberSession, withMemberContext } from '../../lib/member-session'
+import { withMemberContext } from '../../lib/member-session'
+import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
+import { PassportNeedsLink } from '../_components/passport-needs-link'
 import { pool } from '@repo/db/client'
 import { generateQrPayload, encodeQrString } from '@repo/db/portal-member'
 import { QrLiveDisplay } from './qr-live-display'
@@ -16,7 +18,11 @@ import { QrLiveDisplay } from './qr-live-display'
 export const dynamic = 'force-dynamic'
 
 export default async function MeuQrPage() {
-  const session = await requireMemberSession('/meu/qr')
+  const ctx = await requireMemberOrPassport('/meu/qr')
+  if (ctx.kind === 'passport_needs_link') {
+    return <PassportNeedsLink feature="seu QR code de acesso" />
+  }
+  const session = ctx.claims
 
   // Busca secret HMAC do tenant (Sprint 08 access_secrets — última ativa)
   const secret = await withMemberContext(session, async () => {

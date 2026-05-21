@@ -10,12 +10,16 @@
  * Direito do titular (LGPD art. 48 + ANPD Res. 2/2024): notificação em 72h.
  */
 import Link from 'next/link'
-import { requireMemberSession } from '../../../lib/member-session'
+import { requireMemberOrPassport } from '../../../lib/require-member-or-passport'
+import { PassportNeedsLink } from '../../_components/passport-needs-link'
 
 export const dynamic = 'force-dynamic'
 
 export default async function IncidentesPage() {
-  await requireMemberSession('/meu/privacidade/incidentes')
+  const __ctx = await requireMemberOrPassport('/meu/privacidade/incidentes')
+  if (__ctx.kind === 'passport_needs_link') {
+    return <PassportNeedsLink feature="incidentes de segurança" hideLinkButtons />
+  }
 
   const incidents: Array<{
     id: string

@@ -9,12 +9,16 @@
  * Quando expandir, reusar `expandRecurring(range)` + slot picker.
  */
 import Link from 'next/link'
-import { requireMemberSession } from '../../../lib/member-session'
+import { requireMemberOrPassport } from '../../../lib/require-member-or-passport'
+import { PassportNeedsLink } from '../../_components/passport-needs-link'
 
 export const dynamic = 'force-dynamic'
 
 export default async function NovoAgendamentoPage() {
-  await requireMemberSession('/meu/agenda/novo')
+  const __ctx = await requireMemberOrPassport('/meu/agenda/novo')
+  if (__ctx.kind === 'passport_needs_link') {
+    return <PassportNeedsLink feature="agendamento novo" />
+  }
 
   return (
     <div className="ev-portal-page">

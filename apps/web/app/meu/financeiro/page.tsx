@@ -8,7 +8,9 @@
  */
 import Link from 'next/link'
 import { pool } from '@repo/db/client'
-import { requireMemberSession, withMemberContext } from '../../lib/member-session'
+import { withMemberContext } from '../../lib/member-session'
+import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
+import { PassportNeedsLink } from '../_components/passport-needs-link'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,7 +48,11 @@ function formatDate(d: Date): string {
 }
 
 export default async function MeuFinanceiroPage() {
-  const session = await requireMemberSession('/meu/financeiro')
+  const ctx = await requireMemberOrPassport('/meu/financeiro')
+  if (ctx.kind === 'passport_needs_link') {
+    return <PassportNeedsLink feature="suas faturas" />
+  }
+  const session = ctx.claims
 
   const { pending, history } = await withMemberContext(session, async () => {
     const pendRes = await pool.query<InvoiceRow>(

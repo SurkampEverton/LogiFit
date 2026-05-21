@@ -9,7 +9,9 @@
  */
 import Link from 'next/link'
 import { pool } from '@repo/db/client'
-import { requireMemberSession, withMemberContext } from '../../lib/member-session'
+import { withMemberContext } from '../../lib/member-session'
+import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
+import { PassportNeedsLink } from '../_components/passport-needs-link'
 import { CancelButton } from './cancel-button'
 
 export const dynamic = 'force-dynamic'
@@ -50,7 +52,11 @@ function formatBr(d: Date): string {
 }
 
 export default async function MeuAgendaPage() {
-  const session = await requireMemberSession('/meu/agenda')
+  const ctx = await requireMemberOrPassport('/meu/agenda')
+  if (ctx.kind === 'passport_needs_link') {
+    return <PassportNeedsLink feature="sua agenda" />
+  }
+  const session = ctx.claims
 
   const { upcoming, past } = await withMemberContext(session, async () => {
     const upRes = await pool.query<AppointmentRow>(

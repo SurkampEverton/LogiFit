@@ -11,7 +11,9 @@
  */
 import Link from 'next/link'
 import { pool } from '@repo/db/client'
-import { requireMemberSession, withMemberContext } from '../../lib/member-session'
+import { withMemberContext } from '../../lib/member-session'
+import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
+import { PassportNeedsLink } from '../_components/passport-needs-link'
 import {
   CONSENT_CATALOG,
   checkRenewalStatus,
@@ -45,7 +47,11 @@ const RENEWAL_LABEL: Record<RenewalStatus, string | null> = {
 }
 
 export default async function MeuPrivacidadePage() {
-  const session = await requireMemberSession('/meu/privacidade')
+  const ctx = await requireMemberOrPassport('/meu/privacidade')
+  if (ctx.kind === 'passport_needs_link') {
+    return <PassportNeedsLink feature="sua privacidade" hideLinkButtons />
+  }
+  const session = ctx.claims
 
   const rows = await withMemberContext(session, async () => {
     const r = await pool.query<ConsentDbRow>(

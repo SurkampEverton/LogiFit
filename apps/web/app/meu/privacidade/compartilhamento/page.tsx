@@ -13,7 +13,9 @@
  */
 import Link from 'next/link'
 import { pool } from '@repo/db/client'
-import { requireMemberSession, withMemberContext } from '../../../lib/member-session'
+import { withMemberContext } from '../../../lib/member-session'
+import { requireMemberOrPassport } from '../../../lib/require-member-or-passport'
+import { PassportNeedsLink } from '../../_components/passport-needs-link'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,7 +55,11 @@ function formatDate(d: Date): string {
 }
 
 export default async function CompartilhamentoPage() {
-  const session = await requireMemberSession('/meu/privacidade/compartilhamento')
+  const ctx = await requireMemberOrPassport('/meu/privacidade/compartilhamento')
+  if (ctx.kind === 'passport_needs_link') {
+    return <PassportNeedsLink feature="seus vínculos" hideLinkButtons />
+  }
+  const session = ctx.claims
 
   const links = await withMemberContext(session, async () => {
     // 1. Descobrir passport_passport_id do member atual via patient_company_links

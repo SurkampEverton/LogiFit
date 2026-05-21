@@ -11,12 +11,16 @@
  *   - Botão "marcar como lido" → `acknowledgeCrossPrescriptionAlert`
  */
 import Link from 'next/link'
-import { requireMemberSession } from '../../../lib/member-session'
+import { requireMemberOrPassport } from '../../../lib/require-member-or-passport'
+import { PassportNeedsLink } from '../../_components/passport-needs-link'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AlertasCruzadosPage() {
-  await requireMemberSession('/meu/privacidade/alertas-cruzados')
+  const __ctx = await requireMemberOrPassport('/meu/privacidade/alertas-cruzados')
+  if (__ctx.kind === 'passport_needs_link') {
+    return <PassportNeedsLink feature="alertas cruzados" />
+  }
 
   // Schema `cross_prescription_alerts` será criado em Sprint 11+ extensão.
   // MVP: stub explicativo. Quando tabela existir, listar com filtros.

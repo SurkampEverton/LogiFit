@@ -10,12 +10,16 @@
  * com debounce, filtro por cidade + módulo, criação de pedido inverso.
  */
 import Link from 'next/link'
-import { requireMemberSession } from '../../lib/member-session'
+import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
+import { PassportNeedsLink } from '../_components/passport-needs-link'
 
 export const dynamic = 'force-dynamic'
 
 export default async function ConvidarPage() {
-  await requireMemberSession('/meu/convidar')
+  const __ctx = await requireMemberOrPassport('/meu/convidar')
+  if (__ctx.kind === 'passport_needs_link') {
+    return <PassportNeedsLink feature="convidar empresa" hideLinkButtons />
+  }
 
   return (
     <div className="ev-portal-page">

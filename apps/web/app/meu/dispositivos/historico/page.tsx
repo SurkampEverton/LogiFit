@@ -3,7 +3,9 @@
  */
 import Link from 'next/link'
 import { pool } from '@repo/db/client'
-import { requireMemberSession, withMemberContext } from '../../../lib/member-session'
+import { withMemberContext } from '../../../lib/member-session'
+import { requireMemberOrPassport } from '../../../lib/require-member-or-passport'
+import { PassportNeedsLink } from '../../_components/passport-needs-link'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,7 +48,11 @@ function formatDateTime(d: Date): string {
 }
 
 export default async function HistoricoPage() {
-  const session = await requireMemberSession('/meu/dispositivos/historico')
+  const ctx = await requireMemberOrPassport('/meu/dispositivos/historico')
+  if (ctx.kind === 'passport_needs_link') {
+    return <PassportNeedsLink feature="histórico de leituras" />
+  }
+  const session = ctx.claims
 
   const rows = await withMemberContext(session, async () => {
     const r = await pool.query<ReadingRow>(
