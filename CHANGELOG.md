@@ -6,6 +6,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — Form de cadastro de pessoa ganha todos os campos do schema 2026-05-21
+
+`/app/pessoas/new` cobria só CPF/CNPJ + Nome + Email + Telefone. O schema `persons` (ADR 0047) já tem `displayName`, `birthDate`, `sex`, `address` completo e `notes`, mas só `address` chegava preenchido (via auto-fill CNPJ) — invisível. Operador não tinha como completar PF.
+
+- Form expandido com seções: Identidade (kind-aware label: "Razão Social" vs "Nome completo"; `displayName` muda label entre "Nome fantasia" e "Apelido"), Contato, Endereço completo e Observações.
+- `birthDate` (date input) e `sex` (texto livre LGPD art. 11) só aparecem quando documento = CPF.
+- Novo endpoint `GET /api/cep/{cep}` proxia ViaCEP via `safeFetch` (regra 37) — autofill ao blur do CEP preenche logradouro/bairro/cidade/uf sem sobrescrever o que operador já digitou. Auto-fill CNPJ existente expandido para também popular CEP/número/complemento.
+- Schema Zod da action `createPerson` já aceitava todos os campos — só faltava expor na UI.
+
 ### Fixed — Lookup CNPJ retornava "não encontrado" para empresas reais 2026-05-21
 
 BrasilAPI tem snapshot da base aberta da Receita incompleta para filiais altas. CNPJ real `33.009.911/0041-26` (SOUZA CRUZ LTDA filial ATIVA) batia em BrasilAPI 404 e o orquestrador NÃO acionava fallback porque a política original só fallback em `PROVIDER_DOWN`/`RATE_LIMITED` ("NOT_FOUND é definitivo"). Operador via "CNPJ não encontrado na Receita Federal" pra empresa que existe.
