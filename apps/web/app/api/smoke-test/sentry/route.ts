@@ -12,7 +12,10 @@
  *      wrapApiHandler (`setCaptureHook` plugado em sentry.server.config.ts)
  *
  * Uso:
- *   curl https://app.logifit.com.br/api/_smoke/sentry?token=<SMOKE_TOKEN>
+ *   curl https://app.logifit.com.br/api/smoke-test/sentry?token=<SMOKE_TOKEN>
+ *
+ * Path NÃO usa underscore (`_smoke`) porque Next.js App Router trata pastas
+ * com underscore inicial como private folders (excluídas do routing).
  *
  * `SMOKE_TOKEN` env evita scan público encher GlitchTip de eventos lixo.
  */
