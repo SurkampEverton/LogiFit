@@ -58,13 +58,18 @@ function generateNonce(): string {
  * do Tailwind v4 (custom properties em runtime).
  */
 function buildCsp(nonce: string): string {
+  // GlitchTip self-host (errors.logifit.com.br) precisa estar em connect-src
+  // pro Sentry SDK conseguir mandar eventos client-side. Sem isso, CSP bloqueia
+  // o XHR/fetch cross-origin e captura silenciosamente falha (zero eventos no
+  // painel). Server-side capture funciona independente do CSP.
+  // monitor.logifit.com.br (Grafana) também listado pra dashboards futuros.
   return [
     "default-src 'self'",
     `script-src 'nonce-${nonce}' 'strict-dynamic'`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
-    "connect-src 'self'",
+    "connect-src 'self' https://errors.logifit.com.br https://monitor.logifit.com.br",
     "frame-ancestors 'none'",
     "form-action 'self'",
     "base-uri 'self'",
