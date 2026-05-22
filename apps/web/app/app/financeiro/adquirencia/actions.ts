@@ -868,7 +868,10 @@ export async function quoteAnticipationPreview(input: {
   return quoteAnticipation({ originalAmountCents: original, daysToOriginalSettlement: avgDays })
 }
 
-export function computeSaleCostPreview(input: {
+// 'use server' exige que toda export seja async function (Server Action).
+// Este helper é puro — sintético/computacional, sem I/O — mas precisa async
+// pra passar pela validação do Next.js. Caller já faz await sem perda.
+export async function computeSaleCostPreview(input: {
   grossAmountCents: number
   cardKind: 'credit' | 'debit' | 'voucher' | 'pix' | 'other'
   installments: number
