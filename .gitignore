@@ -52,8 +52,14 @@ packages/db/drizzle/meta/_journal.tmp.json
 # Arquivos temporários do agente
 .git/COMMIT_MSG_TMP
 
-# Chaves SSH/GPG locais � nunca versionar
+# Chaves SSH/GPG locais — nunca versionar
 chaves/
+infra/.local-secrets/
+infra/smtp_*.txt
+infra/*.pem
+infra/*.key
+infra/id_*
+infra/ssh-key-*
 
 # Sprint 00b dev — debug logs (stdout buffering em Node + pipe)
 .magic-links.dev.log
