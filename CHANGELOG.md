@@ -6,6 +6,36 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 00.R: GlitchTip captura E2E validada em produção (100% dev) 2026-05-22
+
+Fecha Sprint 00 em 100% lado dev. Captura de erros server-side via `@sentry/nextjs → GlitchTip self-host` validada ponta a ponta em `https://app.logifit.com.br`. Restante 100% real depende dos 3 inputs externos do fundador (backup R2 credentials, DNS security@, HSTS preload submission).
+
+**Setup completado:**
+
+- **GlitchTip:** 104 migrations aplicadas (DB estava vazio desde Faixa 3), superuser admin criado (`eveton.surkamp@logifit.com.br`), Org `LogiFit` + Project `web` criados via UI, DSN copiado.
+- **Coolify ressuscitado:** painel estava 404 (Traefik sem router pra `coolify.logifit.com.br`) — `/data/coolify/source/.env` faltava `APP_URL`. Adicionado + recreate. Workaround temporário: acesso direto via porta 8000 do VPS.
+- **Env vars no Coolify:** `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ENV=production` em `logifit-web`. Descoberta: UI marca "Build Time NO + Preview NO" como `is_runtime=false` no DB — env nem chega ao container. Workaround `UPDATE` SQL.
+
+**Bugs corrigidos durante deploy (commits `9564886`, `75bd6ee`, `f6feefc`):**
+
+- `computeSaleCostPreview` em adquirencia/actions.ts não era async — quebrava `next build` (`Server Actions must be async functions`)
+- CSP `connect-src 'self'` bloqueava SDK client-side de enviar pra `errors.logifit.com.br` — adicionado `https://errors.logifit.com.br` + `https://monitor.logifit.com.br` em connect-src
+- Pasta `_smoke/` no App Router é private folder (excluída do routing Next.js) — renomeada pra `smoke-test/`
+
+**Validação E2E:**
+
+- Disparado via `docker exec` interno (token nunca saiu do server) com `trace_id 48fcc9ee-4693-4907-af57-f2fd962a0235`
+- Issue `WEB-1` apareceu em `errors.logifit.com.br` com TODAS as tags corretas (trace_id matching, environment=production, smoke_test=true, release, server_name, os.name)
+- Pipeline `Server Action → captureFromBoundary → Sentry SDK → GlitchTip → painel` validado
+
+**Cleanup:** endpoint `apps/web/app/api/smoke-test/` removido + `SMOKE_TOKEN` DELETE no Coolify DB.
+
+**Aprendizado documentado (para sessão futura de runbook):**
+
+- Coolify cifra `value` de env vars com Laravel Encrypter — INSERT SQL direto com value plain quebra Livewire render. Caminho correto é UI ou `php artisan tinker`.
+- Coolify v4 UI: "Build Time NO + Preview NO" → `is_runtime=false`. Pra runtime-only env, precisa hack via SQL ou outra combinação de flags.
+- Next.js App Router: pastas com `_` inicial são private folders (excluídas de routing).
+
 ### Build — Sprint 00.Q: GlitchTip SDK no Next.js (~99%) 2026-05-21
 
 Último item de código do Sprint 00. Configura `@sentry/nextjs` apontando pro GlitchTip self-host (`errors.logifit.com.br` rodando desde Faixa 3). Sem DSN env, todas as chamadas são no-op — zero overhead em dev sem GlitchTip configurado.

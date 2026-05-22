@@ -2,7 +2,7 @@
 
 - **Início:** 2026-04-27
 - **Fim planejado:** **+5 semanas (~2026-06-01)** (revisado 2026-04-27 — [ADR 0091](../decisions/0091-self-host-total-oracle-sp.md) self-host total amplia escopo: bootstrap Oracle Cloud Vinhedo + Coolify + observabilidade self-host (GlitchTip/Loki/Grafana) + MinIO + runbook DR drill substituindo "subir Supabase CLI". Revisão anterior 2026-04-25 já tinha levado pra 4 semanas; +1 semana absorve self-host total. Excede regra 9 (3 semanas) com justificativa explícita em ADR 0091).
-- **Status:** **done (~99%)** 2026-05-21 — Faixas 1+2+3+4 entregues + GlitchTip SDK plugado (Sprint 00.Q). Restante: 3 itens bloqueados por input externo do fundador (backup R2 credentials, DNS security@, HSTS preload submission).
+- **Status:** **done (100% dev — observabilidade e2e validada)** 2026-05-22 — Faixas 1+2+3+4 entregues + GlitchTip SDK plugado (Sprint 00.Q) + captura E2E validada em prod (Sprint 00.R). 3 itens bloqueados por input externo do fundador continuam pendentes (backup R2 credentials, DNS security@, HSTS preload submission).
 - **Item do roadmap:** #1
 
 ## Goal
@@ -290,6 +290,26 @@ Para evitar estouro do timebox padrão de 3 semanas (regra 9), Sprint 00 organiz
 - [ ] Integração Translation Memory (TM) para reuso de tradução cross-sprint
 
 ## Log
+
+- **2026-05-22 — Sprint 00.R: GlitchTip captura E2E validada em produção (100% dev).**
+  - **Setup GlitchTip end-to-end:**
+    - 104 migrations rodadas no DB do GlitchTip (banco estava vazio desde Faixa 3) via `python manage.py migrate --no-input` no container `web-lkji13qn0p561ovseh497wgq`.
+    - Superuser admin criado: `eveton.surkamp@logifit.com.br` (senha setada interativa via `changepassword` no terminal do fundador — senha nunca exposta no transcript).
+    - Org `LogiFit` + Team `web` + Project `web` (plataforma JavaScript / Next.js) criados via UI; DSN copiado.
+  - **Coolify dashboard ressuscitado:** o painel `coolify.logifit.com.br` estava com 404 do Traefik (`no available server`) porque `/data/coolify/source/.env` faltava `APP_URL`. Adicionado `APP_URL=https://coolify.logifit.com.br` + recreate container Coolify + `php artisan reload`. **Workaround temporário** para finalizar setup: abrir porta 8000 do VPS (já estava aberta no UFW) e acessar Coolify direto via `http://157.151.31.227:8000` (sem TLS) — fechar porta após uso ou consertar Traefik labels.
+  - **Env vars de Sentry no Coolify:** `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ENV=production`, `SMOKE_TOKEN` (one-off pra smoke test) adicionados via UI Coolify. Descoberta importante: UI marca "Build Time NO + Preview NO" como `is_runtime=false` no DB — env não chega ao container. Workaround via `UPDATE environment_variables SET is_runtime=true` no DB.
+  - **Bug do Next.js descoberto:** pasta `_smoke/` no App Router é tratada como **private folder** (excluída do routing). Renomeado para `smoke-test/` no commit `f6feefc`.
+  - **2 bugs do código corrigidos durante deploy:**
+    - `computeSaleCostPreview` em `apps/web/app/app/financeiro/adquirencia/actions.ts:871` não era async — quebrava `next build` em prod com `Server Actions must be async functions`. Fix em `9564886`.
+    - CSP `connect-src 'self'` no `middleware.ts` bloqueava SDK client-side de enviar pra `errors.logifit.com.br`. Adicionado `https://errors.logifit.com.br` e `https://monitor.logifit.com.br` em `connect-src`. Commit `75bd6ee`.
+  - **Smoke test endpoint** `apps/web/app/api/smoke-test/sentry/route.ts` (commit `f6feefc`) — gated por env `SMOKE_TOKEN`, dispara 2 eventos (info + error level) com tags `trace_id`, `smoke_test`, `module`. **Removido após validação** no commit final desta sessão.
+  - **Validação E2E em prod:**
+    - Disparado via `docker exec` interno (token nunca saiu do server) com trace_id `48fcc9ee-4693-4907-af57-f2fd962a0235`
+    - Issue `WEB-1` apareceu em `errors.logifit.com.br` com TODOS os campos corretos: message, trace_id matching, tags (`environment=production`, `smoke_test=true`, `release`, `server_name`, `os.name=Alpine Linux`), breadcrumbs com HTTP request, app metadata.
+    - **Pipeline `Server Action → captureFromBoundary → Sentry SDK → GlitchTip self-host → painel` validado ponta a ponta.**
+  - **Cleanup pós-validação:** `apps/web/app/api/smoke-test/` removido, `SMOKE_TOKEN` DELETE do Coolify DB (linhas 45 + 46 duplicadas).
+  - **Operações DB Coolify documentadas:** Coolify cifra `value` de env vars com Laravel Encrypter — INSERT SQL direto com value plain quebra Livewire render. Caminho correto é UI ou `php artisan tinker` (com cast auto-encrypt do Eloquent). Documentar em `docs/runbooks/coolify-operacoes.md` futuramente.
+  - **Sprint 00 fecha em 100% (lado dev).** Restante 100% real depende dos 3 inputs externos do fundador.
 
 - **2026-05-21 (tarde) — Sprint 00.Q: GlitchTip SDK plugado no Next.js (~99%).**
   - **4 configs Sentry/GlitchTip em `apps/web/`** — `instrumentation.ts` (entrypoint Next 15 carrega config por runtime), `sentry.client.config.ts` (browser, tracesSampleRate 0.1 prod, replay desabilitado pois GlitchTip não suporta), `sentry.server.config.ts` (Node runtime + conecta `setCaptureHook(@repo/errors) → Sentry.captureException` com tags tenant_id/request_id/module/code/fingerprint), `sentry.edge.config.ts` (Edge middleware minimalista).
