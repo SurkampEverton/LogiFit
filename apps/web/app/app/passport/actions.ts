@@ -27,27 +27,24 @@
  * `cross-tenant-read-must-log` enforça).
  */
 
+import { randomUUID } from 'node:crypto'
 import { db, pool } from '@repo/db/client'
 import {
   patientCompanyLinks,
   patientDataAccessLog,
   patientLinkModules,
   persons,
-  tenants,
 } from '@repo/db/schema'
 import { sendTransactional } from '@repo/email'
 import { ApiException } from '@repo/errors'
 import { and, desc, eq, sql } from 'drizzle-orm'
-import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import {
   renderPassportInviteHtml,
   renderPassportInviteText,
 } from '../../lib/email-templates/passport-invite'
-import {
-  buildInviteUrl,
-  buildPatientWhatsappShareUrl,
-} from '../../lib/passport-invite-share'
+import { logPatientLinkEvent } from '../../lib/passport-event-log'
+import { buildInviteUrl, buildPatientWhatsappShareUrl } from '../../lib/passport-invite-share'
 import { wrapServerAction } from '../../lib/wrap-action'
 
 // ─── Zod schemas ────────────────────────────────────────────────────────
@@ -61,13 +58,7 @@ const DataLevelsSchema = z
   })
   .strict()
 
-const ModuleEnum = z.enum([
-  'academia',
-  'personal_training',
-  'fisioterapia',
-  'nutricao',
-  'pilates',
-])
+const ModuleEnum = z.enum(['academia', 'personal_training', 'fisioterapia', 'nutricao', 'pilates'])
 type ModuleKind = z.infer<typeof ModuleEnum>
 
 const ModuleInputSchema = z.object({
@@ -211,6 +202,34 @@ export const sendPatientInvite = wrapServerAction(
 
       return linkRow!.id
     })
+
+    // Emite eventos de lifecycle (Sprint 02c.4) — best-effort, fora da tx
+    await logPatientLinkEvent({
+      tenantId,
+      linkId,
+      passportPassportId: parsed.passportPassportId,
+      patientPersonId: parsed.personId,
+      actorKind: 'professional',
+      actorUserId: session.user.id,
+      eventKind: 'invite_sent',
+      payload: { creationPath: 'reactive', moduleCount: parsed.modules.length },
+    })
+    for (const m of parsed.modules) {
+      await logPatientLinkEvent({
+        tenantId,
+        linkId,
+        passportPassportId: parsed.passportPassportId,
+        patientPersonId: parsed.personId,
+        actorKind: 'professional',
+        actorUserId: session.user.id,
+        eventKind: 'module_added',
+        payload: {
+          module: m.module,
+          responsibleProfessionalUserId: m.responsibleProfessionalUserId,
+          dataLevels: m.dataLevels,
+        },
+      })
+    }
 
     setAuditResource(linkId, {
       passport_id: parsed.passportPassportId,
@@ -419,6 +438,31 @@ export const acceptPatientInvite = wrapServerAction(
       }
     })
 
+    // Emite eventos lifecycle (Sprint 02c.4)
+    await logPatientLinkEvent({
+      tenantId,
+      linkId: link.id,
+      passportPassportId: link.passportPassportId,
+      patientPersonId: link.personId,
+      actorKind: 'professional', // MVP: staff em nome do paciente; Sprint 02b8+ roda no portal member
+      actorUserId: session.user.id,
+      eventKind: 'link_accepted',
+      payload: { acceptedCount: Array.from(acceptedSet).length },
+    })
+    for (const m of linkModules) {
+      if (!acceptedSet.has(m.module as ModuleKind)) continue
+      await logPatientLinkEvent({
+        tenantId,
+        linkId: link.id,
+        passportPassportId: link.passportPassportId,
+        patientPersonId: link.personId,
+        actorKind: 'professional',
+        actorUserId: session.user.id,
+        eventKind: 'module_activated',
+        payload: { module: m.module },
+      })
+    }
+
     setAuditResource(link.id, {
       passport_id: link.passportPassportId,
       accepted_modules: Array.from(acceptedSet),
@@ -427,8 +471,7 @@ export const acceptPatientInvite = wrapServerAction(
     return {
       ok: true as const,
       linkId: link.id,
-      acceptedCount: linkModules.filter((m) => acceptedSet.has(m.module as ModuleKind))
-        .length,
+      acceptedCount: linkModules.filter((m) => acceptedSet.has(m.module as ModuleKind)).length,
     }
   },
 )
@@ -461,7 +504,11 @@ export const cancelPatientInvite = wrapServerAction(
           eq(patientCompanyLinks.status, 'pending'),
         ),
       )
-      .returning({ id: patientCompanyLinks.id })
+      .returning({
+        id: patientCompanyLinks.id,
+        passportPassportId: patientCompanyLinks.passportPassportId,
+        personId: patientCompanyLinks.personId,
+      })
 
     if (!row) {
       throw new ApiException({
@@ -470,6 +517,18 @@ export const cancelPatientInvite = wrapServerAction(
         request_id: '',
       })
     }
+
+    // Emite evento lifecycle (Sprint 02c.4)
+    await logPatientLinkEvent({
+      tenantId,
+      linkId: row.id,
+      passportPassportId: row.passportPassportId,
+      patientPersonId: row.personId,
+      actorKind: 'professional',
+      actorUserId: session.user.id,
+      eventKind: 'invite_cancelled',
+      payload: { reason: 'cancelled_by_staff' },
+    })
 
     setAuditResource(row.id, { reason: 'cancelled_by_staff' })
     return { ok: true as const }
@@ -504,7 +563,11 @@ export const revokePatientLink = wrapServerAction(
           eq(patientCompanyLinks.status, 'active'),
         ),
       )
-      .returning({ id: patientCompanyLinks.id, passportId: patientCompanyLinks.passportPassportId })
+      .returning({
+        id: patientCompanyLinks.id,
+        passportId: patientCompanyLinks.passportPassportId,
+        personId: patientCompanyLinks.personId,
+      })
 
     if (!row) {
       throw new ApiException({
@@ -514,8 +577,8 @@ export const revokePatientLink = wrapServerAction(
       })
     }
 
-    // Desativa todos os módulos do link em cascata
-    await db
+    // Desativa todos os módulos do link em cascata + captura quais foram pra emitir 1 evento por module
+    const deactivatedModules = await db
       .update(patientLinkModules)
       .set({
         status: 'inactive',
@@ -524,6 +587,31 @@ export const revokePatientLink = wrapServerAction(
         updatedAt: new Date(),
       })
       .where(eq(patientLinkModules.linkId, parsed.linkId))
+      .returning({ module: patientLinkModules.module })
+
+    // Emite eventos lifecycle (Sprint 02c.4)
+    await logPatientLinkEvent({
+      tenantId,
+      linkId: row.id,
+      passportPassportId: row.passportId,
+      patientPersonId: row.personId,
+      actorKind: 'professional',
+      actorUserId: session.user.id,
+      eventKind: 'link_revoked',
+      payload: { reason: parsed.reason, deactivatedModuleCount: deactivatedModules.length },
+    })
+    for (const m of deactivatedModules) {
+      await logPatientLinkEvent({
+        tenantId,
+        linkId: row.id,
+        passportPassportId: row.passportId,
+        patientPersonId: row.personId,
+        actorKind: 'professional',
+        actorUserId: session.user.id,
+        eventKind: 'module_deactivated',
+        payload: { module: m.module, reason: 'link_revoked' },
+      })
+    }
 
     setAuditResource(row.id, { reason: parsed.reason })
     return { ok: true as const }
@@ -540,10 +628,7 @@ export const confirmModuleSubstitution = wrapServerAction(
     action: 'module.substitute',
     resourceType: 'patient_link_modules',
   },
-  async (
-    input: z.infer<typeof ConfirmSubstitutionSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ConfirmSubstitutionSchema>, { session, setAuditResource }) => {
     const parsed = ConfirmSubstitutionSchema.parse(input)
     const tenantId = session.logifit.tenantId
 
@@ -623,6 +708,29 @@ export const confirmModuleSubstitution = wrapServerAction(
       }
     })
 
+    // Emite eventos lifecycle no tenant atual (Sprint 02c.4) — substituição
+    // remota não loga no outro tenant (RLS bloqueia cross-tenant INSERT)
+    await logPatientLinkEvent({
+      tenantId,
+      linkId: newLink.id,
+      passportPassportId: newLink.passportPassportId,
+      patientPersonId: newLink.personId,
+      actorKind: 'professional',
+      actorUserId: session.user.id,
+      eventKind: 'module_substituted',
+      payload: { module: parsed.module },
+    })
+    await logPatientLinkEvent({
+      tenantId,
+      linkId: newLink.id,
+      passportPassportId: newLink.passportPassportId,
+      patientPersonId: newLink.personId,
+      actorKind: 'professional',
+      actorUserId: session.user.id,
+      eventKind: 'module_activated',
+      payload: { module: parsed.module, viaSubstitution: true },
+    })
+
     setAuditResource(newModule.id, {
       passport_id: newLink.passportPassportId,
       substituted_module: parsed.module,
@@ -642,10 +750,7 @@ export const setSharingLevel = wrapServerAction(
     action: 'module.set_sharing',
     resourceType: 'patient_link_modules',
   },
-  async (
-    input: z.infer<typeof SetSharingLevelSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof SetSharingLevelSchema>, { session, setAuditResource }) => {
     const parsed = SetSharingLevelSchema.parse(input)
     const tenantId = session.logifit.tenantId
 
@@ -653,13 +758,14 @@ export const setSharingLevel = wrapServerAction(
     const [row] = await db
       .select({
         id: patientLinkModules.id,
+        linkId: patientLinkModules.linkId,
         passportId: patientLinkModules.passportPassportId,
+        module: patientLinkModules.module,
+        dataLevelsBefore: patientLinkModules.dataLevels,
+        personId: patientCompanyLinks.personId,
       })
       .from(patientLinkModules)
-      .innerJoin(
-        patientCompanyLinks,
-        eq(patientCompanyLinks.id, patientLinkModules.linkId),
-      )
+      .innerJoin(patientCompanyLinks, eq(patientCompanyLinks.id, patientLinkModules.linkId))
       .where(
         and(
           eq(patientLinkModules.id, parsed.linkModuleId),
@@ -680,6 +786,22 @@ export const setSharingLevel = wrapServerAction(
       .update(patientLinkModules)
       .set({ dataLevels: parsed.dataLevels, updatedAt: new Date() })
       .where(eq(patientLinkModules.id, row.id))
+
+    // Emite evento lifecycle (Sprint 02c.4)
+    await logPatientLinkEvent({
+      tenantId,
+      linkId: row.linkId,
+      passportPassportId: row.passportId,
+      patientPersonId: row.personId,
+      actorKind: 'professional',
+      actorUserId: session.user.id,
+      eventKind: 'data_levels_changed',
+      payload: {
+        module: row.module,
+        from: row.dataLevelsBefore,
+        to: parsed.dataLevels,
+      },
+    })
 
     setAuditResource(row.id, {
       passport_id: row.passportId,
@@ -867,7 +989,7 @@ export const sendPatientInviteSimple = wrapServerAction(
         hash.slice(0, 8),
         hash.slice(8, 12),
         '4' + hash.slice(13, 16), // version 4
-        ((parseInt(hash.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + hash.slice(17, 20),
+        ((Number.parseInt(hash.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + hash.slice(17, 20),
         hash.slice(20, 32),
       ].join('-')
     } else {

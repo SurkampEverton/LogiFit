@@ -68,6 +68,24 @@ interface InviteDetail {
   modules: ModuleDetail[]
 }
 
+interface LinkEventRow {
+  createdAt: string
+  actorKind: 'professional' | 'patient' | 'system'
+  actorName: string | null
+  eventKind:
+    | 'invite_sent'
+    | 'invite_resent'
+    | 'invite_cancelled'
+    | 'link_accepted'
+    | 'link_revoked'
+    | 'module_added'
+    | 'module_activated'
+    | 'module_deactivated'
+    | 'module_substituted'
+    | 'data_levels_changed'
+  payload: Record<string, unknown> | null
+}
+
 interface AccessLogRow {
   recordedAt: string
   readerTenantId: string
@@ -155,6 +173,59 @@ interface TimelineEvent {
   detail?: string
 }
 
+const EVENT_KIND_LABELS: Record<LinkEventRow['eventKind'], string> = {
+  invite_sent: 'Convite enviado',
+  invite_resent: 'Convite reenviado',
+  invite_cancelled: 'Convite cancelado',
+  link_accepted: 'Vínculo aceito',
+  link_revoked: 'Vínculo revogado',
+  module_added: 'Módulo solicitado',
+  module_activated: 'Módulo ativado',
+  module_deactivated: 'Módulo desativado',
+  module_substituted: 'Módulo substituído',
+  data_levels_changed: 'Níveis de dados ajustados',
+}
+
+const ACTOR_KIND_LABELS: Record<LinkEventRow['actorKind'], string> = {
+  professional: 'Profissional',
+  patient: 'Paciente',
+  system: 'Sistema',
+}
+
+function formatEventDetail(ev: LinkEventRow): string | undefined {
+  const p = ev.payload
+  if (!p) return undefined
+  // Módulo no payload → "academia", "fisioterapia" etc
+  const moduleVal = typeof p.module === 'string' ? (MODULE_LABELS[p.module] ?? p.module) : null
+  switch (ev.eventKind) {
+    case 'invite_sent': {
+      const path = typeof p.creationPath === 'string' ? p.creationPath : null
+      const count = typeof p.moduleCount === 'number' ? p.moduleCount : null
+      const pieces: string[] = []
+      if (path) pieces.push(path === 'proactive' ? 'auto-cadastro' : 'invite reativo')
+      if (count !== null) pieces.push(`${count} módulo(s)`)
+      return pieces.length > 0 ? pieces.join(' · ') : undefined
+    }
+    case 'link_accepted': {
+      const c = typeof p.acceptedCount === 'number' ? p.acceptedCount : null
+      return c !== null ? `${c} módulo(s) aceito(s)` : undefined
+    }
+    case 'invite_cancelled':
+    case 'link_revoked': {
+      const reason = typeof p.reason === 'string' ? p.reason : null
+      return reason ?? undefined
+    }
+    case 'module_added':
+    case 'module_activated':
+    case 'module_deactivated':
+    case 'module_substituted':
+    case 'data_levels_changed':
+      return moduleVal ?? undefined
+    default:
+      return undefined
+  }
+}
+
 function buildTimeline(invite: InviteDetail): TimelineEvent[] {
   const events: TimelineEvent[] = []
   events.push({
@@ -225,6 +296,7 @@ export default async function PassportInviteDetailPage({
   let invite: InviteDetail | null = null
   let tenantName = 'sua clínica'
   let accessLog: AccessLogRow[] = []
+  let linkEvents: LinkEventRow[] = []
   try {
     await client.query("SELECT set_config('app.tenant_id', $1, false)", [session.logifit.tenantId])
 
@@ -319,6 +391,27 @@ export default async function PassportInviteDetailPage({
         [session.logifit.tenantId, invite.passportPassportId],
       )
       accessLog = logRes.rows
+
+      // Sprint 02c.4: timeline via patient_link_events particionada.
+      // Hard-cap 100 — vínculo típico tem ~8 eventos, mas vínculo "old"
+      // com várias mudanças de sharing pode acumular dezenas.
+      // RLS filtra por tenant_id automaticamente (0061_patient_link_events_rls.sql).
+      const evRes = await client.query<LinkEventRow>(
+        `SELECT
+           e.created_at AS "createdAt",
+           e.actor_kind::text AS "actorKind",
+           actor_p.name AS "actorName",
+           e.event_kind::text AS "eventKind",
+           e.payload
+         FROM patient_link_events e
+         LEFT JOIN users actor_u ON actor_u.id = e.actor_user_id
+         LEFT JOIN persons actor_p ON actor_p.id = actor_u.person_id
+         WHERE e.link_id = $1
+         ORDER BY e.created_at ASC
+         LIMIT 100`,
+        [invite.id],
+      )
+      linkEvents = evRes.rows
     }
   } finally {
     await client.query("SELECT set_config('app.tenant_id', '', false)").catch(() => {})
@@ -339,7 +432,10 @@ export default async function PassportInviteDetailPage({
         })
       : null
 
+  // Sprint 02c.4: prefere patient_link_events; cai pra timeline derivada de
+  // timestamps quando vínculo é anterior à migration 0049 (sem eventos).
   const timeline = buildTimeline(invite)
+  const useEvents = linkEvents.length > 0
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-8 space-y-8">
@@ -475,31 +571,86 @@ export default async function PassportInviteDetailPage({
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">Linha do tempo</h2>
+        <h2 className="text-lg font-medium">
+          Linha do tempo{' '}
+          {useEvents && (
+            <span className="text-xs font-normal" style={{ color: 'var(--ev-text-muted)' }}>
+              ({linkEvents.length} evento(s))
+            </span>
+          )}
+        </h2>
+        {!useEvents && (
+          <p className="text-xs" style={{ color: 'var(--ev-text-muted)' }}>
+            Vínculo anterior à Sprint 02c.4 — linha do tempo derivada dos timestamps do registro.
+            Eventos novos a partir desta data são gravados em
+            <code style={{ marginLeft: '0.25rem', fontFamily: 'var(--ev-mono, ui-monospace)' }}>
+              patient_link_events
+            </code>
+            .
+          </p>
+        )}
         <ol
           className="space-y-3 rounded-md border p-4"
           style={{ borderColor: 'var(--ev-border)', background: 'var(--ev-surface)' }}
         >
-          {timeline.map((ev, idx) => (
-            <li
-              key={`${ev.at}-${idx}`}
-              className="flex flex-wrap items-baseline gap-2 border-b pb-2 last:border-b-0 last:pb-0"
-              style={{ borderColor: 'var(--ev-border)' }}
-            >
-              <span
-                className="text-xs tabular-nums"
-                style={{ color: 'var(--ev-text-muted)', minWidth: '140px' }}
-              >
-                {formatDateTime(ev.at)}
-              </span>
-              <span className="text-sm">{ev.label}</span>
-              {ev.detail && (
-                <span className="text-xs" style={{ color: 'var(--ev-text-muted)' }}>
-                  — {ev.detail}
-                </span>
-              )}
-            </li>
-          ))}
+          {useEvents
+            ? linkEvents.map((ev, idx) => {
+                const detail = formatEventDetail(ev)
+                const actorLabel =
+                  ev.actorName ??
+                  (ev.actorKind === 'patient'
+                    ? 'paciente'
+                    : ev.actorKind === 'system'
+                      ? 'sistema'
+                      : 'profissional')
+                return (
+                  <li
+                    key={`${ev.createdAt}-${idx}`}
+                    className="flex flex-wrap items-baseline gap-2 border-b pb-2 last:border-b-0 last:pb-0"
+                    style={{ borderColor: 'var(--ev-border)' }}
+                  >
+                    <span
+                      className="text-xs tabular-nums"
+                      style={{ color: 'var(--ev-text-muted)', minWidth: '140px' }}
+                    >
+                      {formatDateTime(ev.createdAt)}
+                    </span>
+                    <span className="text-sm">{EVENT_KIND_LABELS[ev.eventKind]}</span>
+                    {detail && (
+                      <span className="text-xs" style={{ color: 'var(--ev-text-muted)' }}>
+                        — {detail}
+                      </span>
+                    )}
+                    <span
+                      className="rounded-full px-1.5 py-0.5 text-[10px]"
+                      style={{ background: 'var(--ev-bg)', color: 'var(--ev-text-muted)' }}
+                      title={`Ator: ${ACTOR_KIND_LABELS[ev.actorKind]}`}
+                    >
+                      {actorLabel}
+                    </span>
+                  </li>
+                )
+              })
+            : timeline.map((ev, idx) => (
+                <li
+                  key={`${ev.at}-${idx}`}
+                  className="flex flex-wrap items-baseline gap-2 border-b pb-2 last:border-b-0 last:pb-0"
+                  style={{ borderColor: 'var(--ev-border)' }}
+                >
+                  <span
+                    className="text-xs tabular-nums"
+                    style={{ color: 'var(--ev-text-muted)', minWidth: '140px' }}
+                  >
+                    {formatDateTime(ev.at)}
+                  </span>
+                  <span className="text-sm">{ev.label}</span>
+                  {ev.detail && (
+                    <span className="text-xs" style={{ color: 'var(--ev-text-muted)' }}>
+                      — {ev.detail}
+                    </span>
+                  )}
+                </li>
+              ))}
         </ol>
       </section>
 

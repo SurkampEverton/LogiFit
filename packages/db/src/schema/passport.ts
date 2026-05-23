@@ -34,8 +34,6 @@
  */
 import { sql } from 'drizzle-orm'
 import {
-  boolean,
-  date,
   index,
   jsonb,
   pgEnum,
@@ -45,8 +43,8 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { persons } from './persons'
 import { tenants, users } from './identity'
+import { persons } from './persons'
 
 // Status do link (regra 42 §estados)
 export const passportLinkStatusEnum = pgEnum('passport_link_status', [
@@ -209,25 +207,103 @@ export const patientDataAccessLog = pgTable(
     userAgent: text('user_agent'),
   },
   (t) => [
-    index('patient_data_access_log_reader_tenant_at_idx').on(
-      t.readerTenantId,
-      t.recordedAt.desc(),
-    ),
-    index('patient_data_access_log_source_tenant_at_idx').on(
-      t.sourceTenantId,
-      t.recordedAt.desc(),
-    ),
-    index('patient_data_access_log_patient_at_idx').on(
-      t.patientPersonId,
-      t.recordedAt.desc(),
-    ),
-    index('patient_data_access_log_passport_at_idx').on(
-      t.passportPassportId,
-      t.recordedAt.desc(),
-    ),
+    index('patient_data_access_log_reader_tenant_at_idx').on(t.readerTenantId, t.recordedAt.desc()),
+    index('patient_data_access_log_source_tenant_at_idx').on(t.sourceTenantId, t.recordedAt.desc()),
+    index('patient_data_access_log_patient_at_idx').on(t.patientPersonId, t.recordedAt.desc()),
+    index('patient_data_access_log_passport_at_idx').on(t.passportPassportId, t.recordedAt.desc()),
+  ],
+)
+
+// ─── patient_link_events ─────────────────────────────────────────────────
+// Sprint 02c.4 — event log dedicado pro lifecycle de vínculos cross-tenant
+// (ADR 0077). Substitui timeline derivada de timestamps em
+// `/app/passport/invites/[id]` por evento append-only.
+//
+// **Particionada por mês** (regra 34 + ADR 0072) — criação via SQL custom em
+// migration 0049 (`CREATE TABLE ... PARTITION BY RANGE (created_at)`); Drizzle
+// só "vê" como tabela normal pra fins de types + queries (PG routing
+// transparente).
+//
+// **Volume estimado**: link tem ~6-10 eventos no lifecycle (created → invite
+// dispatched → accepted → N modules added/activated → N modules deactivated
+// → revoked). Em 10k tenants × 200 pacientes × 8 eventos = 16M/ano. Particiona.
+//
+// **Append-only** (regra 5 + 39): sem UPDATE/DELETE policy; INSERT só com
+// `tenant_id = current_setting('app.tenant_id')`. Hash chain NÃO se aplica
+// (já temos audit_log com chain — eventos são auditoria operacional, não
+// trilha forense).
+//
+// **Actor**: quem causou o evento:
+//   - `professional` — staff do tenant (action via /app/passport)
+//   - `patient` — paciente (action via /meu/* ou /i/[token])
+//   - `system` — cron, trigger SQL, dispatcher (substituição automática etc)
+//
+// **event_kind**: lookup canônico dos lifecycle events. Catálogo extensível
+// via migration nova (nunca quebra append-only).
+export const passportEventActorEnum = pgEnum('passport_event_actor', [
+  'professional',
+  'patient',
+  'system',
+])
+
+export const passportEventKindEnum = pgEnum('passport_event_kind', [
+  'invite_sent', // sendPatientInvite — link criado em 'pending'
+  'invite_resent', // resendPatientInvite (Sprint 02d+) — re-dispatch sem mudar status
+  'invite_cancelled', // cancelPatientInvite — staff cancela pending
+  'link_accepted', // acceptPatientInvite — paciente aceita
+  'link_revoked', // revokePatientLink — staff/paciente revoga active
+  'module_added', // 1 por module no sendPatientInvite
+  'module_activated', // module passa pra status='active' (accept ou substitute)
+  'module_deactivated', // module passa pra status='inactive' (revoke ou substitute)
+  'module_substituted', // confirmModuleSubstitution — passport global troca tenant
+  'data_levels_changed', // setSharingLevel — staff ajusta dataLevels do module
+])
+
+export const patientLinkEvents = pgTable(
+  'patient_link_events',
+  {
+    id: uuid('id').notNull().default(sql`gen_random_uuid()`),
+    tenantId: uuid('tenant_id').notNull(),
+
+    // Link de referência (opcional pro futuro: alguns eventos system-level
+    // sobre passportId podem não ter link específico). MVP: sempre populado.
+    linkId: uuid('link_id'),
+
+    // Identificadores derivados pro replay/aggregate sem JOIN
+    passportPassportId: uuid('passport_passport_id').notNull(),
+    patientPersonId: uuid('patient_person_id').notNull(),
+
+    // Quem causou o evento
+    actorKind: passportEventActorEnum('actor_kind').notNull(),
+    actorUserId: uuid('actor_user_id'), // null pra 'patient' (passport-side) ou 'system'
+
+    // O que aconteceu
+    eventKind: passportEventKindEnum('event_kind').notNull(),
+
+    // Detalhes — payload jsonb (NUNCA PII bruto; só refs + diffs)
+    // Ex (module_added): { module: 'fisioterapia', responsibleUserId: '...', dataLevels: {...} }
+    // Ex (link_revoked): { reason: 'cancelled_by_staff' }
+    // Ex (data_levels_changed): { module: 'academia', from: {...}, to: {...} }
+    payload: jsonb('payload'),
+
+    // Correlation request_id (de @repo/errors wrapAction)
+    requestId: uuid('request_id'),
+
+    // PK efetiva inclui created_at pra ser compatível com particionamento
+    // (Postgres exige PK incluir coluna de partição).
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    // PK composta: id + created_at (regra de PG particionado)
+    uniqueIndex('patient_link_events_pk').on(t.id, t.createdAt),
+    index('patient_link_events_tenant_at_idx').on(t.tenantId, t.createdAt.desc()),
+    index('patient_link_events_link_at_idx').on(t.linkId, t.createdAt.desc()),
+    index('patient_link_events_passport_at_idx').on(t.passportPassportId, t.createdAt.desc()),
   ],
 )
 
 export type PatientCompanyLinkRow = typeof patientCompanyLinks.$inferSelect
 export type PatientLinkModuleRow = typeof patientLinkModules.$inferSelect
 export type PatientDataAccessLogRow = typeof patientDataAccessLog.$inferSelect
+export type PatientLinkEventRow = typeof patientLinkEvents.$inferSelect
+export type PatientLinkEventInsert = typeof patientLinkEvents.$inferInsert

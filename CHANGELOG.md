@@ -6,6 +6,59 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 02c.4: patient_link_events particionado + event log lifecycle vínculo cross-tenant 2026-05-23
+
+Fecha o último item explicitamente declarado como pendente no roadmap pra Sprint 02 (passaporte cross-tenant). Substitui a timeline derivada de timestamps em `/app/passport/invites/[id]` por **event log append-only** dedicado — base pra auditoria operacional fina + integração futura com régua de mensagens (Sprint 13) + cross-alerts (Sprint 27/32).
+
+**Schema novo** (migration `0049_patient_link_events.sql`):
+
+- Tabela `patient_link_events` **particionada por mês** (`PARTITION BY RANGE (created_at)` — regra 34 + ADR 0072; @volume_estimate_yearly 16M+ em 10k tenants × 200 pacientes × 8 eventos).
+- 9 partições iniciais: `_202604` até `_202612` (janeiro 2027 já bloqueia INSERT — abre item Sprint 02d pra cron mensal `create-next-partition`).
+- 2 enums novos: `passport_event_actor` (`professional`/`patient`/`system`) + `passport_event_kind` (10 kinds: `invite_sent`/`invite_resent`/`invite_cancelled`/`link_accepted`/`link_revoked`/`module_added`/`module_activated`/`module_deactivated`/`module_substituted`/`data_levels_changed`).
+- PK composta `(id, created_at)` — exigência Postgres pra particionada.
+- 3 indexes propagados pras partições: `(tenant_id, created_at desc)`, `(link_id, created_at desc)`, `(passport_passport_id, created_at desc)`.
+- Append-only enforced via policy `0061_patient_link_events_rls.sql`: `SELECT` + `INSERT` com `tenant_id = current_setting('app.tenant_id')`; `REVOKE UPDATE, DELETE FROM logifit_app` (validado: role app-side recebe `permission denied for table` em UPDATE/DELETE).
+
+**Helper `logPatientLinkEvent`** (`apps/web/app/lib/passport-event-log.ts`):
+
+- Função **best-effort**: falha de INSERT NÃO bloqueia o SA principal — loga warning estruturado via pino (regra 33). Re-tentativa via outbox fica pra Sprint 02d+ quando virar problema mensurável.
+- Aceita opcional `tx` (drizzle transaction) — caller decide se emite dentro ou fora; default é `db` top-level.
+- Tipos exportados: `PassportEventActor`, `PassportEventKind`, `LogPatientLinkEventInput`.
+
+**6 Server Actions do passaporte emitindo eventos** (`apps/web/app/app/passport/actions.ts`):
+
+| SA | Eventos emitidos | Notas |
+|---|---|---|
+| `sendPatientInvite` | `invite_sent` (1×) + `module_added` (N×) | Fora da tx, após commit |
+| `acceptPatientInvite` | `link_accepted` (1×) + `module_activated` (N×) | actor='professional' MVP; Sprint 02b8+ rodará como 'patient' via portal |
+| `cancelPatientInvite` | `invite_cancelled` (1×) | RETURNING ampliado pra trazer passportId/personId |
+| `revokePatientLink` | `link_revoked` (1×) + `module_deactivated` (N×) | UPDATE modules ganhou RETURNING module pra emitir N eventos |
+| `confirmModuleSubstitution` | `module_substituted` + `module_activated` | Substituição remota não loga no outro tenant (RLS bloqueia cross-tenant INSERT) |
+| `setSharingLevel` | `data_levels_changed` com `{ from, to }` no payload | SELECT pre-update ganhou `dataLevelsBefore` |
+
+**Timeline /app/passport/invites/[id]** (`apps/web/app/app/passport/invites/[id]/page.tsx`):
+
+- Nova query SQL com hard-cap 100 + JOIN em `users`/`persons` pro nome do actor.
+- Renderer prefere events se há ≥1 row; cai pro `buildTimeline` (timestamps derivados) pra vínculos legados anteriores à migration 0049.
+- Cada evento renderiza: timestamp tabular + label humanizado (`EVENT_KIND_LABELS`) + detail extraído do payload via `formatEventDetail` (módulo, motivo, count etc) + chip do ator.
+- Banner explicativo "Vínculo anterior à Sprint 02c.4" no fallback.
+
+**Validação:**
+
+- ✓ typecheck `apps/web` clean
+- ✓ biome auto-fix nos 4 arquivos modificados (imports organizados, formatter aplicado)
+- ✓ Migration aplicada localmente — `\d+ patient_link_events` mostra 9 partições + 3 indexes + 2 policies (`patient_link_events_select`/`patient_link_events_insert`)
+- ✓ Smoke INSERT como `postgres` (BYPASSRLS) → row roteada pra `patient_link_events_202605` (tableoid validado)
+- ✓ Smoke UPDATE como `SET ROLE logifit_app` → `ERROR: permission denied for table patient_link_events` (append-only enforced)
+
+**Sprint 02d futuro** (não fechado nesta sessão):
+
+- Cron `create-next-partition` mensal — janeiro 2027 já bloqueia INSERT em prod sem ela.
+- Outbox + retry pra eventos best-effort que falharem (hoje só log warning).
+- Emissão member-side em `/meu/privacidade/actions.ts` quando paciente revoga vínculo via portal — `actorKind='patient'`.
+- `resendPatientInvite` SA real (emite `invite_resent`) — kind já reservado no enum.
+- Particionamento de `patient_data_access_log` (mesma estratégia — adiado Sprint 04+ em audit.ts; com 02c.4 servindo de template).
+
 ### Build — Sprint 00.R: GlitchTip captura E2E validada em produção (100% dev) 2026-05-22
 
 Fecha Sprint 00 em 100% lado dev. Captura de erros server-side via `@sentry/nextjs → GlitchTip self-host` validada ponta a ponta em `https://app.logifit.com.br`. Restante 100% real depende dos 3 inputs externos do fundador (backup R2 credentials, DNS security@, HSTS preload submission).

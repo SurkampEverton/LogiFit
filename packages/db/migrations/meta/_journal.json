@@ -295,6 +295,13 @@
       "when": 1779120842287,
       "tag": "0041_fiscal_focus_nfe",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1779554670955,
+      "tag": "0049_patient_link_events",
+      "breakpoints": true
     }
   ]
 }
