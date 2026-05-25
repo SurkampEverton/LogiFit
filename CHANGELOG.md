@@ -6,6 +6,90 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 37a: Apuração fiscal mensal Grupo C (motor próprio + memorial estruturado) — ADR 0100 Proposed 2026-05-23
+
+Abre Fase 3 fiscal continuada (pós Sprint 36 Focus NFe). Implementa o slot "Sprint 37" mapeado em [ADR 0061](docs/decisions/0061-motor-retencoes-e-cobertura-fiscal-faseada.md). Operador responde "quanto pago de DAS/DARF este mês?" sem consultar contador — LogiFit calcula receita bruta consolidada por company + fórmula do regime tributário (Simples/Presumido/Real/MEI) + memorial detalhado passo-a-passo. **Não emite guia oficial** (Sprint 38 cuida).
+
+**ADR 0100 Proposed** ([docs/decisions/0100](docs/decisions/0100-apuracao-fiscal-mensal-grupo-c.md)):
+
+- Motor próprio (não provider externo — regra 46 soberania)
+- Tabela Simples Anexos III+V em DB com `valid_from`/`valid_to` (atualização anual via migration data)
+- Status workflow `draft` (regerável) → `closed` (imutável via trigger SQL)
+- Snapshot `tax_regime` na aggregation preserva histórico mesmo trocando regime virada de ano
+- Memorial em jsonb estruturado: `[{ step, label, formula?, value_cents?, note? }]` — render consistente UI ↔ PDF (Sprint 37b)
+
+**Schemas novos** (migration `0050_fiscal_apuracao.sql`):
+
+- `fiscal_revenue_aggregations` — 1:1 por `(tenant_id, company_id, year_month)` com snapshot regime + receita + alíquota + imposto + memorial + status
+- `fiscal_revenue_breakdown` — 1:N filha por `fiscal_emission_kind` (NFS-e/NF-e/NFC-e/etc) com count + total
+- `fiscal_simples_brackets` — GLOBAL Anexos III+V vigentes; **seed inicial 12 brackets** vigentes desde 2026-01-01 (LC 123/2006 + LC 155/2016)
+
+**RLS** (`0062_fiscal_apuracao_rls.sql`):
+
+- SELECT/INSERT/UPDATE scoped por `app.tenant_id` nas 2 tabelas mutáveis
+- Global GRANT SELECT em `fiscal_simples_brackets` pra `logifit_app`
+- **Trigger BEFORE UPDATE** bloqueia mudança em status='closed' (exceto transição idempotente sem alterar campos críticos)
+
+**Libs puras `@repo/ai/fiscal/apuracao`** (508 linhas):
+
+- `types.ts` — `AggregationInput`/`AggregationResult`/`MemorialLine`/`SimplesBracket`
+- `simples-tables.ts` — `SIMPLES_ANEXO_III_2026` + `SIMPLES_ANEXO_V_2026` constants + `findSimplesBracket` lookup com `valid_from/valid_to` + Lucro Presumido atividade-base + MEI valores fixos 2026 + teto Simples R$ 4.8M
+- `compute.ts` — `calculateSimplesNacional` (fórmula efetiva: `(rbt12 × nom - parc) / rbt12`) + `calculateLucroPresumido` (4 atividades + adicional IRPJ 10% sobre excedente R$ 60k/trimestre + PIS/COFINS cumulativos) + `calculateLucroReal` (parcial — memorial explica gap) + `calculateMEI` (3 atividades + valida teto R$ 81k/ano) + `computeAggregation` dispatcher
+
+**24 unit tests verdes** (`compute.test.ts`):
+
+- Anexo III brackets 1, 2, 3 (cálculo efetivo) + Anexo V bracket 3
+- Primeira apuração (RBT12=0 → usa alíquota nominal faixa 1)
+- RBT12 acima do teto Simples (R$ 4.8M) → usa última faixa + memorial alerta
+- Receita zero → imposto zero
+- Lucro Presumido: SERVICO_SAUDE (12% presunção), REVENDA (8%), com adicional IRPJ R$ 60k+
+- Lucro Real apuração parcial + memorial nota
+- MEI 3 atividades (servico/comercio/ambos) + teto excedido
+- Dispatcher computeAggregation cobre todos 4 regimes
+
+**5 Server Actions wrapped** (`apps/web/app/app/fiscal/apuracao/actions.ts` 540 linhas):
+
+- `aggregateMonthlyRevenue(year, month, companyId)` — coleta receita de `fiscal_emissions` + RBT12 últimos 12m + dispatcher compute + UPSERT transacional (rejeita closed)
+- `getAggregation(id)` — read + breakdown
+- `listAggregations(filters)` — read com filtros year/companyId/status
+- `regenerateAggregation(id)` — re-roda (rejeita closed via trigger)
+- `closeAggregation(id)` — marca closed_at + closed_by_user_id
+- `exportMemorialPdf` stub Sprint 37b
+
+**UI 2 rotas** (`apps/web/app/app/fiscal/apuracao/`):
+
+- `/app/fiscal/apuracao` — hub com filtros year+companyId+status + 4 KPI cards (Aguardando × Fechadas × Receita 12m × Imposto 12m) + lista tabular
+- `/app/fiscal/apuracao/[id]` — detalhe com header + 3 KPI cards + breakdown table + memorial expandido linha-a-linha (step + label + formula + valueCents + note) + `<ApuracaoActions>` client com regenerar + fechar (dialog confirm próprio sem `window.confirm` — regra 45)
+
+**Sprint 37 doc** (`docs/sprints/37-fiscal-apuracao-mensal-receita.md`):
+
+- Goal + critério de aceite + dependências
+- Schemas detalhados + rotas + SAs + eventos
+- Estratégia de testes (T6 RLS + T8 cálculo determinístico + T11 UI smoke)
+- DoD Sprint 37a marcado completo
+- Sprint 37b/c documentado (cron + permissions + PDF + Real completo + feature flag + E2E + RIPD)
+
+**Validação:**
+
+- ✓ typecheck 12/12 verde
+- ✓ biome clean nos 11 arquivos novos/modificados (10 errors auto-fix + 2 noNonNullAssertion refatorados pra fallback explícito)
+- ✓ 24/24 unit tests verdes `compute.test.ts`
+- ⚠ Migration aplicada **localmente pendente** — docker desktop estava down na sessão; SQL + journal entry estão versionados, aplica no próximo `pnpm db:migrate`
+
+**Sprint 37b/c futuro** (pós-piloto):
+
+- Cron `aggregate-fiscal-monthly` dia 5 do mês seguinte pré-calcula automático
+- Permissions RBAC `fiscal.apuracao.read/write/close` + `contador_externo` ganha read
+- Memorial PDF via `@react-pdf/renderer` com branding tenant (ADR 0097)
+- Lucro Real completo integra `cost_entries` (Sprint 14)
+- Feature flag `fiscal_apuracao_v1` (ADR 0098)
+- E2E Playwright happy path
+- RIPD apuração + DPO sign-off
+- Cross-alert teto Simples → banner "considere Presumido"
+- Régua Sprint 13 lembrete vencimento DAS (dia 20)
+- Pesquisa global ADR 0062 (aggregations)
+- Update anual tabela Simples 2027 (job admin LogiFit)
+
 ### Build — Sprint 02c.4: patient_link_events particionado + event log lifecycle vínculo cross-tenant 2026-05-23
 
 Fecha o último item explicitamente declarado como pendente no roadmap pra Sprint 02 (passaporte cross-tenant). Substitui a timeline derivada de timestamps em `/app/passport/invites/[id]` por **event log append-only** dedicado — base pra auditoria operacional fina + integração futura com régua de mensagens (Sprint 13) + cross-alerts (Sprint 27/32).

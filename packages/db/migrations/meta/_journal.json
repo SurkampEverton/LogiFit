@@ -302,6 +302,13 @@
       "when": 1779554670955,
       "tag": "0049_patient_link_events",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1779555670955,
+      "tag": "0050_fiscal_apuracao",
+      "breakpoints": true
     }
   ]
 }

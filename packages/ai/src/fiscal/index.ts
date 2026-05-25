@@ -17,3 +17,34 @@
 export * from './provider'
 export * from './mock'
 export * from './cfop-resolver'
+
+// Sprint 37a — Apuração fiscal mensal Grupo C (ADR 0100 Proposed):
+//   - types: AggregationInput/Result, MemorialLine, FiscalSimplesAnexo, FiscalTaxRegime
+//   - tables: SIMPLES_ANEXO_III_2026, SIMPLES_ANEXO_V_2026 + findSimplesBracket
+//   - compute: calculateSimplesNacional/LucroPresumido/LucroReal/MEI + computeAggregation dispatcher
+// Named export pra evitar colisão com FiscalEmissionKind do provider (Sprint 36).
+export {
+  // types
+  type AggregationInput,
+  type AggregationResult,
+  type MemorialLine,
+  type SimplesBracket,
+  type FiscalSimplesAnexo,
+  type FiscalTaxRegime,
+  // tables
+  SIMPLES_ANEXO_III_2026,
+  SIMPLES_ANEXO_V_2026,
+  SIMPLES_RBT12_CEILING_CENTS,
+  MEI_VALOR_SERVICO_CENTS,
+  MEI_VALOR_COMERCIO_CENTS,
+  MEI_VALOR_AMBOS_CENTS,
+  MEI_RBT12_CEILING_CENTS,
+  LUCRO_PRESUMIDO_ATIVIDADE,
+  findSimplesBracket,
+  // compute
+  calculateSimplesNacional,
+  calculateLucroPresumido,
+  calculateLucroReal,
+  calculateMEI,
+  computeAggregation,
+} from './apuracao'

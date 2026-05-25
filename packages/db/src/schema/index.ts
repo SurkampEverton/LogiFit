@@ -166,3 +166,6 @@ export * from './mobile'
 
 // Sprint 36 Faixa A — Fiscal Emissions backbone (ADR 0059 Accepted): fiscal_emissions (8 kinds + status workflow + provider plug-in ADR 0076) + fiscal_events (append-only cancellation/CC-e/inutilizacao) + fiscal_numbering_sequences (atomic UPDATE...RETURNING) + fiscal_service_catalog (LC116/ISS/retenções) + fiscal_provider_credentials (AES-256-GCM cifrado KEK por tenant ADR 0073). @volume 3.6M+/ano (regra 34). Sprint 36b/c entrega payload builders 7 tipos + webhook Focus + portal contador + retencoes.
 export * from './fiscal'
+
+// Sprint 37 Faixa A — Fiscal Apuração Mensal backbone Grupo C (ADR 0100 Proposed): fiscal_revenue_aggregations (1:1 por tenant+company+year_month + snapshot tax_regime + memorial jsonb + status draft→closed) + fiscal_revenue_breakdown (1:N por emission_kind) + fiscal_simples_brackets (GLOBAL Anexos III+V vigentes + valid_from/to). @volume 12k+/ano (regra 34 não aplica). Sprint 37b/c entrega cron mensal + permissions RBAC + memorial PDF + Lucro Real completo + feature flag + E2E.
+export * from './fiscal-apuracao'
