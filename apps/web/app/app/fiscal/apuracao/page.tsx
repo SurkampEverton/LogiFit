@@ -14,6 +14,7 @@ import { db } from '@repo/db/client'
 import { companies, fiscalRevenueAggregations, persons } from '@repo/db/schema'
 import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import Link from 'next/link'
+import { isFeatureEnabled } from '../../../lib/feature-flags'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -72,6 +73,11 @@ export default async function FiscalApuracaoHubPage({
   const params = await searchParams
   const session = await requireFullSession('/app/fiscal/apuracao')
   const tenantId = session.logifit.tenantId
+
+  // Feature flag gate (ADR 0098). Fail-closed: false quando flag não seedada.
+  if (!(await isFeatureEnabled('fiscal_apuracao_v1'))) {
+    return <FeatureGatedNotice />
+  }
 
   // Load companies do tenant pro filter dropdown
   const companyRows = await db
@@ -314,6 +320,47 @@ export default async function FiscalApuracaoHubPage({
           </div>
         )}
       </section>
+    </main>
+  )
+}
+
+function FeatureGatedNotice() {
+  return (
+    <main className="mx-auto max-w-3xl px-6 py-12">
+      <header className="space-y-2 mb-6">
+        <nav className="text-sm" style={{ color: 'var(--ev-text-muted)' }}>
+          <Link href="/app" style={{ color: 'inherit' }}>
+            Início
+          </Link>
+          {' / '}
+          <Link href="/app/fiscal" style={{ color: 'inherit' }}>
+            Fiscal
+          </Link>
+          {' / '}
+          <span>Apuração</span>
+        </nav>
+        <h1 className="text-3xl font-semibold tracking-tight">Apuração fiscal mensal</h1>
+      </header>
+      <div
+        className="rounded-md border p-6 space-y-3"
+        style={{
+          borderColor: 'var(--ev-warning-fg, #92400e)',
+          background: 'var(--ev-warning-bg, #fef3c7)',
+          color: 'var(--ev-warning-fg, #92400e)',
+        }}
+      >
+        <h2 className="text-lg font-medium">Em piloto fechado</h2>
+        <p className="text-sm">
+          O motor de apuração fiscal (Sprint 37, ADR 0100) ainda está em piloto fechado. Valide com
+          o seu contador <strong>3 cenários canônicos do seu regime</strong>{' '}
+          (Simples/Presumido/Real/MEI) antes de habilitar — diferenças entre cálculo operacional e
+          PGDAS-D oficial podem variar até ±5% nas faixas típicas.
+        </p>
+        <p className="text-sm">
+          Pra liberar acesso, peça ao administrador do tenant ativar a feature flag{' '}
+          <code style={{ fontFamily: 'var(--ev-mono, ui-monospace)' }}>fiscal_apuracao_v1</code>.
+        </p>
+      </div>
     </main>
   )
 }

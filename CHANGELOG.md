@@ -6,6 +6,56 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 37b: Apuração fiscal produção-ready (feature flag + RBAC + cron + PDF + cross-alert) 2026-05-23
+
+Refinamento do Sprint 37a que torna a feature utilizável em piloto fechado. Sem 37b, Sprint 37 ficava "código funcional mas não-deployável" — sem cron operador clicava manual, sem PDF contador validava via screenshot, sem feature flag impossível ligar/desligar com segurança, sem permissions qualquer staff via dado fiscal sensível, sem cross-alert teto Simples pegava operador de surpresa.
+
+**Feature flag `fiscal_apuracao_v1`** (ADR 0098):
+- Migration `0052_fiscal_apuracao_flag.sql` — seed disabled por default
+- Gate em `/app/fiscal/apuracao` (hub) + `/app/fiscal/apuracao/[id]` (detail redireciona pro hub) + 3 Server Actions (aggregate/regenerate/close — defesa em profundidade)
+- `<FeatureGatedNotice>` amigável quando off — banner "Em piloto fechado" + instrução pro admin
+
+**Permissions RBAC `fiscal.apuracao.*`** (ADR 0019):
+- Migration `0053_fiscal_apuracao_permissions.sql` — 3 permissions canônicas (`read`/`write`/`close`) + grants
+- `tenant_owner` + `gerente` recebem todas
+- `contador_externo` recebe apenas `read` (LGPD scope mínimo conforme ADR 0061)
+- `super_admin` recebe todas via INSERT explícito (não cobre via CROSS JOIN do 0007_rbac_seed.sql pra permissions adicionadas pós-Sprint 01a)
+- Helper TS `requirePermission(userId, permission)` em `apps/web/app/lib/permissions.ts` — wrapping `has_permission()` SQL (policy 0013); throw `ApiException FORBIDDEN` em falha; fail-closed (false) em DB indisponível
+- 5 SAs gateadas: `aggregateMonthlyRevenue` (write), `getAggregation` (read), `listAggregations` (read), `regenerateAggregation` (write), `closeAggregation` (close), `exportMemorialPdf` (read)
+
+**Cron `POST /api/jobs/aggregate-fiscal-monthly`**:
+- Agendar dia 5 do mês seguinte (ex: 5 jun processa maio)
+- Itera `companies` ativas com `regime_tributario` não-nulo
+- UPSERT em status='draft' (recalcula com dados mais recentes); pula closed
+- Best-effort: erro em 1 company não bloqueia job; conta errors no response
+- Idempotente: rodar 2× no mesmo dia produz mesmo resultado
+- Gate `fiscal_apuracao_v1` no início (early exit + log)
+- Auth Bearer `CRON_SECRET` igual outros crons LogiFit (timingSafeEqual)
+- Counters no response: `companies_total`, `aggregations_created`, `aggregations_updated`, `aggregations_skipped_closed`, `aggregations_skipped_no_regime`, `errors`
+
+**Memorial PDF via @react-pdf/renderer** (instalado 2026-05-23):
+- Componente `MemorialPdfDocument` em `apps/web/app/app/fiscal/apuracao/memorial-pdf.tsx` — A4 retrato, 209 linhas StyleSheet
+- Layout: header LogiFit + filial + competência → 3 KPI inline (Receita/Imposto/Alíquota) → breakdown table por kind → memorial completo linha-a-linha (step + label + formula Courier + nota + valor BRL) → rodapé legal "apuração operacional, valide com contador"
+- `exportMemorialPdf` Server Action (substitui stub) — dynamic import pra não puxar @react-pdf no edge runtime; retorna `{ base64, filename, mimeType }`
+- Client component dispara download via Blob + `<a download>` invisível
+- Botão "📄 Exportar PDF" sempre disponível (draft + closed)
+
+**Cross-alert teto Simples** (regra 33 + ADR 0071):
+- Helper `dispatchSimplesCeilingAlert` em `apps/web/app/lib/fiscal-apuracao-alerts.ts`
+- Threshold conservador: warning ≥87% (R$ 4.176k), critical ≥95% (R$ 4.560k) do teto R$ 4.8M
+- Fingerprint estável `simples_ceiling:{companyId}` permite ring buffer 20 occurrences (não duplica a cada mês)
+- UPSERT em `system_alerts` com retention 90d warning / 1825d (5a) critical
+- Best-effort: falha não propaga pra `aggregateMonthlyRevenue` (já registrou); log warning estruturado
+- Banner inline na detail page color-coded por severity (warning amarelo, critical vermelho) + descrição com plano de ação ("inicie conversa com contador" / "consulte agora")
+
+**Dependency adicionada**: `@react-pdf/renderer` (peer dep estável, server-only, ~500KB no build dev). Aprovado conforme ADR 0091 regra 46 (PDF é trabalho server-side puro, alternativa Puppeteer/Chromium é overkill pra layout estruturado).
+
+**Validação:**
+- ✓ typecheck 12/12 verde
+- ✓ biome clean nos 7 arquivos novos/modificados
+- ✓ 24/24 unit tests Sprint 37a continuam verdes
+- ⚠ Migrations `0052`/`0053` pendentes apply local (docker desktop offline; SQL + journal versionados, rodam no próximo `pnpm db:migrate`)
+
 ### Build — Sprint 37a: Apuração fiscal mensal Grupo C (motor próprio + memorial estruturado) — ADR 0100 Proposed 2026-05-23
 
 Abre Fase 3 fiscal continuada (pós Sprint 36 Focus NFe). Implementa o slot "Sprint 37" mapeado em [ADR 0061](docs/decisions/0061-motor-retencoes-e-cobertura-fiscal-faseada.md). Operador responde "quanto pago de DAS/DARF este mês?" sem consultar contador — LogiFit calcula receita bruta consolidada por company + fórmula do regime tributário (Simples/Presumido/Real/MEI) + memorial detalhado passo-a-passo. **Não emite guia oficial** (Sprint 38 cuida).

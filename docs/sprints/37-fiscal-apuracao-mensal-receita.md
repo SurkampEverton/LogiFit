@@ -3,7 +3,7 @@
 - **Área:** fiscal
 - **Início:** 2026-05-23
 - **Fim planejado:** Sprint 37a (backbone) entregue 2026-05-23
-- **Status:** **done (37a core)** 2026-05-23 — backbone Grupo C operacional: schemas + RLS + libs puras + 5 SAs + 2 rotas UI + memorial estruturado + ADR 0100 Proposed
+- **Status:** **done (37a core + 37b produção-ready)** 2026-05-23 — backbone Grupo C operacional: schemas + RLS + libs puras + 5 SAs + 2 rotas UI + memorial estruturado + ADR 0100 Proposed. **37b 2026-05-23**: feature flag `fiscal_apuracao_v1` gate (rota + 5 SAs) + 3 permissions RBAC `fiscal.apuracao.read/write/close` (tenant_owner/gerente write, contador_externo read) + cron `aggregate-fiscal-monthly` dia 5 + memorial PDF render server via @react-pdf/renderer + dispatch cross-alert teto Simples (warning ≥87%, critical ≥95%) + banner inline na detail page.
 - **Item do roadmap:** #40
 
 ## Goal
@@ -129,21 +129,25 @@ Permissions RBAC adicionadas Sprint 37b — MVP roda em `tenant_owner` por padr�
 - [x] docs/roadmap.md atualizado (status → done 37a core)
 - [x] Zero violação de regras de docs/rules.md (regra 1 RLS + regra 7 Zod + regra 34 — esta tabela ≤ 100k rows/ano, particionamento dispensável)
 
-## Sprint 37b/c futuro (pós-piloto)
+## Sprint 37b — produção-ready (entregue 2026-05-23)
 
-Itens documentados acima na seção "Decisão § O que fica pra Sprint 37b/c" do ADR 0100. Sintetizando:
+Refinamento que torna Sprint 37 utilizável em piloto fechado. Cobertura entregue:
 
-- Cron `aggregate-fiscal-monthly` automático
-- Permissions RBAC `fiscal.apuracao.*`
-- Feature flag `fiscal_apuracao_v1` (segue padrão ADR 0098)
-- Memorial PDF via `@react-pdf/renderer` com branding tenant
+- ✓ Feature flag `fiscal_apuracao_v1` (ADR 0098) gate na rota + 5 SAs; `<FeatureGatedNotice>` amigável quando off; detail page redireciona pro hub
+- ✓ 3 permissions RBAC canônicas `fiscal.apuracao.{read,write,close}` + grants pra `tenant_owner`/`gerente` (todas) + `contador_externo` (read) + `super_admin` (todas); helper TS `requirePermission` wrapping `has_permission()` SQL function (ADR 0019)
+- ✓ Cron `POST /api/jobs/aggregate-fiscal-monthly` dia 5 do mês seguinte; itera companies ativas; UPSERT em draft, pula closed; logs estruturados pino com counters created/updated/skipped/errors; gate `fiscal_apuracao_v1` no início
+- ✓ Memorial PDF via @react-pdf/renderer (instalado): componente `MemorialPdfDocument` A4 retrato (header + 3 KPI + breakdown table + memorial linha-a-linha + rodapé legal); SA `exportMemorialPdf` substituiu stub Sprint 37a retornando base64; download trigger no client component via Blob
+- ✓ Cross-alert teto Simples: `dispatchSimplesCeilingAlert` integrado em `aggregateMonthlyRevenue` quando regime=`simples_nacional` (warning ≥87% R$ 4.176k, critical ≥95% R$ 4.560k); UPSERT em `system_alerts` com fingerprint `simples_ceiling:{companyId}` (ring buffer 20); banner inline na detail page colorido por severity
+
+## Sprint 37c futuro (pós-piloto)
+
 - Lucro Real completo integrando `cost_entries` Sprint 14
-- E2E Playwright completo
+- E2E Playwright completo (operador entra → calcula → fecha → exporta PDF)
 - Régua Sprint 13 alerta WhatsApp 7d antes vencimento DAS (dia 20)
-- Cross-alert teto Simples
 - RIPD apuração + DPO sign-off
-- Pesquisa global ADR 0062 (aggregations indexáveis)
-- `contador_externo` ganha `fiscal.apuracao.read`
+- Pesquisa global ADR 0062 (aggregations indexáveis) — depende ADR 0062 schema implementado
+- Branding tenant no PDF (logo + cor primária via `tenant_branding` Sprint 29)
+- Reabertura de aggregations closed via super_admin (registra trilha)
 
 ## Retro
 

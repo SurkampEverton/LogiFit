@@ -19,7 +19,7 @@
  */
 
 import { type FiscalSimplesAnexo, type FiscalTaxRegime, computeAggregation } from '@repo/ai'
-import { db } from '@repo/db/client'
+import { db, pool } from '@repo/db/client'
 import {
   companies,
   fiscalEmissions,
@@ -29,7 +29,21 @@ import {
 import { ApiException } from '@repo/errors'
 import { and, desc, eq, gte, lt, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import { isFeatureEnabled } from '../../../lib/feature-flags'
+import { dispatchSimplesCeilingAlert } from '../../../lib/fiscal-apuracao-alerts'
+import { requirePermission } from '../../../lib/permissions'
 import { wrapServerAction } from '../../../lib/wrap-action'
+
+/** Gate compartilhado pelas 5 SAs (regra 12 — feature flag em CI). */
+async function requireApuracaoFlag(): Promise<void> {
+  if (!(await isFeatureEnabled('fiscal_apuracao_v1'))) {
+    throw new ApiException({
+      code: 'FORBIDDEN',
+      message: 'Feature fiscal_apuracao_v1 ainda não habilitada neste ambiente.',
+      request_id: '',
+    })
+  }
+}
 
 // ─── Zod schemas ─────────────────────────────────────────────────────────
 
@@ -174,6 +188,8 @@ export const aggregateMonthlyRevenue = wrapServerAction(
     resourceType: 'fiscal_revenue_aggregations',
   },
   async (input: z.infer<typeof AggregateInputSchema>, { session, setAuditResource }) => {
+    await requireApuracaoFlag()
+    await requirePermission(session.user.id, 'fiscal.apuracao.write')
     const parsed = AggregateInputSchema.parse(input)
     const tenantId = session.logifit.tenantId
     const yearMonth = formatYearMonth(parsed.year, parsed.month)
@@ -322,6 +338,16 @@ export const aggregateMonthlyRevenue = wrapServerAction(
       imposto: result.impostoApuradoCents,
     })
 
+    // Cross-alert teto Simples (best-effort fora da tx — Sprint 37b)
+    if (taxRegime === 'simples_nacional' && result.rbt12Cents !== null) {
+      await dispatchSimplesCeilingAlert({
+        tenantId,
+        companyId: parsed.companyId,
+        rbt12Cents: result.rbt12Cents,
+        yearMonth,
+      })
+    }
+
     return {
       ok: true as const,
       aggregationId,
@@ -339,6 +365,7 @@ export const aggregateMonthlyRevenue = wrapServerAction(
 export const getAggregation = wrapServerAction(
   { module: 'fiscal', action: 'apuracao.get' },
   async (input: z.infer<typeof IdSchema>, { session }) => {
+    await requirePermission(session.user.id, 'fiscal.apuracao.read')
     const parsed = IdSchema.parse(input)
     const tenantId = session.logifit.tenantId
 
@@ -375,6 +402,7 @@ export const getAggregation = wrapServerAction(
 export const listAggregations = wrapServerAction(
   { module: 'fiscal', action: 'apuracao.list' },
   async (input: unknown, { session }) => {
+    await requirePermission(session.user.id, 'fiscal.apuracao.read')
     const parsed = ListFiltersSchema.parse(input ?? {}) ?? { limit: 50 }
     const tenantId = session.logifit.tenantId
 
@@ -409,6 +437,8 @@ export const regenerateAggregation = wrapServerAction(
     resourceType: 'fiscal_revenue_aggregations',
   },
   async (input: z.infer<typeof IdSchema>, { session, setAuditResource }) => {
+    await requireApuracaoFlag()
+    await requirePermission(session.user.id, 'fiscal.apuracao.write')
     const parsed = IdSchema.parse(input)
     const tenantId = session.logifit.tenantId
 
@@ -472,6 +502,8 @@ export const closeAggregation = wrapServerAction(
     resourceType: 'fiscal_revenue_aggregations',
   },
   async (input: z.infer<typeof IdSchema>, { session, setAuditResource }) => {
+    await requireApuracaoFlag()
+    await requirePermission(session.user.id, 'fiscal.apuracao.close')
     const parsed = IdSchema.parse(input)
     const tenantId = session.logifit.tenantId
 
@@ -507,15 +539,90 @@ export const closeAggregation = wrapServerAction(
   },
 )
 
-// ─── exportMemorialPdf (stub Sprint 37b) ─────────────────────────────────
+// ─── exportMemorialPdf — Sprint 37b ──────────────────────────────────────
 
 export const exportMemorialPdf = wrapServerAction(
   { module: 'fiscal', action: 'apuracao.export_pdf' },
-  async (_input: z.infer<typeof IdSchema>, _ctx) => {
-    throw new ApiException({
-      code: 'SERVICE_UNAVAILABLE',
-      message: 'Export PDF do memorial fica pra Sprint 37b — @react-pdf/renderer + branding tenant',
-      request_id: '',
+  async (input: z.infer<typeof IdSchema>, { session, setAuditResource }) => {
+    await requirePermission(session.user.id, 'fiscal.apuracao.read')
+    const parsed = IdSchema.parse(input)
+    const tenantId = session.logifit.tenantId
+
+    const [agg] = await db
+      .select()
+      .from(fiscalRevenueAggregations)
+      .where(
+        and(
+          eq(fiscalRevenueAggregations.id, parsed.id),
+          eq(fiscalRevenueAggregations.tenantId, tenantId),
+        ),
+      )
+      .limit(1)
+
+    if (!agg) {
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Apuração não encontrada',
+        request_id: '',
+      })
+    }
+
+    const breakdownRows = await db
+      .select({
+        emissionKind: fiscalRevenueBreakdown.emissionKind,
+        count: fiscalRevenueBreakdown.count,
+        totalCents: fiscalRevenueBreakdown.totalCents,
+      })
+      .from(fiscalRevenueBreakdown)
+      .where(eq(fiscalRevenueBreakdown.aggregationId, agg.id))
+
+    // Resolve company name via JOIN persons
+    const companyRow = await pool.query<{ name: string }>(
+      `SELECT p.name
+         FROM companies c
+         INNER JOIN persons p ON p.id = c.person_id
+        WHERE c.id = $1 AND c.tenant_id = $2
+        LIMIT 1`,
+      [agg.companyId, tenantId],
+    )
+    const companyName = companyRow.rows[0]?.name ?? `Filial ${agg.companyId.slice(0, 8)}`
+
+    // Dynamic import pra não puxar @react-pdf/renderer no edge runtime
+    const { renderMemorialPdf } = await import('./memorial-pdf')
+    const buffer = await renderMemorialPdf({
+      yearMonth: agg.yearMonth,
+      companyName,
+      taxRegime: agg.taxRegime,
+      receitaServicosCents: agg.receitaServicosCents,
+      receitaMercadoriasCents: agg.receitaMercadoriasCents,
+      receitaTotalCents: agg.receitaTotalCents,
+      rbt12Cents: agg.rbt12Cents,
+      aliquotaEfetivaBp: agg.aliquotaEfetivaBp,
+      impostoApuradoCents: agg.impostoApuradoCents,
+      memorial:
+        (agg.memorial as Array<{
+          step: number
+          label: string
+          formula?: string
+          valueCents?: number
+          note?: string
+        }>) ?? [],
+      breakdown: breakdownRows.map((b) => ({
+        emissionKind: b.emissionKind,
+        count: b.count,
+        totalCents: b.totalCents,
+      })),
+      closedAt: agg.closedAt?.toISOString() ?? null,
+      generatedAt: new Date().toISOString(),
     })
+
+    setAuditResource(agg.id, { kind: 'memorial_pdf_export', year_month: agg.yearMonth })
+
+    return {
+      ok: true as const,
+      base64: buffer.toString('base64'),
+      filename: `apuracao-${agg.yearMonth}.pdf`,
+      mimeType: 'application/pdf',
+    }
   },
 )

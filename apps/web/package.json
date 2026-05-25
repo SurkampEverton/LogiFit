@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.5.1",
     "@repo/ai": "workspace:*",
     "@repo/auth": "workspace:*",
     "@repo/cnpj": "workspace:*",
@@ -24,8 +25,8 @@
     "@sentry/nextjs": "^8.45.0",
     "drizzle-orm": "^0.45.2",
     "next": "^15.1.0",
-    "pg": "^8.13.1",
     "next-intl": "^4.0.0",
+    "pg": "^8.13.1",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

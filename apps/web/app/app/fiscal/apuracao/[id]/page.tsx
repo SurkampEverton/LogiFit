@@ -14,10 +14,12 @@ import {
   fiscalRevenueAggregations,
   fiscalRevenueBreakdown,
   persons,
+  systemAlerts,
 } from '@repo/db/schema'
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
+import { isFeatureEnabled } from '../../../../lib/feature-flags'
 import { requireFullSession } from '../../../../lib/session'
 import { ApuracaoActions } from './actions-client'
 
@@ -105,6 +107,11 @@ export default async function ApuracaoDetailPage({
   const session = await requireFullSession(`/app/fiscal/apuracao/${id}`)
   const tenantId = session.logifit.tenantId
 
+  // Feature flag gate (ADR 0098). Detail page redireciona pro hub (que mostra notice).
+  if (!(await isFeatureEnabled('fiscal_apuracao_v1'))) {
+    redirect('/app/fiscal/apuracao')
+  }
+
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
     notFound()
   }
@@ -131,6 +138,25 @@ export default async function ApuracaoDetailPage({
     .from(fiscalRevenueBreakdown)
     .where(eq(fiscalRevenueBreakdown.aggregationId, agg.id))
     .orderBy(asc(fiscalRevenueBreakdown.emissionKind))
+
+  // Cross-alert teto Simples ativo pra esta company? (Sprint 37b)
+  const ceilingAlerts = await db
+    .select({
+      severity: systemAlerts.severity,
+      title: systemAlerts.title,
+      description: systemAlerts.description,
+      lastSeenAt: systemAlerts.lastSeenAt,
+    })
+    .from(systemAlerts)
+    .where(
+      and(
+        eq(systemAlerts.tenantId, tenantId),
+        eq(systemAlerts.fingerprint, `simples_ceiling:${agg.companyId}`),
+        isNull(systemAlerts.resolvedAt),
+      ),
+    )
+    .limit(1)
+  const ceilingAlert = ceilingAlerts[0] ?? null
 
   const memorial = (agg.memorial as MemorialLine[] | null) ?? []
   const sty = STATUS_STYLE[agg.status] ?? STATUS_DRAFT
@@ -175,6 +201,32 @@ export default async function ApuracaoDetailPage({
           yearMonth={agg.yearMonth}
         />
       </header>
+
+      {ceilingAlert && (
+        <section
+          className="rounded-md border p-4 space-y-2"
+          style={{
+            borderColor:
+              ceilingAlert.severity === 'critical'
+                ? 'var(--ev-danger-fg, #991b1b)'
+                : 'var(--ev-warning-fg, #92400e)',
+            background:
+              ceilingAlert.severity === 'critical'
+                ? 'var(--ev-danger-bg, #fee2e2)'
+                : 'var(--ev-warning-bg, #fef3c7)',
+            color:
+              ceilingAlert.severity === 'critical'
+                ? 'var(--ev-danger-fg, #991b1b)'
+                : 'var(--ev-warning-fg, #92400e)',
+          }}
+        >
+          <h2 className="text-base font-semibold">
+            {ceilingAlert.severity === 'critical' ? '⚠ ' : ''}
+            {ceilingAlert.title}
+          </h2>
+          {ceilingAlert.description && <p className="text-sm">{ceilingAlert.description}</p>}
+        </section>
+      )}
 
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <KpiCard

@@ -7,7 +7,7 @@
  */
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { closeAggregation, regenerateAggregation } from '../actions'
+import { closeAggregation, exportMemorialPdf, regenerateAggregation } from '../actions'
 
 export function ApuracaoActions({
   aggregationId,
@@ -19,9 +19,37 @@ export function ApuracaoActions({
   yearMonth: string
 }) {
   const router = useRouter()
-  const [pending, setPending] = useState<'regenerate' | 'close' | null>(null)
+  const [pending, setPending] = useState<'regenerate' | 'close' | 'pdf' | null>(null)
   const [confirmClose, setConfirmClose] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  async function handleExportPdf() {
+    setPending('pdf')
+    setError(null)
+    try {
+      const r = await exportMemorialPdf({ id: aggregationId })
+      if (!r.ok) throw new Error('error' in r ? String(r.error.message ?? 'Erro') : 'Erro')
+      // wrapServerAction envolve em { ok: true, data: { ok: true, base64, filename, mimeType } }
+      const payload = r.data
+      // Download trigger: cria Blob a partir do base64 + clica em link invisível
+      const binary = atob(payload.base64)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+      const blob = new Blob([bytes], { type: payload.mimeType })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = payload.filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao gerar PDF')
+    } finally {
+      setPending(null)
+    }
+  }
 
   async function handleRegenerate() {
     if (isClosed) return
@@ -56,9 +84,25 @@ export function ApuracaoActions({
 
   if (isClosed) {
     return (
-      <p className="text-xs italic" style={{ color: 'var(--ev-text-muted)' }}>
-        Apuração fechada — não pode ser alterada. Reabertura via super_admin (Sprint 37c+).
-      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={handleExportPdf}
+          disabled={pending !== null}
+          className="ev-btn"
+          style={{ fontSize: '0.85rem' }}
+        >
+          {pending === 'pdf' ? 'Gerando PDF…' : '📄 Exportar memorial PDF'}
+        </button>
+        <p className="text-xs italic w-full" style={{ color: 'var(--ev-text-muted)' }}>
+          Apuração fechada — não pode ser alterada. Reabertura via super_admin (Sprint 37c+).
+        </p>
+        {error && (
+          <span className="text-xs" style={{ color: 'var(--ev-danger, #dc2626)' }}>
+            {error}
+          </span>
+        )}
+      </div>
     )
   }
 
@@ -72,6 +116,15 @@ export function ApuracaoActions({
         style={{ fontSize: '0.85rem' }}
       >
         {pending === 'regenerate' ? 'Recalculando…' : '↻ Regenerar cálculo'}
+      </button>
+      <button
+        type="button"
+        onClick={handleExportPdf}
+        disabled={pending !== null}
+        className="ev-btn"
+        style={{ fontSize: '0.85rem' }}
+      >
+        {pending === 'pdf' ? 'Gerando PDF…' : '📄 Exportar PDF'}
       </button>
       <button
         type="button"
