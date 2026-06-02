@@ -12,11 +12,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.77",
-    "@ai-sdk/google": "^3.0.73",
-    "@ai-sdk/openai": "^3.0.63",
+    "@ai-sdk/anthropic": "^3.0.81",
+    "@ai-sdk/google": "^3.0.80",
+    "@ai-sdk/openai": "^3.0.67",
     "@repo/security": "workspace:*",
-    "ai": "^6.0.180",
+    "ai": "^6.0.194",
     "zod": "^3.25.76"
   },
   "devDependencies": {
