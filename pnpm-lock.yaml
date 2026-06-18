@@ -13,7 +13,7 @@ importers:
         version: 1.9.4
       '@vitest/coverage-v8':
         specifier: ^2.1.5
-        version: 2.1.9(vitest@2.1.9(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.48.0))
+        version: 2.1.9(vitest@2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0))
       dotenv-cli:
         specifier: ^11.0.0
         version: 11.0.0
@@ -78,8 +78,8 @@ importers:
         specifier: ^19.0.0
         version: 19.2.5(react@19.2.5)
       zod:
-        specifier: ^3.23.8
-        version: 3.25.76
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@axe-core/playwright':
         specifier: ^4.10.0
@@ -119,22 +119,22 @@ importers:
     dependencies:
       '@ai-sdk/anthropic':
         specifier: ^3.0.77
-        version: 3.0.77(zod@3.25.76)
+        version: 3.0.77(zod@4.4.3)
       '@ai-sdk/google':
         specifier: ^3.0.73
-        version: 3.0.73(zod@3.25.76)
+        version: 3.0.73(zod@4.4.3)
       '@ai-sdk/openai':
         specifier: ^3.0.63
-        version: 3.0.63(zod@3.25.76)
+        version: 3.0.63(zod@4.4.3)
       '@repo/security':
         specifier: workspace:*
         version: link:../security
       ai:
         specifier: ^6.0.180
-        version: 6.0.180(zod@3.25.76)
+        version: 6.0.180(zod@4.4.3)
       zod:
-        specifier: ^3.25.76
-        version: 3.25.76
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@repo/config':
         specifier: workspace:*
@@ -144,7 +144,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.4
-        version: 2.1.9(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.48.0)
+        version: 2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0)
 
   packages/auth:
     dependencies:
@@ -156,7 +156,7 @@ importers:
         version: link:../email
       better-auth:
         specifier: ^1.1.1
-        version: 1.6.11(@opentelemetry/api@1.9.1)(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.20.0))(next@15.5.15(@opentelemetry/api@1.9.1)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(pg@8.20.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(vitest@2.1.9(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.48.0))
+        version: 1.6.11(@opentelemetry/api@1.9.1)(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.20.0))(next@15.5.15(@opentelemetry/api@1.9.1)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(pg@8.20.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(vitest@2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0))
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.20.0)
@@ -178,7 +178,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.5
-        version: 2.1.9(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.48.0)
+        version: 2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0)
 
   packages/cnpj:
     dependencies:
@@ -195,8 +195,8 @@ importers:
         specifier: ^8.13.1
         version: 8.20.0
       zod:
-        specifier: ^3.23.8
-        version: 3.25.76
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@repo/config':
         specifier: workspace:*
@@ -209,7 +209,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.5
-        version: 2.1.9(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.48.0)
+        version: 2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0)
 
   packages/config:
     devDependencies:
@@ -218,7 +218,7 @@ importers:
         version: 1.59.1
       vitest:
         specifier: ^2.1.5
-        version: 2.1.9(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.48.0)
+        version: 2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0)
 
   packages/db:
     dependencies:
@@ -232,8 +232,8 @@ importers:
         specifier: ^2.8.1
         version: 2.8.1
       zod:
-        specifier: ^3.25.76
-        version: 3.25.76
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@repo/config':
         specifier: workspace:*
@@ -252,7 +252,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.5
-        version: 2.1.9(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.48.0)
+        version: 2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0)
 
   packages/email:
     dependencies:
@@ -271,7 +271,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.5
-        version: 2.1.9(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.48.0)
+        version: 2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0)
 
   packages/errors:
     dependencies:
@@ -315,7 +315,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.5
-        version: 2.1.9(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.48.0)
+        version: 2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0)
 
   packages/storage:
     dependencies:
@@ -326,8 +326,8 @@ importers:
         specifier: ^3.705.0
         version: 3.1039.0
       zod:
-        specifier: ^3.23.8
-        version: 3.25.76
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@repo/config':
         specifier: workspace:*
@@ -2693,6 +2693,9 @@ packages:
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
+  '@types/estree@1.0.9':
+    resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
+
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
@@ -2701,6 +2704,9 @@ packages:
 
   '@types/node@22.19.17':
     resolution: {integrity: sha512-wGdMcf+vPYM6jikpS/qhg6WiqSV/OhG+jeeHT/KlVqxYfD40iYJf9/AE1uQxVWFvU7MipKRkRv8NSHiCGgPr8Q==}
+
+  '@types/node@22.19.19':
+    resolution: {integrity: sha512-dyh/xO2Fh5bYrfWaaqGrRQQGkNdmYw6AmaAUvYeUMNTWQtvb796ikLdmTchRmOlOiIJ1TDXfWgVx1QkUlQ6Hew==}
 
   '@types/nodemailer@6.4.23':
     resolution: {integrity: sha512-aFV3/NsYFLSx9mbb5gtirBSXJnAlrusoKNuPbxsASWc7vrKLmIrTQRpdcxNcSFL3VW2A2XpeLEavwb2qMi6nlQ==}
@@ -3232,8 +3238,8 @@ packages:
     resolution: {integrity: sha512-otxSQPw4lkOZWkHpB3zaEQs6gWYEsmX4xQF68ElXC/TWvGxGMSGOvoNbaLXm6/cS/fSfHtsEdw90y20PCd+sCA==}
     engines: {node: '>=10.13.0'}
 
-  enhanced-resolve@5.21.6:
-    resolution: {integrity: sha512-aNnGCvbJ/RIyWo1IuhNdVjnNF+EjH9wpzpNHt+ci/m9He9LJvUN8wrCcXjp9cWsGNAuvSpVFTx/vraAFQ8qGjQ==}
+  enhanced-resolve@5.22.0:
+    resolution: {integrity: sha512-xYcDWrpELkFzz9SpZ3PlI6Eu6eD93Yf0WLDRxikGhWJ3MAir2SNZTIVCVZqZ/NUyx8AdMc2gT9C0gPiw18kG+A==}
     engines: {node: '>=10.13.0'}
 
   env-paths@3.0.0:
@@ -4313,6 +4319,10 @@ packages:
     resolution: {integrity: sha512-eACpxRN02yaawnt+uUNIF7Qje6A9zArxBbcAJjK1PK3S9Ycg5jIuJ8pW4q8EMnwNZCEGltcjkRx1QzOxOkKD8A==}
     engines: {node: '>=10.13.0'}
 
+  webpack-sources@3.5.0:
+    resolution: {integrity: sha512-HPuy+uuoTCaaoEoI1LQ3JN9+vrPBvEesnnX1jADHy728cHSMlq4wUc4afYqahq2B1mhQVZxCXOkNTnXltr+2vQ==}
+    engines: {node: '>=10.13.0'}
+
   webpack-virtual-modules@0.5.0:
     resolution: {integrity: sha512-kyDivFZ7ZM0BVOUteVbDFhlRt7Ah/CSPwJdi8hBpkK7QLumUqdLtVfm/PX/hkcnrvr0i77fO5+TjZ94Pe+C9iw==}
 
@@ -4381,45 +4391,42 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  zod@3.25.76:
-    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
-
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
 snapshots:
 
-  '@ai-sdk/anthropic@3.0.77(zod@3.25.76)':
+  '@ai-sdk/anthropic@3.0.77(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
-      zod: 3.25.76
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
+      zod: 4.4.3
 
-  '@ai-sdk/gateway@3.0.114(zod@3.25.76)':
+  '@ai-sdk/gateway@3.0.114(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
       '@vercel/oidc': 3.2.0
-      zod: 3.25.76
+      zod: 4.4.3
 
-  '@ai-sdk/google@3.0.73(zod@3.25.76)':
+  '@ai-sdk/google@3.0.73(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
-      zod: 3.25.76
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
+      zod: 4.4.3
 
-  '@ai-sdk/openai@3.0.63(zod@3.25.76)':
+  '@ai-sdk/openai@3.0.63(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
-      zod: 3.25.76
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
+      zod: 4.4.3
 
-  '@ai-sdk/provider-utils@4.0.27(zod@3.25.76)':
+  '@ai-sdk/provider-utils@4.0.27(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.8
-      zod: 3.25.76
+      zod: 4.4.3
 
   '@ai-sdk/provider@3.0.10':
     dependencies:
@@ -6715,6 +6722,8 @@ snapshots:
 
   '@types/estree@1.0.8': {}
 
+  '@types/estree@1.0.9': {}
+
   '@types/json-schema@7.0.15': {}
 
   '@types/mysql@2.15.26':
@@ -6722,6 +6731,10 @@ snapshots:
       '@types/node': 22.19.17
 
   '@types/node@22.19.17':
+    dependencies:
+      undici-types: 6.21.0
+
+  '@types/node@22.19.19':
     dependencies:
       undici-types: 6.21.0
 
@@ -6765,7 +6778,7 @@ snapshots:
 
   '@vercel/oidc@3.2.0': {}
 
-  '@vitest/coverage-v8@2.1.9(vitest@2.1.9(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.48.0))':
+  '@vitest/coverage-v8@2.1.9(vitest@2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
@@ -6779,7 +6792,7 @@ snapshots:
       std-env: 3.10.0
       test-exclude: 7.0.2
       tinyrainbow: 1.2.0
-      vitest: 2.1.9(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.48.0)
+      vitest: 2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -6797,6 +6810,14 @@ snapshots:
       magic-string: 0.30.21
     optionalDependencies:
       vite: 5.4.21(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.48.0)
+
+  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0))':
+    dependencies:
+      '@vitest/spy': 2.1.9
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0)
 
   '@vitest/pretty-format@2.1.9':
     dependencies:
@@ -6919,13 +6940,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ai@6.0.180(zod@3.25.76):
+  ai@6.0.180(zod@4.4.3):
     dependencies:
-      '@ai-sdk/gateway': 3.0.114(zod@3.25.76)
+      '@ai-sdk/gateway': 3.0.114(zod@4.4.3)
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
       '@opentelemetry/api': 1.9.1
-      zod: 3.25.76
+      zod: 4.4.3
 
   ajv-formats@2.1.1(ajv@8.20.0):
     optionalDependencies:
@@ -6970,7 +6991,7 @@ snapshots:
 
   baseline-browser-mapping@2.10.31: {}
 
-  better-auth@1.6.11(@opentelemetry/api@1.9.1)(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.20.0))(next@15.5.15(@opentelemetry/api@1.9.1)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(pg@8.20.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(vitest@2.1.9(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.48.0)):
+  better-auth@1.6.11(@opentelemetry/api@1.9.1)(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.20.0))(next@15.5.15(@opentelemetry/api@1.9.1)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(pg@8.20.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(vitest@2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0)):
     dependencies:
       '@better-auth/core': 1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(@opentelemetry/api@1.9.1)(better-call@1.3.5(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0)
       '@better-auth/drizzle-adapter': 1.6.11(@better-auth/core@1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(@opentelemetry/api@1.9.1)(better-call@1.3.5(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0))(@better-auth/utils@0.4.0)(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.20.0))
@@ -6995,7 +7016,7 @@ snapshots:
       pg: 8.20.0
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
-      vitest: 2.1.9(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.48.0)
+      vitest: 2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0)
     transitivePeerDependencies:
       - '@cloudflare/workers-types'
       - '@opentelemetry/api'
@@ -7164,7 +7185,7 @@ snapshots:
       graceful-fs: 4.2.11
       tapable: 2.3.3
 
-  enhanced-resolve@5.21.6:
+  enhanced-resolve@5.22.0:
     dependencies:
       graceful-fs: 4.2.11
       tapable: 2.3.3
@@ -7512,7 +7533,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 22.19.17
+      '@types/node': 22.19.19
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
@@ -8189,6 +8210,24 @@ snapshots:
       - supports-color
       - terser
 
+  vite-node@2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0):
+    dependencies:
+      cac: 6.7.14
+      debug: 4.4.3
+      es-module-lexer: 1.7.0
+      pathe: 1.1.2
+      vite: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0)
+    transitivePeerDependencies:
+      - '@types/node'
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+
   vite@5.4.21(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.48.0):
     dependencies:
       esbuild: 0.21.5
@@ -8196,6 +8235,17 @@ snapshots:
       rollup: 4.60.2
     optionalDependencies:
       '@types/node': 22.19.17
+      fsevents: 2.3.3
+      lightningcss: 1.32.0
+      terser: 5.48.0
+
+  vite@5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0):
+    dependencies:
+      esbuild: 0.21.5
+      postcss: 8.5.12
+      rollup: 4.60.2
+    optionalDependencies:
+      '@types/node': 22.19.19
       fsevents: 2.3.3
       lightningcss: 1.32.0
       terser: 5.48.0
@@ -8235,6 +8285,41 @@ snapshots:
       - supports-color
       - terser
 
+  vitest@2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0):
+    dependencies:
+      '@vitest/expect': 2.1.9
+      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0))
+      '@vitest/pretty-format': 2.1.9
+      '@vitest/runner': 2.1.9
+      '@vitest/snapshot': 2.1.9
+      '@vitest/spy': 2.1.9
+      '@vitest/utils': 2.1.9
+      chai: 5.3.3
+      debug: 4.4.3
+      expect-type: 1.3.0
+      magic-string: 0.30.21
+      pathe: 1.1.2
+      std-env: 3.10.0
+      tinybench: 2.9.0
+      tinyexec: 0.3.2
+      tinypool: 1.1.1
+      tinyrainbow: 1.2.0
+      vite: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0)
+      vite-node: 2.1.9(@types/node@22.19.19)(lightningcss@1.32.0)(terser@5.48.0)
+      why-is-node-running: 2.3.0
+    optionalDependencies:
+      '@types/node': 22.19.19
+    transitivePeerDependencies:
+      - less
+      - lightningcss
+      - msw
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+
   watchpack@2.5.1:
     dependencies:
       glob-to-regexp: 0.4.1
@@ -8244,11 +8329,13 @@ snapshots:
 
   webpack-sources@3.4.1: {}
 
+  webpack-sources@3.5.0: {}
+
   webpack-virtual-modules@0.5.0: {}
 
   webpack@5.107.1(lightningcss@1.32.0):
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       '@types/json-schema': 7.0.15
       '@webassemblyjs/ast': 1.14.1
       '@webassemblyjs/wasm-edit': 1.14.1
@@ -8257,7 +8344,7 @@ snapshots:
       acorn-import-phases: 1.0.4(acorn@8.16.0)
       browserslist: 4.28.2
       chrome-trace-event: 1.0.4
-      enhanced-resolve: 5.21.6
+      enhanced-resolve: 5.22.0
       es-module-lexer: 2.1.0
       eslint-scope: 5.1.1
       events: 3.3.0
@@ -8270,7 +8357,7 @@ snapshots:
       tapable: 2.3.3
       terser-webpack-plugin: 5.6.0(lightningcss@1.32.0)(webpack@5.107.1(lightningcss@1.32.0))
       watchpack: 2.5.1
-      webpack-sources: 3.4.1
+      webpack-sources: 3.5.0
     transitivePeerDependencies:
       - '@minify-html/node'
       - '@swc/core'
@@ -8349,7 +8436,5 @@ snapshots:
       yargs-parser: 18.1.3
 
   yocto-queue@0.1.0: {}
-
-  zod@3.25.76: {}
 
   zod@4.4.3: {}
