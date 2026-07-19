@@ -41,6 +41,7 @@ import { and, desc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { isFeatureEnabled } from '../../lib/feature-flags'
 import { resolveFiscalProvider } from '../../lib/fiscal-provider'
+import { requirePermission } from '../../lib/permissions'
 import { wrapServerAction } from '../../lib/wrap-action'
 
 // ─── Zod schemas ─────────────────────────────────────────────────────────
@@ -71,6 +72,19 @@ const EmitNfseFromInvoiceSchema = z.object({
   invoiceId: z.string().uuid(),
   /** Override do serviço do catálogo (Sprint 36b consome `fiscal_service_catalog`) */
   serviceCatalogId: z.string().uuid().optional(),
+})
+
+const EmitNfseManualSchema = z.object({
+  companyId: z.string().uuid(),
+  serviceCatalogId: z.string().uuid(),
+  recipient: z.object({
+    /** CPF (11) ou CNPJ (14) — dígitos ou formatado */
+    document: z.string().min(11).max(18),
+    name: z.string().min(2).max(200),
+    email: z.string().email().optional(),
+  }),
+  valorTotalCents: z.number().int().positive(),
+  notes: z.string().max(500).optional(),
 })
 
 const CancelEmissionSchema = z.object({
@@ -314,6 +328,7 @@ export const emitNfseFromInvoice = wrapServerAction(
   { module: 'fiscal', action: 'emission.emit_nfse', resourceType: 'fiscal_emission' },
   async (input: z.infer<typeof EmitNfseFromInvoiceSchema>, { session, setAuditResource }) => {
     await requireFocusFlag()
+    await requirePermission(session.logifit.userId, 'fiscal.emit')
     const parsed = EmitNfseFromInvoiceSchema.parse(input)
     // 1. Carrega invoice + valida estado
     const [inv] = await db
@@ -452,12 +467,107 @@ export const emitNfseFromInvoice = wrapServerAction(
   },
 )
 
+// ─── emitNfseManual (avulsa — Sprint 36b.4) ─────────────────────────────
+
+export const emitNfseManual = wrapServerAction(
+  { module: 'fiscal', action: 'emission.emit_nfse_manual', resourceType: 'fiscal_emission' },
+  async (input: z.infer<typeof EmitNfseManualSchema>, { session, setAuditResource }) => {
+    await requireFocusFlag()
+    await requirePermission(session.logifit.userId, 'fiscal.emit')
+    const parsed = EmitNfseManualSchema.parse(input)
+    const tenantId = session.logifit.tenantId
+
+    const recipientDocument = parsed.recipient.document.replace(/\D/g, '')
+    if (recipientDocument.length !== 11 && recipientDocument.length !== 14)
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: 'Documento do tomador deve ser CPF (11) ou CNPJ (14 dígitos)',
+        request_id: '',
+      })
+
+    const company = await resolveCompanyFiscal(tenantId, parsed.companyId)
+    const service = await resolveServiceCatalog(tenantId, parsed.companyId, parsed.serviceCatalogId)
+    const numero = await reserveNextNumero(tenantId, parsed.companyId, 'nfse', 1)
+
+    const provider = await getProviderForTenant(tenantId)
+    const result = await provider.emitNfse({
+      companyCnpj: company.cnpj,
+      municipalityCode: service.municipalityCode,
+      serie: 1,
+      numero,
+      recipient: {
+        document: recipientDocument,
+        name: parsed.recipient.name,
+        email: parsed.recipient.email ?? null,
+      },
+      service: {
+        lc116Code: service.lc116Code,
+        cnae: service.cnae,
+        description: service.description,
+        valorTotalCents: parsed.valorTotalCents,
+        issRateBp: service.issRateBp,
+      },
+      notes: parsed.notes ?? null,
+      inscricaoMunicipal: company.im,
+    })
+
+    const status = result.status === 'completed' ? 'completed' : 'queued'
+    const [row] = await db
+      .insert(fiscalEmissions)
+      .values({
+        tenantId,
+        companyId: parsed.companyId,
+        kind: 'nfse',
+        status,
+        provider: provider.name,
+        sourceKind: 'manual',
+        sourceId: null,
+        serie: 1,
+        numero,
+        chave: result.chave,
+        providerRef: result.providerRef,
+        valorTotalCents: parsed.valorTotalCents,
+        recipientPersonId: null,
+        recipientName: parsed.recipient.name,
+        recipientDocument,
+        payload: {
+          input: {
+            companyId: parsed.companyId,
+            serviceCatalogId: service.id,
+            notes: parsed.notes ?? null,
+          },
+          result: result.raw,
+        },
+        submittedAt: new Date(),
+        completedAt: status === 'completed' ? new Date() : null,
+        cancelDeadlineAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        createdByUserId: session.user.id,
+      })
+      .returning({ id: fiscalEmissions.id })
+    if (!row)
+      throw new ApiException({
+        code: 'INTERNAL_ERROR',
+        message: 'Falha ao gravar emissão',
+        request_id: '',
+      })
+
+    setAuditResource(row.id, {
+      kind: 'nfse',
+      source: 'manual',
+      provider: provider.name,
+      valorTotalCents: parsed.valorTotalCents,
+    })
+    return { id: row.id, status, chave: result.chave, providerRef: result.providerRef }
+  },
+)
+
 // ─── cancelEmission (MFA gate regra 43 — `cancelNfe`) ────────────────────
 
 export const cancelEmission = wrapServerAction(
   { module: 'fiscal', action: 'cancelNfe', resourceType: 'fiscal_emission' },
   async (input: z.infer<typeof CancelEmissionSchema>, { session, setAuditResource }) => {
     await requireFocusFlag()
+    await requirePermission(session.logifit.userId, 'fiscal.cancel')
     const parsed = CancelEmissionSchema.parse(input)
     const [em] = await db
       .select({
@@ -550,6 +660,7 @@ export const issueCce = wrapServerAction(
   { module: 'fiscal', action: 'issueCce', resourceType: 'fiscal_emission' },
   async (input: z.infer<typeof IssueCceSchema>, { session, setAuditResource }) => {
     await requireFocusFlag()
+    await requirePermission(session.logifit.userId, 'fiscal.cancel')
     const parsed = IssueCceSchema.parse(input)
     const [em] = await db
       .select({
@@ -658,6 +769,7 @@ export const inutilizeRange = wrapServerAction(
   { module: 'fiscal', action: 'inutilizeRange', resourceType: 'fiscal_event' },
   async (input: z.infer<typeof InutilizeRangeSchema>, { session, setAuditResource }) => {
     await requireFocusFlag()
+    await requirePermission(session.logifit.userId, 'fiscal.cancel')
     const parsed = InutilizeRangeSchema.parse(input)
     if (parsed.numeroFrom > parsed.numeroTo)
       throw new ApiException({
@@ -790,6 +902,7 @@ export const retryEmission = wrapServerAction(
   { module: 'fiscal', action: 'emission.retry', resourceType: 'fiscal_emission' },
   async (input: z.infer<typeof EmissionIdSchema>, { session, setAuditResource }) => {
     await requireFocusFlag()
+    await requirePermission(session.logifit.userId, 'fiscal.emit')
     const parsed = EmissionIdSchema.parse(input)
     const [em] = await db
       .select()

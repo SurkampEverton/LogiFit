@@ -3,7 +3,7 @@
 - **Área:** fiscal (aplicável a todas as verticais)
 - **Início:** planejado (Fase 3)
 - **Fim planejado:** +4 semanas — candidato à quebra em 36a (NFS-e + eventos) + 36b (NF-e produto + NFC-e + devolução/transferência/conserto) se estourar 3 semanas (regra 9)
-- **Status:** doing — 36a backbone done 2026-05-18 · 36b.1 provider real + 36b.2 lookup/detalhe + 36b.3 catálogo done 2026-07-19 · 36b.4/c pendente (ver Log)
+- **Status:** doing — 36a backbone done 2026-05-18 · 36b.1 provider real + 36b.2 lookup/detalhe + 36b.3 catálogo + 36b.4 NFS-e avulsa/permissions done 2026-07-19 · 36b.5/c pendente (ver Log)
 - **Item do roadmap:** #38
 
 ## Goal
@@ -279,7 +279,13 @@ Consumidores:
   - Rota `/app/settings/fiscal/catalogo` (Step 2 do wizard linka): form de criação/edição (empresa emitente via dropdown, descrição, código IBGE 7 dígitos validado, item LC 116 formato X.YY, CNAE normalizado pra dígitos, regime tributário, alíquota ISS em % na UI ↔ basis points no banco com range 2-5% LC 116 art. 8-A) + tabela com editar/desativar/reativar.
   - 3 SAs em `catalogo/actions.ts` (`listServiceCatalog`/`saveServiceCatalogItem`/`toggleServiceCatalogItem`) — gate `fiscal.admin`, company validada contra o tenant além da RLS, **sem DELETE físico** (desativar preserva histórico de emissões que referenciam o serviço).
   - Validado E2E em dev: cadastro "Mensalidade academia" (3550308 · 8.02 · CNAE 8591100 · 2,00%) → aparece na tabela → desativar/reativar → row conferida no banco. Com isso o fluxo NFS-e completo destrava (resolveServiceCatalog encontra o serviço).
-  - **36b.4/c restante:** SAs de emissão por fonte (`emitNfeProductFromSale`/`emitNfce` POS/`emitNfeReturn`/`emitNfeTransfer`/conserto/self-entry) + lookup real de company (CNPJ/município nas SAs — hoje placeholder) + cbos-cnae-resolver + CRUD catálogo de serviços + `/app/fiscal/[id]` detalhe + PDF/XML TTL 10min + portal contador + `/app/fiscal/retencoes` + job aggregate-fiscal-usage-snapshot + cron validate-credentials + IP allowlist runbook + E2E Focus sandbox + negociação comercial.
+- **2026-07-19 — 36b.4 (NFS-e avulsa + permissions nas SAs) entregue:**
+  - **Descoberta de escopo:** emissão a partir de venda (NF-e produto/NFC-e) está **bloqueada por dependência** — não existe tabela de vendas/POS com itens no schema (Sprint 24 entregou estoque; `nfe_returns` está anotado como "Sprint 15b" e nunca nasceu). Registrado pra decisão de roadmap.
+  - SA `emitNfseManual` — emissão avulsa (caso de uso Solo: consulta/sessão sem invoice): company + serviço do catálogo + tomador digitado (CPF/CNPJ validado) + valor + observações; sourceKind='manual'; reusa resolveCompanyFiscal/resolveServiceCatalog/reserveNextNumero.
+  - Form `/app/fiscal/emitir/nfse` — dropdown de empresa → serviços filtrados por company (com LC 116 + ISS% no label), tomador, valor em R$ (→ centavos na borda), observações; sucesso redireciona pro detalhe `/app/fiscal/[id]`; aviso com link pro catálogo quando não há serviço ativo. Botão `+ Emitir NFS-e` no header do inbox.
+  - **Permissions RBAC aplicadas às SAs fiscais** (catálogo seedado no 36b.1 agora enforced): `fiscal.emit` em emitNfseFromInvoice/emitNfseManual/retryEmission; `fiscal.cancel` em cancelEmission/issueCce/inutilizeRange (além do MFA recente regra 43).
+  - Validado E2E em dev (flag ligada + credencial inativa → mock): form → emissão autorizada série 1 nº 2 com chave + redirect pro detalhe. Bônus de validação: colisão de numeração com emissão de teste manual produziu gap de numeração — cenário real que a inutilização (já implementada) cobre.
+  - **36b.5/c restante:** fontes de emissão pendentes de schema (venda/POS → decidir sprint que cria `sales`; `nfe_returns` 15b; conserto via equipment_maintenance; transferência via intercompany) + person picker no form avulso + cbos-cnae-resolver + PDF/XML URL assinada TTL 10min + IP allowlist runbook + portal contador + job usage snapshot + E2E Focus sandbox + negociação comercial. (`emitNfeProductFromSale`/`emitNfce` POS/`emitNfeReturn`/`emitNfeTransfer`/conserto/self-entry) + lookup real de company (CNPJ/município nas SAs — hoje placeholder) + cbos-cnae-resolver + CRUD catálogo de serviços + `/app/fiscal/[id]` detalhe + PDF/XML TTL 10min + portal contador + `/app/fiscal/retencoes` + job aggregate-fiscal-usage-snapshot + cron validate-credentials + IP allowlist runbook + E2E Focus sandbox + negociação comercial.
 
 ## Definition of Done
 

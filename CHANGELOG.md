@@ -6,6 +6,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 36b.4: NFS-e avulsa + permissions RBAC nas SAs fiscais 2026-07-19
+
+- **`emitNfseManual` + form `/app/fiscal/emitir/nfse`** — emissão de NFS-e avulsa sem invoice (caso de uso primário do perfil Solo: consulta/sessão avulsa). Empresa emitente + serviço do catálogo (dropdown filtrado por company com LC 116 e ISS% no label) + tomador digitado (CPF/CNPJ validado) + valor em R$ + observações. Sucesso redireciona pro detalhe da emissão; botão `+ Emitir NFS-e` no header do inbox.
+- **Permissions RBAC enforced nas SAs fiscais** (o catálogo `fiscal.*` seedado no 36b.1 agora é exigido): `fiscal.emit` em emitir/retry, `fiscal.cancel` em cancelar/CC-e/inutilizar — em camada adicional ao MFA recente (regra 43) e à feature flag.
+- Validado E2E em dev via mock: emissão autorizada (série 1 nº 2) com chave + redirect. A colisão de numeração com dado de teste gerou gap — cenário que a inutilização já cobre.
+- **Descoberta de escopo registrada**: emissão a partir de venda (NF-e produto/NFC-e) está bloqueada por dependência — não existe tabela de vendas/POS com itens no schema (`nfe_returns` idem, anotado "15b"). Decisão de qual sprint cria fica pro roadmap.
+
 ### Build — Sprint 36b.3: CRUD do catálogo de serviços tributáveis 2026-07-19
 
 - **Rota `/app/settings/fiscal/catalogo`** (Step 2 do wizard agora linka pra ela): cadastro e edição de serviços tributáveis por empresa — código IBGE do município (7 dígitos validados), item LC 116/2003 (formato X.YY), CNAE (normalizado pra dígitos), regime tributário e alíquota ISS (exibida em %, armazenada em basis points, range 2–5% conforme LC 116 art. 8-A).

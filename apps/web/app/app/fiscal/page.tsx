@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { fiscalEmissions } from '@repo/db/schema'
 /**
  * `/app/fiscal` — Inbox de emissões fiscais (Sprint 36 Faixa C — backbone).
  *
@@ -13,8 +15,6 @@
  */
 import { and, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { fiscalEmissions } from '@repo/db/schema'
 import { requireFullSession } from '../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -97,8 +97,7 @@ export default async function FiscalInboxPage({
 
   const where = [eq(fiscalEmissions.tenantId, tenantId)]
   if (params.kind) where.push(eq(fiscalEmissions.kind, params.kind as 'nfse'))
-  if (params.status)
-    where.push(eq(fiscalEmissions.status, params.status as 'draft'))
+  if (params.status) where.push(eq(fiscalEmissions.status, params.status as 'draft'))
 
   const rows = await db
     .select({
@@ -125,9 +124,7 @@ export default async function FiscalInboxPage({
   // KPIs simples
   const total = rows.length
   const autorizadas = rows.filter((r) => r.status === 'completed').length
-  const pendentes = rows.filter((r) =>
-    ['draft', 'queued', 'processing'].includes(r.status),
-  ).length
+  const pendentes = rows.filter((r) => ['draft', 'queued', 'processing'].includes(r.status)).length
   const rejeitadas = rows.filter((r) => r.status === 'rejected').length
 
   const totalAutorizadoCents = rows
@@ -147,6 +144,9 @@ export default async function FiscalInboxPage({
         <h1 style={{ margin: 0 }}>Emissões fiscais</h1>
         <span style={{ color: 'var(--ev-muted)' }}>{total} últimas emissões</span>
         <span style={{ flex: 1 }} />
+        <Link href="/app/fiscal/emitir/nfse" className="ev-btn ev-btn-primary">
+          + Emitir NFS-e
+        </Link>
         <Link href="/app/settings/fiscal" className="ev-btn ev-btn-ghost">
           ⚙ Configurações fiscais
         </Link>
@@ -162,12 +162,7 @@ export default async function FiscalInboxPage({
       >
         <KPI label="Autorizadas" value={String(autorizadas)} hint="status completed" />
         <KPI label="Pendentes" value={String(pendentes)} hint="draft + queued + processing" />
-        <KPI
-          label="Rejeitadas"
-          value={String(rejeitadas)}
-          hint="precisa intervenção"
-          danger
-        />
+        <KPI label="Rejeitadas" value={String(rejeitadas)} hint="precisa intervenção" danger />
         <KPI
           label="Total autorizado"
           value={formatBrl(totalAutorizadoCents)}
@@ -186,9 +181,7 @@ export default async function FiscalInboxPage({
         }}
       >
         <label className="ev-stack-sm">
-          <span style={{ color: 'var(--ev-muted)', fontSize: '0.875rem' }}>
-            Tipo
-          </span>
+          <span style={{ color: 'var(--ev-muted)', fontSize: '0.875rem' }}>Tipo</span>
           <select name="kind" defaultValue={params.kind ?? ''} className="ev-input">
             <option value="">Todos</option>
             {Object.entries(KIND_LABEL).map(([k, label]) => (
@@ -199,14 +192,8 @@ export default async function FiscalInboxPage({
           </select>
         </label>
         <label className="ev-stack-sm">
-          <span style={{ color: 'var(--ev-muted)', fontSize: '0.875rem' }}>
-            Status
-          </span>
-          <select
-            name="status"
-            defaultValue={params.status ?? ''}
-            className="ev-input"
-          >
+          <span style={{ color: 'var(--ev-muted)', fontSize: '0.875rem' }}>Status</span>
+          <select name="status" defaultValue={params.status ?? ''} className="ev-input">
             <option value="">Todos</option>
             {Object.entries(STATUS_STYLE).map(([k, v]) => (
               <option key={k} value={k}>
@@ -227,16 +214,13 @@ export default async function FiscalInboxPage({
 
       {/* Lista */}
       {rows.length === 0 ? (
-        <div
-          className="ev-card"
-          style={{ padding: 'var(--ev-space-xl)', textAlign: 'center' }}
-        >
+        <div className="ev-card" style={{ padding: 'var(--ev-space-xl)', textAlign: 'center' }}>
           <p style={{ margin: 0, color: 'var(--ev-muted)' }}>
             Nenhuma emissão fiscal{params.kind || params.status ? ' com esses filtros' : ' ainda'}.
           </p>
           <p style={{ marginTop: 'var(--ev-space-md)', fontSize: '0.875rem' }}>
-            Sprint 36b adiciona botões pra emissão contextual (NFS-e a partir de
-            invoice paga, NF-e produto via POS, etc).
+            Sprint 36b adiciona botões pra emissão contextual (NFS-e a partir de invoice paga, NF-e
+            produto via POS, etc).
           </p>
         </div>
       ) : (
@@ -255,7 +239,11 @@ export default async function FiscalInboxPage({
             </thead>
             <tbody>
               {rows.map((row) => {
-                const style = STATUS_STYLE[row.status] ?? STATUS_STYLE.draft!
+                const style = STATUS_STYLE[row.status] ?? {
+                  bg: 'var(--ev-muted-bg, #e5e7eb)',
+                  fg: 'var(--ev-muted, #6b7280)',
+                  label: row.status,
+                }
                 return (
                   <tr key={row.id}>
                     <td>{KIND_LABEL[row.kind] ?? row.kind}</td>
@@ -273,9 +261,7 @@ export default async function FiscalInboxPage({
                         {row.recipientDocument ?? ''}
                       </div>
                     </td>
-                    <td style={{ textAlign: 'right' }}>
-                      {formatBrl(row.valorTotalCents)}
-                    </td>
+                    <td style={{ textAlign: 'right' }}>{formatBrl(row.valorTotalCents)}</td>
                     <td>
                       <span
                         className="ev-badge"
@@ -300,9 +286,7 @@ export default async function FiscalInboxPage({
                         </div>
                       )}
                     </td>
-                    <td style={{ fontSize: '0.875rem' }}>
-                      {formatDateTime(row.createdAt)}
-                    </td>
+                    <td style={{ fontSize: '0.875rem' }}>{formatDateTime(row.createdAt)}</td>
                     <td>
                       <Link
                         href={`/app/fiscal/${row.id}`}
@@ -326,9 +310,8 @@ export default async function FiscalInboxPage({
           color: 'var(--ev-muted)',
         }}
       >
-        Sprint 36a backbone — provider mock; Sprint 36b conecta Focus NFe real
-        + adiciona wizard de onboarding e ações inline (download PDF/XML,
-        cancelar, CC-e, retry).
+        Sprint 36a backbone — provider mock; Sprint 36b conecta Focus NFe real + adiciona wizard de
+        onboarding e ações inline (download PDF/XML, cancelar, CC-e, retry).
       </footer>
     </div>
   )
@@ -374,11 +357,7 @@ function KPI({
       >
         {value}
       </div>
-      {hint && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--ev-muted)' }}>
-          {hint}
-        </div>
-      )}
+      {hint && <div style={{ fontSize: '0.75rem', color: 'var(--ev-muted)' }}>{hint}</div>}
     </div>
   )
 }
