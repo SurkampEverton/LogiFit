@@ -1,3 +1,9 @@
+import { db } from '@repo/db/client'
+import {
+  fiscalNumberingSequences,
+  fiscalProviderCredentials,
+  fiscalServiceCatalog,
+} from '@repo/db/schema'
 /**
  * `/app/settings/fiscal` — Wizard onboarding fiscal (Sprint 36 Faixa C — esqueleto).
  *
@@ -9,15 +15,10 @@
  *   - Step 4: séries e numeração inicial por tipo
  *   - Step 5: teste de emissão homologação (mock data com 1 NFS-e fake)
  */
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  fiscalProviderCredentials,
-  fiscalServiceCatalog,
-  fiscalNumberingSequences,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
+import { FiscalCredentialsForm } from './credentials-form'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,49 +73,32 @@ export default async function FiscalSettingsPage() {
       </header>
 
       <p style={{ color: 'var(--ev-muted)' }}>
-        Configure o provider Focus NFe e o catálogo de serviços tributáveis
-        antes de emitir notas fiscais. Sprint 36b habilita os formulários
-        interativos; este backbone mostra o estado atual.
+        Configure o provider Focus NFe e o catálogo de serviços tributáveis antes de emitir notas
+        fiscais. Sem credenciais salvas, emissões em dev/teste usam o provider mock; produção exige
+        credenciais ativas.
       </p>
-
-      <div
-        className="ev-card"
-        style={{
-          background: 'var(--ev-warning-bg, #fef3c7)',
-          borderLeft: '4px solid var(--ev-warning, #92400e)',
-          padding: 'var(--ev-space-md)',
-        }}
-      >
-        <strong>Sprint 36a backbone</strong> — wizard interativo + cifra
-        AES-256-GCM das credentials + catálogo de serviços completos chegam
-        no Sprint 36b. Ações de emissão neste sprint usam <code>MockFiscalProvider</code>{' '}
-        (chave SEFAZ determinística sem chamada externa).
-      </div>
 
       <Step
         index={1}
         title="Credentials Focus NFe"
         done={credentialsOk}
         body={
-          credentialsOk ? (
-            <>
-              {credentials.map((c) => (
-                <div key={`${c.provider}-${c.environment}`}>
-                  <strong>{c.provider}</strong> · {c.environment}{' '}
-                  <span style={{ color: 'var(--ev-muted)', fontSize: '0.875rem' }}>
-                    · validado: {c.lastValidatedAt?.toLocaleString('pt-BR') ?? 'nunca'} ·{' '}
-                    {c.lastValidationStatus ?? '—'}
-                  </span>
-                </div>
-              ))}
-            </>
-          ) : (
-            <>
-              Cadastre <strong>api_token</strong> Focus NFe (homologação primeiro,
-              depois produção). Token cifrado AES-256-GCM com KEK por tenant
-              (ADR 0073).
-            </>
-          )
+          <>
+            {credentialsOk && (
+              <div style={{ marginBottom: 'var(--ev-space-sm)' }}>
+                {credentials.map((c) => (
+                  <div key={`${c.provider}-${c.environment}`}>
+                    <strong>{c.provider}</strong> · {c.environment}{' '}
+                    <span style={{ color: 'var(--ev-muted)', fontSize: '0.875rem' }}>
+                      · validado: {c.lastValidatedAt?.toLocaleString('pt-BR') ?? 'nunca'} ·{' '}
+                      {c.lastValidationStatus ?? '—'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <FiscalCredentialsForm configured={credentialsOk} />
+          </>
         }
       />
 
@@ -124,15 +108,11 @@ export default async function FiscalSettingsPage() {
         done={servicesOk}
         body={
           servicesOk ? (
-            <>
-              {services.filter((s) => s.active).length} serviço(s) ativo(s)
-              cadastrado(s).
-            </>
+            <>{services.filter((s) => s.active).length} serviço(s) ativo(s) cadastrado(s).</>
           ) : (
             <>
-              Cadastre os serviços que sua empresa presta (mensalidade
-              academia, consulta fisio, sessão pilates) com código LC 116/2003
-              + alíquota ISS do município.
+              Cadastre os serviços que sua empresa presta (mensalidade academia, consulta fisio,
+              sessão pilates) com código LC 116/2003 + alíquota ISS do município.
             </>
           )
         }
@@ -147,16 +127,15 @@ export default async function FiscalSettingsPage() {
             <>
               {numbering.map((n) => (
                 <div key={`${n.kind}-${n.serie}-${n.environment}`}>
-                  <strong>{n.kind}</strong> série {n.serie} · próximo nº:{' '}
-                  {n.nextNumero} · {n.environment}
+                  <strong>{n.kind}</strong> série {n.serie} · próximo nº: {n.nextNumero} ·{' '}
+                  {n.environment}
                 </div>
               ))}
             </>
           ) : (
             <>
               Séries serão criadas automaticamente na primeira emissão por
-              <code> (company × kind × serie × environment)</code>. Numeração
-              começa em 1.
+              <code> (company × kind × serie × environment)</code>. Numeração começa em 1.
             </>
           )
         }
@@ -168,8 +147,8 @@ export default async function FiscalSettingsPage() {
         done={false}
         body={
           <>
-            Sprint 36b adiciona botão pra emitir 1 NFS-e fake em ambiente
-            homologação Focus NFe (sem custo SEFAZ; valida fluxo end-to-end).
+            Sprint 36b adiciona botão pra emitir 1 NFS-e fake em ambiente homologação Focus NFe (sem
+            custo SEFAZ; valida fluxo end-to-end).
           </>
         }
       />
@@ -212,9 +191,7 @@ function Step({
             minWidth: '1.75rem',
             height: '1.75rem',
             borderRadius: '50%',
-            background: done
-              ? 'var(--ev-success, #16a34a)'
-              : 'var(--ev-muted-bg, #e5e7eb)',
+            background: done ? 'var(--ev-success, #16a34a)' : 'var(--ev-muted-bg, #e5e7eb)',
             // design-token-exempt: #fff pra contraste sobre success bg quando done
             color: done ? '#fff' : 'var(--ev-muted, #6b7280)',
             textAlign: 'center',

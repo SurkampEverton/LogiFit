@@ -107,6 +107,52 @@ export interface NfeProductEmissionInput {
   idDest: 1 | 2 | 3
 }
 
+/**
+ * Payload semântico NFC-e (modelo 65, varejo balcão). Difere de NF-e:
+ * destinatário opcional (venda sem identificação) e formas de pagamento
+ * obrigatórias no XML (grupo pag do modelo 65).
+ */
+export interface NfceEmissionInput {
+  companyCnpj: string
+  serie: number
+  numero: number
+  /** CPF do consumidor (opcional — venda sem identificação é permitida) */
+  recipientCpf?: string | null
+  items: Array<{
+    sku: string
+    description: string
+    quantity: number
+    unitCents: number
+    cfop: string
+    ncm: string
+    cestCode?: string | null
+  }>
+  /**
+   * Formas de pagamento (grupo obrigatório no modelo 65).
+   * Código conforme tabela SEFAZ: 01=dinheiro, 03=crédito, 04=débito, 17=PIX.
+   */
+  payments: Array<{
+    method:
+      | '01'
+      | '02'
+      | '03'
+      | '04'
+      | '05'
+      | '10'
+      | '11'
+      | '12'
+      | '13'
+      | '15'
+      | '16'
+      | '17'
+      | '18'
+      | '19'
+      | '90'
+      | '99'
+    amountCents: number
+  }>
+}
+
 export interface EmissionResult {
   /** Identificador do provider (Focus: `ref`) pra correlacionar webhook */
   providerRef: string
@@ -130,6 +176,11 @@ export interface CancellationInput {
   chave: string
   /** Motivo (15-255 chars) */
   justification: string
+  /**
+   * Tipo da emissão original — providers com endpoint por recurso (Focus:
+   * DELETE /v2/{nfse|nfe|nfce}/{ref}) precisam saber onde cancelar.
+   */
+  kind: FiscalEmissionKind
 }
 
 export interface CceInput {
@@ -182,8 +233,11 @@ export interface FiscalProvider {
   /** Emissão NFS-e (serviço municipal) */
   emitNfse(input: NfseEmissionInput): Promise<EmissionResult>
 
-  /** Emissão NF-e produto (modelo 55) — Sprint 36b implementa Focus */
+  /** Emissão NF-e produto (modelo 55) — cobre venda, devolução (finNFe=4), transferência, conserto e entrada própria via CFOP/natureza */
   emitNfeProduct(input: NfeProductEmissionInput): Promise<EmissionResult>
+
+  /** Emissão NFC-e (modelo 65, varejo balcão) */
+  emitNfce(input: NfceEmissionInput): Promise<EmissionResult>
 
   /** Cancelamento dentro da janela permitida */
   cancel(input: CancellationInput): Promise<EventResult>
@@ -194,6 +248,9 @@ export interface FiscalProvider {
   /** Inutilização de faixa de numeração pulada */
   inutilize(input: InutilizacaoInput): Promise<EventResult>
 
-  /** Re-consulta status de emissão por providerRef */
-  queryStatus(providerRef: string): Promise<EmissionResult>
+  /**
+   * Re-consulta status de emissão por providerRef. `kind` roteia o endpoint
+   * de consulta em providers com recurso por tipo (Focus: GET /v2/{recurso}/{ref}).
+   */
+  queryStatus(providerRef: string, kind: FiscalEmissionKind): Promise<EmissionResult>
 }

@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 /**
  * Server Actions Fiscal Apuração Mensal — Sprint 37a (ADR 0100 Proposed).
@@ -189,7 +189,7 @@ export const aggregateMonthlyRevenue = wrapServerAction(
   },
   async (input: z.infer<typeof AggregateInputSchema>, { session, setAuditResource }) => {
     await requireApuracaoFlag()
-    await requirePermission(session.user.id, 'fiscal.apuracao.write')
+    await requirePermission(session.logifit.userId, 'fiscal.apuracao.write')
     const parsed = AggregateInputSchema.parse(input)
     const tenantId = session.logifit.tenantId
     const yearMonth = formatYearMonth(parsed.year, parsed.month)
@@ -365,7 +365,7 @@ export const aggregateMonthlyRevenue = wrapServerAction(
 export const getAggregation = wrapServerAction(
   { module: 'fiscal', action: 'apuracao.get' },
   async (input: z.infer<typeof IdSchema>, { session }) => {
-    await requirePermission(session.user.id, 'fiscal.apuracao.read')
+    await requirePermission(session.logifit.userId, 'fiscal.apuracao.read')
     const parsed = IdSchema.parse(input)
     const tenantId = session.logifit.tenantId
 
@@ -402,7 +402,7 @@ export const getAggregation = wrapServerAction(
 export const listAggregations = wrapServerAction(
   { module: 'fiscal', action: 'apuracao.list' },
   async (input: unknown, { session }) => {
-    await requirePermission(session.user.id, 'fiscal.apuracao.read')
+    await requirePermission(session.logifit.userId, 'fiscal.apuracao.read')
     const parsed = ListFiltersSchema.parse(input ?? {}) ?? { limit: 50 }
     const tenantId = session.logifit.tenantId
 
@@ -438,7 +438,7 @@ export const regenerateAggregation = wrapServerAction(
   },
   async (input: z.infer<typeof IdSchema>, { session, setAuditResource }) => {
     await requireApuracaoFlag()
-    await requirePermission(session.user.id, 'fiscal.apuracao.write')
+    await requirePermission(session.logifit.userId, 'fiscal.apuracao.write')
     const parsed = IdSchema.parse(input)
     const tenantId = session.logifit.tenantId
 
@@ -503,7 +503,7 @@ export const closeAggregation = wrapServerAction(
   },
   async (input: z.infer<typeof IdSchema>, { session, setAuditResource }) => {
     await requireApuracaoFlag()
-    await requirePermission(session.user.id, 'fiscal.apuracao.close')
+    await requirePermission(session.logifit.userId, 'fiscal.apuracao.close')
     const parsed = IdSchema.parse(input)
     const tenantId = session.logifit.tenantId
 
@@ -544,7 +544,7 @@ export const closeAggregation = wrapServerAction(
 export const exportMemorialPdf = wrapServerAction(
   { module: 'fiscal', action: 'apuracao.export_pdf' },
   async (input: z.infer<typeof IdSchema>, { session, setAuditResource }) => {
-    await requirePermission(session.user.id, 'fiscal.apuracao.read')
+    await requirePermission(session.logifit.userId, 'fiscal.apuracao.read')
     const parsed = IdSchema.parse(input)
     const tenantId = session.logifit.tenantId
 

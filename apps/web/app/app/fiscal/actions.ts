@@ -25,6 +25,8 @@
  * e instancia `FocusNfeProvider`. Mock é check-bloqueado em produção.
  */
 
+import type { FiscalEmissionKind, FiscalProvider } from '@repo/ai'
+import { db } from '@repo/db/client'
 import {
   fiscalEmissions,
   fiscalEvents,
@@ -32,15 +34,11 @@ import {
   invoices,
   persons,
 } from '@repo/db/schema'
-import { db } from '@repo/db/client'
 import { ApiException } from '@repo/errors'
-import {
-  type FiscalEmissionKind,
-  type FiscalProvider,
-  mockFiscalProvider,
-} from '@repo/ai'
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import { isFeatureEnabled } from '../../lib/feature-flags'
+import { resolveFiscalProvider } from '../../lib/fiscal-provider'
 import { wrapServerAction } from '../../lib/wrap-action'
 
 // ─── Zod schemas ─────────────────────────────────────────────────────────
@@ -96,14 +94,25 @@ const InutilizeRangeSchema = z.object({
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
 /**
- * MVP retorna mock; Sprint 36b decifra credentials + retorna FocusNfeProvider real.
+ * Sprint 36b: factory real — decifra credentials e instancia FocusNfeProvider;
+ * sem credenciais, mock em dev/test e FORBIDDEN em produção.
  */
-function getProviderForTenant(_tenantId: string): FiscalProvider {
-  // why: MVP backbone usa mock; Sprint 36b implementa resolveFiscalProvider(tenantId)
-  // que carrega fiscal_provider_credentials, decifra api_token via KEK e instancia
-  // FocusNfeProvider com baseUrl + env. Lint Sprint 36b adiciona check NODE_ENV
-  // bloqueando 'mock' em produção.
-  return mockFiscalProvider
+async function getProviderForTenant(tenantId: string): Promise<FiscalProvider> {
+  return resolveFiscalProvider(tenantId)
+}
+
+/**
+ * Gate `fiscal_focus_v1` (regra 12) — só ações de emissão/evento; leitura
+ * (listEmissions/getEmission) fica livre pra inbox continuar visível.
+ */
+async function requireFocusFlag(): Promise<void> {
+  if (!(await isFeatureEnabled('fiscal_focus_v1'))) {
+    throw new ApiException({
+      code: 'FORBIDDEN',
+      message: 'Emissão fiscal (fiscal_focus_v1) ainda não habilitada neste ambiente.',
+      request_id: '',
+    })
+  }
 }
 
 /**
@@ -142,17 +151,15 @@ async function reserveNextNumero(
       return current
     }
     // 2. Sequence não existe — cria com nextNumero=2, retorna 1
-    await tx
-      .insert(fiscalNumberingSequences)
-      .values({
-        tenantId,
-        companyId,
-        kind,
-        serie,
-        nextNumero: 2,
-        lastUsedNumero: 1,
-        environment,
-      })
+    await tx.insert(fiscalNumberingSequences).values({
+      tenantId,
+      companyId,
+      kind,
+      serie,
+      nextNumero: 2,
+      lastUsedNumero: 1,
+      environment,
+    })
     return 1
   })
 }
@@ -164,8 +171,7 @@ export const listEmissions = wrapServerAction(
   async (input: z.infer<typeof ListEmissionsInputSchema>, { session }) => {
     const parsed = ListEmissionsInputSchema.parse(input)
     const conds = [eq(fiscalEmissions.tenantId, session.logifit.tenantId)]
-    if (parsed.companyId)
-      conds.push(eq(fiscalEmissions.companyId, parsed.companyId))
+    if (parsed.companyId) conds.push(eq(fiscalEmissions.companyId, parsed.companyId))
     if (parsed.kind) conds.push(eq(fiscalEmissions.kind, parsed.kind))
     if (parsed.status) conds.push(eq(fiscalEmissions.status, parsed.status))
     const rows = await db
@@ -236,10 +242,8 @@ export const getEmission = wrapServerAction(
 
 export const emitNfseFromInvoice = wrapServerAction(
   { module: 'fiscal', action: 'emission.emit_nfse', resourceType: 'fiscal_emission' },
-  async (
-    input: z.infer<typeof EmitNfseFromInvoiceSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof EmitNfseFromInvoiceSchema>, { session, setAuditResource }) => {
+    await requireFocusFlag()
     const parsed = EmitNfseFromInvoiceSchema.parse(input)
     // 1. Carrega invoice + valida estado
     const [inv] = await db
@@ -252,10 +256,7 @@ export const emitNfseFromInvoice = wrapServerAction(
       })
       .from(invoices)
       .where(
-        and(
-          eq(invoices.id, parsed.invoiceId),
-          eq(invoices.tenantId, session.logifit.tenantId),
-        ),
+        and(eq(invoices.id, parsed.invoiceId), eq(invoices.tenantId, session.logifit.tenantId)),
       )
       .limit(1)
     if (!inv)
@@ -272,12 +273,7 @@ export const emitNfseFromInvoice = wrapServerAction(
       })
 
     // 2. Reserva próximo número (serie 1 default — wizard Sprint 36b customiza)
-    const numero = await reserveNextNumero(
-      session.logifit.tenantId,
-      inv.companyId,
-      'nfse',
-      1,
-    )
+    const numero = await reserveNextNumero(session.logifit.tenantId, inv.companyId, 'nfse', 1)
 
     // 3. Resolve member + person pra recipient (Sprint 36b: enriquecer com endereço)
     const [recipient] = await db
@@ -294,7 +290,7 @@ export const emitNfseFromInvoice = wrapServerAction(
       .limit(1)
 
     // 4. Provider call (MVP mock)
-    const provider = getProviderForTenant(session.logifit.tenantId)
+    const provider = await getProviderForTenant(session.logifit.tenantId)
     const result = await provider.emitNfse({
       companyCnpj: '00000000000000', // Sprint 36b: companies.cnpj lookup
       municipalityCode: '3550308', // Sprint 36b: companies.municipality_code (São Paulo default)
@@ -374,14 +370,13 @@ export const emitNfseFromInvoice = wrapServerAction(
 
 export const cancelEmission = wrapServerAction(
   { module: 'fiscal', action: 'cancelNfe', resourceType: 'fiscal_emission' },
-  async (
-    input: z.infer<typeof CancelEmissionSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CancelEmissionSchema>, { session, setAuditResource }) => {
+    await requireFocusFlag()
     const parsed = CancelEmissionSchema.parse(input)
     const [em] = await db
       .select({
         id: fiscalEmissions.id,
+        kind: fiscalEmissions.kind,
         status: fiscalEmissions.status,
         chave: fiscalEmissions.chave,
         providerRef: fiscalEmissions.providerRef,
@@ -420,11 +415,12 @@ export const cancelEmission = wrapServerAction(
         request_id: '',
       })
 
-    const provider = getProviderForTenant(session.logifit.tenantId)
+    const provider = await getProviderForTenant(session.logifit.tenantId)
     const result = await provider.cancel({
       providerRef: em.providerRef,
       chave: em.chave,
       justification: parsed.justification,
+      kind: em.kind,
     })
 
     // Transação: insere evento + marca emission cancelled
@@ -466,10 +462,8 @@ export const cancelEmission = wrapServerAction(
 
 export const issueCce = wrapServerAction(
   { module: 'fiscal', action: 'issueCce', resourceType: 'fiscal_emission' },
-  async (
-    input: z.infer<typeof IssueCceSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof IssueCceSchema>, { session, setAuditResource }) => {
+    await requireFocusFlag()
     const parsed = IssueCceSchema.parse(input)
     const [em] = await db
       .select({
@@ -533,7 +527,7 @@ export const issueCce = wrapServerAction(
         request_id: '',
       })
 
-    const provider = getProviderForTenant(session.logifit.tenantId)
+    const provider = await getProviderForTenant(session.logifit.tenantId)
     const result = await provider.issueCce({
       providerRef: em.providerRef,
       chave: em.chave,
@@ -557,12 +551,18 @@ export const issueCce = wrapServerAction(
       })
       .returning({ id: fiscalEvents.id })
 
-    setAuditResource(row!.id, {
+    if (!row)
+      throw new ApiException({
+        code: 'INTERNAL_ERROR',
+        message: 'Insert de fiscal_events não retornou id',
+        request_id: '',
+      })
+    setAuditResource(row.id, {
       emissionId: em.id,
       sequence: nextSequence,
       correction: parsed.correction.slice(0, 80),
     })
-    return { ok: true as const, eventId: row!.id, sequence: nextSequence }
+    return { ok: true as const, eventId: row.id, sequence: nextSequence }
   },
 )
 
@@ -570,10 +570,8 @@ export const issueCce = wrapServerAction(
 
 export const inutilizeRange = wrapServerAction(
   { module: 'fiscal', action: 'inutilizeRange', resourceType: 'fiscal_event' },
-  async (
-    input: z.infer<typeof InutilizeRangeSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof InutilizeRangeSchema>, { session, setAuditResource }) => {
+    await requireFocusFlag()
     const parsed = InutilizeRangeSchema.parse(input)
     if (parsed.numeroFrom > parsed.numeroTo)
       throw new ApiException({
@@ -582,7 +580,7 @@ export const inutilizeRange = wrapServerAction(
         request_id: '',
       })
 
-    const provider = getProviderForTenant(session.logifit.tenantId)
+    const provider = await getProviderForTenant(session.logifit.tenantId)
     const result = await provider.inutilize({
       companyCnpj: '00000000000000', // Sprint 36b lookup
       emissionKind: parsed.emissionKind,
@@ -614,14 +612,20 @@ export const inutilizeRange = wrapServerAction(
       })
       .returning({ id: fiscalEvents.id })
 
-    setAuditResource(row!.id, {
+    if (!row)
+      throw new ApiException({
+        code: 'INTERNAL_ERROR',
+        message: 'Insert de fiscal_events não retornou id',
+        request_id: '',
+      })
+    setAuditResource(row.id, {
       companyId: parsed.companyId,
       kind: parsed.emissionKind,
       serie: parsed.serie,
       numeroFrom: parsed.numeroFrom,
       numeroTo: parsed.numeroTo,
     })
-    return { ok: true as const, eventId: row!.id }
+    return { ok: true as const, eventId: row.id }
   },
 )
 
@@ -638,6 +642,7 @@ export const queryEmissionStatus = wrapServerAction(
     const [em] = await db
       .select({
         id: fiscalEmissions.id,
+        kind: fiscalEmissions.kind,
         status: fiscalEmissions.status,
         providerRef: fiscalEmissions.providerRef,
       })
@@ -662,8 +667,8 @@ export const queryEmissionStatus = wrapServerAction(
         request_id: '',
       })
 
-    const provider = getProviderForTenant(session.logifit.tenantId)
-    const result = await provider.queryStatus(em.providerRef)
+    const provider = await getProviderForTenant(session.logifit.tenantId)
+    const result = await provider.queryStatus(em.providerRef, em.kind)
 
     // Atualiza status local se provider retornar mudança
     if (result.status !== em.status) {
@@ -697,6 +702,7 @@ export const queryEmissionStatus = wrapServerAction(
 export const retryEmission = wrapServerAction(
   { module: 'fiscal', action: 'emission.retry', resourceType: 'fiscal_emission' },
   async (input: z.infer<typeof EmissionIdSchema>, { session, setAuditResource }) => {
+    await requireFocusFlag()
     const parsed = EmissionIdSchema.parse(input)
     const [em] = await db
       .select()

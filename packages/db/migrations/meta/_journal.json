@@ -323,6 +323,13 @@
       "when": 1779557670955,
       "tag": "0053_fiscal_apuracao_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1779558670955,
+      "tag": "0054_fiscal_focus_flag",
+      "breakpoints": true
     }
   ]
 }

@@ -92,3 +92,57 @@ export function decryptSecret(encrypted: string): string {
 export function generateMasterKey(): string {
   return randomBytes(KEY_LENGTH).toString('base64')
 }
+
+// ─── Formato columnar (Sprint 36b) ──────────────────────────────────────────
+// `fiscal_provider_credentials` armazena GCM em 3 colunas separadas
+// (encrypted + nonce + tag) em vez do formato inline `enc:v1:...`. Mesmo
+// algoritmo e mesma LOGIFIT_DATA_KEY — só o layout de storage difere.
+
+export interface SecretParts {
+  /** Ciphertext base64 (sem tag) */
+  encrypted: string
+  /** IV/nonce GCM base64 (12 bytes) */
+  nonce: string
+  /** Auth tag GCM base64 (16 bytes) */
+  tag: string
+}
+
+/**
+ * Cifra pra formato columnar (3 colunas). Usado por `fiscal_provider_credentials`.
+ */
+export function encryptSecretParts(plaintext: string): SecretParts {
+  const key = getKey()
+  const iv = randomBytes(IV_LENGTH)
+  const cipher = createCipheriv(ALGORITHM, key, iv)
+  const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()])
+  return {
+    encrypted: ciphertext.toString('base64'),
+    nonce: iv.toString('base64'),
+    tag: cipher.getAuthTag().toString('base64'),
+  }
+}
+
+/**
+ * Decifra formato columnar. Lança se tag não bate (tampering) ou chave errada.
+ */
+export function decryptSecretParts(parts: SecretParts): string {
+  const iv = Buffer.from(parts.nonce, 'base64')
+  if (iv.length !== IV_LENGTH) {
+    throw new Error('envelope-crypto: nonce length inválido')
+  }
+  const tag = Buffer.from(parts.tag, 'base64')
+  if (tag.length !== TAG_LENGTH) {
+    throw new Error('envelope-crypto: tag length inválido')
+  }
+  const decipher = createDecipheriv(ALGORITHM, getKey(), iv)
+  decipher.setAuthTag(tag)
+  try {
+    const plain = Buffer.concat([
+      decipher.update(Buffer.from(parts.encrypted, 'base64')),
+      decipher.final(),
+    ])
+    return plain.toString('utf8')
+  } catch {
+    throw new Error('envelope-crypto: decrypt failed — chave errada ou ciphertext corrompido')
+  }
+}

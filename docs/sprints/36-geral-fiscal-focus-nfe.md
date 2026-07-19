@@ -3,7 +3,7 @@
 - **Área:** fiscal (aplicável a todas as verticais)
 - **Início:** planejado (Fase 3)
 - **Fim planejado:** +4 semanas — candidato à quebra em 36a (NFS-e + eventos) + 36b (NF-e produto + NFC-e + devolução/transferência/conserto) se estourar 3 semanas (regra 9)
-- **Status:** planejado (futuro)
+- **Status:** doing — 36a backbone done 2026-05-18 · 36b.1 core provider real done 2026-07-19 · 36b.2/c pendente (ver Log)
 - **Item do roadmap:** #38
 
 ## Goal
@@ -257,7 +257,19 @@ Consumidores:
 
 ## Log
 
-- —
+- **2026-07-19 — 36b.1 (core provider real) entregue:**
+  - `FocusNfeProvider` real em `packages/ai/src/fiscal/focus-nfe.ts` — safeFetch (regra 37) com allowlist `api.focusnfe.com.br` + `homologacao.focusnfe.com.br`, Basic auth, refs determinísticas `lf-{kind}-{cnpj}-{serie}-{numero}` (Focus deduplica por ref = idempotência de emissão), mapeamento de status Focus → canônico, erros tipados (429 `FiscalProviderRateLimitError` / 401-403 `FiscalProviderAuthError` / 5xx-timeout `FiscalProviderUnavailableError`; 400/422 vira `rejected` — resultado de negócio, não exceção). 16 unit tests com fetch injetável.
+  - Payload builders puros em `emissions/` — `buildNfsePayload` (prestador/tomador/servico, centavos→decimal, bp→percent), `buildNfePayload` (cobre os 6 kinds modelo 55 via natureza+finNFe+CFOP+notas_referenciadas; tax defaults Simples CSOSN 102 substituíveis), `buildNfcePayload` (formas_pagamento obrigatórias, CPF opcional). 13 unit tests.
+  - Interface `FiscalProvider` estendida: `emitNfce` + `kind` em `CancellationInput`/`queryStatus` (roteamento de recurso por tipo). Mock atualizado.
+  - Crypto columnar `encryptSecretParts`/`decryptSecretParts` em `@repo/security` (AES-256-GCM, formato 3 colunas de `fiscal_provider_credentials`). 5 unit tests.
+  - `resolveFiscalProvider(tenantId)` em `apps/web/app/lib/fiscal-provider.ts` — decifra credentials, instancia provider real; **mock bloqueado em produção** (FORBIDDEN sem credentials, FORBIDDEN com env homologação em prod). Substitui o mock fixo nas 5 SAs.
+  - CRUD de credenciais no wizard `/app/settings/fiscal` — token write-only (nunca ecoado), webhook secret gerado no client e exibido uma única vez com a URL de callback, botão "Testar conexão" via `healthCheck()`. Gate `fiscal.admin`.
+  - Webhook `POST /api/fiscal/focus-nfe/callback` — token na URL verificado timingSafeEqual contra secret cifrado, idempotente (replay converge), sem downgrade de status (completed nunca volta pra processing; cancelled terminal), 401 uniforme sem vazar existência de ref.
+  - Feature flag `fiscal_focus_v1` (migration `0054_fiscal_focus_flag.sql`, disabled por default) + gate nas 6 SAs de emissão/evento (leitura livre).
+  - **Gap 36a corrigido:** permissions `fiscal.read/emit/cancel/admin` nunca tinham sido seedadas (RLS referenciava catálogo vazio) — seed + grants (tenant_owner/gerente tudo; contador_externo read; super_admin tudo) na mesma migration 0054.
+  - **Bug 37b corrigido:** `requirePermission(session.user.id, ...)` passava o id BetterAuth; `has_permission()` resolve `users.id` LogiFit — todas as SAs de apuração retornavam FORBIDDEN pra qualquer usuário. Corrigido pra `session.logifit.userId` (apuração + credenciais) + docstring de alerta em `permissions.ts`.
+  - Validado E2E em dev: salvar credenciais → row cifrada (nonce 12B/tag 16B) → secret one-time na UI → webhook 401 com token inválido. 438 tests verdes nos pacotes tocados (234 @repo/ai + 204 @repo/security); typecheck + biome limpos.
+  - **36b.2/c restante:** SAs de emissão por fonte (`emitNfeProductFromSale`/`emitNfce` POS/`emitNfeReturn`/`emitNfeTransfer`/conserto/self-entry) + lookup real de company (CNPJ/município nas SAs — hoje placeholder) + cbos-cnae-resolver + CRUD catálogo de serviços + `/app/fiscal/[id]` detalhe + PDF/XML TTL 10min + portal contador + `/app/fiscal/retencoes` + job aggregate-fiscal-usage-snapshot + cron validate-credentials + IP allowlist runbook + E2E Focus sandbox + negociação comercial.
 
 ## Definition of Done
 

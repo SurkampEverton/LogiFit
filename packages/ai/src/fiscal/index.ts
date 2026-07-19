@@ -17,6 +17,11 @@
 export * from './provider'
 export * from './mock'
 export * from './cfop-resolver'
+export * from './focus-nfe'
+export * from './emissions/nfse'
+export * from './emissions/nfe'
+export * from './emissions/nfce'
+export { centsToDecimal, bpToPercent } from './emissions/shared'
 
 // Sprint 37a — Apuração fiscal mensal Grupo C (ADR 0100 Proposed):
 //   - types: AggregationInput/Result, MemorialLine, FiscalSimplesAnexo, FiscalTaxRegime

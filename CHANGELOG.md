@@ -6,6 +6,32 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 36b.1: Focus NFe provider real (safeFetch + credenciais cifradas + webhook + flag) 2026-07-19
+
+Primeiro trecho do Sprint 36b — o ciclo fiscal deixa de ser 100% mock: com credenciais Focus NFe configuradas, as emissões saem por HTTP real. Sem credenciais, dev/teste seguem no mock; **produção bloqueia mock** (FORBIDDEN).
+
+**`FocusNfeProvider` real** (`packages/ai/src/fiscal/focus-nfe.ts`):
+- Toda chamada via `safeFetch()` (regra 37) com allowlist `api.focusnfe.com.br` + `homologacao.focusnfe.com.br`; Basic auth com token
+- Ref determinística `lf-{kind}-{cnpj}-{serie}-{numero}` — Focus deduplica por ref (reenvio não duplica nota)
+- Mapeamento status Focus → canônico; 400/422 vira `rejected` com motivo (resultado de negócio); 429/401/403/5xx lançam erros tipados (`RateLimit`/`Auth`/`Unavailable` — retry queue diferencia transient)
+- 16 unit tests com fetch injetável
+
+**Payload builders** (`packages/ai/src/fiscal/emissions/`): nfse (prestador/tomador/servico, centavos→decimal, bp→percent), nfe modelo 55 (6 kinds via natureza+finNFe+CFOP+notas_referenciadas; tax defaults Simples CSOSN 102 substituíveis por regime), nfce (formas_pagamento obrigatórias, CPF opcional). 13 unit tests. Interface ganha `emitNfce` + `kind` em cancel/queryStatus.
+
+**Credenciais cifradas + factory**:
+- `encryptSecretParts`/`decryptSecretParts` em `@repo/security` — AES-256-GCM no formato columnar (encrypted+nonce+tag) de `fiscal_provider_credentials`
+- `resolveFiscalProvider(tenantId)` decifra token e instancia provider real; produção sem credenciais ou com env homologação → FORBIDDEN
+- Wizard `/app/settings/fiscal` Step 1 funcional: token write-only (nunca ecoado), webhook secret gerado no client e exibido uma única vez com URL de callback, botão "Testar conexão" (healthCheck + `last_validated_at`)
+
+**Webhook `POST /api/fiscal/focus-nfe/callback`**: token na URL verificado `timingSafeEqual` contra secret cifrado do tenant; idempotente (replay converge); sem downgrade de status (completed↛processing, cancelled terminal); 401 uniforme.
+
+**Feature flag `fiscal_focus_v1`** (migration `0054`, disabled por default) gateando as 6 SAs de emissão/evento; leitura (inbox) livre.
+
+**Correções**:
+- Gap 36a: permissions `fiscal.read/emit/cancel/admin` nunca foram seedadas (RLS referenciava catálogo vazio) — seed + grants na migration 0054
+- Bug 37b: `requirePermission(session.user.id, ...)` passava id BetterAuth mas `has_permission()` resolve `users.id` LogiFit — **todas as SAs de apuração retornavam FORBIDDEN**; corrigido pra `session.logifit.userId` + docstring de alerta
+- `.claude/launch.json` config `web` não carregava `.env.local` da raiz (client apontava porta 3000 → login quebrado); agora usa `pnpm dev` com dotenv
+
 ### Build — Sprint 37b: Apuração fiscal produção-ready (feature flag + RBAC + cron + PDF + cross-alert) 2026-05-23
 
 Refinamento do Sprint 37a que torna a feature utilizável em piloto fechado. Sem 37b, Sprint 37 ficava "código funcional mas não-deployável" — sem cron operador clicava manual, sem PDF contador validava via screenshot, sem feature flag impossível ligar/desligar com segurança, sem permissions qualquer staff via dado fiscal sensível, sem cross-alert teto Simples pegava operador de surpresa.

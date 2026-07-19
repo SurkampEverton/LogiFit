@@ -17,8 +17,10 @@ import type {
   CceInput,
   EmissionResult,
   EventResult,
+  FiscalEmissionKind,
   FiscalProvider,
   InutilizacaoInput,
+  NfceEmissionInput,
   NfeProductEmissionInput,
   NfseEmissionInput,
   ProviderHealthResult,
@@ -73,10 +75,7 @@ export class MockFiscalProvider implements FiscalProvider {
   }
 
   async emitNfeProduct(input: NfeProductEmissionInput): Promise<EmissionResult> {
-    const totalCents = input.items.reduce(
-      (s, it) => s + it.quantity * it.unitCents,
-      0,
-    )
+    const totalCents = input.items.reduce((s, it) => s + it.quantity * it.unitCents, 0)
     const seed = `nfe:${input.companyCnpj}:${input.serie}:${input.numero}:${input.recipient.document}:${totalCents}`
     const chave = fakeChave(seed)
     return {
@@ -92,6 +91,27 @@ export class MockFiscalProvider implements FiscalProvider {
         items: input.items.length,
         valor_total: totalCents,
         fin_nfe: input.finNFe,
+      },
+    }
+  }
+
+  async emitNfce(input: NfceEmissionInput): Promise<EmissionResult> {
+    const totalCents = input.items.reduce((s, it) => s + it.quantity * it.unitCents, 0)
+    const seed = `nfce:${input.companyCnpj}:${input.serie}:${input.numero}:${totalCents}`
+    const chave = fakeChave(seed)
+    return {
+      providerRef: fakeRef(seed),
+      status: 'completed',
+      chave,
+      xmlUrl: `https://mock.local/nfce/${chave}.xml`,
+      pdfUrl: `https://mock.local/nfce/${chave}.pdf`,
+      rejectionReason: null,
+      raw: {
+        mock: true,
+        kind: 'nfce',
+        items: input.items.length,
+        valor_total: totalCents,
+        pagamentos: input.payments.length,
       },
     }
   }
@@ -139,7 +159,7 @@ export class MockFiscalProvider implements FiscalProvider {
     }
   }
 
-  async queryStatus(providerRef: string): Promise<EmissionResult> {
+  async queryStatus(providerRef: string, _kind: FiscalEmissionKind): Promise<EmissionResult> {
     // Mock sempre returns completed mesmo em re-consulta
     return {
       providerRef,

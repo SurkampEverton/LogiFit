@@ -30,9 +30,33 @@ import type { FiscalEmissionKind } from './provider'
  * UFs brasileiros (27 unidades federativas).
  */
 export type UF =
-  | 'AC' | 'AL' | 'AP' | 'AM' | 'BA' | 'CE' | 'DF' | 'ES' | 'GO' | 'MA'
-  | 'MT' | 'MS' | 'MG' | 'PA' | 'PB' | 'PR' | 'PE' | 'PI' | 'RJ' | 'RN'
-  | 'RS' | 'RO' | 'RR' | 'SC' | 'SP' | 'SE' | 'TO'
+  | 'AC'
+  | 'AL'
+  | 'AP'
+  | 'AM'
+  | 'BA'
+  | 'CE'
+  | 'DF'
+  | 'ES'
+  | 'GO'
+  | 'MA'
+  | 'MT'
+  | 'MS'
+  | 'MG'
+  | 'PA'
+  | 'PB'
+  | 'PR'
+  | 'PE'
+  | 'PI'
+  | 'RJ'
+  | 'RN'
+  | 'RS'
+  | 'RO'
+  | 'RR'
+  | 'SC'
+  | 'SP'
+  | 'SE'
+  | 'TO'
 
 export interface CfopResolveInput {
   /** Tipo de emissão (espelha enum schema) */
@@ -103,8 +127,7 @@ export function resolveCfop(input: CfopResolveInput): CfopResolveResult {
             }
           : {
               cfop: '6102',
-              description:
-                'Venda de mercadoria adquirida ou recebida de terceiros — interestadual',
+              description: 'Venda de mercadoria adquirida ou recebida de terceiros — interestadual',
               isCanonical: true,
             }
       }
@@ -117,8 +140,7 @@ export function resolveCfop(input: CfopResolveInput): CfopResolveResult {
             }
           : {
               cfop: '6101',
-              description:
-                'Venda de produção do estabelecimento — interestadual',
+              description: 'Venda de produção do estabelecimento — interestadual',
               isCanonical: true,
             }
       }
@@ -131,8 +153,7 @@ export function resolveCfop(input: CfopResolveInput): CfopResolveResult {
             }
           : {
               cfop: '6551',
-              description:
-                'Venda de bem do ativo imobilizado — interestadual',
+              description: 'Venda de bem do ativo imobilizado — interestadual',
               isCanonical: true,
             }
       }
@@ -153,8 +174,7 @@ export function resolveCfop(input: CfopResolveInput): CfopResolveResult {
       // NFC-e sempre interno (consumidor final balcão); SEFAZ não aceita 6.xxx
       return {
         cfop: '5102',
-        description:
-          'NFC-e venda a consumidor final — mercadoria adquirida de terceiros',
+        description: 'NFC-e venda a consumidor final — mercadoria adquirida de terceiros',
         isCanonical: true,
       }
 
@@ -164,14 +184,12 @@ export function resolveCfop(input: CfopResolveInput): CfopResolveResult {
       return isInternal
         ? {
             cfop: '5202',
-            description:
-              'Devolução de compra para comercialização (operação interna)',
+            description: 'Devolução de compra para comercialização (operação interna)',
             isCanonical: true,
           }
         : {
             cfop: '6202',
-            description:
-              'Devolução de compra para comercialização — interestadual',
+            description: 'Devolução de compra para comercialização — interestadual',
             isCanonical: true,
           }
 
@@ -182,14 +200,12 @@ export function resolveCfop(input: CfopResolveInput): CfopResolveResult {
       return isInternal
         ? {
             cfop: '5152',
-            description:
-              'Transferência de mercadoria adquirida ou recebida de terceiros',
+            description: 'Transferência de mercadoria adquirida ou recebida de terceiros',
             isCanonical: true,
           }
         : {
             cfop: '6152',
-            description:
-              'Transferência interestadual de mercadoria adquirida de terceiros',
+            description: 'Transferência interestadual de mercadoria adquirida de terceiros',
             isCanonical: true,
           }
 
@@ -198,8 +214,7 @@ export function resolveCfop(input: CfopResolveInput): CfopResolveResult {
       return isInternal
         ? {
             cfop: '5915',
-            description:
-              'Remessa de mercadoria ou bem para conserto ou reparo',
+            description: 'Remessa de mercadoria ou bem para conserto ou reparo',
             isCanonical: true,
           }
         : {
@@ -213,8 +228,7 @@ export function resolveCfop(input: CfopResolveInput): CfopResolveResult {
       return isInternal
         ? {
             cfop: '1915',
-            description:
-              'Entrada de mercadoria ou bem recebido para conserto ou reparo',
+            description: 'Entrada de mercadoria ou bem recebido para conserto ou reparo',
             isCanonical: true,
           }
         : {
@@ -229,14 +243,12 @@ export function resolveCfop(input: CfopResolveInput): CfopResolveResult {
       return isInternal
         ? {
             cfop: '1917',
-            description:
-              'Entrada de mercadoria ou bem recebido em consignação industrial',
+            description: 'Entrada de mercadoria ou bem recebido em consignação industrial',
             isCanonical: true,
           }
         : {
             cfop: '2917',
-            description:
-              'Entrada de mercadoria recebida em consignação — interestadual',
+            description: 'Entrada de mercadoria recebida em consignação — interestadual',
             isCanonical: true,
           }
 

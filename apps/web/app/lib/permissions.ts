@@ -10,9 +10,13 @@
  *   import { requirePermission } from '@/app/lib/permissions'
  *
  *   async (input, { session }) => {
- *     await requirePermission(session.user.id, 'fiscal.apuracao.write')
+ *     await requirePermission(session.logifit.userId, 'fiscal.apuracao.write')
  *     // ... handler
  *   }
+ *
+ * **Atenção:** passar `session.logifit.userId` (users.id LogiFit), NUNCA
+ * `session.user.id` (auth_user BetterAuth) — `has_permission()` resolve
+ * `user_roles.user_id` que referencia `users.id`.
  *
  * **Throw padrão**: lança `ApiException` com code 'FORBIDDEN' — envelope ADR 0071
  * mapeia pra HTTP 403 + toast user-facing.
