@@ -272,8 +272,8 @@ export class FocusNfeProvider implements FiscalProvider {
     const ref = FocusNfeProvider.emissionRef('nfse', input.companyCnpj, input.serie, input.numero)
     const payload = buildNfsePayload(input, {
       emissionDate: options?.emissionDate ?? new Date(),
-      issRetido: options?.issRetido,
-      inscricaoMunicipal: options?.inscricaoMunicipal,
+      issRetido: options?.issRetido ?? input.issRetido,
+      inscricaoMunicipal: options?.inscricaoMunicipal ?? input.inscricaoMunicipal,
     })
     const { httpStatus, body } = await this.request('POST', `/v2/nfse?ref=${ref}`, payload)
     return this.toEmissionResult(ref, httpStatus, body)

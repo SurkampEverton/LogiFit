@@ -28,9 +28,11 @@
 import type { FiscalEmissionKind, FiscalProvider } from '@repo/ai'
 import { db } from '@repo/db/client'
 import {
+  companies,
   fiscalEmissions,
   fiscalEvents,
   fiscalNumberingSequences,
+  fiscalServiceCatalog,
   invoices,
   persons,
 } from '@repo/db/schema'
@@ -113,6 +115,74 @@ async function requireFocusFlag(): Promise<void> {
       request_id: '',
     })
   }
+}
+
+/**
+ * Resolve dados fiscais da company: CNPJ (via persons — regra 22 CNPJ mora no
+ * cadastro central) + inscrição municipal. Lança se company sem CNPJ válido.
+ */
+async function resolveCompanyFiscal(
+  tenantId: string,
+  companyId: string,
+): Promise<{ cnpj: string; im: string | null }> {
+  const [row] = await db
+    .select({ document: persons.document, im: companies.im })
+    .from(companies)
+    .innerJoin(persons, eq(persons.id, companies.personId))
+    .where(and(eq(companies.id, companyId), eq(companies.tenantId, tenantId)))
+    .limit(1)
+  const cnpj = row?.document?.replace(/\D/g, '') ?? ''
+  if (cnpj.length !== 14)
+    throw new ApiException({
+      code: 'VALIDATION_ERROR',
+      message: 'Company sem CNPJ válido no cadastro — complete os dados fiscais da empresa',
+      request_id: '',
+    })
+  return { cnpj, im: row?.im ?? null }
+}
+
+/**
+ * Resolve o serviço tributável do catálogo: id explícito do operador, ou o
+ * primeiro ativo da company. Lança se catálogo vazio (wizard Step 2 pendente).
+ */
+async function resolveServiceCatalog(
+  tenantId: string,
+  companyId: string,
+  serviceCatalogId?: string,
+): Promise<{
+  id: string
+  municipalityCode: string
+  lc116Code: string | null
+  cnae: string | null
+  description: string
+  issRateBp: number
+}> {
+  const conds = [
+    eq(fiscalServiceCatalog.tenantId, tenantId),
+    eq(fiscalServiceCatalog.companyId, companyId),
+    eq(fiscalServiceCatalog.active, true),
+  ]
+  if (serviceCatalogId) conds.push(eq(fiscalServiceCatalog.id, serviceCatalogId))
+  const [svc] = await db
+    .select({
+      id: fiscalServiceCatalog.id,
+      municipalityCode: fiscalServiceCatalog.municipalityCode,
+      lc116Code: fiscalServiceCatalog.lc116Code,
+      cnae: fiscalServiceCatalog.cnae,
+      description: fiscalServiceCatalog.description,
+      issRateBp: fiscalServiceCatalog.issRateBp,
+    })
+    .from(fiscalServiceCatalog)
+    .where(and(...conds))
+    .limit(1)
+  if (!svc)
+    throw new ApiException({
+      code: 'VALIDATION_ERROR',
+      message:
+        'Nenhum serviço tributável cadastrado pra esta empresa — configure o catálogo em Configurações → Fiscal',
+      request_id: '',
+    })
+  return svc
 }
 
 /**
@@ -272,10 +342,18 @@ export const emitNfseFromInvoice = wrapServerAction(
         request_id: '',
       })
 
-    // 2. Reserva próximo número (serie 1 default — wizard Sprint 36b customiza)
+    // 2. Resolve company (CNPJ real) + serviço do catálogo (36b.2)
+    const company = await resolveCompanyFiscal(session.logifit.tenantId, inv.companyId)
+    const service = await resolveServiceCatalog(
+      session.logifit.tenantId,
+      inv.companyId,
+      parsed.serviceCatalogId,
+    )
+
+    // 3. Reserva próximo número (serie 1 default — numeração custom Sprint 36c)
     const numero = await reserveNextNumero(session.logifit.tenantId, inv.companyId, 'nfse', 1)
 
-    // 3. Resolve member + person pra recipient (Sprint 36b: enriquecer com endereço)
+    // 4. Resolve member + person pra recipient (endereço completo Sprint 36c)
     const [recipient] = await db
       .select({
         id: persons.id,
@@ -288,24 +366,32 @@ export const emitNfseFromInvoice = wrapServerAction(
         sql`members.person_id = ${persons.id} AND members.id = ${inv.memberId}`,
       )
       .limit(1)
+    if (!recipient?.document)
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: 'Member sem CPF/CNPJ no cadastro — NFS-e exige documento do tomador',
+        request_id: '',
+      })
 
-    // 4. Provider call (MVP mock)
+    // 5. Provider call
     const provider = await getProviderForTenant(session.logifit.tenantId)
     const result = await provider.emitNfse({
-      companyCnpj: '00000000000000', // Sprint 36b: companies.cnpj lookup
-      municipalityCode: '3550308', // Sprint 36b: companies.municipality_code (São Paulo default)
+      companyCnpj: company.cnpj,
+      municipalityCode: service.municipalityCode,
       serie: 1,
       numero,
       recipient: {
-        document: recipient?.document ?? '00000000000',
-        name: recipient?.displayName ?? 'Cliente',
+        document: recipient.document,
+        name: recipient.displayName ?? 'Cliente',
       },
       service: {
-        lc116Code: '8.01', // ensino → Sprint 36b consome fiscal_service_catalog
-        description: `Mensalidade — invoice ${inv.id.slice(0, 8)}`,
+        lc116Code: service.lc116Code,
+        cnae: service.cnae,
+        description: `${service.description} — invoice ${inv.id.slice(0, 8)}`,
         valorTotalCents: inv.amountCents,
-        issRateBp: 200, // 2.00% → Sprint 36b consome catálogo
+        issRateBp: service.issRateBp,
       },
+      inscricaoMunicipal: company.im,
     })
 
     // 5. Persiste emissão
@@ -333,7 +419,7 @@ export const emitNfseFromInvoice = wrapServerAction(
             companyId: inv.companyId,
             memberId: inv.memberId,
             invoiceId: inv.id,
-            serviceCatalogId: parsed.serviceCatalogId ?? null,
+            serviceCatalogId: service.id,
           },
           result: result.raw,
         },
@@ -580,9 +666,10 @@ export const inutilizeRange = wrapServerAction(
         request_id: '',
       })
 
+    const company = await resolveCompanyFiscal(session.logifit.tenantId, parsed.companyId)
     const provider = await getProviderForTenant(session.logifit.tenantId)
     const result = await provider.inutilize({
-      companyCnpj: '00000000000000', // Sprint 36b lookup
+      companyCnpj: company.cnpj,
       emissionKind: parsed.emissionKind,
       serie: parsed.serie,
       numeroFrom: parsed.numeroFrom,

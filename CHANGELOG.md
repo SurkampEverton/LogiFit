@@ -6,6 +6,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 36b.2: NFS-e com dados reais + detalhe de emissão 2026-07-19
+
+- **Placeholders eliminados nas SAs fiscais**: `emitNfseFromInvoice` e `inutilizeRange` agora resolvem CNPJ real da company (via `persons.document` — regra 22) + inscrição municipal, e a NFS-e consome o `fiscal_service_catalog` (código IBGE do município, LC 116, CNAE, alíquota ISS, descrição). Sem catálogo cadastrado ou company sem CNPJ → erro de validação acionável em vez de nota com dados fake.
+- **`NfseEmissionInput`** ganhou `inscricaoMunicipal` + `issRetido` (repassados ao payload builder).
+- **Rota `/app/fiscal/[id]`** (o inbox já linkava pra ela): detalhe completo da emissão — status color-coded, valor, chave SEFAZ, ref no provider, origem polimórfica, timestamps, janela de cancelamento, banner de rejeição com contador de retry e lista de eventos fiscais.
+- **Ações inline** com visibilidade condicional: cancelar (janela 24h aberta), CC-e (só modelo 55), tentar novamente (rejected com retry<3), re-consultar status. Justificativa/correção coletadas via prompt dialog (regra 45 — sem `window.prompt`), mínimo 15 caracteres. Gates de MFA recente (regra 43) e feature flag permanecem server-side — validado E2E: cancelamento sem MFA responde `MFA_RECENT_REQUIRED` inline.
+
 ### Build — Sprint 36b.1: Focus NFe provider real (safeFetch + credenciais cifradas + webhook + flag) 2026-07-19
 
 Primeiro trecho do Sprint 36b — o ciclo fiscal deixa de ser 100% mock: com credenciais Focus NFe configuradas, as emissões saem por HTTP real. Sem credenciais, dev/teste seguem no mock; **produção bloqueia mock** (FORBIDDEN).

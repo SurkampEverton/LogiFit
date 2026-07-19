@@ -73,6 +73,10 @@ export interface NfseEmissionInput {
   }
   /** Notas adicionais do operador (opcional) */
   notes?: string | null
+  /** Inscrição municipal do prestador (municípios que exigem) */
+  inscricaoMunicipal?: string | null
+  /** ISS retido na fonte pelo tomador (retenção do catálogo fiscal) */
+  issRetido?: boolean
 }
 
 export interface NfeProductEmissionInput {

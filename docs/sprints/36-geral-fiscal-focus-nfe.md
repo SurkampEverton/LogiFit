@@ -3,7 +3,7 @@
 - **Área:** fiscal (aplicável a todas as verticais)
 - **Início:** planejado (Fase 3)
 - **Fim planejado:** +4 semanas — candidato à quebra em 36a (NFS-e + eventos) + 36b (NF-e produto + NFC-e + devolução/transferência/conserto) se estourar 3 semanas (regra 9)
-- **Status:** doing — 36a backbone done 2026-05-18 · 36b.1 core provider real done 2026-07-19 · 36b.2/c pendente (ver Log)
+- **Status:** doing — 36a backbone done 2026-05-18 · 36b.1 core provider real + 36b.2 lookup real/detalhe done 2026-07-19 · 36b.3/c pendente (ver Log)
 - **Item do roadmap:** #38
 
 ## Goal
@@ -269,7 +269,13 @@ Consumidores:
   - **Gap 36a corrigido:** permissions `fiscal.read/emit/cancel/admin` nunca tinham sido seedadas (RLS referenciava catálogo vazio) — seed + grants (tenant_owner/gerente tudo; contador_externo read; super_admin tudo) na mesma migration 0054.
   - **Bug 37b corrigido:** `requirePermission(session.user.id, ...)` passava o id BetterAuth; `has_permission()` resolve `users.id` LogiFit — todas as SAs de apuração retornavam FORBIDDEN pra qualquer usuário. Corrigido pra `session.logifit.userId` (apuração + credenciais) + docstring de alerta em `permissions.ts`.
   - Validado E2E em dev: salvar credenciais → row cifrada (nonce 12B/tag 16B) → secret one-time na UI → webhook 401 com token inválido. 438 tests verdes nos pacotes tocados (234 @repo/ai + 204 @repo/security); typecheck + biome limpos.
-  - **36b.2/c restante:** SAs de emissão por fonte (`emitNfeProductFromSale`/`emitNfce` POS/`emitNfeReturn`/`emitNfeTransfer`/conserto/self-entry) + lookup real de company (CNPJ/município nas SAs — hoje placeholder) + cbos-cnae-resolver + CRUD catálogo de serviços + `/app/fiscal/[id]` detalhe + PDF/XML TTL 10min + portal contador + `/app/fiscal/retencoes` + job aggregate-fiscal-usage-snapshot + cron validate-credentials + IP allowlist runbook + E2E Focus sandbox + negociação comercial.
+- **2026-07-19 — 36b.2 (lookup real + detalhe) entregue:**
+  - `resolveCompanyFiscal(tenantId, companyId)` — CNPJ real via `companies.person_id → persons.document` (regra 22) + inscrição municipal; lança VALIDATION_ERROR se company sem CNPJ de 14 dígitos. Consumido por `emitNfseFromInvoice` + `inutilizeRange` (placeholders `00000000000000` eliminados).
+  - `resolveServiceCatalog(...)` — serviço tributável do `fiscal_service_catalog` (id explícito do operador ou primeiro ativo da company); NFS-e agora usa `municipality_code`/`lc116_code`/`cnae`/`iss_rate_bp`/`description` reais do catálogo; erro claro se catálogo vazio ("configure em Configurações → Fiscal"). Tomador sem CPF/CNPJ também bloqueia com mensagem acionável.
+  - `NfseEmissionInput` ganhou `inscricaoMunicipal` + `issRetido` (provider repassa ao builder).
+  - Rota `/app/fiscal/[id]` (o inbox já linkava): detalhe completo (badge de status color-coded, valor BRL, chave, ref+provider, origem polimórfica, timestamps, janela de cancelamento) + banner de rejeição com contador de retry + lista de eventos fiscais + `<EmissionActions>` client com ações condicionais (cancelar se janela aberta; CC-e só modelo 55; retry se rejected e retry_count<3; re-consultar se providerRef) e prompt dialog regra 45 (sem window.prompt) pra justificativa/correção com mínimo 15 chars.
+  - Validado E2E em dev: emissão de teste → página renderiza tudo → dialog de cancelamento → SA responde `MFA_RECENT_REQUIRED` (regra 43 íntegra pra sessão magic-link sem MFA) e erro aparece inline na UI.
+  - **36b.3/c restante:** SAs de emissão por fonte (`emitNfeProductFromSale`/`emitNfce` POS/`emitNfeReturn`/`emitNfeTransfer`/conserto/self-entry) + lookup real de company (CNPJ/município nas SAs — hoje placeholder) + cbos-cnae-resolver + CRUD catálogo de serviços + `/app/fiscal/[id]` detalhe + PDF/XML TTL 10min + portal contador + `/app/fiscal/retencoes` + job aggregate-fiscal-usage-snapshot + cron validate-credentials + IP allowlist runbook + E2E Focus sandbox + negociação comercial.
 
 ## Definition of Done
 
