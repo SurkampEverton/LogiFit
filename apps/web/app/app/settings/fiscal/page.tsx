@@ -107,14 +107,21 @@ export default async function FiscalSettingsPage() {
         title="Catálogo de serviços tributáveis"
         done={servicesOk}
         body={
-          servicesOk ? (
-            <>{services.filter((s) => s.active).length} serviço(s) ativo(s) cadastrado(s).</>
-          ) : (
-            <>
-              Cadastre os serviços que sua empresa presta (mensalidade academia, consulta fisio,
-              sessão pilates) com código LC 116/2003 + alíquota ISS do município.
-            </>
-          )
+          <>
+            {servicesOk ? (
+              <p style={{ marginTop: 0 }}>
+                {services.filter((s) => s.active).length} serviço(s) ativo(s) cadastrado(s).
+              </p>
+            ) : (
+              <p style={{ marginTop: 0 }}>
+                Cadastre os serviços que sua empresa presta (mensalidade academia, consulta fisio,
+                sessão pilates) com código LC 116/2003 + alíquota ISS do município.
+              </p>
+            )}
+            <Link href="/app/settings/fiscal/catalogo" className="ev-btn ev-btn-sm">
+              {servicesOk ? 'Gerenciar catálogo' : 'Cadastrar serviços'}
+            </Link>
+          </>
         }
       />
 

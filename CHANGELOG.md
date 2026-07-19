@@ -6,6 +6,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 36b.3: CRUD do catálogo de serviços tributáveis 2026-07-19
+
+- **Rota `/app/settings/fiscal/catalogo`** (Step 2 do wizard agora linka pra ela): cadastro e edição de serviços tributáveis por empresa — código IBGE do município (7 dígitos validados), item LC 116/2003 (formato X.YY), CNAE (normalizado pra dígitos), regime tributário e alíquota ISS (exibida em %, armazenada em basis points, range 2–5% conforme LC 116 art. 8-A).
+- **3 Server Actions** (`listServiceCatalog`/`saveServiceCatalogItem`/`toggleServiceCatalogItem`) com gate `fiscal.admin` e validação de company contra o tenant. Sem DELETE físico — desativar preserva o histórico de emissões que referenciam o serviço.
+- Com o catálogo populado, o fluxo completo de NFS-e destrava: `resolveServiceCatalog` (36b.2) encontra o serviço e a emissão sai com dados fiscais reais. Validado E2E em dev (cadastro → tabela → toggle → row no banco).
+
 ### Build — Sprint 36b.2: NFS-e com dados reais + detalhe de emissão 2026-07-19
 
 - **Placeholders eliminados nas SAs fiscais**: `emitNfseFromInvoice` e `inutilizeRange` agora resolvem CNPJ real da company (via `persons.document` — regra 22) + inscrição municipal, e a NFS-e consome o `fiscal_service_catalog` (código IBGE do município, LC 116, CNAE, alíquota ISS, descrição). Sem catálogo cadastrado ou company sem CNPJ → erro de validação acionável em vez de nota com dados fake.

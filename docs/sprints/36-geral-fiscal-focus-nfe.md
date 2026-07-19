@@ -3,7 +3,7 @@
 - **Área:** fiscal (aplicável a todas as verticais)
 - **Início:** planejado (Fase 3)
 - **Fim planejado:** +4 semanas — candidato à quebra em 36a (NFS-e + eventos) + 36b (NF-e produto + NFC-e + devolução/transferência/conserto) se estourar 3 semanas (regra 9)
-- **Status:** doing — 36a backbone done 2026-05-18 · 36b.1 core provider real + 36b.2 lookup real/detalhe done 2026-07-19 · 36b.3/c pendente (ver Log)
+- **Status:** doing — 36a backbone done 2026-05-18 · 36b.1 provider real + 36b.2 lookup/detalhe + 36b.3 catálogo done 2026-07-19 · 36b.4/c pendente (ver Log)
 - **Item do roadmap:** #38
 
 ## Goal
@@ -275,7 +275,11 @@ Consumidores:
   - `NfseEmissionInput` ganhou `inscricaoMunicipal` + `issRetido` (provider repassa ao builder).
   - Rota `/app/fiscal/[id]` (o inbox já linkava): detalhe completo (badge de status color-coded, valor BRL, chave, ref+provider, origem polimórfica, timestamps, janela de cancelamento) + banner de rejeição com contador de retry + lista de eventos fiscais + `<EmissionActions>` client com ações condicionais (cancelar se janela aberta; CC-e só modelo 55; retry se rejected e retry_count<3; re-consultar se providerRef) e prompt dialog regra 45 (sem window.prompt) pra justificativa/correção com mínimo 15 chars.
   - Validado E2E em dev: emissão de teste → página renderiza tudo → dialog de cancelamento → SA responde `MFA_RECENT_REQUIRED` (regra 43 íntegra pra sessão magic-link sem MFA) e erro aparece inline na UI.
-  - **36b.3/c restante:** SAs de emissão por fonte (`emitNfeProductFromSale`/`emitNfce` POS/`emitNfeReturn`/`emitNfeTransfer`/conserto/self-entry) + lookup real de company (CNPJ/município nas SAs — hoje placeholder) + cbos-cnae-resolver + CRUD catálogo de serviços + `/app/fiscal/[id]` detalhe + PDF/XML TTL 10min + portal contador + `/app/fiscal/retencoes` + job aggregate-fiscal-usage-snapshot + cron validate-credentials + IP allowlist runbook + E2E Focus sandbox + negociação comercial.
+- **2026-07-19 — 36b.3 (CRUD catálogo de serviços) entregue:**
+  - Rota `/app/settings/fiscal/catalogo` (Step 2 do wizard linka): form de criação/edição (empresa emitente via dropdown, descrição, código IBGE 7 dígitos validado, item LC 116 formato X.YY, CNAE normalizado pra dígitos, regime tributário, alíquota ISS em % na UI ↔ basis points no banco com range 2-5% LC 116 art. 8-A) + tabela com editar/desativar/reativar.
+  - 3 SAs em `catalogo/actions.ts` (`listServiceCatalog`/`saveServiceCatalogItem`/`toggleServiceCatalogItem`) — gate `fiscal.admin`, company validada contra o tenant além da RLS, **sem DELETE físico** (desativar preserva histórico de emissões que referenciam o serviço).
+  - Validado E2E em dev: cadastro "Mensalidade academia" (3550308 · 8.02 · CNAE 8591100 · 2,00%) → aparece na tabela → desativar/reativar → row conferida no banco. Com isso o fluxo NFS-e completo destrava (resolveServiceCatalog encontra o serviço).
+  - **36b.4/c restante:** SAs de emissão por fonte (`emitNfeProductFromSale`/`emitNfce` POS/`emitNfeReturn`/`emitNfeTransfer`/conserto/self-entry) + lookup real de company (CNPJ/município nas SAs — hoje placeholder) + cbos-cnae-resolver + CRUD catálogo de serviços + `/app/fiscal/[id]` detalhe + PDF/XML TTL 10min + portal contador + `/app/fiscal/retencoes` + job aggregate-fiscal-usage-snapshot + cron validate-credentials + IP allowlist runbook + E2E Focus sandbox + negociação comercial.
 
 ## Definition of Done
 
