@@ -103,6 +103,16 @@ export default async function FiscalEmissionDetailPage({
           {status?.label ?? em.status}
         </span>
         <span style={{ flex: 1 }} />
+        {em.pdfStoragePath && (
+          <a href={`/api/fiscal/emissions/${em.id}/pdf`} className="ev-btn ev-btn-sm" download>
+            ⬇ PDF
+          </a>
+        )}
+        {em.xmlStoragePath && (
+          <a href={`/api/fiscal/emissions/${em.id}/xml`} className="ev-btn ev-btn-sm" download>
+            ⬇ XML
+          </a>
+        )}
         <Link href="/app/fiscal" className="ev-btn ev-btn-ghost">
           ← Inbox de emissões
         </Link>

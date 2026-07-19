@@ -3,7 +3,7 @@
 - **Área:** fiscal (aplicável a todas as verticais)
 - **Início:** planejado (Fase 3)
 - **Fim planejado:** +4 semanas — candidato à quebra em 36a (NFS-e + eventos) + 36b (NF-e produto + NFC-e + devolução/transferência/conserto) se estourar 3 semanas (regra 9)
-- **Status:** doing — 36a backbone done 2026-05-18 · 36b.1 provider real + 36b.2 lookup/detalhe + 36b.3 catálogo + 36b.4 NFS-e avulsa/permissions done 2026-07-19 · 36b.5/c pendente (ver Log)
+- **Status:** doing — 36a backbone done 2026-05-18 · 36b.1-36b.5 (provider real, lookup/detalhe, catálogo, NFS-e avulsa, design system + PDF/XML) done 2026-07-19 · 36b.6/c pendente (ver Log)
 - **Item do roadmap:** #38
 
 ## Goal
@@ -285,7 +285,15 @@ Consumidores:
   - Form `/app/fiscal/emitir/nfse` — dropdown de empresa → serviços filtrados por company (com LC 116 + ISS% no label), tomador, valor em R$ (→ centavos na borda), observações; sucesso redireciona pro detalhe `/app/fiscal/[id]`; aviso com link pro catálogo quando não há serviço ativo. Botão `+ Emitir NFS-e` no header do inbox.
   - **Permissions RBAC aplicadas às SAs fiscais** (catálogo seedado no 36b.1 agora enforced): `fiscal.emit` em emitNfseFromInvoice/emitNfseManual/retryEmission; `fiscal.cancel` em cancelEmission/issueCce/inutilizeRange (além do MFA recente regra 43).
   - Validado E2E em dev (flag ligada + credencial inativa → mock): form → emissão autorizada série 1 nº 2 com chave + redirect pro detalhe. Bônus de validação: colisão de numeração com emissão de teste manual produziu gap de numeração — cenário real que a inutilização (já implementada) cobre.
-  - **36b.5/c restante:** fontes de emissão pendentes de schema (venda/POS → decidir sprint que cria `sales`; `nfe_returns` 15b; conserto via equipment_maintenance; transferência via intercompany) + person picker no form avulso + cbos-cnae-resolver + PDF/XML URL assinada TTL 10min + IP allowlist runbook + portal contador + job usage snapshot + E2E Focus sandbox + negociação comercial. (`emitNfeProductFromSale`/`emitNfce` POS/`emitNfeReturn`/`emitNfeTransfer`/conserto/self-entry) + lookup real de company (CNPJ/município nas SAs — hoje placeholder) + cbos-cnae-resolver + CRUD catálogo de serviços + `/app/fiscal/[id]` detalhe + PDF/XML TTL 10min + portal contador + `/app/fiscal/retencoes` + job aggregate-fiscal-usage-snapshot + cron validate-credentials + IP allowlist runbook + E2E Focus sandbox + negociação comercial.
+- **2026-07-19 — 36b.5 (design system + download PDF/XML) entregue:**
+  - **Fix regra 44 (cross-sprint):** primitivos `.ev-*` portados do protótipo pro app — `packages/ui/src/base.css` novo (botões/cards/badges/inputs/tabelas/banner/toast/modal/utilities + headings) + aliases de tokens semânticos em `tokens.css` (`--ev-space-xs..xl`, `--ev-fg`, `--ev-info-bg`, etc). Todas as telas staff renderizavam sem formatação desde o Sprint 07 (só tokens tinham sido portados). Modificadores em duas grafias (BEM `--mod` + traço simples). Commit `3eb370e`.
+  - `downloadFiscalFile(tenantId, path)` em `lib/fiscal-provider.ts` — busca PDF/XML no host Focus com Basic auth do token decifrado via safeFetch (paths `caminho_danfe`/`caminho_xml_nota_fiscal` são relativos e autenticados).
+  - Route `GET /api/fiscal/emissions/[id]/{pdf|xml}` — sessão + `fiscal.read`, streaming com Content-Disposition + cache privado 10min (TTL do sprint doc); 404 acionável pra emissões mock; 400 pra asset inválido; 502 se provider cair.
+  - SAs de emissão + queryStatus agora persistem `xml_storage_path`/`pdf_storage_path` (antes só o webhook populava).
+  - Botões ⬇ PDF / ⬇ XML no header do detalhe quando os paths existem.
+  - Validado E2E dev: emissão nº 3 via form → botões visíveis → endpoint responde 404 mock-aware / 400 asset inválido.
+  - **Gap adicional registrado:** `tenant_usage_snapshots` (ADR 0066 — Sprint 04 deveria ter criado) não existe; job `aggregate-fiscal-usage-snapshot` bloqueado até o schema de billing nascer.
+  - **36b.6/c restante:** fontes de emissão pendentes de schema (venda/POS → decidir sprint que cria `sales`; `nfe_returns` 15b; conserto via equipment_maintenance; transferência via intercompany) + person picker no form avulso + cbos-cnae-resolver + PDF/XML URL assinada TTL 10min + IP allowlist runbook + portal contador + job usage snapshot + E2E Focus sandbox + negociação comercial. (`emitNfeProductFromSale`/`emitNfce` POS/`emitNfeReturn`/`emitNfeTransfer`/conserto/self-entry) + lookup real de company (CNPJ/município nas SAs — hoje placeholder) + cbos-cnae-resolver + CRUD catálogo de serviços + `/app/fiscal/[id]` detalhe + PDF/XML TTL 10min + portal contador + `/app/fiscal/retencoes` + job aggregate-fiscal-usage-snapshot + cron validate-credentials + IP allowlist runbook + E2E Focus sandbox + negociação comercial.
 
 ## Definition of Done
 

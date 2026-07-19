@@ -6,6 +6,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 36b.5: Download PDF/XML das emissões fiscais 2026-07-19
+
+- **Route `GET /api/fiscal/emissions/{id}/{pdf|xml}`** — proxy autenticado (sessão staff + `fiscal.read`) que busca DANFE/XML no host Focus com o Basic auth do token decifrado do tenant (safeFetch, regra 37) e streama com `Content-Disposition` + cache privado de 10min. Emissão mock responde 404 com mensagem clara; asset inválido 400; provider fora 502.
+- SAs de emissão e `queryEmissionStatus` agora persistem `xml_storage_path`/`pdf_storage_path` (antes só o webhook populava) — botões **⬇ PDF / ⬇ XML** aparecem no header do detalhe quando os arquivos existem.
+- **Gap registrado**: `tenant_usage_snapshots` (ADR 0066, esperado do Sprint 04) não existe no schema — o job mensal `aggregate-fiscal-usage-snapshot` fica bloqueado até o billing criar a tabela.
+
 ### Fix — Design system: primitivos `.ev-*` portados pro app (regra 44) 2026-07-19
 
 Todas as telas staff renderizavam **sem formatação** (cards sem borda, botões como texto puro, tabelas sem grade): as páginas usam as classes "Equilíbrio Vital" (`.ev-card`/`.ev-btn`/`.ev-input`/`.ev-table`/`.ev-badge`/`.ev-stack`...) desde o Sprint 07, mas só os **tokens** haviam sido portados do protótipo — as classes primitivas existiam apenas em `prototipo/base.css` e nunca entraram no CSS servido. Nenhum sprint validou visualmente (E2E cobrem dados/a11y, não aparência).

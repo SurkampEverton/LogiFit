@@ -12,11 +12,16 @@
  * envelope de retorno — sanitize do wrapAction já redige `api_token`).
  */
 
-import { type FiscalProvider, FocusNfeProvider, mockFiscalProvider } from '@repo/ai'
+import {
+  FOCUS_NFE_HOSTS,
+  type FiscalProvider,
+  FocusNfeProvider,
+  mockFiscalProvider,
+} from '@repo/ai'
 import { db } from '@repo/db/client'
 import { fiscalProviderCredentials } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
-import { decryptSecretParts } from '@repo/security'
+import { decryptSecretParts, safeFetch } from '@repo/security'
 import { and, eq } from 'drizzle-orm'
 
 function isProduction(): boolean {
@@ -102,5 +107,52 @@ export async function resolveWebhookSecret(tenantId: string): Promise<string | n
     encrypted: creds.encrypted,
     nonce: creds.nonce,
     tag: creds.tag,
+  })
+}
+
+/**
+ * Baixa arquivo (PDF/XML) do provider fiscal — os paths que o Focus retorna
+ * (`caminho_danfe`, `caminho_xml_nota_fiscal`) são relativos ao host da API
+ * e exigem o mesmo Basic auth das emissões (Sprint 36b.5).
+ *
+ * Retorna null quando o tenant não tem credenciais reais (emissões mock não
+ * têm arquivo baixável) ou quando o path não é relativo ao host Focus.
+ */
+export async function downloadFiscalFile(tenantId: string, path: string): Promise<Response | null> {
+  if (!path.startsWith('/')) return null // mock usa URL absoluta fake — sem arquivo real
+
+  const [creds] = await db
+    .select({
+      encrypted: fiscalProviderCredentials.apiTokenEncrypted,
+      nonce: fiscalProviderCredentials.apiTokenNonce,
+      tag: fiscalProviderCredentials.apiTokenTag,
+      environment: fiscalProviderCredentials.environment,
+      baseUrl: fiscalProviderCredentials.baseUrl,
+    })
+    .from(fiscalProviderCredentials)
+    .where(
+      and(
+        eq(fiscalProviderCredentials.tenantId, tenantId),
+        eq(fiscalProviderCredentials.provider, 'focus_nfe'),
+        eq(fiscalProviderCredentials.active, true),
+      ),
+    )
+    .limit(1)
+  if (!creds) return null
+
+  const apiToken = decryptSecretParts({
+    encrypted: creds.encrypted,
+    nonce: creds.nonce,
+    tag: creds.tag,
+  })
+  const host = creds.baseUrl ? new URL(creds.baseUrl).hostname : FOCUS_NFE_HOSTS[creds.environment]
+
+  return safeFetch(`https://${host}${path}`, {
+    method: 'GET',
+    headers: {
+      authorization: `Basic ${Buffer.from(`${apiToken}:`).toString('base64')}`,
+    },
+    allowedHosts: [FOCUS_NFE_HOSTS.producao, FOCUS_NFE_HOSTS.homologacao],
+    timeoutMs: 30_000,
   })
 }
