@@ -3,7 +3,7 @@
 - **Área:** fiscal (aplicável a todas as verticais)
 - **Início:** planejado (Fase 3)
 - **Fim planejado:** +4 semanas — candidato à quebra em 36a (NFS-e + eventos) + 36b (NF-e produto + NFC-e + devolução/transferência/conserto) se estourar 3 semanas (regra 9)
-- **Status:** doing — 36a backbone done 2026-05-18 · 36b.1-36b.5 (provider real, lookup/detalhe, catálogo, NFS-e avulsa, design system + PDF/XML) done 2026-07-19 · 36b.6/c pendente (ver Log)
+- **Status:** doing — 36a backbone done 2026-05-18 · 36b.1-36b.6 (provider real, lookup/detalhe, catálogo, NFS-e avulsa, design system + PDF/XML, portal contador fase 1) done 2026-07-19 · 36b.7/c pendente (ver Log)
 - **Item do roadmap:** #38
 
 ## Goal
@@ -293,7 +293,14 @@ Consumidores:
   - Botões ⬇ PDF / ⬇ XML no header do detalhe quando os paths existem.
   - Validado E2E dev: emissão nº 3 via form → botões visíveis → endpoint responde 404 mock-aware / 400 asset inválido.
   - **Gap adicional registrado:** `tenant_usage_snapshots` (ADR 0066 — Sprint 04 deveria ter criado) não existe; job `aggregate-fiscal-usage-snapshot` bloqueado até o schema de billing nascer.
-  - **36b.6/c restante:** fontes de emissão pendentes de schema (venda/POS → decidir sprint que cria `sales`; `nfe_returns` 15b; conserto via equipment_maintenance; transferência via intercompany) + person picker no form avulso + cbos-cnae-resolver + PDF/XML URL assinada TTL 10min + IP allowlist runbook + portal contador + job usage snapshot + E2E Focus sandbox + negociação comercial. (`emitNfeProductFromSale`/`emitNfce` POS/`emitNfeReturn`/`emitNfeTransfer`/conserto/self-entry) + lookup real de company (CNPJ/município nas SAs — hoje placeholder) + cbos-cnae-resolver + CRUD catálogo de serviços + `/app/fiscal/[id]` detalhe + PDF/XML TTL 10min + portal contador + `/app/fiscal/retencoes` + job aggregate-fiscal-usage-snapshot + cron validate-credentials + IP allowlist runbook + E2E Focus sandbox + negociação comercial.
+- **2026-07-19 — 36b.6 (portal contador fase 1 + palette fiscal) entregue:**
+  - Layout `/app/contador` próprio: **banner obrigatório "leitura somente — dados fiscais e financeiros; sem acesso clínico"** (ADR 0061) + nav enxuta (Visão geral / Notas emitidas) + gate `fiscal.read` com redirect.
+  - Dashboard do contador (página do Sprint 01b) ganhou seção **Emissões fiscais do mês** (emitidas/autorizadas/valor autorizado agregados) + links pra lista de notas e apuração mensal.
+  - `/app/contador/fiscal-emissions` — lista read-only de até 500 notas com filtros (período 30/90/365d, tipo, status), chave truncada e **download individual PDF/XML** via route 36b.5 (contador tem `fiscal.read`). Zero ações de escrita.
+  - Command Palette: 5 rotas fiscais + portal contador + ação "Emitir NFS-e avulsa" adicionadas à lista canônica.
+  - **Gap registrado (ADR 0062/regra 30):** tabela `search_index` nunca foi criada — o palette do Sprint 07 é lista estática; FTS de pessoas/members/emissões continua pendente de infra (Faixa D do Sprint 07 fantasma).
+  - Validado E2E dev: banner + KPIs fiscais reais (3 notas, R$ 569,00) + lista com filtros + botões PDF/XML só onde há arquivo.
+  - **36b.7/c restante:** fontes de emissão pendentes de schema (venda/POS → decidir sprint que cria `sales`; `nfe_returns` 15b; conserto via equipment_maintenance; transferência via intercompany) + person picker no form avulso + cbos-cnae-resolver + PDF/XML URL assinada TTL 10min + IP allowlist runbook + portal contador + job usage snapshot + E2E Focus sandbox + negociação comercial. (`emitNfeProductFromSale`/`emitNfce` POS/`emitNfeReturn`/`emitNfeTransfer`/conserto/self-entry) + lookup real de company (CNPJ/município nas SAs — hoje placeholder) + cbos-cnae-resolver + CRUD catálogo de serviços + `/app/fiscal/[id]` detalhe + PDF/XML TTL 10min + portal contador + `/app/fiscal/retencoes` + job aggregate-fiscal-usage-snapshot + cron validate-credentials + IP allowlist runbook + E2E Focus sandbox + negociação comercial.
 
 ## Definition of Done
 

@@ -6,6 +6,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 36b.6: Portal do contador fase 1 + rotas fiscais no palette 2026-07-19
+
+- **Portal `/app/contador` estruturado** (ADR 0061): layout próprio com banner obrigatório "leitura somente — dados fiscais e financeiros; sem acesso clínico" + navegação enxuta + gate `fiscal.read` com redirect. O dashboard financeiro do Sprint 01b ganhou a seção **Emissões fiscais do mês** (agregados: emitidas, autorizadas, valor autorizado) com links pra lista de notas e apuração.
+- **`/app/contador/fiscal-emissions`** — lista read-only de até 500 notas com filtros (período 30/90/365 dias, tipo, status) e download individual de PDF/XML pela route autenticada do 36b.5. Nenhuma ação de escrita — cancelamento/CC-e são exclusivos do operador.
+- **Command Palette** (Ctrl+K): módulo fiscal ficou visível — inbox de emissões, apuração, configurações, catálogo, portal do contador e ação "Emitir NFS-e avulsa".
+- **Gap registrado**: a tabela `search_index` (ADR 0062, regra 30) nunca foi criada — o palette do Sprint 07 é lista estática; FTS global segue pendente de infra.
+
 ### Build — Sprint 36b.5: Download PDF/XML das emissões fiscais 2026-07-19
 
 - **Route `GET /api/fiscal/emissions/{id}/{pdf|xml}`** — proxy autenticado (sessão staff + `fiscal.read`) que busca DANFE/XML no host Focus com o Basic auth do token decifrado do tenant (safeFetch, regra 37) e streama com `Content-Disposition` + cache privado de 10min. Emissão mock responde 404 com mensagem clara; asset inválido 400; provider fora 502.

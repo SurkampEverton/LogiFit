@@ -15,10 +15,10 @@
  * MVP Sprint 01b: dashboard agregado simples. Sprint 04+ Faixa C amplia
  * com filtros, export CSV/XML SPED, drill-down por NF-e.
  */
+import { db } from '@repo/db/client'
+import { companies, fiscalEmissions, invoices, payments, persons } from '@repo/db/schema'
 import { and, desc, eq, gte, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { companies, invoices, payments, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -38,7 +38,7 @@ export default async function ContadorPortalPage() {
   const last90d = new Date(now)
   last90d.setDate(now.getDate() - 90)
 
-  const [mrr, paymentsMonth, recentPayments, revenueByCompany] = await Promise.all([
+  const [mrr, paymentsMonth, recentPayments, revenueByCompany, fiscalMonth] = await Promise.all([
     db
       .select({ sum: sql<number>`coalesce(sum(${invoices.amountCents}), 0)::int` })
       .from(invoices)
@@ -86,6 +86,16 @@ export default async function ContadorPortalPage() {
       )
       .groupBy(invoices.companyId, persons.name)
       .orderBy(desc(sql`sum(${invoices.amountCents})`)),
+    db
+      .select({
+        total: sql<number>`count(*)::int`,
+        autorizadas: sql<number>`count(*) FILTER (WHERE status = 'completed')::int`,
+        valorAutorizadoCents: sql<number>`coalesce(sum(valor_total_cents) FILTER (WHERE status = 'completed'), 0)::bigint`,
+      })
+      .from(fiscalEmissions)
+      .where(
+        and(eq(fiscalEmissions.tenantId, tenantId), gte(fiscalEmissions.createdAt, startOfMonth)),
+      ),
   ])
 
   return (
@@ -106,12 +116,8 @@ export default async function ContadorPortalPage() {
           <div className="text-xs text-[color:var(--ev-text-muted)] uppercase tracking-wide">
             MRR do mês
           </div>
-          <div className="text-2xl font-semibold tabular-nums">
-            {formatBRL(mrr[0]?.sum ?? 0)}
-          </div>
-          <div className="text-xs text-[color:var(--ev-text-muted)]">
-            Invoices `paid` no mês
-          </div>
+          <div className="text-2xl font-semibold tabular-nums">{formatBRL(mrr[0]?.sum ?? 0)}</div>
+          <div className="text-xs text-[color:var(--ev-text-muted)]">Invoices `paid` no mês</div>
         </div>
         <div className="rounded-xl border border-[color:var(--ev-border)] p-5 space-y-1">
           <div className="text-xs text-[color:var(--ev-text-muted)] uppercase tracking-wide">
@@ -190,10 +196,49 @@ export default async function ContadorPortalPage() {
         )}
       </section>
 
+      {/* Emissões fiscais do mês (Sprint 36b.6) */}
+      <section className="rounded-xl border border-[color:var(--ev-border)] p-5 space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h2 className="font-semibold">🧾 Emissões fiscais do mês</h2>
+          <Link href="/app/contador/fiscal-emissions" className="ev-btn ev-btn-sm">
+            Ver notas + XML/PDF →
+          </Link>
+        </div>
+        <div className="flex flex-wrap gap-6 text-sm">
+          <div>
+            <div className="text-xs text-[color:var(--ev-text-muted)] uppercase tracking-wide">
+              Emitidas
+            </div>
+            <div className="text-2xl font-semibold tabular-nums">{fiscalMonth[0]?.total ?? 0}</div>
+          </div>
+          <div>
+            <div className="text-xs text-[color:var(--ev-text-muted)] uppercase tracking-wide">
+              Autorizadas
+            </div>
+            <div className="text-2xl font-semibold tabular-nums">
+              {fiscalMonth[0]?.autorizadas ?? 0}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-[color:var(--ev-text-muted)] uppercase tracking-wide">
+              Valor autorizado
+            </div>
+            <div className="text-2xl font-semibold tabular-nums">
+              {formatBRL(Number(fiscalMonth[0]?.valorAutorizadoCents ?? 0))}
+            </div>
+          </div>
+          <div className="flex items-end">
+            <Link href="/app/fiscal/apuracao" className="ev-btn ev-btn-sm ev-btn-ghost">
+              📊 Apuração mensal (memorial pré-DAS)
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <section className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-6 text-sm text-[color:var(--ev-text-muted)]">
         <p>
-          <strong>Sprint 04+ / 36:</strong> filtros mês/status/company · export CSV/XML SPED · NF-e
-          emitidas via Focus NFe · retenções IRRF/INSS/ISS · DRE simplificado.
+          <strong>Fase 2 do portal:</strong> download ZIP em massa de XMLs · CSV/OFX de AP/AR ·
+          retenções IRRF/INSS/ISS por tributo · DRE read-only · export SPED.
         </p>
       </section>
 

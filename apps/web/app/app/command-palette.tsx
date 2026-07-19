@@ -28,29 +28,231 @@ interface CommandItem {
 
 const CANONICAL_ITEMS: CommandItem[] = [
   // Navigation
-  { id: 'nav-dashboard', label: 'Dashboard', hint: '/app', href: '/app', emoji: '🏠', category: 'navigation' },
-  { id: 'nav-members', label: 'Alunos / Pacientes', hint: '/app/members', href: '/app/members', emoji: '👥', category: 'navigation' },
-  { id: 'nav-persons', label: 'Pessoas (PF/PJ)', hint: '/app/pessoas', href: '/app/pessoas', emoji: '📇', category: 'navigation' },
-  { id: 'nav-agenda', label: 'Agenda', hint: '/app/agenda', href: '/app/agenda', emoji: '📅', category: 'navigation' },
-  { id: 'nav-agenda-week', label: 'Agenda — Visão semanal', hint: '/app/agenda/week', href: '/app/agenda/week', emoji: '📆', category: 'navigation' },
-  { id: 'nav-resources', label: 'Recursos (catraca/sala/instrutor)', hint: '/app/agenda/resources', href: '/app/agenda/resources', emoji: '🔧', category: 'navigation' },
-  { id: 'nav-financeiro', label: 'Financeiro', hint: '/app/financeiro', href: '/app/financeiro', emoji: '💰', category: 'navigation' },
-  { id: 'nav-planos', label: 'Planos', hint: '/app/financeiro/planos', href: '/app/financeiro/planos', emoji: '💼', category: 'navigation' },
-  { id: 'nav-contratos', label: 'Contratos', hint: '/app/financeiro/contratos', href: '/app/financeiro/contratos', emoji: '📋', category: 'navigation' },
-  { id: 'nav-cobrancas', label: 'Cobranças', hint: '/app/financeiro/cobrancas', href: '/app/financeiro/cobrancas', emoji: '🧾', category: 'navigation' },
-  { id: 'nav-promocoes', label: 'Promoções', hint: '/app/financeiro/promocoes', href: '/app/financeiro/promocoes', emoji: '🎟️', category: 'navigation' },
-  { id: 'nav-checkins', label: 'Check-ins ao vivo', hint: '/app/acesso/checkins', href: '/app/acesso/checkins', emoji: '🚪', category: 'navigation' },
-  { id: 'nav-retencao', label: 'Retenção / Churn', hint: '/app/retencao', href: '/app/retencao', emoji: '🎯', category: 'navigation' },
-  { id: 'nav-retencao-intv', label: 'Intervenções de retenção', hint: '/app/retencao/interventions', href: '/app/retencao/interventions', emoji: '📋', category: 'navigation' },
-  { id: 'nav-recepcao', label: 'Dashboard Recepção', hint: '/app/dashboard/recepcao', href: '/app/dashboard/recepcao', emoji: '🛎️', category: 'navigation' },
-  { id: 'nav-users', label: 'Usuários e roles', hint: '/app/settings/users', href: '/app/settings/users', emoji: '⚙️', category: 'navigation' },
+  {
+    id: 'nav-dashboard',
+    label: 'Dashboard',
+    hint: '/app',
+    href: '/app',
+    emoji: '🏠',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-members',
+    label: 'Alunos / Pacientes',
+    hint: '/app/members',
+    href: '/app/members',
+    emoji: '👥',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-persons',
+    label: 'Pessoas (PF/PJ)',
+    hint: '/app/pessoas',
+    href: '/app/pessoas',
+    emoji: '📇',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-agenda',
+    label: 'Agenda',
+    hint: '/app/agenda',
+    href: '/app/agenda',
+    emoji: '📅',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-agenda-week',
+    label: 'Agenda — Visão semanal',
+    hint: '/app/agenda/week',
+    href: '/app/agenda/week',
+    emoji: '📆',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-resources',
+    label: 'Recursos (catraca/sala/instrutor)',
+    hint: '/app/agenda/resources',
+    href: '/app/agenda/resources',
+    emoji: '🔧',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-financeiro',
+    label: 'Financeiro',
+    hint: '/app/financeiro',
+    href: '/app/financeiro',
+    emoji: '💰',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-planos',
+    label: 'Planos',
+    hint: '/app/financeiro/planos',
+    href: '/app/financeiro/planos',
+    emoji: '💼',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-contratos',
+    label: 'Contratos',
+    hint: '/app/financeiro/contratos',
+    href: '/app/financeiro/contratos',
+    emoji: '📋',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-cobrancas',
+    label: 'Cobranças',
+    hint: '/app/financeiro/cobrancas',
+    href: '/app/financeiro/cobrancas',
+    emoji: '🧾',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-promocoes',
+    label: 'Promoções',
+    hint: '/app/financeiro/promocoes',
+    href: '/app/financeiro/promocoes',
+    emoji: '🎟️',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-checkins',
+    label: 'Check-ins ao vivo',
+    hint: '/app/acesso/checkins',
+    href: '/app/acesso/checkins',
+    emoji: '🚪',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-retencao',
+    label: 'Retenção / Churn',
+    hint: '/app/retencao',
+    href: '/app/retencao',
+    emoji: '🎯',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-retencao-intv',
+    label: 'Intervenções de retenção',
+    hint: '/app/retencao/interventions',
+    href: '/app/retencao/interventions',
+    emoji: '📋',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-recepcao',
+    label: 'Dashboard Recepção',
+    hint: '/app/dashboard/recepcao',
+    href: '/app/dashboard/recepcao',
+    emoji: '🛎️',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-users',
+    label: 'Usuários e roles',
+    hint: '/app/settings/users',
+    href: '/app/settings/users',
+    emoji: '⚙️',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-fiscal',
+    label: 'Emissões fiscais (NFS-e/NF-e)',
+    hint: '/app/fiscal',
+    href: '/app/fiscal',
+    emoji: '🧾',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-fiscal-apuracao',
+    label: 'Apuração fiscal mensal',
+    hint: '/app/fiscal/apuracao',
+    href: '/app/fiscal/apuracao',
+    emoji: '📊',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-fiscal-settings',
+    label: 'Configurações fiscais (Focus NFe)',
+    hint: '/app/settings/fiscal',
+    href: '/app/settings/fiscal',
+    emoji: '⚙️',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-fiscal-catalogo',
+    label: 'Catálogo de serviços tributáveis',
+    hint: '/app/settings/fiscal/catalogo',
+    href: '/app/settings/fiscal/catalogo',
+    emoji: '📚',
+    category: 'navigation',
+  },
+  {
+    id: 'nav-contador',
+    label: 'Portal do contador',
+    hint: '/app/contador',
+    href: '/app/contador',
+    emoji: '🧮',
+    category: 'navigation',
+  },
   // Actions
-  { id: 'act-new-member', label: 'Cadastrar novo member', hint: '/app/members/new', href: '/app/members/new', emoji: '➕', category: 'action' },
-  { id: 'act-new-appointment', label: 'Novo agendamento', hint: '/app/agenda/new', href: '/app/agenda/new', emoji: '➕', category: 'action' },
-  { id: 'act-new-plan', label: 'Novo plano', hint: '/app/financeiro/planos/new', href: '/app/financeiro/planos/new', emoji: '➕', category: 'action' },
-  { id: 'act-new-promo', label: 'Nova promoção', hint: '/app/financeiro/promocoes/new', href: '/app/financeiro/promocoes/new', emoji: '➕', category: 'action' },
-  { id: 'act-new-resource', label: 'Novo recurso (catraca/sala)', hint: '/app/agenda/resources/new', href: '/app/agenda/resources/new', emoji: '➕', category: 'action' },
-  { id: 'act-new-user', label: 'Novo usuário', hint: '/app/settings/users/new', href: '/app/settings/users/new', emoji: '➕', category: 'action' },
+  {
+    id: 'act-new-member',
+    label: 'Cadastrar novo member',
+    hint: '/app/members/new',
+    href: '/app/members/new',
+    emoji: '➕',
+    category: 'action',
+  },
+  {
+    id: 'act-new-appointment',
+    label: 'Novo agendamento',
+    hint: '/app/agenda/new',
+    href: '/app/agenda/new',
+    emoji: '➕',
+    category: 'action',
+  },
+  {
+    id: 'act-new-plan',
+    label: 'Novo plano',
+    hint: '/app/financeiro/planos/new',
+    href: '/app/financeiro/planos/new',
+    emoji: '➕',
+    category: 'action',
+  },
+  {
+    id: 'act-new-promo',
+    label: 'Nova promoção',
+    hint: '/app/financeiro/promocoes/new',
+    href: '/app/financeiro/promocoes/new',
+    emoji: '➕',
+    category: 'action',
+  },
+  {
+    id: 'act-new-resource',
+    label: 'Novo recurso (catraca/sala)',
+    hint: '/app/agenda/resources/new',
+    href: '/app/agenda/resources/new',
+    emoji: '➕',
+    category: 'action',
+  },
+  {
+    id: 'act-new-user',
+    label: 'Novo usuário',
+    hint: '/app/settings/users/new',
+    href: '/app/settings/users/new',
+    emoji: '➕',
+    category: 'action',
+  },
+  {
+    id: 'act-emit-nfse',
+    label: 'Emitir NFS-e avulsa',
+    hint: '/app/fiscal/emitir/nfse',
+    href: '/app/fiscal/emitir/nfse',
+    emoji: '📄',
+    category: 'action',
+  },
 ]
 
 function fuzzyMatch(query: string, label: string): boolean {
@@ -69,11 +271,7 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Filtra: se query começa com `>`, só actions; `/`, só navigation; senão tudo
-  const filterMode = query.startsWith('>')
-    ? 'action'
-    : query.startsWith('/')
-      ? 'navigation'
-      : 'all'
+  const filterMode = query.startsWith('>') ? 'action' : query.startsWith('/') ? 'navigation' : 'all'
   const searchTerm = query.startsWith('>') || query.startsWith('/') ? query.slice(1).trim() : query
 
   const items = CANONICAL_ITEMS.filter(
@@ -148,6 +346,7 @@ export function CommandPalette() {
         }}
       />
       {/* Palette */}
+      {/* biome-ignore lint/a11y/useSemanticElements: <dialog> nativo muda foco/open behavior — migração fica pro Sprint 07 Faixa D junto com search_index */}
       <div
         role="dialog"
         aria-label="Command palette"
@@ -189,9 +388,7 @@ export function CommandPalette() {
                       backgroundColor:
                         i === selectedIdx ? 'var(--ev-surface-muted)' : 'transparent',
                       borderLeft:
-                        i === selectedIdx
-                          ? '3px solid var(--ev-primary)'
-                          : '3px solid transparent',
+                        i === selectedIdx ? '3px solid var(--ev-primary)' : '3px solid transparent',
                       minHeight: '44px',
                     }}
                   >
