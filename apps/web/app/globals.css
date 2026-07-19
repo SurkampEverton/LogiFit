@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@repo/ui/tokens.css";
+@import "@repo/ui/base.css";
 
 /*
  * Mapeia tokens "Equilíbrio Vital" para os tokens do Tailwind v4 (regra 44).

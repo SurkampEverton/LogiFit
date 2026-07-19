@@ -6,6 +6,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fix — Design system: primitivos `.ev-*` portados pro app (regra 44) 2026-07-19
+
+Todas as telas staff renderizavam **sem formatação** (cards sem borda, botões como texto puro, tabelas sem grade): as páginas usam as classes "Equilíbrio Vital" (`.ev-card`/`.ev-btn`/`.ev-input`/`.ev-table`/`.ev-badge`/`.ev-stack`...) desde o Sprint 07, mas só os **tokens** haviam sido portados do protótipo — as classes primitivas existiam apenas em `prototipo/base.css` e nunca entraram no CSS servido. Nenhum sprint validou visualmente (E2E cobrem dados/a11y, não aparência).
+
+- **`packages/ui/src/base.css` novo** (export `@repo/ui/base.css`, importado no `globals.css`): porte dos primitivos do protótipo adaptado ao app — botões pill (+variants primary/ghost/danger/sm em **duas grafias**: BEM `--mod` do protótipo e traço simples `-mod` que as páginas adotaram), cards radius 24px, badges, inputs pill, tabelas, banner/alert, toast, modal, form-error, utilities (stack/row/grid/dot) e tipografia de headings (Tailwind preflight zera h1-h6).
+- **Aliases de tokens** em `tokens.css`: nomes semânticos usados pelas páginas (`--ev-space-xs..xl`, `--ev-fg`, `--ev-muted`, `--ev-muted-bg`, `--ev-info(-bg)`, `--ev-success/warning/danger-bg/-fg/-text`, `--ev-radius`, `--ev-font-*`, `--ev-mono`, `--ev-link`, `--ev-input-bg`) agora derivam dos canônicos — antes resolviam vazio e colapsavam paddings.
+- Corrige de uma vez todas as telas staff (fiscal, apuração, settings, e qualquer outra que use `.ev-*`) sem tocar em nenhuma página. Portal `/meu` não é afetado (CSS próprio desde o Sprint 26).
+
 ### Build — Sprint 36b.4: NFS-e avulsa + permissions RBAC nas SAs fiscais 2026-07-19
 
 - **`emitNfseManual` + form `/app/fiscal/emitir/nfse`** — emissão de NFS-e avulsa sem invoice (caso de uso primário do perfil Solo: consulta/sessão avulsa). Empresa emitente + serviço do catálogo (dropdown filtrado por company com LC 116 e ISS% no label) + tomador digitado (CPF/CNPJ validado) + valor em R$ + observações. Sucesso redireciona pro detalhe da emissão; botão `+ Emitir NFS-e` no header do inbox.

@@ -7,6 +7,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./tokens.css": "./src/tokens.css",
+    "./base.css": "./src/base.css",
     "./messages": "./src/messages/index.ts",
     "./layout/app-layout": "./src/layout/app-layout.tsx",
     "./assets/*": "./assets/*",

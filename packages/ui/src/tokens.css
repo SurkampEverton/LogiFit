@@ -116,6 +116,43 @@
   --ev-z-drawer: 300;
   --ev-z-modal: 400;
   --ev-z-toast: 500;
+
+  /* ===== Aliases de conveniência (Sprint 36b.5) ==========================
+   * Páginas escritas nos Sprints 07-37 usam estes nomes semânticos em inline
+   * styles. Sempre derivam dos canônicos acima — mudar SOMENTE o canônico. */
+  --ev-space-xs: var(--ev-space-1);
+  --ev-space-sm: var(--ev-space-2);
+  --ev-space-md: var(--ev-space-4);
+  --ev-space-lg: var(--ev-space-6);
+  --ev-space-xl: var(--ev-space-8);
+
+  --ev-fg: var(--ev-text);
+  --ev-muted: var(--ev-text-muted);
+  --ev-muted-bg: var(--ev-surface-muted);
+  --ev-muted-soft: var(--ev-surface-muted);
+  --ev-input-bg: var(--ev-surface);
+  --ev-link: var(--ev-primary);
+  --ev-primary-foreground: var(--ev-text-inverse);
+
+  --ev-info: var(--ev-primary);
+  --ev-info-bg: var(--ev-primary-soft);
+  --ev-info-soft: var(--ev-primary-soft);
+  --ev-success-bg: var(--ev-success-soft);
+  --ev-success-fg: var(--ev-success);
+  --ev-success-text: var(--ev-success);
+  --ev-warning-bg: var(--ev-warning-soft);
+  --ev-warning-fg: var(--ev-warning);
+  --ev-warning-text: var(--ev-warning);
+  --ev-danger-bg: var(--ev-danger-soft);
+  --ev-danger-fg: var(--ev-danger);
+  --ev-danger-text: var(--ev-danger);
+
+  --ev-radius: var(--ev-radius-md);
+  --ev-font-xs: var(--ev-text-xs);
+  --ev-font-sm: var(--ev-text-sm);
+  --ev-font-md: var(--ev-text-base);
+  --ev-font-lg: var(--ev-text-lg);
+  --ev-mono: var(--ev-font-mono);
 }
 
 /* ===== DARK ===== */
