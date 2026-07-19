@@ -6,6 +6,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — Sprint 36b.7: Runbook webhook Focus + auditoria de dependências fantasma 2026-07-19
+
+- **Runbook `docs/runbooks/focus-nfe-webhook.md`** — registro do webhook no Focus NFe (UI + API), rotação de secret, IP allowlist via Cloudflare WAF (pendente de faixa de IPs confirmada pelo suporte Focus — não ativar antes), teste ponta-a-ponta em homologação, troubleshooting de emissões presas em `processing` e rollback.
+- **Seção "Débitos de schema" no roadmap** — auditoria consolidada das 6 estruturas citadas como entregues por sprints anteriores mas inexistentes no schema (vendas/POS, `nfe_returns`, `tenant_usage_snapshots`, `search_index`, `tax_retentions`, invites de staff), com o que cada uma bloqueia. O escopo desbloqueado do Sprint 36b se esgotou — a continuação depende dessas alocações + conta Focus NFe.
+
 ### Build — Sprint 36b.6: Portal do contador fase 1 + rotas fiscais no palette 2026-07-19
 
 - **Portal `/app/contador` estruturado** (ADR 0061): layout próprio com banner obrigatório "leitura somente — dados fiscais e financeiros; sem acesso clínico" + navegação enxuta + gate `fiscal.read` com redirect. O dashboard financeiro do Sprint 01b ganhou a seção **Emissões fiscais do mês** (agregados: emitidas, autorizadas, valor autorizado) com links pra lista de notas e apuração.

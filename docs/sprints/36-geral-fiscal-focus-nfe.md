@@ -3,7 +3,7 @@
 - **Área:** fiscal (aplicável a todas as verticais)
 - **Início:** planejado (Fase 3)
 - **Fim planejado:** +4 semanas — candidato à quebra em 36a (NFS-e + eventos) + 36b (NF-e produto + NFC-e + devolução/transferência/conserto) se estourar 3 semanas (regra 9)
-- **Status:** doing — 36a backbone done 2026-05-18 · 36b.1-36b.6 (provider real, lookup/detalhe, catálogo, NFS-e avulsa, design system + PDF/XML, portal contador fase 1) done 2026-07-19 · 36b.7/c pendente (ver Log)
+- **Status:** doing — 36a backbone done 2026-05-18 · 36b.1-36b.7 done 2026-07-19 (provider real, lookup/detalhe, catálogo, NFS-e avulsa, design system + PDF/XML, portal contador, runbook webhook + auditoria) · **escopo desbloqueado esgotado** — 36b.8+/c aguardam schemas da auditoria de fantasmas (roadmap "Débitos de schema") + conta Focus NFe
 - **Item do roadmap:** #38
 
 ## Goal
@@ -300,7 +300,11 @@ Consumidores:
   - Command Palette: 5 rotas fiscais + portal contador + ação "Emitir NFS-e avulsa" adicionadas à lista canônica.
   - **Gap registrado (ADR 0062/regra 30):** tabela `search_index` nunca foi criada — o palette do Sprint 07 é lista estática; FTS de pessoas/members/emissões continua pendente de infra (Faixa D do Sprint 07 fantasma).
   - Validado E2E dev: banner + KPIs fiscais reais (3 notas, R$ 569,00) + lista com filtros + botões PDF/XML só onde há arquivo.
-  - **36b.7/c restante:** fontes de emissão pendentes de schema (venda/POS → decidir sprint que cria `sales`; `nfe_returns` 15b; conserto via equipment_maintenance; transferência via intercompany) + person picker no form avulso + cbos-cnae-resolver + PDF/XML URL assinada TTL 10min + IP allowlist runbook + portal contador + job usage snapshot + E2E Focus sandbox + negociação comercial. (`emitNfeProductFromSale`/`emitNfce` POS/`emitNfeReturn`/`emitNfeTransfer`/conserto/self-entry) + lookup real de company (CNPJ/município nas SAs — hoje placeholder) + cbos-cnae-resolver + CRUD catálogo de serviços + `/app/fiscal/[id]` detalhe + PDF/XML TTL 10min + portal contador + `/app/fiscal/retencoes` + job aggregate-fiscal-usage-snapshot + cron validate-credentials + IP allowlist runbook + E2E Focus sandbox + negociação comercial.
+- **2026-07-19 — 36b.7 (runbook webhook + auditoria de fantasmas) entregue:**
+  - Runbook [`focus-nfe-webhook.md`](../runbooks/focus-nfe-webhook.md) — registro do hook no Focus (UI + API), rotação de secret, **IP allowlist via Cloudflare WAF** (pendente de faixa confirmada pelo suporte Focus — não ativar antes), teste ponta-a-ponta em homologação, troubleshooting de emissões presas em `processing` e rollback.
+  - **Auditoria consolidada de dependências fantasma** — nova seção "Débitos de schema" no [roadmap](../roadmap.md) com as 6 estruturas inexistentes descobertas no 36b (vendas/POS, `nfe_returns`, `tenant_usage_snapshots`, `search_index`, `tax_retentions`, invites de staff), cada uma com o sprint que "deveria" ter criado e o que bloqueia. Decisão de alocação é do fundador.
+  - Com isso o escopo **desbloqueado** do 36b está esgotado — 36b.8+/c dependem de: schemas da auditoria acima, conta Focus NFe (token homologação → E2E sandbox real), negociação comercial, e auth helper de E2E (Sprint 04+).
+  - **36b.8/c restante (bloqueado):** fontes de emissão pendentes de schema (venda/POS → decidir sprint que cria `sales`; `nfe_returns` 15b; conserto via equipment_maintenance; transferência via intercompany) + person picker no form avulso + cbos-cnae-resolver + PDF/XML URL assinada TTL 10min + IP allowlist runbook + portal contador + job usage snapshot + E2E Focus sandbox + negociação comercial. (`emitNfeProductFromSale`/`emitNfce` POS/`emitNfeReturn`/`emitNfeTransfer`/conserto/self-entry) + lookup real de company (CNPJ/município nas SAs — hoje placeholder) + cbos-cnae-resolver + CRUD catálogo de serviços + `/app/fiscal/[id]` detalhe + PDF/XML TTL 10min + portal contador + `/app/fiscal/retencoes` + job aggregate-fiscal-usage-snapshot + cron validate-credentials + IP allowlist runbook + E2E Focus sandbox + negociação comercial.
 
 ## Definition of Done
 
