@@ -20,7 +20,7 @@ O ciclo de emissão é assíncrono: `POST /v2/{nfse|nfe|nfce}?ref=...` responde 
 
 ## Pré-requisitos
 
-- [ ] Acesso ao painel Focus NFe da conta do tenant (app.focusnfe.com.br)
+- [ ] Acesso ao painel Focus NFe da conta do tenant (https://app-v2.focusnfe.com.br) — cadastro em https://focusnfe.com.br/cadastro/ (30 dias de teste, sem setup nem fidelidade); doc da API em https://doc.focusnfe.com.br
 - [ ] Acesso ao Cloudflare (zona logifit.com.br) pra regra WAF
 - [ ] MFA recente: **N/A** — registro de webhook não passa por Server Action de alto risco; o secret é gerado/salvo pelo wizard com gate `fiscal.admin`
 - [ ] Credenciais Focus já salvas no wizard (`/app/settings/fiscal` Step 1) e secret anotado
