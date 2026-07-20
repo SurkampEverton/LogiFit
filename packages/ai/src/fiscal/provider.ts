@@ -112,6 +112,30 @@ export interface NfeProductEmissionInput {
 }
 
 /**
+ * Opções da emissão modelo 55 — o que distingue venda de devolução,
+ * transferência, conserto e entrada própria (ADR 0059).
+ *
+ * Vive na interface (não só no adapter Focus) porque é decisão fiscal do
+ * caller, não detalhe de provider: `nfe_return` exige `referencedChaves`
+ * (refNFe da nota original) e `finNFe=4`; entrada própria exige
+ * `tipoDocumento=0`.
+ */
+export interface NfeProductEmissionOptions {
+  /** Kind real da emissão — roteia o `ref` e o recurso do provider */
+  kind?: FiscalEmissionKind
+  /** Descrição da operação ("Venda de mercadoria", "Devolução de compra"…) */
+  naturezaOperacao?: string
+  /** 1=saída (venda/devolução/transferência), 0=entrada (compra de PF) */
+  tipoDocumento?: 0 | 1
+  /** Chaves SEFAZ referenciadas — devolução exige a da nota original */
+  referencedChaves?: string[]
+  /** Data de emissão (default: agora) */
+  emissionDate?: Date
+  /** presenca_comprador SEFAZ (default 9 = não presencial) */
+  presencaComprador?: number
+}
+
+/**
  * Payload semântico NFC-e (modelo 65, varejo balcão). Difere de NF-e:
  * destinatário opcional (venda sem identificação) e formas de pagamento
  * obrigatórias no XML (grupo pag do modelo 65).
@@ -237,8 +261,11 @@ export interface FiscalProvider {
   /** Emissão NFS-e (serviço municipal) */
   emitNfse(input: NfseEmissionInput): Promise<EmissionResult>
 
-  /** Emissão NF-e produto (modelo 55) — cobre venda, devolução (finNFe=4), transferência, conserto e entrada própria via CFOP/natureza */
-  emitNfeProduct(input: NfeProductEmissionInput): Promise<EmissionResult>
+  /** Emissão NF-e produto (modelo 55) — cobre venda, devolução (finNFe=4), transferência, conserto e entrada própria via CFOP/natureza + options */
+  emitNfeProduct(
+    input: NfeProductEmissionInput,
+    options?: NfeProductEmissionOptions,
+  ): Promise<EmissionResult>
 
   /** Emissão NFC-e (modelo 65, varejo balcão) */
   emitNfce(input: NfceEmissionInput): Promise<EmissionResult>

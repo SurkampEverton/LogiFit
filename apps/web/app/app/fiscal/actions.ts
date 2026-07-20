@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 /**
  * Server Actions Fiscal — Sprint 36 Faixa B.2 (ADR 0059 Accepted).
@@ -35,6 +35,7 @@ import {
   fiscalServiceCatalog,
   invoices,
   members,
+  nfeReturns,
   persons,
   saleItems,
   salePayments,
@@ -840,6 +841,161 @@ export const emitNfceFromSale = wrapServerAction(
     })
     setAuditResource(saved.id, { saleId: sale.id, kind: 'nfce', valorTotalCents: sale.totalCents })
     return { id: saved.id, status: saved.status, chave: result.chave }
+  },
+)
+
+// ─── emitNfeReturn (devolução de compra — Sprint 17b, ADR 0104) ─────────
+
+const EmitNfeReturnSchema = z.object({ nfeReturnId: z.string().uuid() })
+
+interface NfeReturnItem {
+  description: string
+  ncm: string
+  quantity: number
+  unitCents: number
+}
+
+export const emitNfeReturn = wrapServerAction(
+  { module: 'fiscal', action: 'emission.emit_nfe_return', resourceType: 'fiscal_emission' },
+  async (input: z.infer<typeof EmitNfeReturnSchema>, { session, setAuditResource }) => {
+    await requireFocusFlag()
+    await requirePermission(session.logifit.userId, 'fiscal.emit')
+    const parsed = EmitNfeReturnSchema.parse(input)
+    const tenantId = session.logifit.tenantId
+
+    const [ret] = await db
+      .select()
+      .from(nfeReturns)
+      .where(and(eq(nfeReturns.id, parsed.nfeReturnId), eq(nfeReturns.tenantId, tenantId)))
+      .limit(1)
+    if (!ret)
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Devolução não encontrada',
+        request_id: '',
+      })
+    if (ret.status !== 'draft')
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: `Devolução em status '${ret.status}' — só rascunho pode ser emitido`,
+        request_id: '',
+      })
+
+    // Devolução total sem itens discriminados: 1 linha sintética com o total.
+    // NCM genérico não existe — sem itens, o operador precisa detalhar.
+    const rawItems = (ret.items as NfeReturnItem[] | null) ?? []
+    if (rawItems.length === 0)
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message:
+          'Devolução sem itens discriminados — informe descrição, NCM, quantidade e valor de cada item',
+        request_id: '',
+      })
+    const missingNcm = rawItems.filter((it) => !it.ncm)
+    if (missingNcm.length > 0)
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: `Item(ns) sem NCM: ${missingNcm.map((i) => i.description).join(', ')}`,
+        request_id: '',
+      })
+    if (!ret.originalSupplierDocument)
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: 'Devolução sem CNPJ do fornecedor original — obrigatório como destinatário',
+        request_id: '',
+      })
+
+    const company = await resolveCompanyFiscal(tenantId, ret.companyId)
+    // Devolução espelha a operação original: mercadoria volta pro fornecedor
+    const cfop = resolveCfop({ kind: 'nfe_return', ufOrigin: 'SP', ufDestination: 'SP' })
+    const numero = await reserveNextNumero(tenantId, ret.companyId, 'nfe_return', 1)
+
+    const provider = await getProviderForTenant(tenantId)
+    const result = await provider.emitNfeProduct(
+      {
+        companyCnpj: company.cnpj,
+        serie: 1,
+        numero,
+        recipient: {
+          document: ret.originalSupplierDocument,
+          name: ret.originalSupplierName ?? 'Fornecedor',
+        },
+        items: rawItems.map((it) => ({
+          sku: it.description.slice(0, 30),
+          description: it.description,
+          quantity: it.quantity,
+          unitCents: it.unitCents,
+          cfop: cfop.cfop,
+          ncm: it.ncm,
+        })),
+        finNFe: 4, // devolução
+        idDest: 1,
+      },
+      {
+        kind: 'nfe_return',
+        naturezaOperacao: 'Devolução de compra',
+        tipoDocumento: 1,
+        // refNFe: liga a devolução à nota original (exigência do layout)
+        referencedChaves: [ret.originalChave],
+      },
+    )
+
+    const status = result.status === 'completed' ? 'completed' : 'queued'
+    const [row] = await db
+      .insert(fiscalEmissions)
+      .values({
+        tenantId,
+        companyId: ret.companyId,
+        kind: 'nfe_return',
+        status,
+        provider: provider.name as 'mock',
+        sourceKind: 'nfe_return',
+        sourceId: ret.id,
+        serie: 1,
+        numero,
+        chave: result.chave,
+        providerRef: result.providerRef,
+        xmlStoragePath: result.xmlUrl ?? null,
+        pdfStoragePath: result.pdfUrl ?? null,
+        valorTotalCents: ret.returnAmountCents,
+        recipientName: ret.originalSupplierName,
+        recipientDocument: ret.originalSupplierDocument,
+        payload: {
+          input: { nfeReturnId: ret.id, originalChave: ret.originalChave },
+          result: result.raw,
+        },
+        submittedAt: new Date(),
+        completedAt: status === 'completed' ? new Date() : null,
+        cancelDeadlineAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        createdByUserId: session.logifit.userId,
+      })
+      .returning({ id: fiscalEmissions.id })
+    if (!row)
+      throw new ApiException({
+        code: 'INTERNAL_ERROR',
+        message: 'Falha ao gravar emissão',
+        request_id: '',
+      })
+
+    // Fecha o ciclo da devolução (ADR 0058 camada 2)
+    await db
+      .update(nfeReturns)
+      .set({
+        status: 'emitted',
+        emittedAt: new Date(),
+        emissionMode: 'focus_nfe',
+        externalChave: result.chave,
+        fiscalEmissionId: row.id,
+        updatedAt: new Date(),
+      })
+      .where(eq(nfeReturns.id, ret.id))
+
+    setAuditResource(row.id, {
+      nfeReturnId: ret.id,
+      originalChave: ret.originalChave,
+      valorTotalCents: ret.returnAmountCents,
+    })
+    return { id: row.id, status, chave: result.chave }
   },
 )
 

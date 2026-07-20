@@ -34,6 +34,7 @@ import type {
   InutilizacaoInput,
   NfceEmissionInput,
   NfeProductEmissionInput,
+  NfeProductEmissionOptions,
   NfseEmissionInput,
   ProviderHealthResult,
 } from './provider'
@@ -281,7 +282,7 @@ export class FocusNfeProvider implements FiscalProvider {
 
   async emitNfeProduct(
     input: NfeProductEmissionInput,
-    options?: Partial<NfePayloadOptions> & { kind?: FiscalEmissionKind },
+    options?: NfeProductEmissionOptions & Partial<Pick<NfePayloadOptions, 'taxDefaults'>>,
   ): Promise<EmissionResult> {
     const kind = options?.kind ?? 'nfe'
     const ref = FocusNfeProvider.emissionRef(kind, input.companyCnpj, input.serie, input.numero)

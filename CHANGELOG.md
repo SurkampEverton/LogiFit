@@ -6,6 +6,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 17b: devolução de compra desacoplada (débito 2 — o último) 2026-07-20
+
+Fecha a auditoria de débitos de schema do Sprint 36b: **6 de 6 quitados**.
+
+- **Descoberta**: o débito tinha **dependência em cascata** — o ADR 0058 especificava `nfe_returns` com FK obrigatória pra `nfe_received`, que *também* nunca foi criada (ADR 0056/Sprint 17). Implementar "como especificado" exigiria construir a recepção de NF-e inteira (SEFAZ, manifestação, parsing de XML) antes.
+- **[ADR 0104](docs/decisions/0104-nfe-returns-desacoplado.md)** resolve por desacoplamento: `original_chave` digitada pelo operador (44 dígitos com CHECK) — que é o dado que o layout NF-e realmente exige no `refNFe`, e está no DANFE que veio com a mercadoria. O campo `nfe_received_id` já fica preparado pra ganhar FK + backfill por chave quando o Sprint 17 chegar.
+- **Schema + migration 0061 + RLS**: `kind` total/parcial (parcial exige itens discriminados via CHECK), motivo categorizado + descrição ≥20 chars, ciclo `draft → emitted → cancelled`.
+- **SA `emitNfeReturn`** — monta `finNFe=4` + `notas_referenciadas` com a chave original, reusando o builder de NF-e do 36b; valida NCM por item e CNPJ do fornecedor com erros acionáveis; fecha o ciclo marcando a devolução como emitida e ligando à emissão fiscal.
+- **`/app/fiscal/devolucoes`** com ação de emitir. **Validado E2E**: devolução parcial de R$ 241,00 → NF-e `nfe_return` série 1 nº 1 autorizada, `refNFe` da nota original no payload, devolução `emitted` com `emission_mode='focus_nfe'`.
+- **Contrato do provider ampliado**: `NfeProductEmissionOptions` saiu do adapter Focus e subiu pra interface `FiscalProvider` — decidir entre venda, devolução, transferência e entrada própria é decisão fiscal do caller, não detalhe de implementação do provider.
+
 ### Fix — Integridade de `*_user_id`: dados reparados, FKs criadas, lint ativo 2026-07-20
 
 Fecha as 3 pendências do bug sistêmico corrigido mais cedo:

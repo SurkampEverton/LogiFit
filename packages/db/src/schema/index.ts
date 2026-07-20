@@ -181,3 +181,6 @@ export * from './user-invites'
 
 // Sprint 15b — Retenções tributárias (ADR 0061 Grupos B e G; débito #5 da auditoria 36b): tax_natures (global curada tenant_id NULL + custom por tenant; rules jsonb no shape RetentionRule[]) + tax_retentions (1 por fonte×tributo + ciclo de guia pending→paid→reconciled + year_month pro relatório). Cálculo puro em @repo/ai/fiscal/retencoes.
 export * from './retencoes'
+
+// Sprint 17b — Devolução de compra (ADR 0104 + ADR 0058; débito #2 da auditoria 36b): nfe_returns DESACOPLADO da inbox — original_chave digitada (44 dígitos) em vez de FK obrigatória pra nfe_received (que só nasce no Sprint 17; campo já preparado pro backfill). Emissão via finNFe=4 + notas_referenciadas.
+export * from './nfe-returns'
