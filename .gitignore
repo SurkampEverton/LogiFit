@@ -56,8 +56,11 @@ packages/db/drizzle/meta/_journal.tmp.json
 chaves/
 infra/.local-secrets/
 infra/smtp_*.txt
+infra/*_ddns.txt
+infra/r2-*.txt
 infra/*.pem
 infra/*.key
+infra/*.asc
 infra/id_*
 infra/ssh-key-*
 
