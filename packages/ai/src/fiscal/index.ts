@@ -18,6 +18,27 @@ export * from './provider'
 export * from './mock'
 export * from './cfop-resolver'
 export * from './focus-nfe'
+// Sprint 15b — motor de retenções (ADR 0061 Grupos B e G)
+export {
+  type CappedRateRule,
+  type FixedRateRule,
+  type ProgressiveBracket,
+  type ProgressiveRateRule,
+  type RetentionInput,
+  type RetentionLine,
+  type RetentionResult,
+  type RetentionRule,
+  type TaxKind,
+  type TaxNatureDefinition,
+  FEDERAL_MIN_BASE_CENTS,
+  findGlobalTaxNature,
+  GLOBAL_TAX_NATURES,
+  INSS_CEILING_CENTS_2026,
+  INSS_RATE_BP,
+  IRRF_BRACKETS_2026,
+  TAX_TABLES_VERSION,
+  calculateRetentions,
+} from './retencoes'
 export * from './emissions/nfse'
 export * from './emissions/nfe'
 export * from './emissions/nfce'

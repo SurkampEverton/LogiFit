@@ -178,3 +178,6 @@ export * from './billing'
 
 // Sprint 01c — Convites de staff (ADR 0103; débito #6 da auditoria 36b): user_invites (token_hash sha256 + TTL 7d + revogável + unique pendente por tenant+email). MVP só contador_externo (CHECK); aceite provisiona auth_user+person+user+role sem criar sessão.
 export * from './user-invites'
+
+// Sprint 15b — Retenções tributárias (ADR 0061 Grupos B e G; débito #5 da auditoria 36b): tax_natures (global curada tenant_id NULL + custom por tenant; rules jsonb no shape RetentionRule[]) + tax_retentions (1 por fonte×tributo + ciclo de guia pending→paid→reconciled + year_month pro relatório). Cálculo puro em @repo/ai/fiscal/retencoes.
+export * from './retencoes'

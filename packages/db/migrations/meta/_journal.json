@@ -358,6 +358,13 @@
       "when": 1779562670955,
       "tag": "0058_user_invites",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1779563670955,
+      "tag": "0059_retencoes",
+      "breakpoints": true
     }
   ]
 }

@@ -6,6 +6,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 15b: motor de retenções tributárias (débito 5 — ADR 0061 Grupos B e G) 2026-07-19
+
+- **Calculadora pura `@repo/ai/fiscal/retencoes`** — 3 tipos de regra cobrindo a legislação: alíquota fixa com piso de dispensa (PIS/COFINS/CSLL/IRRF PJ — Lei 10.833 art. 31), **tabela progressiva** com parcela a deduzir e reporte da **alíquota efetiva** (IRRF PF), e alíquota com **teto compartilhado no mês** (INSS 11% — base já retida por outra fonte consome o limite). ISS entra por fora, com alíquota do catálogo municipal. **24 testes** incluindo invariantes (líquido + retido = bruto, retenção nunca excede o bruto, determinismo).
+- **Schemas `tax_natures` + `tax_retentions`** (migration 0059 + RLS 0067): naturezas globais curadas (`tenant_id IS NULL`, legíveis por todos, editáveis só por super_admin) coexistindo com custom por tenant; retenção única por (fonte, tributo) com ciclo de guia `pending → paid → reconciled` e competência `YYYY-MM`. **Seed das 10 naturezas** do ADR 0061 com referência normativa em cada uma.
+- **`/app/fiscal/retencoes`** — relatório agrupado por tributo na competência, com a guia onde cada um é recolhido (DARF federal / GPS / guia municipal), base acumulada, total retido e pendências. Acesso por `fiscal.read` ou contador externo.
+- **Ainda não fia nas fontes**: falta o select de natureza tributária na UI de contas a pagar (Sprint 15) e o cálculo automático sobre comissão/RPA (Sprint 23) — sem isso nada popula `tax_retentions` ainda. O motor e o relatório estão prontos esperando.
+
 ### Build — Sprint 01c: convite de contador externo (débito 6 — ADR 0103) 2026-07-19
 
 O portal do contador existia mas nenhum contador conseguia entrar — faltava o convite:
