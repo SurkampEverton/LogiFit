@@ -8,20 +8,20 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 
 ## Modelo comercial
 
-**6 planos** ([ADR 0066](docs/decisions/0066-plano-comercial-pricing-trial.md) — versão vigente 2026-04-25; tabela abaixo é fonte canônica):
+**6 planos** ([ADR 0066](docs/decisions/0066-plano-comercial-pricing-trial.md) — versão vigente 2026-07-20; tabela abaixo é fonte canônica):
 
-| Plano | R$/mês | Members | Verticais | Profs | NFS-e/mês | IA/mês | Storage |
+| Plano | R$/mês | Members | Verticais | Profs | Docs fiscais/mês | IA/mês | Storage |
 |---|---|---|---|---|---|---|---|
-| **Solo** | 49 | 30 | 1 à escolha | 1 | 20 | 200 | 1 GB |
-| **Solo Combo** | 69 | 60 | até 3 simultâneas | 1 | 30 | 200 | 2 GB |
-| **Starter** | 99 | 100 | Academia (MVP) — Fisio/Nutri liberam em Fases 2/3 | 5 | 50 | 500 | 5 GB |
-| **Pro** | 199 | 500 | todas simultâneas + Focus NFe + Device Hub + Pipeline Exames | 10 | 200 | 3.000 | 50 GB |
-| **Business** | 449 | 2.000 | todas + multi-company (até 3 CNPJs) + intercompany + adquirência | 30 | 1.000 | 10.000 | 200 GB |
-| **Enterprise** | sob consulta (~1.199+) | ilimitado | todas + white-label + DPO add-on + SLA | ilimitado | 5.000 | 25.000 ou BYOK | 500 GB+ |
+| **Solo** | 49 | 30 | 1 à escolha | 1 | 50 | 200 | 1 GB |
+| **Solo Combo** | 69 | 60 | até 3 simultâneas | 1 | 100 | 200 | 2 GB |
+| **Starter** | 99 | 100 | Academia (MVP) — Fisio/Nutri liberam em Fases 2/3 | 5 | 150 | 500 | 5 GB |
+| **Pro** | 199 | 500 | todas simultâneas + Focus NFe + Device Hub + Pipeline Exames | 10 | 750 | 3.000 | 50 GB |
+| **Business** | 449 | 2.000 | todas + multi-company (até 3 CNPJs) + intercompany + adquirência | 30 | 3.000 | 10.000 | 200 GB |
+| **Enterprise** | sob consulta (~1.199+) | ilimitado | todas + white-label + DPO add-on + SLA | ilimitado | 15.000 | 25.000 ou BYOK | 500 GB+ |
 
 - **Solo / Solo Combo** (`tenants.mode='solo'`, [ADR 0069](docs/decisions/0069-perfil-paciente-hub-operacional.md)) — profissional autônomo (CREF/CREFITO/CRN/CRP/CRO/Pilates/esteticista) com UX simplificada e templates por profissão.
 - **Overage member** R$ 0,50/member acima do incluído (Solo/Combo: R$ 0,40); cap por tier força upgrade sugerido após 2 ciclos consecutivos. **1 active member por (paciente, tenant)** — passaporte cross-tenant ([ADR 0077](docs/decisions/0077-passaporte-paciente-vinculo-cross-tenant.md)) **não duplica cobrança** (paciente em N tenants = 1 member por tenant cada).
-- **Overage NFS-e** R$ 0,50 / 0,40 / 0,35 / 0,25 por **nota emitida** (NFS-e + NF-e + NFC-e + devolução + transferência + conserto), por tier respectivo. **Eventos não contam** (cancelamento, CC-e, inutilização). Repasse calibrado sobre custo Focus NFe + margem operacional.
+- **Overage documento fiscal** R$ 0,15 / 0,15 / 0,12 / 0,10 / 0,08 / 0,05 por **documento emitido** (NFS-e + NF-e + NFC-e + devolução + transferência + conserto), do Solo ao Enterprise. **Eventos não contam** (cancelamento, CC-e, inutilização). Cota = **1,5× o teto de members** do tier, então quem usa o produto como projetado nunca encosta nela. **Não é repasse de custo** — a conta Focus é do tenant ([ADR 0105](docs/decisions/0105-conta-focus-por-tenant-byo.md)); o overage é guardrail contra abuso + captura de valor pelo ciclo fiscal (fila, retry, reconciliação, storage 5 anos, auditoria, portal do contador).
 - **Cota IA é hard-stop** — excedido = bloqueio até próximo ciclo + convite BYOK (não há overage IA pago). Default LogiFit: Gemini 2.5 Flash via Vertex AI ([ADR 0064](docs/decisions/0064-ia-arquitetura-gemini-default-byok-rag.md)); runbook emergencial em [`docs/runbooks/ia-byok-emergencial.md`](docs/runbooks/ia-byok-emergencial.md).
 - **Trial 14 dias** sem cartão com features Pro; dados retidos 30 dias após expiração e então **anonimizados** (preserva agregados estatísticos, remove PII; ver ADR 0054 + Sprint 01a). Conversão antes do dia 30 reativa dados originais.
 - **Multi-tenant por subdomínio** ([ADR 0065](docs/decisions/0065-multi-tenant-por-subdominio.md)): `{slug}.logifit.com.br`.
@@ -41,7 +41,7 @@ LogiFit é um ERP SaaS B2B multi-tenant para **Academia + Fisioterapia + Nutriç
 - **ANVISA RDC 657/2022 + RDC 751/2022** — Software as Medical Device (SaMD): classes I/II (baixo risco) → notificação; III/IV (alto risco) → registro pleno. LogiFit evita Classe III por design.
 - **ANS TISS 4.01 (Ofício-Circular ANS nº 1/2026)** — padrão vigente para faturamento de convênios; LogiFit mantém pipeline de atualização semestral da terminologia TUSS + validador proativo XSD/regra de negócio + versionamento por guia. Ver [ADR 0079](docs/decisions/0079-tiss-401-ans-padrao-vigente.md) + Sprint 22.
 - **NT 2012/002 SEFAZ / ENCAT** — Manifestação do Destinatário de NF-e: 4 eventos fiscais (Ciência, Confirmação, Desconhecimento, Não Realizada) obrigatórios para destinatário com CNPJ no prazo de 180 dias. Ciência automática ativa por padrão no LogiFit; demais eventos manuais. Ver [ADR 0057](docs/decisions/0057-manifestacao-destinatario-nfe.md) + Sprint 17.
-- **Emissão fiscal unificada via Focus NFe** — LogiFit não toca em motor tributário. Todas as emissões (NFS-e, NF-e produto, NFC-e varejo, NF-e devolução, NF-e transferência, NF-e conserto, NF-e entrada própria, CC-e, cancelamento, inutilização) passam pelo provider Focus NFe. Ver [ADR 0059](docs/decisions/0059-ciclo-fiscal-emissao-focus-nfe.md) + Sprint 36. NT 2013/005 SEFAZ (NFC-e), NT 2011/004 SEFAZ (CC-e), RTC 1.400/2016 ABRASF (NFS-e) cobertas pelo provider. **Custo fiscal repassado ao tenant via overage** (ADR 0066 revisado 2026-04-25); rejeitado explicitamente o caminho de motor fiscal próprio (8-12 meses solo + manutenção eterna).
+- **Emissão fiscal unificada via Focus NFe** — LogiFit não toca em motor tributário. Todas as emissões (NFS-e, NF-e produto, NFC-e varejo, NF-e devolução, NF-e transferência, NF-e conserto, NF-e entrada própria, CC-e, cancelamento, inutilização) passam pelo provider Focus NFe. Ver [ADR 0059](docs/decisions/0059-ciclo-fiscal-emissao-focus-nfe.md) + Sprint 36. NT 2013/005 SEFAZ (NFC-e), NT 2011/004 SEFAZ (CC-e), RTC 1.400/2016 ABRASF (NFS-e) cobertas pelo provider. **A conta Focus é do tenant** (BYO — [ADR 0105](docs/decisions/0105-conta-focus-por-tenant-byo.md)): o tenant contrata e paga a Focus direto, e a LogiFit não repassa custo de emissão. Rejeitado explicitamente o caminho de motor fiscal próprio (8-12 meses solo + manutenção eterna).
 - **NFS-e Padrão Nacional como provider complementar futuro** ([ADR 0076](docs/decisions/0076-nfse-nacional-provider-complementar.md)) — não substitui Focus NFe; complementa para municípios aderidos (gratuito, infra federal). Não entra no MVP — gatilhos: Sprint 36 estável há 3 meses + 10k notas/mês LogiFit + 30% emissões em municípios aderidos. Reusa interface `FiscalProvider`.
 - **Cobertura fiscal faseada (ADR 0061)** — Fase atual cobre Grupos A (emissão via Focus), B (retenções em AP) e G (retenções em comissão/RPA) + portal `contador_externo` read-only (LGPD). Fases futuras mapeadas no roadmap (Sprints 37-40): apuração mensal, guias oficiais DAS/DARF, obrigações acessórias SPED/ECD/ECF, folha CLT + eSocial. LogiFit vai assumir progressivamente; ambição de cobertura completa. Fontes: Lei 10.833/2003 (retenções), IN RFB 1.234/2012, Tabela IRRF RFB, Portaria INSS (teto anual), LC 116/2003 (ISS).
 

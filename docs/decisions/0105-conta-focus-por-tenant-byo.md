@@ -25,14 +25,13 @@ Consequência prática observada em 2026-07-20: por o código presumir conta do 
 
 Motivos: é o que já funciona, evita que a LogiFit vire intermediária de contrato fiscal de terceiros, e mantém a LogiFit fora da cadeia de responsabilidade sobre credenciais de portais municipais e certificados A1 de clientes.
 
-### Consequência que exige ação: ADR 0066 precisa de revisão
+### Consequência no pricing — resolvida em 2026-07-20
 
-O overage de NFS-e **deixa de ser repasse de custo**, porque não há custo Focus na LogiFit. Continuar descrevendo-o como repasse é incorreto perante o cliente. Caminhos possíveis (decisão comercial pendente, fora do escopo deste ADR):
+O overage de NFS-e **deixou de ser repasse de custo**, porque não há custo Focus na LogiFit. O [ADR 0066](0066-plano-comercial-pricing-trial.md) foi revisado no mesmo dia (4ª revisão) e o overage reenquadrado como **guardrail contra abuso + captura de valor pelo ciclo fiscal** (fila com retry, reconciliação, storage de XML/PDF por 5 anos, auditoria, portal do contador) — não como recuperação de custo.
 
-1. **Reenquadrar** como tarifa de plataforma pelo ciclo fiscal (fila, retry, reconciliação, auditoria, portal do contador) — o valor entregue existe e é independente do custo Focus.
-2. **Remover** o overage de NFS-e e absorver a emissão na mensalidade do tier.
+A revisão também corrigiu um defeito estrutural descoberto na mesma análise: a cota de documentos de todos os tiers estava **abaixo do teto de members do próprio tier**, num produto cujo caso de uso central é uma nota por member por mês. Um Business no teto pagaria +R$ 350 sobre R$ 449 (+78%) todo mês só por usar o produto como projetado. Nova base: cota = **1,5× o teto de members**, overage reduzido a R$ 0,15 → 0,05 conforme tier.
 
-Enquanto não decidido, o texto do ADR 0066 e de [`docs/comercial.md`](../comercial.md) está impreciso quanto à natureza da cobrança.
+Efeito colateral positivo: sem o custo Focus, a margem fica uniforme em ~80% em todos os tiers — o Enterprise deixa de ser o plano estruturalmente pior (antes 8%, com alerta).
 
 ### O que continua sendo responsabilidade do LogiFit
 
@@ -52,12 +51,12 @@ Mesmo com conta do tenant, o LogiFit deve reduzir o atrito de configuração —
 ### Negativas (mitigáveis)
 
 - **Onboarding mais pesado para o tenant** — precisa contratar a Focus e cadastrar a empresa lá antes de usar o módulo fiscal. Mitigado pelos perfis municipais e pela tela de configuração pendente acima.
-- **ADR 0066 fica impreciso** até a revisão comercial descrita acima. É a dívida aberta por esta decisão.
+- **Menos receita de overage fiscal** — com a cota redimensionada, o tenant típico nunca a encosta. Aceito conscientemente: a margem base de ~80% sustenta os planos, e um preço de capa que corresponde à fatura real vale mais que a receita marginal perdida.
 - **Suporte mais difuso** — problema de emissão pode estar no contrato do tenant com a Focus, fora do alcance do LogiFit. Mitigado por mensagens de erro que identificam a origem (ver `focus-nfe.ts`, prefixo do código de erro).
 
 ## Referências
 
 - [ADR 0059](0059-ciclo-fiscal-emissao-focus-nfe.md) — ciclo fiscal via Focus NFe
-- [ADR 0066](0066-plano-comercial-pricing-trial.md) — pricing (**a revisar**)
+- [ADR 0066](0066-plano-comercial-pricing-trial.md) — pricing (revisão 2026-07-20 decorre deste ADR)
 - [ADR 0076](0076-nfse-nacional-provider-complementar.md) — NFS-e Nacional como provider complementar
 - Doc Focus: https://doc.focusnfe.com.br/reference/atualizar_empresa.md

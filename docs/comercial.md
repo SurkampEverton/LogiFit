@@ -42,7 +42,7 @@ A plataforma ERP que gerencia **academia, clínica de fisioterapia e consultóri
 - Planos e pacotes combinados (mensalidade + 8 aulas de pilates + 2 consultas nutri)
 - Cupons de desconto e promoções sazonais
 - Cashback para retenção
-- **Emissão automática de NFS-e** em todos os municípios brasileiros (cobertura nacional via Focus NFe) — pacote de notas incluso no plano + cobrança proporcional ao volume real de emissão
+- **Emissão automática de NFS-e** em todos os municípios brasileiros (cobertura nacional via Focus NFe) — cota dimensionada em 1,5× o porte do plano, então a emissão é, na prática, inclusa
 
 ### Controlando a operação diária
 
@@ -141,24 +141,25 @@ Cache semântico reduz consumo em até 60% (perguntas comuns reaproveitam respos
 
 ### Emissão fiscal — pacote incluso + custo proporcional
 
-Todo plano com emissão fiscal traz um **pacote de notas inclusas no preço-base** + **cobrança proporcional** se você emitir mais. Modelo justo: tenant pequeno paga só o plano; tenant que emite muito paga proporcional ao volume.
+A cota de documentos fiscais de cada plano é **1,5× o número de alunos/pacientes que o plano comporta**. Ou seja: se você emitir a mensalidade de todo mundo, todo mês, ainda sobra folga para notas avulsas, venda de produto e devolução. **Usando o produto como ele foi projetado, você não paga nada além do plano.**
 
-| Plano | Notas inclusas/mês | Custo por nota extra | Tipos cobertos no contador* |
-|---|---|---|---|
-| Solo R$ 49 | 20 | R$ 0,50 | NFS-e (serviço) |
-| Solo Combo R$ 69 | 30 | R$ 0,50 | NFS-e (serviço) |
-| Starter R$ 99 | 50 | R$ 0,50 | NFS-e (serviço) |
-| Pro R$ 199 | 200 | R$ 0,40 | NFS-e + NF-e + NFC-e + devolução + transferência + conserto |
-| Business R$ 449 | 1.000 | R$ 0,35 | Todos os tipos + intercompany |
-| Enterprise | 5.000 default | R$ 0,25 (negociável) | Todos |
+| Plano | Documentos inclusos/mês | Alunos/pacientes do plano | Custo por documento extra | Tipos cobertos no contador* |
+|---|---|---|---|---|
+| Solo R$ 49 | 50 | 30 | R$ 0,15 | NFS-e (serviço) |
+| Solo Combo R$ 69 | 100 | 60 | R$ 0,15 | NFS-e (serviço) |
+| Starter R$ 99 | 150 | 100 | R$ 0,12 | NFS-e (serviço) |
+| Pro R$ 199 | 750 | 500 | R$ 0,10 | NFS-e + NF-e + NFC-e + devolução + transferência + conserto |
+| Business R$ 449 | 3.000 | 2.000 | R$ 0,08 | Todos os tipos + intercompany |
+| Enterprise | 15.000 default | ilimitado | R$ 0,05 (negociável) | Todos |
 
-*\* **Eventos não contam** no contador de overage (cancelamento de nota, CC-e/Carta de Correção, inutilização) — ficam livres para você corrigir e operar sem peso na fatura. Repasse calibrado sobre custo do provider de emissão fiscal (Focus NFe) + margem operacional para sustentar a plataforma.*
+*\* **Eventos não contam** no contador (cancelamento de nota, CC-e/Carta de Correção, inutilização) — ficam livres para você corrigir e operar sem peso na fatura.*
 
 **Exemplo prático:** academia Business com 2.000 alunos emitindo 2.000 mensalidades/mês:
 - Plano: R$ 449
-- 1.000 notas inclusas → 0 overage para essas
-- 1.000 notas extras × R$ 0,35 = R$ 350 overage
-- **Total fatura: R$ 799/mês** (vs R$ 449 plano + cobrança fiscal externa pelo contador, que sairia mais cara e dolorosa)
+- 2.000 documentos, dentro dos 3.000 inclusos → **zero overage**
+- **Total fatura: R$ 449/mês** — o preço anunciado é o preço que você paga
+
+O custo por documento extra só entra em volume atípico (bem acima do porte do plano) e serve para sinalizar que é hora de subir de tier, não para inflar a fatura.
 
 **Por que esse modelo é melhor que concorrentes:**
 
@@ -166,9 +167,9 @@ Todo plano com emissão fiscal traz um **pacote de notas inclusas no preço-base
 |---|---|
 | **Tecnofit, ActiveWise** | Não emite NFS-e — você precisa contratar parte fiscal externa (mais caro, mais retrabalho) |
 | **iClinic, Feegow** | Emissão à parte cobrada por nota desde a 1ª (sem pacote incluso) |
-| **LogiFit** | Pacote incluso no plano + repasse direto sem markup escondido |
+| **LogiFit** | Cota dimensionada acima do porte do plano — na prática, emissão inclusa |
 
-**UI mostra preview da fatura** sempre — você vê em tempo real quantas notas emitiu, quantas faltam do pacote, e qual será o total da próxima fatura.
+**UI mostra preview da fatura** sempre — você vê em tempo real quantos documentos emitiu, quantos faltam da cota, e qual será o total da próxima fatura.
 
 **Segurança built-in:**
 
@@ -237,7 +238,7 @@ Todo plano com emissão fiscal traz um **pacote de notas inclusas no preço-base
 |---|---|---|---|
 | **Solo** | **R$ 49/mês** | Profissional autônomo (CREF/CREFITO/CRN/CRP/CRO/Pilates/esteticista) atendendo 1-1 | UX simplificada · 30 pacientes ativos · agenda · prontuário · receita/recibo · cobrança PIX · IA 200 chamadas · WhatsApp · MEI/RPA fiscal simplificado |
 | **Solo Combo** | **R$ 69/mês** | Profissional Solo que combina 2-3 áreas (ex: nutricionista + personal trainer) | Tudo do Solo + 60 pacientes · até 3 verticais simultâneas · IA 200 chamadas · templates por profissão |
-| **Starter** | **R$ 99/mês** | Pequeno negócio com equipe ≤5 profs especializado **em uma área** | **Academia no MVP** (Fisio/Nutri liberam quando módulos saem nas Fases 2/3) · 100 alunos/pacientes · 5 profissionais · 50 NFS-e/mês · IA 500 chamadas · Portal do paciente · WhatsApp · Asaas |
+| **Starter** | **R$ 99/mês** | Pequeno negócio com equipe ≤5 profs especializado **em uma área** | **Academia no MVP** (Fisio/Nutri liberam quando módulos saem nas Fases 2/3) · 100 alunos/pacientes · 5 profissionais · 150 documentos fiscais/mês · IA 500 chamadas · Portal do paciente · WhatsApp · Asaas |
 | **Pro** | **R$ 199/mês** | Clínica ou academia que atende **mais de uma especialidade** ao mesmo tempo | Todas as 3 verticais simultâneas · 500 alunos/pacientes · 10 profissionais · 200 notas/mês · IA 3.000 chamadas · Convênios TISS/TUSS 4.01 · Device Hub · Pipeline Exames · BYOK opcional |
 | **Business** | **R$ 449/mês** | Rede pequena (5-10 unidades) ou holding com múltiplos CNPJs | Tudo do Pro + multi-company · até 3 CNPJs · 2.000 alunos/pacientes · 30 profissionais · 1.000 notas/mês · IA 10.000 · Adquirência · Rateio · Generative UI clínica |
 | **Enterprise** | **sob consulta** | Rede grande, hospital, clínica com DPO próprio | Tudo do Business + ilimitado · BYOK ilimitado · SLA 99,9% · White-label · Gestor de conta · **DPO-as-a-service add-on opcional via firma especializada** |

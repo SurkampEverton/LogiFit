@@ -6,6 +6,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Changed — Pricing fiscal: cota 1,5× members e fim do "repasse de custo" 2026-07-20
+
+Revisão do [ADR 0066](docs/decisions/0066-plano-comercial-pricing-trial.md) (4ª) decorrente do [ADR 0105](docs/decisions/0105-conta-focus-por-tenant-byo.md). **Nenhuma mudança de código** — a cota fiscal nunca teve enforcement; sempre foi só medição mensal em `tenant_usage_snapshots` para faturamento.
+
+- **Defeito estrutural corrigido**: a cota de documentos de **todos** os tiers estava abaixo do teto de members do próprio tier, num produto cujo caso de uso central é uma nota por member por mês. Um tenant no teto do plano estouraria a cota todo mês só por usar o produto como projetado — Starter +R$ 25 (25% da mensalidade), Pro +R$ 120 (60%), Business +R$ 350 (78%). O preço de capa virava ficção no topo de cada tier.
+- **Nova base — cota = 1,5× o teto de members**: Solo 20→50 · Combo 30→100 · Starter 50→150 · Pro 200→750 · Business 1.000→3.000 · Enterprise 5.000→15.000. Cobre a mensalidade de todos os members com folga para avulsas, produtos e devoluções.
+- **Overage reduzido** a R$ 0,15 / 0,15 / 0,12 / 0,10 / 0,08 / 0,05 por documento, e **reenquadrado**: deixa de ser "repasse calibrado sobre custo Focus NFe" (não há custo Focus na LogiFit sob BYO) e passa a ser guardrail contra abuso + captura de valor pelo ciclo fiscal. Custo marginal real é ~R$ 0,001/documento (XML+PDF+linhas, 5 anos no R2) — qualquer preço aqui é ordens de grandeza acima do custo, e o ADR agora diz isso explicitamente.
+- **Análise de margem refeita sem custo Focus**: fica uniforme em ~80% em todos os tiers. O Enterprise deixa de aparecer com 8% e alerta ⚠️, e o Business sai de 42% para 82%.
+- **Consequência aceita**: menos receita de overage — um Business que emite 2.000 documentos agora fica dentro da cota. Trocado conscientemente por um preço anunciado que corresponde à fatura real.
+- Atualizados `CLAUDE.md` (tabela canônica), `docs/comercial.md` (o exemplo do pitch anunciava exatamente o defeito: "Total fatura: R$ 799/mês" para um Business no teto — agora R$ 449) e as tabelas de limites do ADR 0066. Seção antiga preservada marcada como histórico.
+
 ### Docs — ADR 0105: conta Focus NFe é do tenant (BYO), não revenda 2026-07-20
 
 O primeiro onboarding fiscal real expôs uma contradição entre modelo comercial e código: o [ADR 0066](docs/decisions/0066-plano-comercial-pricing-trial.md) descreve o overage de NFS-e como *"repasse calibrado sobre custo Focus NFe"* — o que pressupõe a LogiFit como cliente da Focus revendendo —, mas `fiscal_provider_credentials` é por tenant e o wizard só coleta o token do tenant, isto é, **cada tenant traz a própria conta**. Nesse arranjo não existe custo Focus na LogiFit para repassar.

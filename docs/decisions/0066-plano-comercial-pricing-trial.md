@@ -2,26 +2,26 @@
 
 - **Status:** Accepted
 - **Date:** 2026-04-24 (versão inicial)
-- **Versão vigente:** 2026-04-25 (3ª revisão — ver seção [Versão vigente](#versão-vigente-2026-04-25) abaixo para o estado canônico)
+- **Versão vigente:** 2026-07-20 (4ª revisão — ver seção [Versão vigente](#versão-vigente-2026-07-20) abaixo para o estado canônico)
 
-> **🟢 Para leitura rápida da versão vigente, pular para [Versão vigente (2026-04-25)](#versão-vigente-2026-04-25).** Seções "Decisões do usuário (2026-04-24)" + "Revisão 2026-04-25" abaixo são **histórico de evolução** preservado para rastreabilidade — **não são fonte de verdade operacional**.
+> **🟢 Para leitura rápida da versão vigente, pular para [Versão vigente (2026-07-20)](#versão-vigente-2026-07-20).** Seções "Decisões do usuário (2026-04-24)" + "Revisão 2026-04-25" abaixo são **histórico de evolução** preservado para rastreabilidade — **não são fonte de verdade operacional**.
 
-## Versão vigente (2026-04-25)
+## Versão vigente (2026-07-20)
 
 | Plano | Preço mensal | Membros | Verticais | Profs | NFS-e/mês | IA/mês | Storage |
 |---|---|---|---|---|---|---|---|
-| **Solo** | R$ 49 | 30 | 1 à escolha | 1 | 20 | 200 | 1 GB |
-| **Solo Combo** | R$ 69 | 60 | até 3 simultâneas | 1 | 30 | 200 | 2 GB |
-| **Starter** | R$ 99 | 100 | **Academia (MVP)** — Fisio/Nutri liberam Fases 2/3 | 5 | 50 | 500 | 5 GB |
-| **Pro** | R$ 199 | 500 | todas simultâneas | 10 | 200 | 3.000 | 50 GB |
-| **Business** | R$ 449 | 2.000 | todas + multi-company (até 3 CNPJs) + intercompany + adquirência | 30 | 1.000 | 10.000 | 200 GB |
-| **Enterprise** | sob consulta (~R$ 1.199+) | ilimitado | todas + white-label + DPO add-on | ilimitado | 5.000 | 25.000 ou BYOK | 500 GB+ |
+| **Solo** | R$ 49 | 30 | 1 à escolha | 1 | 50 | 200 | 1 GB |
+| **Solo Combo** | R$ 69 | 60 | até 3 simultâneas | 1 | 100 | 200 | 2 GB |
+| **Starter** | R$ 99 | 100 | **Academia (MVP)** — Fisio/Nutri liberam Fases 2/3 | 5 | 150 | 500 | 5 GB |
+| **Pro** | R$ 199 | 500 | todas simultâneas | 10 | 750 | 3.000 | 50 GB |
+| **Business** | R$ 449 | 2.000 | todas + multi-company (até 3 CNPJs) + intercompany + adquirência | 30 | 3.000 | 10.000 | 200 GB |
+| **Enterprise** | sob consulta (~R$ 1.199+) | ilimitado | todas + white-label + DPO add-on | ilimitado | 15.000 | 25.000 ou BYOK | 500 GB+ |
 
 **Cobrança LogiFit:** "1 active member por (paciente, tenant)" — passaporte cross-tenant ([ADR 0077](0077-passaporte-paciente-vinculo-cross-tenant.md)) **não duplica**.
 
 **Overage member:** R$ 0,50/member acima do incluído (Solo/Combo: R$ 0,40); cap por tier força upgrade sugerido após 2 ciclos consecutivos acima do threshold.
 
-**Overage NFS-e:** R$ 0,50 / 0,40 / 0,35 / 0,25 por nota emitida (cobre NFS-e + NF-e + NFC-e + devolução + transferência + conserto). **Eventos não contam** (cancelamento, CC-e, inutilização). Repasse calibrado sobre custo Focus NFe + margem operacional.
+**Overage documento fiscal:** R$ 0,15 / 0,15 / 0,12 / 0,10 / 0,08 / 0,05 por documento emitido, do Solo ao Enterprise (cobre NFS-e + NF-e + NFC-e + devolução + transferência + conserto). **Eventos não contam** (cancelamento, CC-e, inutilização). **Não é repasse de custo** — ver [revisão 2026-07-20](#revisão-2026-07-20--fim-do-repasse-de-custo-fiscal) abaixo.
 
 **Cota IA hard-stop sem overage** ([ADR 0064](0064-ia-arquitetura-gemini-default-byok-rag.md)): excedido = bloqueio até próximo ciclo + convite BYOK; runbook emergencial em [`docs/runbooks/ia-byok-emergencial.md`](../runbooks/ia-byok-emergencial.md).
 
@@ -144,8 +144,8 @@ Discussão com fundador (2026-04-25) sobre 3 clientes-piloto reais expôs duas f
 | **IA (chamadas/mês)** — Gemini Flash via LogiFit | 200 | 200 | 500 | 3.000 | 10.000 | 25k ou BYOK ilimitado |
 | **Storage** (fotos, exames, contratos, docs) | 1 GB | 2 GB | 5 GB | 50 GB | 200 GB | 500 GB+ (R$ 2/GB extra) |
 | **Transcrição STT** (Sprint 31, Groq Whisper) | — | — | — | 60 min | 300 min | 1.500 min ou BYOK |
-| **Emissões fiscais incluídas** (NFS-e + NF-e + NFC-e + devolução + transferência + conserto) | 20 NFS-e MEI | 30 NFS-e | 50 NFS-e | 200 | 1.000 | 5.000 default |
-| **Overage por nota fiscal extra** | R$ 0,50/nota | R$ 0,50/nota | R$ 0,50/nota | R$ 0,40/nota | R$ 0,35/nota | R$ 0,25/nota |
+| **Emissões fiscais incluídas** (NFS-e + NF-e + NFC-e + devolução + transferência + conserto) — 1,5× o teto de members | 50 | 100 | 150 | 750 | 3.000 | 15.000 default |
+| **Overage por documento fiscal extra** (não é repasse de custo — revisão 2026-07-20) | R$ 0,15 | R$ 0,15 | R$ 0,12 | R$ 0,10 | R$ 0,08 | R$ 0,05 |
 | **Eventos fiscais** (cancelamento, CC-e, inutilização) | **não contam** no overage | idem | idem | idem | idem | idem |
 | **Webhooks outgoing** | 1k/mês | 5k/mês | 10k/mês | 100k/mês | 500k/mês | 1M/mês |
 | **Retenção audit log** | 5 anos | 5 anos | 5 anos | 5 anos | 5 anos | 5 anos |
@@ -186,7 +186,35 @@ IF overage > upgrade_threshold_for_plan:
 - Overage do mês corrente (preview da fatura)
 - "Faça upgrade para Pro e economize R$ X/mês" (comparativo visível)
 
-### Overage por nota fiscal — repasse direto
+### Revisão 2026-07-20 — fim do repasse de custo fiscal
+
+> ⚠️ **A seção "Overage por nota fiscal — repasse direto" logo abaixo é histórico.** Sua premissa caiu com o [ADR 0105](0105-conta-focus-por-tenant-byo.md).
+
+**O que mudou.** O [ADR 0105](0105-conta-focus-por-tenant-byo.md) fixou que **a conta Focus NFe é do tenant** (BYO), não da LogiFit. O tenant contrata e paga a Focus diretamente. Logo **não existe custo Focus na LogiFit para repassar** — toda a mecânica desenhada em 2026-04-25 ficou sem base.
+
+**Custo marginal real por documento.** Em BYO o que a LogiFit gasta por documento é XML + PDF + linhas de banco (~200 KB), retidos 5 anos (regra 34 / [ADR 0072](0072-escalabilidade-banco-particionamento-retencao-cold-storage.md)), mais processamento de webhook e trilha de auditoria. A ~US$ 0,015/GB-mês no R2, isso dá da ordem de **R$ 0,001 por documento**. Qualquer valor cobrado aqui é ordens de grandeza acima do custo.
+
+**Reenquadramento.** O overage deixa de ser recuperação de custo e passa a ser, honestamente: **guardrail contra abuso + sinal de upgrade + captura de valor pelo ciclo fiscal** que a LogiFit opera (fila com retry, reconciliação com o provider, storage e disponibilização de XML/PDF por 5 anos, trilha de auditoria, portal do contador). Esse valor existe e independe de quem paga a Focus — mas **não deve ser vendido como repasse**, porque não é.
+
+**Correção de um defeito estrutural encontrado na mesma revisão.** A cota de documentos de *todos* os tiers estava **abaixo do teto de members do próprio tier**, enquanto o caso de uso central é uma nota por member por mês:
+
+| Plano | Members | NFS-e antes | Notas/mês emitindo 1 por member | Overage estrutural |
+|---|---|---|---|---|
+| Solo | 30 | 20 | 30 | todo mês |
+| Solo Combo | 60 | 30 | 60 | todo mês |
+| Starter | 100 | 50 | 100 | +R$ 25 (25% da mensalidade) |
+| Pro | 500 | 200 | 500 | +R$ 120 (60%) |
+| Business | 2.000 | 1.000 | 2.000 | +R$ 350 (78%) |
+
+Um tenant no teto do plano, usando o produto exatamente como projetado, estouraria a cota **todo mês, para sempre** — e o preço de capa viraria ficção no topo de cada tier. Sob repasse de custo era defensável; sob BYO seria margem disfarçada de custo.
+
+**Nova base:** cota = **1,5× o teto de members** (cobre a mensalidade recorrente de todos os members + folga para avulsas, produtos e devoluções), e overage reduzido a **R$ 0,15 → 0,05** conforme tier. Números na [tabela vigente](#versão-vigente-2026-07-20).
+
+**Consequência aceita:** menos receita de overage. É o preço de um pricing que o cliente consegue verificar sem se sentir pedagiado, e cujo preço anunciado corresponde ao que ele vai pagar usando o produto normalmente.
+
+---
+
+### Overage por nota fiscal — repasse direto (histórico — premissa revogada em 2026-07-20)
 
 **Motivação (revisão 2026-04-25):** O modelo original assumia LogiFit absorvendo 100% do custo Focus NFe (~R$ 0,15-0,50/nota), o que **inviabiliza margem em alto volume**:
 
@@ -209,11 +237,11 @@ fim do mês: count emissões NFS-e + NF-e + NFC-e do mês
 
 **Importante:** o overage cobre o **custo do provider Focus NFe** (R$ 0,15-0,30 negociado por volume) **+ margem operacional**. Não é "lucro extra" — é repasse calibrado. Quando NFS-e Nacional ([ADR 0076](0076-nfse-nacional-provider-complementar.md)) reduzir custo unitário, a tabela de overage pode cair sem afetar margem.
 
-**UI em `/app/settings/tenant/plan`:**
-- "Notas emitidas neste mês: 1.247 / 1.000 incluídas"
-- "Overage fiscal estimado: R$ 86,45 (247 notas × R$ 0,35)"
-- "Total previsto desta fatura: R$ 449 (plano) + R$ 86,45 (notas) = R$ 535,45"
-- Comparativo: "Upgrade para Enterprise inclui 5.000 notas/mês — vale a pena se você emite >1.500 notas/mês"
+**UI em `/app/settings/tenant/plan`** (valores da tabela vigente 2026-07-20):
+- "Documentos emitidos neste mês: 3.247 / 3.000 incluídos"
+- "Overage fiscal estimado: R$ 19,76 (247 documentos × R$ 0,08)"
+- "Total previsto desta fatura: R$ 449 (plano) + R$ 19,76 (documentos) = R$ 468,76"
+- Comparativo: "Upgrade para Enterprise inclui 15.000 documentos/mês"
 
 **Tipos cobertos pelo contador de overage:** NFS-e + NF-e + NFC-e + NF-e devolução + NF-e transferência + NF-e conserto. Eventos (cancelamento, CC-e, inutilização) **não contam** (são correções, não novas emissões).
 
@@ -312,28 +340,22 @@ tenant_usage_snapshots
 
 Seeded via migration global (tenant_id NULL).
 
-### Análise de margem (revisada 2026-04-25)
+### Análise de margem (revisada 2026-07-20 — sem custo Focus)
 
-**Tabela de custo Focus NFe assumida** — com volume agregado LogiFit projetado (objetivo de negociação enterprise no Sprint 36):
+Com o [ADR 0105](0105-conta-focus-por-tenant-byo.md) (conta Focus é do tenant), **o custo de emissão sai da planilha da LogiFit**. Sobra apenas o custo marginal de operar o ciclo fiscal: storage de XML/PDF por 5 anos, linhas em tabelas particionadas, webhook e auditoria — da ordem de **R$ 0,001 por documento**, desprezível mesmo no teto de cada tier.
 
-| Volume LogiFit total/mês | Tabela negociada Focus | Premissa para análise |
-|---|---|---|
-| 0-2.000 notas (early stage) | R$ 0,29/nota | conservador |
-| 2.000-10.000 | R$ 0,18/nota | volume médio |
-| 10.000+ (post-PMF) | R$ 0,12/nota | enterprise |
-
-**Margem por plano com fiscal_emissions_included + overage** (premissa Focus a R$ 0,18/nota fase média):
-
-| Plano | Preço base | Notas inclusas | Custo Focus inclusas | + outros custos | Total custo | **Margem base** | **Margem %** |
+| Plano | Preço base | Docs inclusos | Custo fiscal | + outros custos | Total custo | **Margem base** | **Margem %** |
 |---|---|---|---|---|---|---|---|
-| Starter R$ 99 | 99 | 50 NFS-e | R$ 9 | ~16 (infra + IA 500 + Asaas + suporte) | 25 | **R$ 74** | **75%** |
-| Pro R$ 199 | 199 | 200 | R$ 36 | ~40 | 76 | **R$ 123** | **62%** |
-| Business R$ 449 | 449 | 1.000 | R$ 180 | ~80 | 260 | **R$ 189** | **42%** |
-| Enterprise R$ 1.199+ | 1.199+ | 5.000 | R$ 900 | ~200 (DPO + SLA + conta) | 1.100 | **R$ 99+** | **8%+** ⚠️ |
+| Starter R$ 99 | 99 | 150 | ~R$ 0,15 | ~16 (infra + IA 500 + Asaas + suporte) | ~16 | **R$ 83** | **84%** |
+| Pro R$ 199 | 199 | 750 | ~R$ 0,75 | ~40 | ~41 | **R$ 158** | **79%** |
+| Business R$ 449 | 449 | 3.000 | ~R$ 3 | ~80 | ~83 | **R$ 366** | **82%** |
+| Enterprise R$ 1.199+ | 1.199+ | 15.000 | ~R$ 15 | ~200 (DPO + SLA + conta) | ~215 | **R$ 984+** | **82%+** |
 
-**Margem em alto volume (com overage):** tenant Business que emite 2.000 notas/mês paga R$ 449 + (1.000 × R$ 0,35) = **R$ 799**. Custo: R$ 360 Focus + R$ 80 outros = R$ 440. Margem: **R$ 359 (45%)**. Sustentável.
+**O que essa revisão resolve.** Na versão anterior o Enterprise aparecia com margem de 8% e alerta ⚠️, e o Business caía para 42% — ambos consequência de absorver custo Focus. Sem esse custo, a margem fica **uniforme em ~80% em todos os tiers**, e o Enterprise deixa de ser o plano estruturalmente pior.
 
-**Enterprise alto volume:** preço base é piso, customizado por contrato. Contrato real cobra a partir de R$ 1.799-2.499 quando volume >5k notas/mês — não há prejuízo, apenas o piso público é apertado por simplicidade.
+**Consequência menos favorável, registrada por honestidade:** a receita de overage cai muito. Um Business que emite 2.000 documentos/mês agora está **dentro** da cota de 3.000 (antes pagaria R$ 350 de overage). Isso é intencional — o overage virou guardrail contra abuso, não linha de receita. A margem base de 82% sustenta o plano sem ele.
+
+**Enterprise alto volume:** preço base segue sendo piso, customizado por contrato. O gatilho de customização deixa de ser custo de emissão e passa a ser storage, SLA, DPO e volume de suporte.
 
 ### Caminhos de melhoria contínua de margem
 
@@ -368,7 +390,7 @@ Seeded via migration global (tenant_id NULL).
 - **Tenant pode ter 2 sources de overage** (members e fiscal) — UI deve apresentar agregado claro com breakdown opcional
 - **Grandfather clause** — tenant ativo precisa manter preço por ≥12 meses se LogiFit aumentar; reajuste IPCA automático anual documentado
 - **Tenant com 98 members pode ficar próximo do limit** e evitar cadastrar um novo — aceitar; conversão para Pro natural quando passa de 120
-- **Repasse fiscal pode parecer "taxa extra"** na UX comercial — mitigado: copy clara "notas fiscais emitidas pelo sistema" + comparação com concorrentes que cobram nota fiscal à parte (Tecnofit Pro, iClinic Pro)
+- **Overage fiscal pode parecer "taxa extra"** na UX comercial — mitigado desde a revisão 2026-07-20: a cota agora é 1,5× o teto de members, então o tenant que usa o produto como projetado **nunca** encosta nela; o overage só aparece em volume atípico. Copy clara "documentos fiscais processados pelo sistema" + comparação com concorrentes que cobram nota à parte (Tecnofit Pro, iClinic Pro). **Nunca vender como repasse de custo** — não é (ADR 0105)
 
 ### Riscos não endereçados
 
@@ -392,8 +414,8 @@ Confirmado em 2026-04-25 como **opção futura válida** após implementação d
 | Members incluídos | 30 |
 | Profissionais com contrato | 1 (solo) |
 | Companies / Units | 1 / 1 |
-| NFS-e inclusas | 20/mês |
-| Overage NFS-e | R$ 0,50/nota |
+| Documentos fiscais inclusos | 50/mês |
+| Overage documento fiscal | R$ 0,15/documento |
 | IA assistente | Camada 1 (Help/RAG) apenas — sem Camada 2/3 |
 | Storage | 2 GB |
 | Portal do paciente | Versão limitada (só calendário + boletos) |
@@ -401,7 +423,7 @@ Confirmado em 2026-04-25 como **opção futura válida** após implementação d
 | Multi-empresa | — |
 | Audit log retenção | 6 meses |
 
-**Custo estimado LogiFit:** ~R$ 12 (infra mínima + Asaas fee + 20 notas Focus). **Margem: R$ 37 (76%)** — sustentável.
+**Custo estimado LogiFit:** ~R$ 12 (infra mínima + Asaas fee; emissão não custa — conta Focus é do tenant, ADR 0105). **Margem: R$ 37 (76%)** — sustentável.
 
 **Por que não entra no MVP:**
 - Distrai do caminho crítico (4 tiers já cobrem ICP principal)
