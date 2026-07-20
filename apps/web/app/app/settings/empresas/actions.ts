@@ -11,9 +11,12 @@ import { type CompanyRow, companies, persons } from '@repo/db/schema'
  *
  * `listCompanies` + `listAvailablePjPersons` alimentam a UI.
  */
+import { ApiException } from '@repo/errors'
 import { and, eq, isNull, notInArray } from 'drizzle-orm'
 import { z } from 'zod'
+import { requirePermission } from '../../../lib/permissions'
 import { requireFullSession, withSessionContext } from '../../../lib/session'
+import { wrapServerAction } from '../../../lib/wrap-action'
 
 type ActionResult<T> =
   | { ok: true; data: T }
@@ -165,3 +168,54 @@ export async function createFilial(
     }
   })
 }
+
+// ─── updateCompanyFiscal ──────────────────────────────────────────────────
+
+const UpdateCompanyFiscalSchema = z.object({
+  companyId: z.string().uuid(),
+  /** Inscrição Estadual — NF-e produto */
+  ie: z.string().trim().max(50).nullable().optional(),
+  /** Inscrição Municipal — exigida pra NFS-e na maioria dos municípios */
+  im: z.string().trim().max(50).nullable().optional(),
+  regimeTributario: z.enum(['simples', 'presumido', 'real', 'mei']).nullable().optional(),
+})
+
+/**
+ * Edita os dados fiscais da empresa (IE, IM, regime tributário).
+ *
+ * Existiam só no `createFilial`: depois de criada, não havia como corrigir
+ * pela interface — inscrição municipal faltando obrigava mexer no banco.
+ * Como a IM é exigida pra NFS-e na maior parte dos municípios, isso travava
+ * onboarding fiscal sem dar caminho ao operador (descoberto em 2026-07-20).
+ */
+export const updateCompanyFiscal = wrapServerAction(
+  { module: 'settings', action: 'company.update_fiscal', resourceType: 'company' },
+  async (input: z.infer<typeof UpdateCompanyFiscalSchema>, { session, setAuditResource }) => {
+    await requirePermission(session.logifit.userId, 'fiscal.admin')
+    const parsed = UpdateCompanyFiscalSchema.parse(input)
+
+    const [updated] = await db
+      .update(companies)
+      .set({
+        ...(parsed.ie !== undefined ? { ie: parsed.ie || null } : {}),
+        ...(parsed.im !== undefined ? { im: parsed.im || null } : {}),
+        ...(parsed.regimeTributario !== undefined
+          ? { regimeTributario: parsed.regimeTributario }
+          : {}),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(eq(companies.id, parsed.companyId), eq(companies.tenantId, session.logifit.tenantId)),
+      )
+      .returning({ id: companies.id, ie: companies.ie, im: companies.im })
+    if (!updated)
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Empresa não encontrada neste tenant',
+        request_id: '',
+      })
+
+    setAuditResource(updated.id, { im: updated.im, ie: updated.ie })
+    return { id: updated.id }
+  },
+)

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { requireFullSession } from '../../../lib/session'
 import { listCompanies } from './actions'
+import { CompanyFiscalEdit } from './fiscal-edit'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,13 +57,21 @@ export default async function EmpresasPage() {
                   </span>
                 )}
               </div>
-              {(c.ie || c.regimeTributario) && (
-                <p className="text-xs text-[color:var(--ev-text-muted)]">
-                  {c.ie && `IE: ${c.ie}`}
-                  {c.ie && c.regimeTributario && ' · '}
-                  {c.regimeTributario && `Regime: ${c.regimeTributario}`}
-                </p>
-              )}
+              <p className="text-xs text-[color:var(--ev-text-muted)]">
+                {c.ie ? `IE: ${c.ie}` : 'IE: —'}
+                {' · '}
+                {c.im ? `IM: ${c.im}` : 'IM: —'}
+                {' · '}
+                {c.regimeTributario ? `Regime: ${c.regimeTributario}` : 'Regime: —'}
+                {c.municipalCredentialsConfiguredAt &&
+                  ` · portal municipal configurado em ${c.municipalCredentialsConfiguredAt.toLocaleDateString('pt-BR')}`}
+              </p>
+              <CompanyFiscalEdit
+                companyId={c.id}
+                initialIe={c.ie}
+                initialIm={c.im}
+                initialRegime={c.regimeTributario}
+              />
             </li>
           ))}
         </ul>
