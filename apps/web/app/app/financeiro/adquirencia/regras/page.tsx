@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { acquirerReconciliationRules } from '@repo/db/schema'
 /**
  * `/app/financeiro/adquirencia/regras` — DSL de match automático (Sprint 18 Faixa C).
  */
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { acquirerReconciliationRules } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -45,17 +45,17 @@ export default async function AcquirerRulesPage() {
 
       <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
         <p style={{ marginTop: 0 }}>
-          Regras avaliadas em ordem crescente de prioridade. A primeira que casa todas
-          as condições aplica. Mantenha regras específicas com prioridade baixa
-          (ex: <code>10</code>) e fallback genérico com prioridade alta (<code>900</code>).
+          Regras avaliadas em ordem crescente de prioridade. A primeira que casa todas as condições
+          aplica. Mantenha regras específicas com prioridade baixa (ex: <code>10</code>) e fallback
+          genérico com prioridade alta (<code>900</code>).
         </p>
       </div>
 
       {rules.length === 0 ? (
         <div className="ev-card" style={{ padding: 'var(--ev-space-lg)' }}>
           <p style={{ marginTop: 0 }}>
-            Nenhuma regra cadastrada. O sistema cai para sugestão manual (top-3 por
-            heurística) em <code>/conciliacao</code>.
+            Nenhuma regra cadastrada. O sistema cai para sugestão manual (top-3 por heurística) em{' '}
+            <code>/conciliacao</code>.
           </p>
           <Link href="/app/financeiro/adquirencia/regras/new" className="ev-btn ev-btn-primary">
             Criar primeira regra

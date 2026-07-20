@@ -1,9 +1,9 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/nutri/planos` — lista de planos alimentares (Sprint 29 Faixa C).
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -60,7 +60,12 @@ export default async function PlanosListPage({ searchParams }: PageProps) {
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>Planos alimentares</h1>
         <span style={{ color: 'var(--ev-text-muted)' }}>
@@ -119,7 +124,13 @@ export default async function PlanosListPage({ searchParams }: PageProps) {
                 <td style={{ padding: 'var(--ev-space-2)', color: 'var(--ev-text-muted)' }}>
                   {GOAL_LABEL[r.goal] ?? r.goal}
                 </td>
-                <td style={{ padding: 'var(--ev-space-2)', textAlign: 'right', fontFamily: 'monospace' }}>
+                <td
+                  style={{
+                    padding: 'var(--ev-space-2)',
+                    textAlign: 'right',
+                    fontFamily: 'monospace',
+                  }}
+                >
                   {r.target_kcal ?? '—'}
                 </td>
                 <td style={{ padding: 'var(--ev-space-2)', textAlign: 'right' }}>v{r.version}</td>

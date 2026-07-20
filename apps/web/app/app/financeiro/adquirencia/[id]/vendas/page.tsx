@@ -1,11 +1,11 @@
+import { db } from '@repo/db/client'
+import { acquirerConnections, acquirerSales, companies, persons } from '@repo/db/schema'
 /**
  * `/app/financeiro/adquirencia/[id]/vendas` — extrato de vendas + sync (Sprint 18 Faixa C).
  */
-import { and, desc, eq, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import { acquirerConnections, acquirerSales, companies, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../../../lib/session'
 import { SyncSalesButton } from './sync-sales-button'
 
@@ -81,7 +81,14 @@ export default async function ConnectionSalesPage({ params }: { params: Promise<
 
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
-      <header style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}>
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
+      >
         <h1 style={{ margin: 0 }}>{conn.nickname ?? `${conn.provider} ${conn.merchantId}`}</h1>
         <span className="ev-badge">{conn.provider}</span>
         {conn.sandbox && <span className="ev-badge">Sandbox</span>}
@@ -108,7 +115,9 @@ export default async function ConnectionSalesPage({ params }: { params: Promise<
         }}
       >
         <div>
-          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Total vendas</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
+            Total vendas
+          </div>
           <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>{agg?.total ?? 0}</div>
         </div>
         <div>
@@ -124,9 +133,7 @@ export default async function ConnectionSalesPage({ params }: { params: Promise<
           </div>
         </div>
         <div>
-          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
-            A conciliar
-          </div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>A conciliar</div>
           <div
             style={{
               fontSize: 'var(--ev-font-lg)',
@@ -142,8 +149,8 @@ export default async function ConnectionSalesPage({ params }: { params: Promise<
       {sales.length === 0 && (
         <div className="ev-card" style={{ padding: 'var(--ev-space-lg)' }}>
           <p style={{ marginTop: 0 }}>
-            Nenhuma venda sincronizada. Clique em "Sincronizar agora" para puxar vendas
-            do provider (mock gera 3 vendas/dia determinísticas pelo intervalo).
+            Nenhuma venda sincronizada. Clique em "Sincronizar agora" para puxar vendas do provider
+            (mock gera 3 vendas/dia determinísticas pelo intervalo).
           </p>
         </div>
       )}

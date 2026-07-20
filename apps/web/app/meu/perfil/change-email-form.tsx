@@ -35,9 +35,7 @@ export function ChangeEmailForm({ currentEmail }: { currentEmail: string }) {
           | { ok: false; error?: { code?: string; message?: string } }
         if ('ok' in r && !r.ok) {
           if (r.error?.code === 'MFA_RECENT_REQUIRED') {
-            setErr(
-              'Verificação MFA expirou (>15min) — faça login de novo pra trocar o email',
-            )
+            setErr('Verificação MFA expirou (>15min) — faça login de novo pra trocar o email')
             return
           }
           setErr(r.error?.message ?? 'Falha ao solicitar troca de email')

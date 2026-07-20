@@ -25,7 +25,6 @@
  *   - regra 42 (cross-tenant read — placeholder stub)
  */
 
-import { calculateKcalPerSession } from '@repo/db/treinos'
 import { db } from '@repo/db/client'
 import {
   exercises,
@@ -36,6 +35,7 @@ import {
   workoutSessions,
   workouts,
 } from '@repo/db/schema'
+import { calculateKcalPerSession } from '@repo/db/treinos'
 import { ApiException } from '@repo/errors'
 import { and, asc, desc, eq, isNull, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -135,10 +135,7 @@ const ListMemberPrescriptionsInputSchema = z.object({
 
 export const createExercise = wrapServerAction(
   { module: 'treinos', action: 'exercise.create', resourceType: 'exercises' },
-  async (
-    input: z.infer<typeof CreateExerciseInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateExerciseInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateExerciseInputSchema.parse(input)
     const [row] = await db
       .insert(exercises)
@@ -215,10 +212,7 @@ export const listExercises = wrapServerAction(
 
 export const createWorkout = wrapServerAction(
   { module: 'treinos', action: 'workout.create', resourceType: 'workouts' },
-  async (
-    input: z.infer<typeof CreateWorkoutInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateWorkoutInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateWorkoutInputSchema.parse(input)
     return await db.transaction(async (tx) => {
       const [w] = await tx
@@ -274,20 +268,14 @@ export const createWorkout = wrapServerAction(
  */
 export const updateWorkout = wrapServerAction(
   { module: 'treinos', action: 'workout.update', resourceType: 'workouts' },
-  async (
-    input: z.infer<typeof UpdateWorkoutInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof UpdateWorkoutInputSchema>, { session, setAuditResource }) => {
     const parsed = UpdateWorkoutInputSchema.parse(input)
     return await db.transaction(async (tx) => {
       const [base] = await tx
         .select({ id: workouts.id, version: workouts.version })
         .from(workouts)
         .where(
-          and(
-            eq(workouts.id, parsed.workoutId),
-            eq(workouts.tenantId, session.logifit.tenantId),
-          ),
+          and(eq(workouts.id, parsed.workoutId), eq(workouts.tenantId, session.logifit.tenantId)),
         )
         .limit(1)
       if (!base)
@@ -360,12 +348,7 @@ export const listWorkouts = wrapServerAction(
         createdAt: workouts.createdAt,
       })
       .from(workouts)
-      .where(
-        and(
-          eq(workouts.tenantId, session.logifit.tenantId),
-          isNull(workouts.archivedAt),
-        ),
-      )
+      .where(and(eq(workouts.tenantId, session.logifit.tenantId), isNull(workouts.archivedAt)))
       .orderBy(desc(workouts.createdAt))
       .limit(parsed.limit)
     return { rows }
@@ -382,10 +365,7 @@ export const getWorkout = wrapServerAction(
       .select()
       .from(workouts)
       .where(
-        and(
-          eq(workouts.id, parsed.workoutId),
-          eq(workouts.tenantId, session.logifit.tenantId),
-        ),
+        and(eq(workouts.id, parsed.workoutId), eq(workouts.tenantId, session.logifit.tenantId)),
       )
       .limit(1)
     if (!w)
@@ -430,22 +410,14 @@ export const getWorkout = wrapServerAction(
  */
 export const prescribeWorkout = wrapServerAction(
   { module: 'treinos', action: 'prescription.create', resourceType: 'prescriptions' },
-  async (
-    input: z.infer<typeof PrescribeWorkoutInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof PrescribeWorkoutInputSchema>, { session, setAuditResource }) => {
     const parsed = PrescribeWorkoutInputSchema.parse(input)
 
     // Sanity: member + workout pertencem ao tenant
     const [member] = await db
       .select({ id: members.id })
       .from(members)
-      .where(
-        and(
-          eq(members.id, parsed.memberId),
-          eq(members.tenantId, session.logifit.tenantId),
-        ),
-      )
+      .where(and(eq(members.id, parsed.memberId), eq(members.tenantId, session.logifit.tenantId)))
       .limit(1)
     if (!member)
       throw new ApiException({
@@ -505,10 +477,7 @@ export const prescribeWorkout = wrapServerAction(
 
 export const listMemberPrescriptions = wrapServerAction(
   { module: 'treinos', action: 'prescription.list_by_member' },
-  async (
-    input: z.infer<typeof ListMemberPrescriptionsInputSchema>,
-    { session },
-  ) => {
+  async (input: z.infer<typeof ListMemberPrescriptionsInputSchema>, { session }) => {
     const parsed = ListMemberPrescriptionsInputSchema.parse(input)
     const conditions = [
       eq(prescriptions.tenantId, session.logifit.tenantId),
@@ -546,10 +515,7 @@ export const listMemberPrescriptions = wrapServerAction(
 
 export const startSession = wrapServerAction(
   { module: 'treinos', action: 'session.start', resourceType: 'workout_sessions' },
-  async (
-    input: z.infer<typeof StartSessionInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof StartSessionInputSchema>, { session, setAuditResource }) => {
     const parsed = StartSessionInputSchema.parse(input)
 
     const [p] = await db
@@ -598,10 +564,7 @@ export const recordSessionItem = wrapServerAction(
     action: 'session.record_item',
     resourceType: 'workout_session_items',
   },
-  async (
-    input: z.infer<typeof RecordSessionItemInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof RecordSessionItemInputSchema>, { session, setAuditResource }) => {
     const parsed = RecordSessionItemInputSchema.parse(input)
     const [row] = await db
       .insert(workoutSessionItems)
@@ -641,10 +604,7 @@ export const recordSessionItem = wrapServerAction(
  */
 export const finishSession = wrapServerAction(
   { module: 'treinos', action: 'session.finish', resourceType: 'workout_sessions' },
-  async (
-    input: z.infer<typeof FinishSessionInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof FinishSessionInputSchema>, { session, setAuditResource }) => {
     const parsed = FinishSessionInputSchema.parse(input)
     return await db.transaction(async (tx) => {
       const [s] = await tx
@@ -694,10 +654,7 @@ export const finishSession = wrapServerAction(
           .where(eq(workoutItems.workoutId, p.refId))
 
         const finishedAt = new Date()
-        const durationMin = Math.max(
-          0,
-          (finishedAt.getTime() - s.startedAt.getTime()) / 60000,
-        )
+        const durationMin = Math.max(0, (finishedAt.getTime() - s.startedAt.getTime()) / 60000)
 
         const result = calculateKcalPerSession({
           items: items.map((it) => ({

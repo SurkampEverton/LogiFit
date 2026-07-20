@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { consultas, members, persons } from '@repo/db/schema'
 /**
  * `/app/fisio/pacientes/[memberId]/prontuario` — Sprint 20 Faixa C.
  *
@@ -6,8 +8,6 @@
 import { and, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import { consultas, members, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../../../lib/session'
 import { CreateConsultaButton } from './create-consulta-button'
 
@@ -73,10 +73,9 @@ export default async function ProntuarioPage({
 
       <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
         <p style={{ marginTop: 0, marginBottom: 0 }}>
-          Política de assinatura aplicada automaticamente por <strong>kind</strong>:
-          médico → ICP-Brasil A3 obrigatório (CFM 2.299/2021); fisio/nutri/personal →
-          lacre autenticado MFA aceito (COFFITO 414, CFN 599, Lei 9.696). Retenção
-          mínima 20 anos (Lei 13.787/2018).
+          Política de assinatura aplicada automaticamente por <strong>kind</strong>: médico →
+          ICP-Brasil A3 obrigatório (CFM 2.299/2021); fisio/nutri/personal → lacre autenticado MFA
+          aceito (COFFITO 414, CFN 599, Lei 9.696). Retenção mínima 20 anos (Lei 13.787/2018).
         </p>
       </div>
 
@@ -115,10 +114,7 @@ export default async function ProntuarioPage({
                     {c.lockedAt ? new Date(c.lockedAt).toLocaleString('pt-BR') : '—'}
                   </td>
                   <td>
-                    <Link
-                      href={`/app/fisio/consultas/${c.id}`}
-                      className="ev-btn ev-btn-ghost"
-                    >
+                    <Link href={`/app/fisio/consultas/${c.id}`} className="ev-btn ev-btn-ghost">
                       Abrir →
                     </Link>
                   </td>

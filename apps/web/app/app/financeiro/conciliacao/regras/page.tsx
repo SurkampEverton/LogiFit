@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { reconciliationRules } from '@repo/db/schema'
 /**
  * `/app/financeiro/conciliacao/regras` — lista reconciliation_rules (Sprint 17 Faixa C).
  */
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { reconciliationRules } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -31,9 +31,7 @@ export default async function ReconciliationRulesPage() {
       hitsCount: reconciliationRules.hitsCount,
     })
     .from(reconciliationRules)
-    .where(
-      and(eq(reconciliationRules.tenantId, tenantId), isNull(reconciliationRules.archivedAt)),
-    )
+    .where(and(eq(reconciliationRules.tenantId, tenantId), isNull(reconciliationRules.archivedAt)))
     .orderBy(asc(reconciliationRules.priority))
 
   return (

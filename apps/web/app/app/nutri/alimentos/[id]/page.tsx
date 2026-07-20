@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/nutri/alimentos/[id]` — detalhe nutricional + medidas caseiras.
  *   Sprint 29 Faixa C.
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -63,7 +63,12 @@ export default async function FoodDetailPage({ params }: PageProps) {
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>{food.name}</h1>
         <span style={{ color: 'var(--ev-text-muted)' }}>
@@ -89,7 +94,9 @@ export default async function FoodDetailPage({ params }: PageProps) {
           <tbody>
             {Object.entries(nutrients).map(([k, v]) => (
               <tr key={k} style={{ borderTop: '1px solid var(--ev-border)' }}>
-                <td style={{ padding: 'var(--ev-space-1) 0', color: 'var(--ev-text-muted)' }}>{k}</td>
+                <td style={{ padding: 'var(--ev-space-1) 0', color: 'var(--ev-text-muted)' }}>
+                  {k}
+                </td>
                 <td
                   style={{
                     padding: 'var(--ev-space-1) 0',

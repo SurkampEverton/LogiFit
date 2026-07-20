@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { chartOfAccounts, companies, persons } from '@repo/db/schema'
 /**
  * `/app/financeiro/contas-receber/new` — criação de AR avulso.
  */
 import { and, asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { chartOfAccounts, companies, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 import { NewARForm } from './new-ar-form'
 

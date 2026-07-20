@@ -29,8 +29,7 @@ export function NewSupplierForm({ persons }: { persons: PersonOption[] }) {
   const filtered = query
     ? persons.filter(
         (p) =>
-          p.name.toLowerCase().includes(query.toLowerCase()) ||
-          (p.document ?? '').includes(query),
+          p.name.toLowerCase().includes(query.toLowerCase()) || (p.document ?? '').includes(query),
       )
     : persons
 

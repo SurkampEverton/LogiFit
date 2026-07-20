@@ -1,3 +1,4 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/cross` — hub cross-alerts (Sprint 27 Faixa C).
  *
@@ -5,7 +6,6 @@
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -42,7 +42,12 @@ export default async function CrossHubPage() {
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>Cross-alerts</h1>
         <span style={{ color: 'var(--ev-muted)' }}>
@@ -96,7 +101,9 @@ export default async function CrossHubPage() {
           <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
             Bloqueados 30d
           </div>
-          <div style={{ fontSize: 'var(--ev-text-2xl)', fontWeight: 600, color: 'var(--ev-warning)' }}>
+          <div
+            style={{ fontSize: 'var(--ev-text-2xl)', fontWeight: 600, color: 'var(--ev-warning)' }}
+          >
             {kpi.blocked_30d}
           </div>
         </div>
@@ -111,7 +118,9 @@ export default async function CrossHubPage() {
             contrato Academia ativo + workout ativo
           </li>
           <li>Se ok: gera sugestão de adaptação da ficha (regra 25 + ADR 0084)</li>
-          <li>Instrutor revisa em <code>/app/treinos/adaptacao-pendente</code> e confirma</li>
+          <li>
+            Instrutor revisa em <code>/app/treinos/adaptacao-pendente</code> e confirma
+          </li>
           <li>Nova versão do workout é criada e atribuída automaticamente</li>
         </ol>
       </section>

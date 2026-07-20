@@ -1,15 +1,10 @@
+import { db } from '@repo/db/client'
+import { members, messageTemplates, messagesSent, persons } from '@repo/db/schema'
 /**
  * `/app/mensagens/historico` — histórico de mensagens enviadas (Sprint 13 Faixa C).
  */
 import { and, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  members,
-  messageTemplates,
-  messagesSent,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'

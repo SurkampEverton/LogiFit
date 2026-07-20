@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { leadStages, leads, persons, users } from '@repo/db/schema'
 /**
  * `/app/vendas/leads` — lista tabular de leads ativos (Sprint 10 Faixa C).
  *
@@ -5,10 +7,8 @@
  * filtros completos ficam Faixa D+.
  */
 import { and, desc, eq, isNull } from 'drizzle-orm'
-import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { alias } from 'drizzle-orm/pg-core'
-import { leadStages, leads, persons, users } from '@repo/db/schema'
+import Link from 'next/link'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -104,7 +104,10 @@ export default async function VendasLeadsListPage({ searchParams }: PageProps) {
                   className="border-t border-[color:var(--ev-border)] hover:bg-[color:var(--ev-surface)]"
                 >
                   <td className="px-3 py-2">
-                    <Link href={`/app/vendas/leads/${row.id}`} className="font-medium hover:underline">
+                    <Link
+                      href={`/app/vendas/leads/${row.id}`}
+                      className="font-medium hover:underline"
+                    >
                       {row.personName ?? row.quickName ?? '(sem nome)'}
                     </Link>
                     <div className="text-xs text-[color:var(--ev-text-muted)]">

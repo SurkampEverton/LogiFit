@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { assessmentTypes } from '@repo/db/schema'
 /**
  * `/app/avaliacoes/tipos` — catálogo de tipos (global + tenant) (Sprint 12 Faixa C).
  *
@@ -6,8 +8,6 @@
  */
 import { and, asc, eq, isNull, or } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { assessmentTypes } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -78,9 +78,7 @@ export default async function CatalogoTiposPage({
     <div className="mx-auto max-w-[1200px] px-6 py-8 space-y-6">
       <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Catálogo de tipos
-          </h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Catálogo de tipos</h1>
           <p className="text-sm text-[color:var(--ev-text-muted)]">
             {rows.length} tipos · biblioteca global LogiFit + customizados do tenant
           </p>
@@ -142,8 +140,7 @@ export default async function CatalogoTiposPage({
 
       {rows.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-6 text-sm text-[color:var(--ev-text-muted)]">
-          Nenhum tipo encontrado. Crie um customizado pra cadastrar
-          avaliações.
+          Nenhum tipo encontrado. Crie um customizado pra cadastrar avaliações.
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -159,8 +156,10 @@ export default async function CatalogoTiposPage({
                   <span
                     className="rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide shrink-0"
                     style={{
-                      backgroundColor: t.tenantId === null ? 'var(--ev-info-bg, #dbeafe)' : 'var(--ev-bg)',
-                      color: t.tenantId === null ? 'var(--ev-info, #1e40af)' : 'var(--ev-text-muted)',
+                      backgroundColor:
+                        t.tenantId === null ? 'var(--ev-info-bg, #dbeafe)' : 'var(--ev-bg)',
+                      color:
+                        t.tenantId === null ? 'var(--ev-info, #1e40af)' : 'var(--ev-text-muted)',
                       border: '1px solid var(--ev-border)',
                     }}
                   >

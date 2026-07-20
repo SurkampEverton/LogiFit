@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { contracts, members, persons, plans } from '@repo/db/schema'
 /**
  * `/app/financeiro/contratos` — lista contratos do tenant (Sprint 04 Faixa C).
  *
@@ -6,8 +8,6 @@
  */
 import { and, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { contracts, members, persons, plans } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -69,10 +69,7 @@ export default async function ContratosPage({
   return (
     <div className="mx-auto max-w-6xl px-6 py-8 space-y-6">
       <nav className="text-sm">
-        <Link
-          href="/app/financeiro"
-          className="text-[color:var(--ev-text-muted)] hover:underline"
-        >
+        <Link href="/app/financeiro" className="text-[color:var(--ev-text-muted)] hover:underline">
           ← Voltar para Financeiro
         </Link>
       </nav>
@@ -114,7 +111,8 @@ export default async function ContratosPage({
       {rows.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-8 text-center">
           <p className="text-[color:var(--ev-text-muted)]">
-            Nenhum contrato {statusFilter ? `com status "${STATUS_LABEL[statusFilter]}"` : 'cadastrado'}.
+            Nenhum contrato{' '}
+            {statusFilter ? `com status "${STATUS_LABEL[statusFilter]}"` : 'cadastrado'}.
           </p>
         </div>
       ) : (
@@ -133,10 +131,7 @@ export default async function ContratosPage({
               {rows.map((c) => (
                 <tr key={c.id} className="border-t border-[color:var(--ev-border)]">
                   <td className="px-4 py-3 font-medium">
-                    <Link
-                      href={`/app/members/${c.memberId}`}
-                      className="hover:underline"
-                    >
+                    <Link href={`/app/members/${c.memberId}`} className="hover:underline">
                       {c.personName}
                     </Link>
                   </td>

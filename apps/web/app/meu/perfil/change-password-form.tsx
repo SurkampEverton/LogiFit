@@ -1,5 +1,7 @@
 'use client'
 
+import { confirm } from '@repo/ui/messages'
+import { useRouter } from 'next/navigation'
 /**
  * /meu/perfil — form trocar senha (Sprint 02b4 — passport_global_identities).
  *
@@ -9,8 +11,6 @@
  * fresh com TOTP pra ter mfa_verified_at recente).
  */
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { confirm } from '@repo/ui/messages'
 import { changePassword } from './passport-actions'
 
 export function ChangePasswordForm() {
@@ -44,9 +44,7 @@ export function ChangePasswordForm() {
           | { ok: false; error?: { code?: string; message?: string } }
         if ('ok' in r && !r.ok) {
           if (r.error?.code === 'MFA_RECENT_REQUIRED') {
-            setErr(
-              'Verificação MFA expirou (>15min) — faça login de novo pra trocar a senha',
-            )
+            setErr('Verificação MFA expirou (>15min) — faça login de novo pra trocar a senha')
             return
           }
           setErr(r.error?.message ?? 'Falha ao trocar senha')

@@ -16,8 +16,8 @@ export default async function NewPersonPage() {
         </Link>
         <h1 className="text-3xl font-semibold tracking-tight">Nova pessoa</h1>
         <p className="text-sm text-[color:var(--ev-text-muted)]">
-          Digite o CPF (11 dígitos) ou CNPJ (14 dígitos) — detectamos o tipo automaticamente.
-          CNPJ válido busca dados na Receita Federal.
+          Digite o CPF (11 dígitos) ou CNPJ (14 dígitos) — detectamos o tipo automaticamente. CNPJ
+          válido busca dados na Receita Federal.
         </p>
       </header>
 

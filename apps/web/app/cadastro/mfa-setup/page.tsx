@@ -18,8 +18,8 @@ export default async function MfaSetupPage() {
       <header style={{ marginBottom: 'var(--ev-space-lg)' }}>
         <h1 className="ev-portal-h1">Ativar autenticação em 2 fatores</h1>
         <p className="ev-portal-muted" style={{ fontSize: 'var(--ev-text-sm)' }}>
-          Aumente a segurança da sua conta com um código de 6 dígitos do seu app
-          authenticator (Google Authenticator, Authy, 1Password, Bitwarden ou similar).
+          Aumente a segurança da sua conta com um código de 6 dígitos do seu app authenticator
+          (Google Authenticator, Authy, 1Password, Bitwarden ou similar).
         </p>
       </header>
 

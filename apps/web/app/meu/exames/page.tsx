@@ -1,8 +1,8 @@
+import { pool } from '@repo/db/client'
 /**
  * /meu/exames — paciente vê próprios exames. Sprint 33 Faixa C.
  */
 import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { withMemberContext } from '../../lib/member-session'
 import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
 import { PassportNeedsLink } from '../_components/passport-needs-link'
@@ -82,9 +82,7 @@ export default async function MeuExamesPage() {
             <li key={e.id} className="ev-portal-list-item">
               <div className="ev-portal-list-item--row">
                 <div>
-                  <div className="ev-portal-h3">
-                    {e.exam_type_detected ?? 'Exame laboratorial'}
-                  </div>
+                  <div className="ev-portal-h3">{e.exam_type_detected ?? 'Exame laboratorial'}</div>
                   <div className="ev-portal-muted">
                     {e.laboratory ?? ''}
                     {e.laboratory ? ' · ' : ''}
@@ -105,8 +103,8 @@ export default async function MeuExamesPage() {
       )}
 
       <p className="ev-portal-muted" style={{ fontSize: 'var(--ev-text-xs)' }}>
-        Após análise pelo profissional, os valores entram automaticamente no seu histórico.
-        Você pode acompanhar a evolução em /meu/exames/historico (em breve).
+        Após análise pelo profissional, os valores entram automaticamente no seu histórico. Você
+        pode acompanhar a evolução em /meu/exames/historico (em breve).
       </p>
     </div>
   )

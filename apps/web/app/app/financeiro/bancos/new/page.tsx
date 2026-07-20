@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { companies, persons } from '@repo/db/schema'
 /**
  * `/app/financeiro/bancos/new` — adicionar conta bancária (Sprint 17 Faixa C).
  */
 import { asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { companies, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 import { NewBankAccountForm } from './new-bank-account-form'
 
@@ -32,9 +32,9 @@ export default async function NewBankAccountPage() {
       </header>
 
       <p style={{ color: 'var(--ev-muted)', marginTop: 0 }}>
-        Conta cadastrada manualmente. <strong>Open Finance</strong> (sync automático via Pluggy/Belvo)
-        chega no Sprint 17b após POC do provider (ADR 0037). Por enquanto, importe extrato via{' '}
-        <strong>OFX</strong> (botão "Importar OFX" no extrato da conta).
+        Conta cadastrada manualmente. <strong>Open Finance</strong> (sync automático via
+        Pluggy/Belvo) chega no Sprint 17b após POC do provider (ADR 0037). Por enquanto, importe
+        extrato via <strong>OFX</strong> (botão "Importar OFX" no extrato da conta).
       </p>
 
       {companyList.length === 0 ? (

@@ -1,3 +1,4 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/retencao/model` — metadados do modelo + accuracy (Sprint 19 Faixa C).
  *
@@ -6,7 +7,6 @@
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -30,8 +30,7 @@ export default async function ModelPage() {
 
   const totalCancellations = Number(row.total_cancellations ?? 0)
   const predictedCancellations = Number(row.predicted_cancellations ?? 0)
-  const recall =
-    totalCancellations === 0 ? null : predictedCancellations / totalCancellations
+  const recall = totalCancellations === 0 ? null : predictedCancellations / totalCancellations
   const closedIntv = Number(row.closed_intv ?? 0)
   const successIntv = Number(row.success_intv ?? 0)
   const successRate = closedIntv === 0 ? null : successIntv / closedIntv
@@ -71,18 +70,15 @@ export default async function ModelPage() {
           <Link href="https://github.com/SurkampEverton/LogiFit/blob/main/docs/decisions/0027-estrategia-modelo-churn.md">
             ADR 0027
           </Link>
-          . Atualmente Fase 1: heurística determinística (40% absence + 30%
-          frequency drop + 20% overdue + 10% downgrade) com atenuadores de
-          engajamento (achievements + goals) e loyalty buff. Gemini Flash via{' '}
-          <code>resolveModelForTask('classification')</code> entra como upgrade
-          quando habilitado no env (mantém mesma assinatura — wrapper{' '}
-          <code>predictChurn</code> escolhe LLM ou heurística e cai pra
-          heurística se Zod falhar).
+          . Atualmente Fase 1: heurística determinística (40% absence + 30% frequency drop + 20%
+          overdue + 10% downgrade) com atenuadores de engajamento (achievements + goals) e loyalty
+          buff. Gemini Flash via <code>resolveModelForTask('classification')</code> entra como
+          upgrade quando habilitado no env (mantém mesma assinatura — wrapper{' '}
+          <code>predictChurn</code> escolhe LLM ou heurística e cai pra heurística se Zod falhar).
         </p>
         <p style={{ marginBottom: 0 }}>
-          Fase 2 (sklearn/XGBoost em edge function) entra quando volume{' '}
-          &gt;500/dia/tenant OU precision &lt;70% OU latência P95 &gt;500ms.
-          Wrapper preserva interface.
+          Fase 2 (sklearn/XGBoost em edge function) entra quando volume &gt;500/dia/tenant OU
+          precision &lt;70% OU latência P95 &gt;500ms. Wrapper preserva interface.
         </p>
       </div>
 

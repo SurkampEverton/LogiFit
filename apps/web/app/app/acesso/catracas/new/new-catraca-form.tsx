@@ -40,9 +40,7 @@ export function NewCatracaForm({
   const unitsForCompany = availableUnits.filter((u) => u.companyId === companyId)
 
   function toggleMode(mode: string) {
-    setAuthModes((prev) =>
-      prev.includes(mode) ? prev.filter((m) => m !== mode) : [...prev, mode],
-    )
+    setAuthModes((prev) => (prev.includes(mode) ? prev.filter((m) => m !== mode) : [...prev, mode]))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -70,11 +68,15 @@ export function NewCatracaForm({
         <div className="rounded-xl border border-[color:var(--ev-success, #10b981)] bg-[color:var(--ev-success-bg, #d1fae5)] p-4">
           <p className="font-semibold text-sm">✓ Catraca cadastrada</p>
           <p className="text-xs text-[color:var(--ev-text-muted)] mt-1">
-            Copie o token abaixo e cole na configuração da catraca. <strong>Não será mostrado novamente</strong>.
+            Copie o token abaixo e cole na configuração da catraca.{' '}
+            <strong>Não será mostrado novamente</strong>.
           </p>
         </div>
         <div className="rounded-md border border-[color:var(--ev-border)] p-4">
-          <label htmlFor="token-output" className="block text-xs font-medium text-[color:var(--ev-text-muted)] mb-2">
+          <label
+            htmlFor="token-output"
+            className="block text-xs font-medium text-[color:var(--ev-text-muted)] mb-2"
+          >
             Token do dispositivo (header `x-device-token`)
           </label>
           <input
@@ -86,8 +88,8 @@ export function NewCatracaForm({
             className="block w-full rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-surface-muted)] px-3 py-2 font-mono text-xs"
           />
           <p className="text-xs text-[color:var(--ev-text-muted)] mt-2">
-            Configure NTP na catraca antes do primeiro check-in (clock drift &gt;120s causa
-            falso negativo — ADR 0017).
+            Configure NTP na catraca antes do primeiro check-in (clock drift &gt;120s causa falso
+            negativo — ADR 0017).
           </p>
         </div>
         <a

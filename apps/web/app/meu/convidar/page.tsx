@@ -36,14 +36,14 @@ export default async function ConvidarPage() {
       <div className="ev-portal-callout">
         <h2 className="ev-portal-h2">Em breve</h2>
         <p>
-          A busca por profissional dentro do app vai abrir junto com a próxima atualização.
-          Por enquanto:
+          A busca por profissional dentro do app vai abrir junto com a próxima atualização. Por
+          enquanto:
         </p>
         <ul style={{ paddingLeft: 'var(--ev-space-4)' }}>
           <li>Se o estabelecimento já usa LogiFit: peça pra recepção te enviar o convite.</li>
           <li>
-            Se ainda não usa: indique nosso site{' '}
-            <a href="https://logifit.com.br">logifit.com.br</a> — gente fala com eles.
+            Se ainda não usa: indique nosso site <a href="https://logifit.com.br">logifit.com.br</a>{' '}
+            — gente fala com eles.
           </li>
         </ul>
       </div>

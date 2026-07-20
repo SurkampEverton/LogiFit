@@ -1,3 +1,4 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/retencao` — home gestor de retenção (Sprint 19 Faixa C).
  *
@@ -5,14 +6,21 @@
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../lib/session'
 
 export const dynamic = 'force-dynamic'
 
 const BAND_LABEL: Record<string, { label: string; bg: string; color: string }> = {
-  low: { label: 'Baixo', bg: 'var(--ev-success-soft, #dcfce7)', color: 'var(--ev-success, #16a34a)' },
-  medium: { label: 'Médio', bg: 'var(--ev-warning-soft, #fef9c3)', color: 'var(--ev-warning, #ca8a04)' },
+  low: {
+    label: 'Baixo',
+    bg: 'var(--ev-success-soft, #dcfce7)',
+    color: 'var(--ev-success, #16a34a)',
+  },
+  medium: {
+    label: 'Médio',
+    bg: 'var(--ev-warning-soft, #fef9c3)',
+    color: 'var(--ev-warning, #ca8a04)',
+  },
   high: { label: 'Alto', bg: 'var(--ev-danger-soft, #fee2e2)', color: 'var(--ev-danger, #b91c1c)' },
 }
 
@@ -83,7 +91,14 @@ export default async function RetencaoHomePage() {
 
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
-      <header style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}>
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
+      >
         <h1 style={{ margin: 0 }}>Retenção</h1>
         <span style={{ color: 'var(--ev-muted)' }}>previsão de churn — ADR 0027 Fase 1</span>
         <span style={{ flex: 1 }} />
@@ -163,8 +178,8 @@ export default async function RetencaoHomePage() {
         <div className="ev-card" style={{ padding: 'var(--ev-space-lg)' }}>
           <p style={{ marginTop: 0 }}>
             Nenhuma predição computada ainda. Use a Server Action <code>scorePredict</code>
-            no detalhe de um member ou rode <code>db:seed:retencao</code> para popular o
-            ambiente de demo.
+            no detalhe de um member ou rode <code>db:seed:retencao</code> para popular o ambiente de
+            demo.
           </p>
         </div>
       ) : (
@@ -201,12 +216,8 @@ export default async function RetencaoHomePage() {
                   <td style={{ textAlign: 'right', fontWeight: 600 }}>
                     {Math.round(Number(m.prob_30d) * 100)}%
                   </td>
-                  <td style={{ textAlign: 'right' }}>
-                    {Math.round(Number(m.prob_60d) * 100)}%
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    {Math.round(Number(m.prob_90d) * 100)}%
-                  </td>
+                  <td style={{ textAlign: 'right' }}>{Math.round(Number(m.prob_60d) * 100)}%</td>
+                  <td style={{ textAlign: 'right' }}>{Math.round(Number(m.prob_90d) * 100)}%</td>
                   <td style={{ fontSize: 'var(--ev-font-xs)' }}>{m.source}</td>
                   <td>
                     {m.open_interventions > 0 ? (

@@ -1,3 +1,4 @@
+import { db } from '@repo/db/client'
 /**
  * POST /api/jobs/hard-delete-deactivated-passport — Sprint 02b4 (ADR 0094).
  *
@@ -28,7 +29,6 @@
  */
 import { sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
-import { db } from '@repo/db/client'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'

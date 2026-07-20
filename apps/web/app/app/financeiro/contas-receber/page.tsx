@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { accountsReceivable, chartOfAccounts, persons } from '@repo/db/schema'
 /**
  * `/app/financeiro/contas-receber` — AR avulso (Sprint 15 Faixa C).
  *
@@ -6,8 +8,6 @@
  */
 import { and, asc, eq, gte, lte } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { accountsReceivable, chartOfAccounts, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -31,7 +31,11 @@ const STATUS_BADGE: Record<string, { bg: string; fg: string; label: string }> = 
     fg: 'var(--ev-danger, #dc2626)',
     label: 'Em atraso',
   },
-  cancelled: { bg: 'var(--ev-muted-bg, #e5e7eb)', fg: 'var(--ev-muted, #6b7280)', label: 'Cancelada' },
+  cancelled: {
+    bg: 'var(--ev-muted-bg, #e5e7eb)',
+    fg: 'var(--ev-muted, #6b7280)',
+    label: 'Cancelada',
+  },
   refunded: {
     bg: 'var(--ev-warning-bg, #fef3c7)',
     fg: 'var(--ev-warning, #92400e)',

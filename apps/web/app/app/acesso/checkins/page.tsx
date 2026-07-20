@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { accessDevices, accessEvents, members, persons } from '@repo/db/schema'
 /**
  * `/app/acesso/checkins` — feed live de check-ins (Sprint 08 Faixa C).
  *
@@ -7,13 +9,6 @@
  */
 import { desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  accessDevices,
-  accessEvents,
-  members,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -88,8 +83,7 @@ export default async function CheckinsPage() {
       {rows.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-8 text-center">
           <p className="text-[color:var(--ev-text-muted)]">
-            Nenhum evento de acesso ainda. Catraca precisa estar cadastrada e
-            online.
+            Nenhum evento de acesso ainda. Catraca precisa estar cadastrada e online.
           </p>
           <Link
             href="/app/acesso/catracas"

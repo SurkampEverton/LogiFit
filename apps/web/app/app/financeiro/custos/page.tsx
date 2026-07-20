@@ -1,15 +1,10 @@
+import { db } from '@repo/db/client'
+import { companies, costCategories, costEntries, persons } from '@repo/db/schema'
 /**
  * `/app/financeiro/custos` — lista de custos do tenant (Sprint 14 Faixa C).
  */
 import { and, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  companies,
-  costCategories,
-  costEntries,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -118,8 +113,15 @@ export default async function CustosListPage({
 
       {rows.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-6 text-sm text-[color:var(--ev-text-muted)]">
-          Nenhum custo lançado ainda. Comece em <Link href="/app/financeiro/custos/categorias" className="underline">Categorias</Link>{' '}
-          → depois <Link href="/app/financeiro/custos/new" className="underline">Novo custo</Link>.
+          Nenhum custo lançado ainda. Comece em{' '}
+          <Link href="/app/financeiro/custos/categorias" className="underline">
+            Categorias
+          </Link>{' '}
+          → depois{' '}
+          <Link href="/app/financeiro/custos/new" className="underline">
+            Novo custo
+          </Link>
+          .
         </div>
       ) : (
         <ul className="space-y-2">

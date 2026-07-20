@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { workoutItems, workouts } from '@repo/db/schema'
 /**
  * `/app/treinos` — lista de workouts do tenant (Sprint 11 Faixa C).
  *
@@ -5,10 +7,8 @@
  * mostra items + permite criar nova versão (chama updateWorkout que cria
  * `version+1` com parent_workout_id).
  */
-import { and, asc, count, desc, eq, isNull } from 'drizzle-orm'
+import { and, count, desc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { workoutItems, workouts } from '@repo/db/schema'
 import { requireFullSession } from '../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -53,9 +53,7 @@ export default async function TreinosListPage() {
       <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Treinos</h1>
-          <p className="text-sm text-[color:var(--ev-text-muted)]">
-            {rows.length} workouts ativos
-          </p>
+          <p className="text-sm text-[color:var(--ev-text-muted)]">{rows.length} workouts ativos</p>
         </div>
         <div className="flex gap-2">
           <Link
@@ -75,8 +73,8 @@ export default async function TreinosListPage() {
 
       {rows.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-6 text-sm text-[color:var(--ev-text-muted)]">
-          Nenhum workout criado ainda. Comece adicionando exercícios à
-          biblioteca, depois monte um treino.
+          Nenhum workout criado ainda. Comece adicionando exercícios à biblioteca, depois monte um
+          treino.
         </div>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -92,11 +90,7 @@ export default async function TreinosListPage() {
                     v{w.version}
                   </span>
                 </header>
-                {w.goal && (
-                  <p className="text-xs text-[color:var(--ev-text-muted)]">
-                    {w.goal}
-                  </p>
-                )}
+                {w.goal && <p className="text-xs text-[color:var(--ev-text-muted)]">{w.goal}</p>}
                 <dl className="flex gap-3 text-xs text-[color:var(--ev-text-muted)]">
                   <div>
                     <dt className="inline">Exercícios: </dt>

@@ -1,15 +1,10 @@
+import { db } from '@repo/db/client'
+import { companies, insuranceAgreements, insurancePlans, persons } from '@repo/db/schema'
 /**
  * `/app/fisio/convenios` — lista de planos + acordos (Sprint 22 Faixa C).
  */
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { asc, eq, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  insuranceAgreements,
-  insurancePlans,
-  persons,
-  companies,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -64,10 +59,9 @@ export default async function ConveniosPage() {
 
       <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
         <p style={{ marginTop: 0, marginBottom: 0 }}>
-          Padrão vigente <strong>TISS 4.01</strong> (Ofício-Circular ANS nº 1/2026).
-          Validador proativo bloqueia envio com erros conhecidos antes da glosa.
-          Pipeline de atualização semestral da terminologia TUSS (próxima janela:
-          julho/2026).
+          Padrão vigente <strong>TISS 4.01</strong> (Ofício-Circular ANS nº 1/2026). Validador
+          proativo bloqueia envio com erros conhecidos antes da glosa. Pipeline de atualização
+          semestral da terminologia TUSS (próxima janela: julho/2026).
         </p>
       </div>
 

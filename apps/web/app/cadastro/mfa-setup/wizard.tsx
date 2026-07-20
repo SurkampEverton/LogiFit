@@ -1,5 +1,7 @@
 'use client'
 
+import { confirm } from '@repo/ui/messages'
+import { useRouter } from 'next/navigation'
 /**
  * MFA TOTP setup wizard — 3 steps (Sprint 02b3 ADR 0094 + Sprint 02b4 ADR 0095).
  *
@@ -9,8 +11,6 @@
  * Step 3 "done": mostra recovery codes + redirect /meu
  */
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { confirm } from '@repo/ui/messages'
 import { cancelTotpEnroll, confirmTotp, enrollTotp } from './actions'
 
 type Step = 'init' | 'scan' | 'done'
@@ -139,7 +139,9 @@ export function MfaSetupWizard() {
               borderRadius: 'var(--ev-radius-sm)',
             }}
           >
-            <p style={{ marginTop: 0, fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
+            <p
+              style={{ marginTop: 0, fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}
+            >
               📱 Opção 1 — Escaneie o QR code com a câmera do app authenticator:
             </p>
             <div
@@ -157,7 +159,13 @@ export function MfaSetupWizard() {
               // biome-ignore lint/security/noDangerouslySetInnerHtml: SVG server-side controlado
               dangerouslySetInnerHTML={{ __html: qrSvg }}
             />
-            <p style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)', marginTop: 'var(--ev-space-md)' }}>
+            <p
+              style={{
+                fontSize: 'var(--ev-text-xs)',
+                color: 'var(--ev-text-muted)',
+                marginTop: 'var(--ev-space-md)',
+              }}
+            >
               ⌨️ Opção 2 — Não consegue escanear? Digite o secret manualmente no app:
             </p>
             <pre
@@ -175,7 +183,13 @@ export function MfaSetupWizard() {
               {secret.match(/.{1,4}/g)?.join(' ')}
             </pre>
             <details style={{ marginTop: 'var(--ev-space-2)' }}>
-              <summary style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)', cursor: 'pointer' }}>
+              <summary
+                style={{
+                  fontSize: 'var(--ev-text-xs)',
+                  color: 'var(--ev-text-muted)',
+                  cursor: 'pointer',
+                }}
+              >
                 Ver URI otpauth:// (debug)
               </summary>
               <pre
@@ -223,7 +237,9 @@ export function MfaSetupWizard() {
             <p style={{ color: 'var(--ev-danger)', fontSize: 'var(--ev-text-sm)' }}>{err}</p>
           ) : null}
 
-          <div style={{ display: 'flex', gap: 'var(--ev-space-2)', marginTop: 'var(--ev-space-md)' }}>
+          <div
+            style={{ display: 'flex', gap: 'var(--ev-space-2)', marginTop: 'var(--ev-space-md)' }}
+          >
             <button
               type="submit"
               disabled={pending || code.length !== 6}
@@ -264,8 +280,8 @@ export function MfaSetupWizard() {
       >
         <h3 style={{ marginTop: 0 }}>⚠ Salve seus códigos de recuperação</h3>
         <p style={{ fontSize: 'var(--ev-text-sm)' }}>
-          Cada código só funciona <strong>uma vez</strong>. Use se perder o celular —
-          sem eles, recuperar a conta exige verificação manual com o suporte LogiFit.
+          Cada código só funciona <strong>uma vez</strong>. Use se perder o celular — sem eles,
+          recuperar a conta exige verificação manual com o suporte LogiFit.
           <br />
           <strong>Salve agora — não conseguiremos mostrá-los de novo.</strong>
         </p>
@@ -295,11 +311,7 @@ export function MfaSetupWizard() {
       </div>
 
       <div style={{ marginTop: 'var(--ev-space-md)' }}>
-        <button
-          type="button"
-          onClick={() => router.push('/meu')}
-          className="ev-portal-button"
-        >
+        <button type="button" onClick={() => router.push('/meu')} className="ev-portal-button">
           Salvei → ir para minha conta
         </button>
       </div>

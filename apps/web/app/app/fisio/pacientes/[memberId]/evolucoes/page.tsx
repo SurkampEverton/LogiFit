@@ -1,11 +1,11 @@
+import { db } from '@repo/db/client'
+import { evolucoesSessao, members, persons } from '@repo/db/schema'
 /**
  * `/app/fisio/pacientes/[memberId]/evolucoes` — lista de evoluções (Sprint 21 Faixa C).
  */
 import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import { evolucoesSessao, members, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -20,9 +20,7 @@ export default async function EvolucoesListPage({
   params,
 }: { params: Promise<{ memberId: string }> }) {
   const { memberId } = await params
-  const session = await requireFullSession(
-    `/app/fisio/pacientes/${memberId}/evolucoes`,
-  )
+  const session = await requireFullSession(`/app/fisio/pacientes/${memberId}/evolucoes`)
   const tenantId = session.logifit.tenantId
 
   const [member] = await db
@@ -60,10 +58,7 @@ export default async function EvolucoesListPage({
         <h1 style={{ margin: 0 }}>Evoluções — {member.name ?? '—'}</h1>
         <span style={{ color: 'var(--ev-muted)' }}>{rows.length} sessões</span>
         <span style={{ flex: 1 }} />
-        <Link
-          href={`/app/fisio/pacientes/${memberId}/prontuario`}
-          className="ev-btn ev-btn-ghost"
-        >
+        <Link href={`/app/fisio/pacientes/${memberId}/prontuario`} className="ev-btn ev-btn-ghost">
           → Prontuário (consultas)
         </Link>
         <Link
@@ -82,11 +77,10 @@ export default async function EvolucoesListPage({
 
       <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
         <p style={{ marginTop: 0, marginBottom: 0 }}>
-          <strong>Evolução por sessão</strong> é um SOAP enxuto registrado a cada
-          atendimento. Difere de <strong>consulta</strong> (avaliação inicial/reavaliação
-          com CID/CIF formal). Anexos categorizados (raio-X / vídeo execução /
-          documento / foto postural / áudio) entram aqui também — scan obrigatório
-          antes de exibir (regra 38).
+          <strong>Evolução por sessão</strong> é um SOAP enxuto registrado a cada atendimento.
+          Difere de <strong>consulta</strong> (avaliação inicial/reavaliação com CID/CIF formal).
+          Anexos categorizados (raio-X / vídeo execução / documento / foto postural / áudio) entram
+          aqui também — scan obrigatório antes de exibir (regra 38).
         </p>
       </div>
 
@@ -125,10 +119,7 @@ export default async function EvolucoesListPage({
                   </td>
                   <td>{e.attachmentsCount}</td>
                   <td>
-                    <Link
-                      href={`/app/fisio/evolucoes/${e.id}`}
-                      className="ev-btn ev-btn-ghost"
-                    >
+                    <Link href={`/app/fisio/evolucoes/${e.id}`} className="ev-btn ev-btn-ghost">
                       Abrir →
                     </Link>
                   </td>

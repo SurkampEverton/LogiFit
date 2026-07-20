@@ -1,3 +1,5 @@
+import { pool } from '@repo/db/client'
+import { encodeQrString, generateQrPayload } from '@repo/db/portal-member'
 /**
  * GET /api/meu/qr — Sprint 26 Faixa C (26b).
  *
@@ -8,8 +10,6 @@
  * porque o path do cookie é hierárquico... validamos via getMemberSession).
  */
 import { NextResponse } from 'next/server'
-import { pool } from '@repo/db/client'
-import { encodeQrString, generateQrPayload } from '@repo/db/portal-member'
 import { getMemberSession, withMemberContext } from '../../../lib/member-session'
 
 export const runtime = 'nodejs'

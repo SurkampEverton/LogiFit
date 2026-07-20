@@ -1,3 +1,12 @@
+import { db } from '@repo/db/client'
+import {
+  assessmentCalculations,
+  assessmentMeasurements,
+  assessmentTypes,
+  assessments,
+  members,
+  persons,
+} from '@repo/db/schema'
 /**
  * `/app/members/[id]/avaliacoes/[assessmentId]` — detalhe da avaliação
  * (Sprint 12 Faixa C).
@@ -8,15 +17,6 @@
 import { and, asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import {
-  assessmentCalculations,
-  assessmentMeasurements,
-  assessmentTypes,
-  assessments,
-  members,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -77,9 +77,7 @@ export default async function AssessmentDetailPage({
   params: Promise<{ id: string; assessmentId: string }>
 }) {
   const { id, assessmentId } = await params
-  const session = await requireFullSession(
-    `/app/members/${id}/avaliacoes/${assessmentId}`,
-  )
+  const session = await requireFullSession(`/app/members/${id}/avaliacoes/${assessmentId}`)
   const tenantId = session.logifit.tenantId
 
   const [a] = await db
@@ -145,7 +143,9 @@ export default async function AssessmentDetailPage({
         </Link>
         <div className="flex items-end justify-between gap-2 flex-wrap">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight">{a.typeName ?? '(tipo removido)'}</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">
+              {a.typeName ?? '(tipo removido)'}
+            </h1>
             <p className="text-sm text-[color:var(--ev-text-muted)]">
               {a.memberName} ·{' '}
               {new Date(a.performedAt).toLocaleString('pt-BR', {
@@ -235,10 +235,7 @@ export default async function AssessmentDetailPage({
             <tbody>
               {measurements.map((m) => {
                 const def = fieldByKey.get(m.fieldKey)
-                const value =
-                  m.valueNum !== null
-                    ? m.valueNum
-                    : m.valueEnum ?? m.valueText ?? '—'
+                const value = m.valueNum !== null ? m.valueNum : (m.valueEnum ?? m.valueText ?? '—')
                 return (
                   <tr key={m.fieldKey} className="border-t border-[color:var(--ev-border)]">
                     <td className="py-2">
@@ -250,9 +247,7 @@ export default async function AssessmentDetailPage({
                       )}
                     </td>
                     <td className="py-2 tabular-nums font-medium">{value}</td>
-                    <td className="py-2 text-xs text-[color:var(--ev-text-muted)]">
-                      {m.source}
-                    </td>
+                    <td className="py-2 text-xs text-[color:var(--ev-text-muted)]">{m.source}</td>
                   </tr>
                 )
               })}

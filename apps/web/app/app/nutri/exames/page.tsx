@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/nutri/exames` — catálogo de analitos laboratoriais.
  *   Sprint 30 Faixa C.
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -54,10 +54,17 @@ export default async function ExamesCatalogoPage({ searchParams }: PageProps) {
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>Catálogo de exames</h1>
-        <span style={{ color: 'var(--ev-text-muted)' }}>{rows.length} analito{rows.length === 1 ? '' : 's'}</span>
+        <span style={{ color: 'var(--ev-text-muted)' }}>
+          {rows.length} analito{rows.length === 1 ? '' : 's'}
+        </span>
       </header>
 
       <nav style={{ display: 'flex', gap: 'var(--ev-space-sm)', flexWrap: 'wrap' }}>
@@ -94,7 +101,10 @@ export default async function ExamesCatalogoPage({ searchParams }: PageProps) {
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ padding: 'var(--ev-space-md)', color: 'var(--ev-text-muted)' }}>
+                <td
+                  colSpan={5}
+                  style={{ padding: 'var(--ev-space-md)', color: 'var(--ev-text-muted)' }}
+                >
                   Nenhum analito. Rode <code>pnpm db:seed:nutri-labs</code>.
                 </td>
               </tr>
@@ -102,14 +112,22 @@ export default async function ExamesCatalogoPage({ searchParams }: PageProps) {
             {rows.map((r) => (
               <tr key={r.id} style={{ borderTop: '1px solid var(--ev-border)' }}>
                 <td style={{ padding: 'var(--ev-space-2)' }}>{r.name}</td>
-                <td style={{ padding: 'var(--ev-space-2)', fontFamily: 'monospace', fontSize: 'var(--ev-text-xs)' }}>
+                <td
+                  style={{
+                    padding: 'var(--ev-space-2)',
+                    fontFamily: 'monospace',
+                    fontSize: 'var(--ev-text-xs)',
+                  }}
+                >
                   {r.code}
                 </td>
                 <td style={{ padding: 'var(--ev-space-2)', color: 'var(--ev-text-muted)' }}>
                   {CATEGORY_LABEL[r.category] ?? r.category}
                 </td>
                 <td style={{ padding: 'var(--ev-space-2)' }}>{r.unit}</td>
-                <td style={{ padding: 'var(--ev-space-2)', textAlign: 'right' }}>{r.ranges_count}</td>
+                <td style={{ padding: 'var(--ev-space-2)', textAlign: 'right' }}>
+                  {r.ranges_count}
+                </td>
               </tr>
             ))}
           </tbody>

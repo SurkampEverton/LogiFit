@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 /**
  * Member session helpers — Sprint 26 Faixa B.2.
  *
@@ -13,7 +14,6 @@
  * a cada uso (single-use refresh + access JWT 15min separado).
  */
 import { pool } from '@repo/db/client'
-import { createHash } from 'node:crypto'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
@@ -73,9 +73,9 @@ export async function getMemberSession(): Promise<MemberSessionClaims | null> {
   if (row.expires_at.getTime() < Date.now()) return null
 
   // Update last_seen_at (fire-and-forget)
-  void pool.query(`UPDATE member_sessions SET last_seen_at = now() WHERE id = $1`, [row.id]).catch(
-    () => {},
-  )
+  void pool
+    .query(`UPDATE member_sessions SET last_seen_at = now() WHERE id = $1`, [row.id])
+    .catch(() => {})
 
   return {
     memberId: row.member_id,

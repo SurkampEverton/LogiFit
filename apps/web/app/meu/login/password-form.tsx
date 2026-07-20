@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 /**
  * /meu/login — password form (Sprint 02b3 ADR 0094).
  *
@@ -8,7 +9,6 @@
  * por otplib real.
  */
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { loginPassport } from './actions'
 
 export function PasswordLoginForm() {
@@ -58,12 +58,12 @@ export function PasswordLoginForm() {
     return (
       <form onSubmit={handleSubmit} className="ev-portal-form">
         <p className="ev-portal-muted" style={{ fontSize: 'var(--ev-text-sm)' }}>
-          Digite o código de 6 dígitos do seu autenticador (Google Authenticator,
-          Authy, 1Password, etc).
+          Digite o código de 6 dígitos do seu autenticador (Google Authenticator, Authy, 1Password,
+          etc).
         </p>
         <p className="ev-portal-muted" style={{ fontSize: 'var(--ev-text-xs)' }}>
-          🛠 Sprint 02b3 partial: TOTP placeholder aceita <code>000000</code>. Wizard
-          MFA TOTP real entra em Sprint 02b3 completo (otplib).
+          🛠 Sprint 02b3 partial: TOTP placeholder aceita <code>000000</code>. Wizard MFA TOTP real
+          entra em Sprint 02b3 completo (otplib).
         </p>
 
         <label className="ev-portal-label" htmlFor="totp">
@@ -144,7 +144,14 @@ export function PasswordLoginForm() {
         {pending ? 'Entrando...' : 'Entrar'}
       </button>
 
-      <p style={{ marginTop: 'var(--ev-space-md)', fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)', textAlign: 'center' }}>
+      <p
+        style={{
+          marginTop: 'var(--ev-space-md)',
+          fontSize: 'var(--ev-text-xs)',
+          color: 'var(--ev-text-muted)',
+          textAlign: 'center',
+        }}
+      >
         Esqueceu a senha? Use o magic link (aba ao lado) ou cadastre-se em <code>/cadastro</code>.
       </p>
     </form>

@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { bankAccounts } from '@repo/db/schema'
 /**
  * `/app/financeiro/adquirencia/regras/new` — criar regra de match (Sprint 18 Faixa C).
  */
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { bankAccounts } from '@repo/db/schema'
 import { requireFullSession } from '../../../../../lib/session'
 import { NewAcquirerRuleForm } from './new-acquirer-rule-form'
 

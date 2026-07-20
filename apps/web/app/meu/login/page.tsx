@@ -1,3 +1,4 @@
+import { headers } from 'next/headers'
 /**
  * /meu/login — login do portal do paciente. Sprint 26 (magic link) +
  * Sprint 02b3 (password — ADR 0094).
@@ -12,7 +13,6 @@
  * silently + fallback magic link.
  */
 import Link from 'next/link'
-import { headers } from 'next/headers'
 import { LoginTabs } from './login-tabs'
 
 export const dynamic = 'force-dynamic'
@@ -40,8 +40,7 @@ export default async function MeuLoginPage() {
           textAlign: 'center',
         }}
       >
-        Ainda não tem conta?{' '}
-        <Link href="/cadastro">Cadastre-se →</Link>
+        Ainda não tem conta? <Link href="/cadastro">Cadastre-se →</Link>
       </p>
     </div>
   )

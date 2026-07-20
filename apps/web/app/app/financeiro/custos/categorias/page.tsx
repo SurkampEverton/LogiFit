@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { costCategories } from '@repo/db/schema'
 /**
  * `/app/financeiro/custos/categorias` — catálogo de categorias (Sprint 14 Faixa C).
  */
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { costCategories } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 import { NewCategoryForm } from './new-category-form'
 
@@ -26,9 +26,7 @@ export default async function CategoriasPage() {
       description: costCategories.description,
     })
     .from(costCategories)
-    .where(
-      and(eq(costCategories.tenantId, tenantId), isNull(costCategories.archivedAt)),
-    )
+    .where(and(eq(costCategories.tenantId, tenantId), isNull(costCategories.archivedAt)))
     .orderBy(asc(costCategories.type), asc(costCategories.name))
 
   return (
@@ -69,9 +67,7 @@ export default async function CategoriasPage() {
                     <div className="font-medium text-sm">
                       {c.icon ?? '💼'} {c.name}
                     </div>
-                    <code className="text-[10px] text-[color:var(--ev-text-muted)]">
-                      {c.slug}
-                    </code>
+                    <code className="text-[10px] text-[color:var(--ev-text-muted)]">{c.slug}</code>
                     {c.description && (
                       <p className="text-xs text-[color:var(--ev-text-muted)] mt-1">
                         {c.description}

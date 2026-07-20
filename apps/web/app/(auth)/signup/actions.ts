@@ -2,6 +2,19 @@
 
 import { headers as nextHeaders } from 'next/headers'
 
+import { auth } from '@repo/auth/server'
+import { lookupCnpj } from '@repo/cnpj'
+import { parseDocument } from '@repo/db/persons'
+import {
+  companies,
+  persons,
+  roles,
+  tenants,
+  units,
+  userRoles,
+  userTenants,
+  users,
+} from '@repo/db/schema'
 /**
  * Server Actions do onboarding atômico (`/signup` wizard).
  *
@@ -23,22 +36,8 @@ import { headers as nextHeaders } from 'next/headers'
  * `companies_person_per_tenant_uq`).
  */
 import { eq, sql } from 'drizzle-orm'
-import { z } from 'zod'
-import { auth } from '@repo/auth/server'
-import { lookupCnpj } from '@repo/cnpj'
-import { parseDocument } from '@repo/db/persons'
-import {
-  authUser,
-  companies,
-  persons,
-  roles,
-  tenants,
-  units,
-  userRoles,
-  userTenants,
-  users,
-} from '@repo/db/schema'
 import { drizzle } from 'drizzle-orm/node-postgres'
+import { z } from 'zod'
 import { withElevatedContext } from '../../lib/session'
 
 type ActionResult<T> =
@@ -327,7 +326,10 @@ export async function onboardTenant(
         error: { code: 'SLUG_TAKEN', message: 'Este subdomínio já está em uso' },
       }
     }
-    if (msg.includes('companies_person_per_tenant_uq') || msg.includes('persons_tenant_document_uq')) {
+    if (
+      msg.includes('companies_person_per_tenant_uq') ||
+      msg.includes('persons_tenant_document_uq')
+    ) {
       return {
         ok: false,
         error: { code: 'CNPJ_TAKEN', message: 'CNPJ já cadastrado em outro tenant' },
@@ -348,5 +350,7 @@ export async function onboardTenant(
 function cryptoRandomString(len: number): string {
   const bytes = new Uint8Array(len)
   crypto.getRandomValues(bytes)
-  return Array.from(bytes, (b) => b.toString(36).padStart(2, '0')).join('').slice(0, len)
+  return Array.from(bytes, (b) => b.toString(36).padStart(2, '0'))
+    .join('')
+    .slice(0, len)
 }

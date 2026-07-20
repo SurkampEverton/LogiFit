@@ -6,7 +6,10 @@ import { createAcquirerReconciliationRule } from '../../actions'
 
 function parseBrlToCents(v: string): number | undefined {
   if (!v) return undefined
-  const cleaned = v.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')
+  const cleaned = v
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.')
   const num = Number(cleaned)
   if (!Number.isFinite(num)) return undefined
   return Math.round(num * 100)
@@ -53,8 +56,7 @@ export function NewAcquirerRuleForm({
     if (bankDescriptionContains.trim())
       condition.bankDescriptionContains = bankDescriptionContains.trim()
 
-    if (Object.keys(condition).length === 0)
-      return setError('Defina ao menos uma condição')
+    if (Object.keys(condition).length === 0) return setError('Defina ao menos uma condição')
 
     startTransition(async () => {
       const r = await createAcquirerReconciliationRule({

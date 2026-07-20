@@ -42,9 +42,7 @@ function buildWhatsappUrl(input: EmailVerificationTemplateInput): string | null 
   return `https://wa.me/${num}?text=${msg}`
 }
 
-export function renderEmailVerificationHtml(
-  input: EmailVerificationTemplateInput,
-): string {
+export function renderEmailVerificationHtml(input: EmailVerificationTemplateInput): string {
   const name = escapeHtml(input.patientName.split(' ')[0] ?? input.patientName)
   const whatsappUrl = buildWhatsappUrl(input)
 
@@ -73,9 +71,7 @@ export function renderEmailVerificationHtml(
 </html>`
 }
 
-export function renderEmailVerificationText(
-  input: EmailVerificationTemplateInput,
-): string {
+export function renderEmailVerificationText(input: EmailVerificationTemplateInput): string {
   const whatsappUrl = buildWhatsappUrl(input)
   const whatsappBlock = whatsappUrl
     ? `

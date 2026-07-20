@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { reguas } from '@repo/db/schema'
 /**
  * `/app/mensagens/reguas` — lista de réguas declarativas (Sprint 13 Faixa C).
  */
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { reguas } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -56,14 +56,13 @@ export default async function ReguasListPage() {
 
       {rows.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-6 text-sm text-[color:var(--ev-text-muted)]">
-          Nenhuma régua. Crie uma "Cobrança D+1/+3/+7" pra disparar automaticamente
-          quando <code>invoice.overdue</code> chegar.
+          Nenhuma régua. Crie uma "Cobrança D+1/+3/+7" pra disparar automaticamente quando{' '}
+          <code>invoice.overdue</code> chegar.
         </div>
       ) : (
         <ul className="space-y-3">
           {rows.map((r) => {
-            const triggerEvent =
-              (r.trigger as { event?: string } | null)?.event ?? '(sem trigger)'
+            const triggerEvent = (r.trigger as { event?: string } | null)?.event ?? '(sem trigger)'
             const actions = (r.actions as Array<{ kind: string; channel?: string }> | null) ?? []
             return (
               <li
@@ -74,20 +73,14 @@ export default async function ReguasListPage() {
                   <div className="min-w-0">
                     <h3 className="font-medium">{r.name}</h3>
                     {r.description && (
-                      <p className="text-xs text-[color:var(--ev-text-muted)]">
-                        {r.description}
-                      </p>
+                      <p className="text-xs text-[color:var(--ev-text-muted)]">{r.description}</p>
                     )}
                   </div>
                   <span
                     className="rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide shrink-0"
                     style={{
-                      backgroundColor: r.active
-                        ? 'var(--ev-success-bg, #dcfce7)'
-                        : 'var(--ev-bg)',
-                      color: r.active
-                        ? 'var(--ev-success, #166534)'
-                        : 'var(--ev-text-muted)',
+                      backgroundColor: r.active ? 'var(--ev-success-bg, #dcfce7)' : 'var(--ev-bg)',
+                      color: r.active ? 'var(--ev-success, #166534)' : 'var(--ev-text-muted)',
                       border: '1px solid var(--ev-border)',
                     }}
                   >
@@ -107,10 +100,7 @@ export default async function ReguasListPage() {
                 </div>
                 <div className="flex gap-1 flex-wrap text-[11px] text-[color:var(--ev-text-muted)]">
                   {actions.slice(0, 5).map((a, idx) => (
-                    <span
-                      key={idx}
-                      className="rounded-full bg-[color:var(--ev-bg)] px-2 py-0.5"
-                    >
+                    <span key={idx} className="rounded-full bg-[color:var(--ev-bg)] px-2 py-0.5">
                       {a.kind === 'send_message' ? `📤 ${a.channel}` : '⏱️ wait'}
                     </span>
                   ))}

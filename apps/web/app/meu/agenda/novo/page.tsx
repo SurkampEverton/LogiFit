@@ -24,17 +24,15 @@ export default async function NovoAgendamentoPage() {
     <div className="ev-portal-page">
       <header>
         <h1 className="ev-portal-h1">Agendar novo</h1>
-        <p className="ev-portal-muted">
-          Selecione modalidade, profissional e horário disponível.
-        </p>
+        <p className="ev-portal-muted">Selecione modalidade, profissional e horário disponível.</p>
       </header>
 
       <div className="ev-portal-callout">
         <h2 className="ev-portal-h2">Agendamento online em breve</h2>
         <p>
-          A escolha de horários direto pelo portal está sendo finalizada. Por enquanto,
-          fale com a recepção pelo WhatsApp ou ligue para a sua unidade. Após o
-          agendamento, ele aparecerá automaticamente na sua agenda.
+          A escolha de horários direto pelo portal está sendo finalizada. Por enquanto, fale com a
+          recepção pelo WhatsApp ou ligue para a sua unidade. Após o agendamento, ele aparecerá
+          automaticamente na sua agenda.
         </p>
       </div>
 

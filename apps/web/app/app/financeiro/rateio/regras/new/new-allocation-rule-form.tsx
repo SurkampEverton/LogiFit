@@ -133,11 +133,7 @@ export function NewAllocationRuleForm({ companies }: { companies: CompanyOption[
 
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span>Tipo (kind)</span>
-        <select
-          value={kind}
-          onChange={(e) => setKind(e.target.value as Kind)}
-          className="ev-input"
-        >
+        <select value={kind} onChange={(e) => setKind(e.target.value as Kind)} className="ev-input">
           <option value="fixed">Fixo (% explícito; soma=100)</option>
           <option value="proportional">Proporcional (pesos relativos)</option>
           <option value="per_unit">Por unidade (snapshot das units)</option>
@@ -151,14 +147,21 @@ export function NewAllocationRuleForm({ companies }: { companies: CompanyOption[
         <fieldset style={{ border: '1px solid var(--ev-border)', padding: 'var(--ev-space-md)' }}>
           <legend style={{ padding: '0 8px', fontSize: 'var(--ev-font-sm)' }}>
             Distribuição (soma deve ser 100%; atual:{' '}
-            <strong style={{ color: Math.abs(sumPct - 100) < 0.01 ? 'var(--ev-success)' : 'var(--ev-danger)' }}>
+            <strong
+              style={{
+                color: Math.abs(sumPct - 100) < 0.01 ? 'var(--ev-success)' : 'var(--ev-danger)',
+              }}
+            >
               {sumPct.toFixed(2)}%
             </strong>
             )
           </legend>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ev-space-sm)' }}>
             {fixedItems.map((item, idx) => (
-              <div key={idx} style={{ display: 'flex', gap: 'var(--ev-space-sm)', alignItems: 'center' }}>
+              <div
+                key={idx}
+                style={{ display: 'flex', gap: 'var(--ev-space-sm)', alignItems: 'center' }}
+              >
                 <select
                   value={item.companyId}
                   onChange={(e) => updateFixed(idx, { companyId: e.target.value })}
@@ -211,7 +214,10 @@ export function NewAllocationRuleForm({ companies }: { companies: CompanyOption[
           </legend>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ev-space-sm)' }}>
             {propItems.map((item, idx) => (
-              <div key={idx} style={{ display: 'flex', gap: 'var(--ev-space-sm)', alignItems: 'center' }}>
+              <div
+                key={idx}
+                style={{ display: 'flex', gap: 'var(--ev-space-sm)', alignItems: 'center' }}
+              >
                 <select
                   value={item.companyId}
                   onChange={(e) => updateProp(idx, { companyId: e.target.value })}

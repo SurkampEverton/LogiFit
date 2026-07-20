@@ -14,8 +14,8 @@ export default async function UsersPage() {
         <div className="space-y-1">
           <h1 className="text-3xl font-semibold tracking-tight">Usuários</h1>
           <p className="text-sm text-[color:var(--ev-text-muted)]">
-            Operadores do tenant. Roles profissionais (médico, fisio, nutri…) exigem MFA TOTP
-            (regra 43).
+            Operadores do tenant. Roles profissionais (médico, fisio, nutri…) exigem MFA TOTP (regra
+            43).
           </p>
         </div>
         <Link

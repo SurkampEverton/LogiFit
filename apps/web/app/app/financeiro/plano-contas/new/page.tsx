@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { chartOfAccounts } from '@repo/db/schema'
 /**
  * `/app/financeiro/plano-contas/new` — formulário criação de conta contábil.
  */
 import { and, asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { chartOfAccounts } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 import { NewChartAccountForm } from './new-chart-form'
 
@@ -22,12 +22,7 @@ export default async function NewChartAccountPage() {
       kind: chartOfAccounts.kind,
     })
     .from(chartOfAccounts)
-    .where(
-      and(
-        eq(chartOfAccounts.tenantId, tenantId),
-        eq(chartOfAccounts.active, true),
-      ),
-    )
+    .where(and(eq(chartOfAccounts.tenantId, tenantId), eq(chartOfAccounts.active, true)))
     .orderBy(asc(chartOfAccounts.code))
 
   return (

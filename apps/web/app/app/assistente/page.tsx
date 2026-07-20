@@ -56,7 +56,15 @@ export default async function AssistantPage() {
           {t('page.empty')}
         </div>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 'var(--ev-space-2)' }}>
+        <ul
+          style={{
+            listStyle: 'none',
+            padding: 0,
+            margin: 0,
+            display: 'grid',
+            gap: 'var(--ev-space-2)',
+          }}
+        >
           {sessions.map((s) => (
             <li
               key={s.id}
@@ -67,13 +75,25 @@ export default async function AssistantPage() {
                 backgroundColor: 'var(--ev-surface)',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--ev-space-3)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: 'var(--ev-space-3)',
+                }}
+              >
                 <strong style={{ fontSize: 'var(--ev-text-sm)' }}>{s.title}</strong>
                 <span style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
                   {t(`persona.${s.persona}`)}
                 </span>
               </div>
-              <div style={{ marginTop: 'var(--ev-space-1)', fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
+              <div
+                style={{
+                  marginTop: 'var(--ev-space-1)',
+                  fontSize: 'var(--ev-text-xs)',
+                  color: 'var(--ev-text-muted)',
+                }}
+              >
                 {new Date(s.updatedAt).toLocaleString('pt-BR')}
               </div>
             </li>

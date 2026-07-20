@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { exercises, workoutItems, workouts } from '@repo/db/schema'
 /**
  * `/app/treinos/[id]` — detalhe do workout com lista de items expandida
  * (Sprint 11 Faixa C). Read-only MVP — edição cria nova versão via
@@ -6,8 +8,6 @@
 import { and, asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import { exercises, workoutItems, workouts } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -60,10 +60,7 @@ export default async function WorkoutDetailPage({
                 <>
                   {' '}
                   · evolução de{' '}
-                  <Link
-                    href={`/app/treinos/${w.parentWorkoutId}`}
-                    className="underline"
-                  >
+                  <Link href={`/app/treinos/${w.parentWorkoutId}`} className="underline">
                     versão anterior
                   </Link>
                 </>
@@ -80,9 +77,7 @@ export default async function WorkoutDetailPage({
           </Link>
         </div>
         {w.description && (
-          <p className="text-sm text-[color:var(--ev-text-muted)]">
-            {w.description}
-          </p>
+          <p className="text-sm text-[color:var(--ev-text-muted)]">{w.description}</p>
         )}
       </header>
 
@@ -91,9 +86,7 @@ export default async function WorkoutDetailPage({
           Exercícios ({items.length})
         </h2>
         {items.length === 0 ? (
-          <p className="text-sm text-[color:var(--ev-text-muted)] italic">
-            Sem items.
-          </p>
+          <p className="text-sm text-[color:var(--ev-text-muted)] italic">Sem items.</p>
         ) : (
           <ol className="space-y-2">
             {items.map((it, idx) => (
@@ -107,31 +100,19 @@ export default async function WorkoutDetailPage({
                   </div>
                   <div className="text-xs text-[color:var(--ev-text-muted)] flex gap-2 flex-wrap">
                     <span>
-                      <strong className="text-[color:var(--ev-text)]">
-                        {it.sets}
-                      </strong>{' '}
-                      séries
+                      <strong className="text-[color:var(--ev-text)]">{it.sets}</strong> séries
                     </span>
                     <span>
-                      ×{' '}
-                      <strong className="text-[color:var(--ev-text)]">
-                        {it.reps}
-                      </strong>{' '}
-                      reps
+                      × <strong className="text-[color:var(--ev-text)]">{it.reps}</strong> reps
                     </span>
                     {it.loadKg && (
                       <span>
-                        ·{' '}
-                        <strong className="text-[color:var(--ev-text)]">
-                          {it.loadKg}kg
-                        </strong>
+                        · <strong className="text-[color:var(--ev-text)]">{it.loadKg}kg</strong>
                       </span>
                     )}
                     <span>
                       · descanso{' '}
-                      <strong className="text-[color:var(--ev-text)]">
-                        {it.restSeconds}s
-                      </strong>
+                      <strong className="text-[color:var(--ev-text)]">{it.restSeconds}s</strong>
                     </span>
                     {it.supersetGroup !== null && it.supersetGroup !== undefined && (
                       <span
@@ -144,9 +125,7 @@ export default async function WorkoutDetailPage({
                   </div>
                 </header>
                 {it.notes && (
-                  <p className="text-xs text-[color:var(--ev-text-muted)] italic">
-                    {it.notes}
-                  </p>
+                  <p className="text-xs text-[color:var(--ev-text-muted)] italic">{it.notes}</p>
                 )}
                 {it.exerciseMuscleGroups && it.exerciseMuscleGroups.length > 0 && (
                   <div className="flex gap-1 flex-wrap">

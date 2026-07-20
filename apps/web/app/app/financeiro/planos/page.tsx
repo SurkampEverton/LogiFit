@@ -32,10 +32,7 @@ export default async function PlanosPage({
   return (
     <div className="mx-auto max-w-5xl px-6 py-8 space-y-6">
       <nav className="text-sm">
-        <Link
-          href="/app/financeiro"
-          className="text-[color:var(--ev-text-muted)] hover:underline"
-        >
+        <Link href="/app/financeiro" className="text-[color:var(--ev-text-muted)] hover:underline">
           ← Voltar para Financeiro
         </Link>
       </nav>

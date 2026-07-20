@@ -1,13 +1,13 @@
 'use client'
 
+import { confirm, prompt } from '@repo/ui/messages'
+import { useRouter } from 'next/navigation'
 /**
  * Botões de ação para confirmar/rejeitar adaptação — Sprint 27 Faixa C
  * (regra 45 + ADR 0089 — substituído window.confirm/prompt por confirm()/prompt()
  * do catálogo `@repo/ui/messages` no fechamento Sprint 02c cleanup).
  */
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { confirm, prompt } from '@repo/ui/messages'
 import { confirmAdaptation, rejectAdaptation } from '../../../cross/actions'
 
 interface Props {

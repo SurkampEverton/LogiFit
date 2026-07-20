@@ -67,7 +67,10 @@ export function NewAssessmentTypeForm() {
         if (f.min) def.min = Number(f.min)
         if (f.max) def.max = Number(f.max)
         if (f.kind === 'enum' && f.options) {
-          def.options = f.options.split(',').map((s) => s.trim()).filter(Boolean)
+          def.options = f.options
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
         }
         return def
       })

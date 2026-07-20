@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { messageTemplates, messagesSent, reguas } from '@repo/db/schema'
 /**
  * `/app/mensagens` — hub mensagens (Sprint 13 Faixa C).
  *
@@ -5,8 +7,6 @@
  */
 import { and, count, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { messageTemplates, messagesSent, reguas } from '@repo/db/schema'
 import { requireFullSession } from '../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -19,12 +19,7 @@ export default async function MensagensHubPage() {
     db
       .select({ n: count() })
       .from(messageTemplates)
-      .where(
-        and(
-          eq(messageTemplates.tenantId, tenantId),
-          isNull(messageTemplates.archivedAt),
-        ),
-      ),
+      .where(and(eq(messageTemplates.tenantId, tenantId), isNull(messageTemplates.archivedAt))),
     db
       .select({ n: count() })
       .from(reguas)
@@ -37,7 +32,8 @@ export default async function MensagensHubPage() {
       <header className="space-y-1">
         <h1 className="text-3xl font-semibold tracking-tight">Mensagens</h1>
         <p className="text-sm text-[color:var(--ev-text-muted)]">
-          WhatsApp + Email + Régua de cobrança. Provider real (Twilio/Gupshup/Resend) será habilitado em Sprint 13b — MVP usa stub adapter.
+          WhatsApp + Email + Régua de cobrança. Provider real (Twilio/Gupshup/Resend) será
+          habilitado em Sprint 13b — MVP usa stub adapter.
         </p>
       </header>
 
@@ -64,9 +60,7 @@ export default async function MensagensHubPage() {
           <div className="text-xs uppercase tracking-wide text-[color:var(--ev-text-muted)]">
             Réguas
           </div>
-          <div className="text-3xl font-semibold tabular-nums mt-2">
-            {reguasCount[0]?.n ?? 0}
-          </div>
+          <div className="text-3xl font-semibold tabular-nums mt-2">{reguasCount[0]?.n ?? 0}</div>
           <div className="text-xs text-[color:var(--ev-text-muted)] mt-1">
             cobrança / reengajamento
           </div>
@@ -79,25 +73,19 @@ export default async function MensagensHubPage() {
           <div className="text-xs uppercase tracking-wide text-[color:var(--ev-text-muted)]">
             Histórico
           </div>
-          <div className="text-3xl font-semibold tabular-nums mt-2">
-            {messagesCount[0]?.n ?? 0}
-          </div>
+          <div className="text-3xl font-semibold tabular-nums mt-2">{messagesCount[0]?.n ?? 0}</div>
           <div className="text-xs text-[color:var(--ev-text-muted)] mt-1">
             mensagens registradas
           </div>
         </Link>
 
         <div className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-5 text-xs text-[color:var(--ev-text-muted)]">
-          <div className="text-sm font-medium text-[color:var(--ev-text)]">
-            Provider
-          </div>
+          <div className="text-sm font-medium text-[color:var(--ev-text)]">Provider</div>
           <p className="mt-2">
-            Sprint 13b plugará Twilio/Gupshup (WhatsApp) + Resend (email) via
-            adapter abstrato.
+            Sprint 13b plugará Twilio/Gupshup (WhatsApp) + Resend (email) via adapter abstrato.
           </p>
           <p className="italic mt-2">
-            MVP usa <code>provider='stub'</code>: mensagens entram em queued sem
-            envio real.
+            MVP usa <code>provider='stub'</code>: mensagens entram em queued sem envio real.
           </p>
         </div>
       </div>

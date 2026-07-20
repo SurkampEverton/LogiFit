@@ -1,3 +1,4 @@
+import { pool } from '@repo/db/client'
 /**
  * /meu/diario — diário alimentar do paciente. Sprint 31 Faixa C.
  *
@@ -5,7 +6,6 @@
  * nutricional por refeição + status de review do nutri (se houver).
  */
 import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { withMemberContext } from '../../lib/member-session'
 import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
 import { PassportNeedsLink } from '../_components/passport-needs-link'
@@ -126,7 +126,10 @@ export default async function MeuDiarioPage() {
                         <div className="ev-portal-h3">
                           {MEAL_LABEL[e.meal_name] ?? e.meal_name}
                           {e.consumed_at ? (
-                            <span className="ev-portal-muted" style={{ fontWeight: 400, marginLeft: 8 }}>
+                            <span
+                              className="ev-portal-muted"
+                              style={{ fontWeight: 400, marginLeft: 8 }}
+                            >
                               {formatTime(e.consumed_at)}
                             </span>
                           ) : null}
@@ -135,18 +138,19 @@ export default async function MeuDiarioPage() {
                           <p style={{ margin: '4px 0 0 0' }}>{e.free_text_description}</p>
                         ) : null}
                         {e.calculated_nutrition ? (
-                          <div className="ev-portal-muted" style={{ fontSize: 'var(--ev-text-xs)' }}>
-                            {(e.calculated_nutrition.kcal ?? 0).toFixed(0)} kcal ·
-                            P {(e.calculated_nutrition.protein_g ?? 0).toFixed(0)}g ·
-                            C {(e.calculated_nutrition.carbohydrate_g ?? 0).toFixed(0)}g ·
-                            L {(e.calculated_nutrition.lipid_g ?? 0).toFixed(0)}g
+                          <div
+                            className="ev-portal-muted"
+                            style={{ fontSize: 'var(--ev-text-xs)' }}
+                          >
+                            {(e.calculated_nutrition.kcal ?? 0).toFixed(0)} kcal · P{' '}
+                            {(e.calculated_nutrition.protein_g ?? 0).toFixed(0)}g · C{' '}
+                            {(e.calculated_nutrition.carbohydrate_g ?? 0).toFixed(0)}g · L{' '}
+                            {(e.calculated_nutrition.lipid_g ?? 0).toFixed(0)}g
                           </div>
                         ) : null}
                       </div>
                       {e.review_status ? (
-                        <span
-                          className={`ev-portal-badge ${REVIEW_BADGE[e.review_status] ?? ''}`}
-                        >
+                        <span className={`ev-portal-badge ${REVIEW_BADGE[e.review_status] ?? ''}`}>
                           {REVIEW_LABEL[e.review_status] ?? e.review_status}
                         </span>
                       ) : (

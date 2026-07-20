@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { companies, contracts, invoices, members, persons } from '@repo/db/schema'
 /**
  * `/app/dashboard/diretor` — dashboard diretor tenant (Sprint 07 Faixa D).
  *
@@ -6,14 +8,6 @@
  */
 import { and, count, desc, eq, gte, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  companies,
-  contracts,
-  invoices,
-  members,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -126,25 +120,19 @@ export default async function DashboardDiretorPage() {
           <div className="text-xs text-[color:var(--ev-text-muted)] uppercase tracking-wide">
             Total members ativos
           </div>
-          <div className="text-2xl font-semibold tabular-nums">
-            {totalMembers[0]?.n ?? 0}
-          </div>
+          <div className="text-2xl font-semibold tabular-nums">{totalMembers[0]?.n ?? 0}</div>
         </div>
         <div className="rounded-xl border border-[color:var(--ev-border)] p-5 space-y-1">
           <div className="text-xs text-[color:var(--ev-text-muted)] uppercase tracking-wide">
             Contratos ativos
           </div>
-          <div className="text-2xl font-semibold tabular-nums">
-            {totalContracts[0]?.n ?? 0}
-          </div>
+          <div className="text-2xl font-semibold tabular-nums">{totalContracts[0]?.n ?? 0}</div>
         </div>
         <div className="rounded-xl border border-[color:var(--ev-border)] p-5 space-y-1">
           <div className="text-xs text-[color:var(--ev-text-muted)] uppercase tracking-wide">
             MRR (mês corrente)
           </div>
-          <div className="text-2xl font-semibold tabular-nums">
-            {formatBRL(mrr[0]?.sum ?? 0)}
-          </div>
+          <div className="text-2xl font-semibold tabular-nums">{formatBRL(mrr[0]?.sum ?? 0)}</div>
         </div>
       </section>
 

@@ -51,8 +51,16 @@ const LogMealSchema = z.object({
 })
 
 const ListDiarySchema = z.object({
-  fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
-  toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  fromDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .nullable(),
+  toDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .nullable(),
   mealName: z.enum(MEAL_NAME_ENUM).optional().nullable(),
   limit: z.number().int().min(1).max(200).default(60),
 })
@@ -258,10 +266,10 @@ export const deleteDiaryEntry = wrapMemberAction(
     eventKind: 'meu.diary.meal_deleted',
   },
   async (input, { session }) => {
-    const r = await pool.query(
-      `DELETE FROM meal_log_entries WHERE id = $1 AND member_id = $2`,
-      [input.entryId, session.memberId],
-    )
+    const r = await pool.query(`DELETE FROM meal_log_entries WHERE id = $1 AND member_id = $2`, [
+      input.entryId,
+      session.memberId,
+    ])
     if (r.rowCount === 0) {
       throw new ApiException({
         code: 'NOT_FOUND',

@@ -17,9 +17,7 @@ export interface EmailChangeConfirmationInput {
   confirmUrl: string
 }
 
-export function renderEmailChangeConfirmationHtml(
-  input: EmailChangeConfirmationInput,
-): string {
+export function renderEmailChangeConfirmationHtml(input: EmailChangeConfirmationInput): string {
   const name = escapeHtml(input.patientName.split(' ')[0] ?? input.patientName)
   const newEmail = escapeHtml(input.newEmail)
   return `<!doctype html>
@@ -38,9 +36,7 @@ export function renderEmailChangeConfirmationHtml(
 </html>`
 }
 
-export function renderEmailChangeConfirmationText(
-  input: EmailChangeConfirmationInput,
-): string {
+export function renderEmailChangeConfirmationText(input: EmailChangeConfirmationInput): string {
   return `Olá, ${input.patientName}!
 
 Você solicitou trocar o email da sua conta LogiFit pra ${input.newEmail}.
@@ -61,9 +57,7 @@ export interface EmailChangeNotificationInput {
   newEmail: string
 }
 
-export function renderEmailChangeNotificationHtml(
-  input: EmailChangeNotificationInput,
-): string {
+export function renderEmailChangeNotificationHtml(input: EmailChangeNotificationInput): string {
   const name = escapeHtml(input.patientName.split(' ')[0] ?? input.patientName)
   const newEmail = escapeHtml(input.newEmail)
   // Mascara o new_email pra preservar privacidade caso este email seja
@@ -88,9 +82,7 @@ export function renderEmailChangeNotificationHtml(
 </html>`
 }
 
-export function renderEmailChangeNotificationText(
-  input: EmailChangeNotificationInput,
-): string {
+export function renderEmailChangeNotificationText(input: EmailChangeNotificationInput): string {
   const masked = maskEmail(input.newEmail)
   return `⚠ Email da sua conta foi alterado
 

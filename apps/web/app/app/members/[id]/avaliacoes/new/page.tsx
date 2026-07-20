@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { assessmentTypes, members, persons } from '@repo/db/schema'
 /**
  * `/app/members/[id]/avaliacoes/new` — wizard dinâmico de avaliação (Sprint 12 Faixa C).
  *
@@ -8,12 +10,6 @@
 import { and, asc, eq, isNull, or } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import {
-  assessmentTypes,
-  members,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../../../lib/session'
 import { NewAssessmentForm } from './new-assessment-form'
 
@@ -73,8 +69,7 @@ export default async function NewMemberAssessmentPage({
   // Idade calculada se birth_date existe
   const ageYears = member.birthDate
     ? Math.floor(
-        (Date.now() - new Date(member.birthDate).getTime()) /
-          (1000 * 60 * 60 * 24 * 365.25),
+        (Date.now() - new Date(member.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 365.25),
       )
     : null
   const sex = (member.sex === 'M' ? 'male' : member.sex === 'F' ? 'female' : null) as

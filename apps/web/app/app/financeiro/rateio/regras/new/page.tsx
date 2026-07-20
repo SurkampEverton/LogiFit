@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { companies, persons } from '@repo/db/schema'
 /**
  * `/app/financeiro/rateio/regras/new` — criar allocation_rule (Sprint 16 Faixa C).
  */
-import { and, asc, eq } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { companies, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../../../lib/session'
 import { NewAllocationRuleForm } from './new-allocation-rule-form'
 
@@ -34,8 +34,8 @@ export default async function NewAllocationRulePage() {
       {companiesList.length < 2 ? (
         <div className="ev-card" style={{ padding: 'var(--ev-space-lg)' }}>
           <p>
-            Rateio precisa de pelo menos 2 companies no tenant. Atualmente:{' '}
-            {companiesList.length} company(s).
+            Rateio precisa de pelo menos 2 companies no tenant. Atualmente: {companiesList.length}{' '}
+            company(s).
           </p>
         </div>
       ) : (

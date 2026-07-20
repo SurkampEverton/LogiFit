@@ -28,12 +28,12 @@ export default async function UploadExamPage() {
       <div className="ev-portal-callout">
         <h2 className="ev-portal-h2">Upload em breve</h2>
         <p>
-          O upload via drag-drop entra na próxima versão (Sprint 33b — depende da integração
-          MinIO + scan de segurança).
+          O upload via drag-drop entra na próxima versão (Sprint 33b — depende da integração MinIO +
+          scan de segurança).
         </p>
         <p>
-          Por enquanto: <strong>envie por WhatsApp da clínica</strong>. O sistema reconhece
-          como exame e processa automaticamente.
+          Por enquanto: <strong>envie por WhatsApp da clínica</strong>. O sistema reconhece como
+          exame e processa automaticamente.
         </p>
       </div>
 

@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { equipment, equipmentMaintenance } from '@repo/db/schema'
 /**
  * `/app/vigilancia/equipamentos` — lista de equipamentos (Sprint 25 Faixa C).
  */
 import { and, asc, eq, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { equipment, equipmentMaintenance } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -74,8 +74,8 @@ export default async function EquipamentosListPage() {
       {rows.length === 0 ? (
         <div className="ev-card" style={{ padding: 'var(--ev-space-lg)' }}>
           <p style={{ marginTop: 0 }}>
-            Nenhum equipamento cadastrado. Adicione equipamentos regulados ANVISA
-            (ultrassom, TENS, laser, crioterapia, bioimpedância, etc).
+            Nenhum equipamento cadastrado. Adicione equipamentos regulados ANVISA (ultrassom, TENS,
+            laser, crioterapia, bioimpedância, etc).
           </p>
         </div>
       ) : (

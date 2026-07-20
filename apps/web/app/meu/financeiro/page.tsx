@@ -1,3 +1,4 @@
+import { pool } from '@repo/db/client'
 /**
  * /meu/financeiro — cobranças do paciente. Sprint 26 Faixa C (26b).
  *
@@ -7,7 +8,6 @@
  * RLS member: invoices.member_id = current_setting('app.member_id').
  */
 import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { withMemberContext } from '../../lib/member-session'
 import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
 import { PassportNeedsLink } from '../_components/passport-needs-link'

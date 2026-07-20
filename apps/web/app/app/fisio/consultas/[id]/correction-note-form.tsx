@@ -39,8 +39,8 @@ export function CorrectionNoteForm({ consultaId }: { consultaId: string }) {
   return (
     <form onSubmit={submit} className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
       <p style={{ marginTop: 0, fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
-        Nota corretiva é append-only — entra na audit chain (regra 39) e fica anexada
-        ao prontuário sem alterar o conteúdo original assinado.
+        Nota corretiva é append-only — entra na audit chain (regra 39) e fica anexada ao prontuário
+        sem alterar o conteúdo original assinado.
       </p>
       <label className="ev-stack" style={{ gap: 4 }}>
         <span>Motivo</span>

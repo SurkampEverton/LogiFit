@@ -1,11 +1,11 @@
+import { db } from '@repo/db/client'
+import { allocationRules, companies, persons } from '@repo/db/schema'
 /**
  * `/app/financeiro/rateio/regras/[id]/simular` — simulador de rateio (Sprint 16 Faixa C).
  */
 import { and, asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import { allocationRules, companies, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../../../../lib/session'
 import { SimulatorForm } from './simulator-form'
 

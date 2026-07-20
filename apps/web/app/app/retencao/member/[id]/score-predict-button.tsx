@@ -27,7 +27,12 @@ export function ScorePredictButton({ memberId }: { memberId: string }) {
       <button onClick={() => run(false)} className="ev-btn ev-btn-primary" disabled={pending}>
         {pending ? 'Calculando...' : 'Calcular agora'}
       </button>
-      <button onClick={() => run(true)} className="ev-btn ev-btn-ghost" disabled={pending} title="Ignora cache">
+      <button
+        onClick={() => run(true)}
+        className="ev-btn ev-btn-ghost"
+        disabled={pending}
+        title="Ignora cache"
+      >
         ↻ Forçar
       </button>
       {message && (

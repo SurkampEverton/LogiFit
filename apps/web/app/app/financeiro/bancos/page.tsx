@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { bankAccounts, companies, persons } from '@repo/db/schema'
 /**
  * `/app/financeiro/bancos` — lista de contas bancárias (Sprint 17 Faixa C).
  */
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { bankAccounts, companies, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -119,8 +119,7 @@ export default async function BancosListPage() {
               <span className="ev-badge">{KIND_LABELS[acc.kind] ?? acc.kind}</span>
             </div>
             <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
-              {acc.bankCode} · {acc.bankName} ·{' '}
-              {acc.agency ? `Ag ${acc.agency}` : ''}{' '}
+              {acc.bankCode} · {acc.bankName} · {acc.agency ? `Ag ${acc.agency}` : ''}{' '}
               {acc.accountNumber}
               {acc.accountDigit ? `-${acc.accountDigit}` : ''}
             </div>

@@ -1,3 +1,4 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/treinos/adaptacao-pendente` — fila do instrutor (Sprint 27 Faixa C).
  *
@@ -7,7 +8,6 @@
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -62,7 +62,12 @@ export default async function FilaAdaptacaoPage() {
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>Fila do instrutor</h1>
         <span style={{ color: 'var(--ev-text-muted)' }}>
@@ -73,8 +78,8 @@ export default async function FilaAdaptacaoPage() {
       {rows.length === 0 ? (
         <section className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
           <p style={{ color: 'var(--ev-text-muted)' }}>
-            Nenhuma adaptação pendente. Quando um fisioterapeuta registrar CID de lesão em
-            paciente que também é aluno, a sugestão aparecerá aqui.
+            Nenhuma adaptação pendente. Quando um fisioterapeuta registrar CID de lesão em paciente
+            que também é aluno, a sugestão aparecerá aqui.
           </p>
         </section>
       ) : (
@@ -105,7 +110,14 @@ export default async function FilaAdaptacaoPage() {
                     <p style={{ marginTop: 'var(--ev-space-2)' }}>{r.changes.summary}</p>
                   ) : null}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-end',
+                    gap: 2,
+                  }}
+                >
                   {(r.changes?.avoidCount ?? 0) > 0 ? (
                     <span style={{ color: 'var(--ev-danger)', fontWeight: 600 }}>
                       {r.changes!.avoidCount} avoid

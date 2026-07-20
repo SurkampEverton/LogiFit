@@ -1,11 +1,11 @@
+import { db } from '@repo/db/client'
+import { members, persons } from '@repo/db/schema'
 /**
  * `/app/fisio/evolucoes/new?memberId=X` — criação rápida (Sprint 21 Faixa C).
  */
 import { and, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { db } from '@repo/db/client'
-import { members, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 import { NewEvolucaoForm } from './new-evolucao-form'
 
@@ -35,18 +35,12 @@ export default async function NewEvolucaoPage({
         <h1 style={{ margin: 0 }}>Nova evolução</h1>
         <span style={{ color: 'var(--ev-muted)' }}>{member.name ?? '—'}</span>
         <span style={{ flex: 1 }} />
-        <Link
-          href={`/app/fisio/pacientes/${memberId}/evolucoes`}
-          className="ev-btn ev-btn-ghost"
-        >
+        <Link href={`/app/fisio/pacientes/${memberId}/evolucoes`} className="ev-btn ev-btn-ghost">
           ← Voltar
         </Link>
       </header>
 
-      <NewEvolucaoForm
-        memberId={memberId}
-        appointmentId={params.appointmentId ?? null}
-      />
+      <NewEvolucaoForm memberId={memberId} appointmentId={params.appointmentId ?? null} />
     </div>
   )
 }

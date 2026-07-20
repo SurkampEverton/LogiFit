@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { cleaningChecklists, cleaningLogs, persons, users } from '@repo/db/schema'
 /**
  * `/app/vigilancia/limpeza` — registro de limpeza (Sprint 25 Faixa C).
  */
 import { and, asc, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { cleaningChecklists, cleaningLogs, persons, users } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -60,8 +60,8 @@ export default async function LimpezaPage() {
       {checklists.length === 0 ? (
         <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
           <p style={{ marginTop: 0 }}>
-            Nenhum checklist cadastrado. Configure templates por ambiente (sala
-            fisio, vestiário, recepção) com itens obrigatórios e opcionais.
+            Nenhum checklist cadastrado. Configure templates por ambiente (sala fisio, vestiário,
+            recepção) com itens obrigatórios e opcionais.
           </p>
         </div>
       ) : (
@@ -113,11 +113,17 @@ export default async function LimpezaPage() {
                 <td>{l.completionPct ?? 0}%</td>
                 <td>
                   {l.isComplete ? (
-                    <span className="ev-badge" style={{ background: 'var(--ev-success-soft, #dcfce7)' }}>
+                    <span
+                      className="ev-badge"
+                      style={{ background: 'var(--ev-success-soft, #dcfce7)' }}
+                    >
                       ✓ Completo
                     </span>
                   ) : (
-                    <span className="ev-badge" style={{ background: 'var(--ev-warning-soft, #fef9c3)' }}>
+                    <span
+                      className="ev-badge"
+                      style={{ background: 'var(--ev-warning-soft, #fef9c3)' }}
+                    >
                       ⚠ Incompleto
                     </span>
                   )}

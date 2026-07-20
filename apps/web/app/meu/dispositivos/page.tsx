@@ -1,9 +1,9 @@
+import { pool } from '@repo/db/client'
 /**
  * /meu/dispositivos — lista de dispositivos conectados + opções de conectar.
  *   Sprint 32 Faixa C (ADR 0049).
  */
 import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { withMemberContext } from '../../lib/member-session'
 import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
 import { PassportNeedsLink } from '../_components/passport-needs-link'
@@ -71,7 +71,12 @@ const AVAILABLE_PROVIDERS = [
 
 function formatDate(d: Date | null): string {
   if (!d) return '—'
-  return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 export default async function MeuDispositivosPage() {
@@ -94,7 +99,9 @@ export default async function MeuDispositivosPage() {
   })
 
   const connectedProviders = new Set(
-    connections.filter((c) => c.status === 'active' || c.status === 'pending').map((c) => c.provider),
+    connections
+      .filter((c) => c.status === 'active' || c.status === 'pending')
+      .map((c) => c.provider),
   )
   const availableToConnect = AVAILABLE_PROVIDERS.filter((p) => !connectedProviders.has(p))
 
@@ -182,8 +189,8 @@ export default async function MeuDispositivosPage() {
       ) : null}
 
       <p className="ev-portal-muted" style={{ fontSize: 'var(--ev-text-xs)' }}>
-        Provedores OAuth reais (Garmin, Oura, Fitbit) + Web Bluetooth ficam na próxima
-        versão. Dados importados via arquivo (CSV InBody) já funcionam.
+        Provedores OAuth reais (Garmin, Oura, Fitbit) + Web Bluetooth ficam na próxima versão. Dados
+        importados via arquivo (CSV InBody) já funcionam.
       </p>
 
       <Link href="/meu/dispositivos/historico" className="ev-portal-button ev-portal-button--ghost">

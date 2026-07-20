@@ -8,7 +8,7 @@
  * Sprint 28b: streaming SSE — modelo retorna tool calls progressivamente +
  * cliente renderiza conforme chega. MVP entrega resposta batch única.
  */
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { composeGenUIResponse } from '../../../app/copilot/genui-actions'
 
 export const runtime = 'nodejs'

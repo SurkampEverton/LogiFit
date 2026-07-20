@@ -1,9 +1,9 @@
+import { MessageHost, Toaster } from '@repo/ui/messages'
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
-import { headers } from 'next/headers'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
-import { MessageHost, Toaster } from '@repo/ui/messages'
+import { Inter } from 'next/font/google'
+import { headers } from 'next/headers'
 import './globals.css'
 
 const inter = Inter({
@@ -33,11 +33,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const [locale, messages, headerStore] = await Promise.all([
-    getLocale(),
-    getMessages(),
-    headers(),
-  ])
+  const [locale, messages, headerStore] = await Promise.all([getLocale(), getMessages(), headers()])
   const nonce = headerStore.get('x-nonce') ?? undefined
 
   return (

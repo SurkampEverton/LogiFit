@@ -156,8 +156,8 @@ export function MemberQrDisplay({ memberId }: { memberId: string }) {
         {data ? `Atualiza em ${countdown}s` : 'aguarde…'}
       </div>
       <p className="text-xs text-center text-[color:var(--ev-warning, #f59e0b)]">
-        ⚠ MVP: QR é placeholder visual. Sprint 09+ usa lib qrcode pra QR
-        leitor-compatível real (~12KB bundle).
+        ⚠ MVP: QR é placeholder visual. Sprint 09+ usa lib qrcode pra QR leitor-compatível real
+        (~12KB bundle).
       </p>
     </div>
   )

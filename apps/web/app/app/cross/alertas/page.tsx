@@ -1,3 +1,4 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/cross/alertas` — lista de todos os injury_alerts (Sprint 27 Faixa C).
  *
@@ -6,7 +7,6 @@
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -84,7 +84,12 @@ export default async function AlertasListPage({ searchParams }: PageProps) {
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>Alertas de lesão</h1>
         <span style={{ flex: 1 }} />
@@ -152,7 +157,7 @@ export default async function AlertasListPage({ searchParams }: PageProps) {
                   {STATUS_LABEL[r.status] ?? r.status}
                 </td>
                 <td style={{ padding: 'var(--ev-space-2)', color: 'var(--ev-text-muted)' }}>
-                  {r.blocked_reason ? BLOCKED_LABEL[r.blocked_reason] ?? r.blocked_reason : '—'}
+                  {r.blocked_reason ? (BLOCKED_LABEL[r.blocked_reason] ?? r.blocked_reason) : '—'}
                 </td>
                 <td style={{ padding: 'var(--ev-space-2)' }}>
                   {new Date(r.created_at).toLocaleString('pt-BR')}

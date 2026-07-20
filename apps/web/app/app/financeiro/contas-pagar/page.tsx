@@ -1,17 +1,12 @@
+import { db } from '@repo/db/client'
+import { accountsPayable, chartOfAccounts, persons, suppliers } from '@repo/db/schema'
 /**
  * `/app/financeiro/contas-pagar` — lista de AP filtrável (Sprint 15 Faixa C).
  *
  * Filtros: status, supplier (search), company, due range.
  */
-import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm'
+import { and, asc, eq, gte, lte } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  accountsPayable,
-  chartOfAccounts,
-  persons,
-  suppliers,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -38,7 +33,11 @@ const STATUS_BADGE: Record<string, { bg: string; fg: string; label: string }> = 
   },
   scheduled: { bg: 'var(--ev-info-bg, #dbeafe)', fg: 'var(--ev-info, #1e40af)', label: 'Agendada' },
   paid: { bg: 'var(--ev-success-bg, #dcfce7)', fg: 'var(--ev-success, #16a34a)', label: 'Paga' },
-  cancelled: { bg: 'var(--ev-muted-bg, #e5e7eb)', fg: 'var(--ev-muted, #6b7280)', label: 'Cancelada' },
+  cancelled: {
+    bg: 'var(--ev-muted-bg, #e5e7eb)',
+    fg: 'var(--ev-muted, #6b7280)',
+    label: 'Cancelada',
+  },
   reconciled: {
     bg: 'var(--ev-success-bg, #dcfce7)',
     fg: 'var(--ev-success, #16a34a)',

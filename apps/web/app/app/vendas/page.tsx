@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { leadStages, leads, persons } from '@repo/db/schema'
 /**
  * `/app/vendas` — board kanban do funil de vendas (Sprint 10 Faixa C).
  *
@@ -13,8 +15,6 @@
  */
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { leadStages, leads, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -95,8 +95,8 @@ export default async function VendasBoardPage() {
 
       {stages.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-6 text-sm text-[color:var(--ev-text-muted)]">
-          Nenhum estágio cadastrado pra este tenant. Seed deve ter populado 6
-          estágios default; verifique com <code>pnpm db:seed</code>.
+          Nenhum estágio cadastrado pra este tenant. Seed deve ter populado 6 estágios default;
+          verifique com <code>pnpm db:seed</code>.
         </div>
       ) : (
         <div

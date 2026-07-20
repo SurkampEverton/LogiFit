@@ -36,12 +36,12 @@ export function PassportNeedsLink({ feature, hideLinkButtons = false }: Passport
           🔗 Precisa de vínculo com uma empresa
         </h1>
         <p style={{ fontSize: 'var(--ev-text-sm)' }}>
-          Pra ver {feature}, você precisa estar vinculado a uma clínica ou academia que
-          use o LogiFit.
+          Pra ver {feature}, você precisa estar vinculado a uma clínica ou academia que use o
+          LogiFit.
         </p>
         <p className="ev-portal-muted" style={{ fontSize: 'var(--ev-text-sm)' }}>
-          Você pode convidar uma empresa, aceitar um convite recebido, ou pedir pra
-          recepção da sua clínica te cadastrar.
+          Você pode convidar uma empresa, aceitar um convite recebido, ou pedir pra recepção da sua
+          clínica te cadastrar.
         </p>
         {!hideLinkButtons ? (
           <div

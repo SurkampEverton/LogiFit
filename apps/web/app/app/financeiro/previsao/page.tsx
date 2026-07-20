@@ -31,7 +31,9 @@ export default async function PrevisaoPage({
   await requireFullSession('/app/financeiro/previsao')
 
   const monthsAhead = Math.min(12, Math.max(1, Number(params.months ?? 3) || 3))
-  const manualChurn = params.churn ? Math.min(1, Math.max(0, Number(params.churn) / 100)) : undefined
+  const manualChurn = params.churn
+    ? Math.min(1, Math.max(0, Number(params.churn) / 100))
+    : undefined
 
   const result = await forecastRevenueAction({ monthsAhead, manualChurnRate: manualChurn })
   const data = result.ok ? result.data : null
@@ -159,11 +161,10 @@ export default async function PrevisaoPage({
                 </thead>
                 <tbody>
                   {data.forecast.monthly.map((m) => (
-                    <tr
-                      key={m.monthOffset}
-                      className="border-b border-[color:var(--ev-border)]"
-                    >
-                      <td className="py-2">+{m.monthOffset} mês{m.monthOffset > 1 ? 'es' : ''}</td>
+                    <tr key={m.monthOffset} className="border-b border-[color:var(--ev-border)]">
+                      <td className="py-2">
+                        +{m.monthOffset} mês{m.monthOffset > 1 ? 'es' : ''}
+                      </td>
                       <td className="py-2 text-right tabular-nums text-[color:var(--ev-text-muted)]">
                         {formatBrl(m.lowCents)}
                       </td>
@@ -179,8 +180,8 @@ export default async function PrevisaoPage({
               </table>
             )}
             <p className="text-[10px] text-[color:var(--ev-text-muted)]">
-              Heurística simples: baseline × (1 - churn)^N. Modelo preditivo (família A
-              Gemini LLM ou família B sklearn) aterrissa em Sprint 19 via ADR 0027.
+              Heurística simples: baseline × (1 - churn)^N. Modelo preditivo (família A Gemini LLM
+              ou família B sklearn) aterrissa em Sprint 19 via ADR 0027.
             </p>
           </section>
         </>

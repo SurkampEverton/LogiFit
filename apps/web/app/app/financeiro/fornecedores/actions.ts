@@ -14,13 +14,9 @@
  */
 
 import { db } from '@repo/db/client'
-import {
-  accountsPayable,
-  persons,
-  suppliers,
-} from '@repo/db/schema'
+import { accountsPayable, persons, suppliers } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
-import { and, asc, desc, eq, ilike, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { wrapServerAction } from '../../../lib/wrap-action'
 
@@ -78,22 +74,14 @@ const ArchiveSupplierInputSchema = z.object({
 
 export const createSupplier = wrapServerAction(
   { module: 'financeiro', action: 'supplier.create', resourceType: 'suppliers' },
-  async (
-    input: z.infer<typeof CreateSupplierInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateSupplierInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateSupplierInputSchema.parse(input)
 
     // Valida persons existe no tenant
     const [p] = await db
       .select({ id: persons.id })
       .from(persons)
-      .where(
-        and(
-          eq(persons.id, parsed.personId),
-          eq(persons.tenantId, session.logifit.tenantId),
-        ),
-      )
+      .where(and(eq(persons.id, parsed.personId), eq(persons.tenantId, session.logifit.tenantId)))
       .limit(1)
     if (!p) {
       throw new ApiException({
@@ -130,16 +118,14 @@ export const createSupplier = wrapServerAction(
 
 export const updateSupplier = wrapServerAction(
   { module: 'financeiro', action: 'supplier.update', resourceType: 'suppliers' },
-  async (
-    input: z.infer<typeof UpdateSupplierInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof UpdateSupplierInputSchema>, { session, setAuditResource }) => {
     const parsed = UpdateSupplierInputSchema.parse(input)
     const set: Record<string, unknown> = { updatedAt: new Date() }
     const p = parsed.patch
     if (p.companyId !== undefined) set.companyId = p.companyId
     if (p.defaultPaymentMethod !== undefined) set.defaultPaymentMethod = p.defaultPaymentMethod
-    if (p.defaultPaymentTermDays !== undefined) set.defaultPaymentTermDays = p.defaultPaymentTermDays
+    if (p.defaultPaymentTermDays !== undefined)
+      set.defaultPaymentTermDays = p.defaultPaymentTermDays
     if (p.bankAccount !== undefined) set.bankAccount = p.bankAccount
     if (p.notes !== undefined) set.notes = p.notes
 
@@ -147,10 +133,7 @@ export const updateSupplier = wrapServerAction(
       .update(suppliers)
       .set(set)
       .where(
-        and(
-          eq(suppliers.id, parsed.supplierId),
-          eq(suppliers.tenantId, session.logifit.tenantId),
-        ),
+        and(eq(suppliers.id, parsed.supplierId), eq(suppliers.tenantId, session.logifit.tenantId)),
       )
       .returning({ id: suppliers.id })
     if (!row)
@@ -168,10 +151,7 @@ export const updateSupplier = wrapServerAction(
 
 export const listSuppliers = wrapServerAction(
   { module: 'financeiro', action: 'supplier.list' },
-  async (
-    input: z.infer<typeof ListSuppliersInputSchema> | undefined,
-    { session },
-  ) => {
+  async (input: z.infer<typeof ListSuppliersInputSchema> | undefined, { session }) => {
     const parsed = ListSuppliersInputSchema.parse(input ?? {})
     const where = [eq(suppliers.tenantId, session.logifit.tenantId)]
     if (!parsed.includeArchived) where.push(isNull(suppliers.archivedAt))
@@ -217,10 +197,7 @@ export const listSuppliers = wrapServerAction(
 
 export const getSupplier = wrapServerAction(
   { module: 'financeiro', action: 'supplier.get', resourceType: 'suppliers' },
-  async (
-    input: z.infer<typeof GetSupplierInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof GetSupplierInputSchema>, { session, setAuditResource }) => {
     const parsed = GetSupplierInputSchema.parse(input)
     const [row] = await db
       .select({
@@ -242,10 +219,7 @@ export const getSupplier = wrapServerAction(
       .from(suppliers)
       .leftJoin(persons, eq(persons.id, suppliers.personId))
       .where(
-        and(
-          eq(suppliers.id, parsed.supplierId),
-          eq(suppliers.tenantId, session.logifit.tenantId),
-        ),
+        and(eq(suppliers.id, parsed.supplierId), eq(suppliers.tenantId, session.logifit.tenantId)),
       )
       .limit(1)
     if (!row) {
@@ -281,10 +255,7 @@ export const getSupplier = wrapServerAction(
 
 export const archiveSupplier = wrapServerAction(
   { module: 'financeiro', action: 'supplier.archive', resourceType: 'suppliers' },
-  async (
-    input: z.infer<typeof ArchiveSupplierInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ArchiveSupplierInputSchema>, { session, setAuditResource }) => {
     const parsed = ArchiveSupplierInputSchema.parse(input)
     // Bloqueio: AP não-concluídas pendentes
     const [openAp] = await db
@@ -307,10 +278,7 @@ export const archiveSupplier = wrapServerAction(
       .update(suppliers)
       .set({ archivedAt: new Date(), updatedAt: new Date() })
       .where(
-        and(
-          eq(suppliers.id, parsed.supplierId),
-          eq(suppliers.tenantId, session.logifit.tenantId),
-        ),
+        and(eq(suppliers.id, parsed.supplierId), eq(suppliers.tenantId, session.logifit.tenantId)),
       )
       .returning({ id: suppliers.id })
     if (!row)

@@ -2,11 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import {
-  attestRegistration,
-  createRegistration,
-  updateRegistrationSituation,
-} from './actions'
+import { attestRegistration, createRegistration, updateRegistrationSituation } from './actions'
 
 type CouncilBody = 'CRM' | 'CRN' | 'CREFITO' | 'CREF' | 'CRF' | 'CRP' | 'COREN' | 'CRO'
 type Situation =

@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { persons, suppliers } from '@repo/db/schema'
 /**
  * `/app/financeiro/fornecedores` — lista de fornecedores (Sprint 15 Faixa C).
  */
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { persons, suppliers } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'

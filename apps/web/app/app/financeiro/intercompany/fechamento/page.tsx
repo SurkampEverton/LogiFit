@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { companies, intercompanyEntries, persons } from '@repo/db/schema'
 /**
  * `/app/financeiro/intercompany/fechamento` — fechamento mensal IC (Sprint 16 Faixa C).
  *
@@ -5,8 +7,6 @@
  */
 import { and, eq, gte, lte, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { companies, intercompanyEntries, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -210,10 +210,7 @@ export default async function ICFechamentoPage({
                   <td
                     style={{
                       textAlign: 'right',
-                      color:
-                        Number(p.pendingCents) > 0
-                          ? 'var(--ev-warning, #92400e)'
-                          : 'inherit',
+                      color: Number(p.pendingCents) > 0 ? 'var(--ev-warning, #92400e)' : 'inherit',
                       fontWeight: Number(p.pendingCents) > 0 ? 600 : 400,
                     }}
                   >

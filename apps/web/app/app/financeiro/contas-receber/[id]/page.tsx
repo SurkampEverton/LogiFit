@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { accountsReceivable, apArPayments, chartOfAccounts, persons } from '@repo/db/schema'
 /**
  * `/app/financeiro/contas-receber/[id]` — detalhe AR + ações
  * (markIssued/registerReceived/cancel). Sprint 15 Faixa C.
@@ -5,13 +7,6 @@
 import { and, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import {
-  accountsReceivable,
-  apArPayments,
-  chartOfAccounts,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 import { ARActions } from './ar-actions'
 
@@ -30,7 +25,11 @@ const STATUS_BADGE: Record<string, { bg: string; fg: string; label: string }> = 
     fg: 'var(--ev-danger, #dc2626)',
     label: 'Em atraso',
   },
-  cancelled: { bg: 'var(--ev-muted-bg, #e5e7eb)', fg: 'var(--ev-muted, #6b7280)', label: 'Cancelada' },
+  cancelled: {
+    bg: 'var(--ev-muted-bg, #e5e7eb)',
+    fg: 'var(--ev-muted, #6b7280)',
+    label: 'Cancelada',
+  },
   refunded: {
     bg: 'var(--ev-warning-bg, #fef3c7)',
     fg: 'var(--ev-warning, #92400e)',
@@ -166,7 +165,9 @@ export default async function ARDetailPage({ params }: { params: Promise<{ id: s
           <dd style={{ margin: 0 }}>{ar.docNumber ?? '—'}</dd>
         </dl>
         {ar.description && (
-          <p style={{ marginTop: 'var(--ev-space-md)', whiteSpace: 'pre-wrap' }}>{ar.description}</p>
+          <p style={{ marginTop: 'var(--ev-space-md)', whiteSpace: 'pre-wrap' }}>
+            {ar.description}
+          </p>
         )}
       </section>
 

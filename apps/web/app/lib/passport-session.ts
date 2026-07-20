@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from 'node:crypto'
 /**
  * Passport global session helpers — Sprint 02b3 (ADR 0094).
  *
@@ -17,7 +18,6 @@
  * Sprint 02b4: refresh token rotation single-use (atualmente long-lived 30d).
  */
 import { pool } from '@repo/db/client'
-import { createHash, randomBytes } from 'node:crypto'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
@@ -226,8 +226,7 @@ export async function withPassportContext<T>(
  * Caller (`loginPassport` Sprint 02b3 completo) chama após validar TOTP.
  */
 export async function markPassportSessionMfaVerified(sessionId: string): Promise<void> {
-  await pool.query(
-    `UPDATE passport_global_sessions SET mfa_verified_at = now() WHERE id = $1`,
-    [sessionId],
-  )
+  await pool.query(`UPDATE passport_global_sessions SET mfa_verified_at = now() WHERE id = $1`, [
+    sessionId,
+  ])
 }

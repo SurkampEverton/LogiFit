@@ -1,9 +1,9 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/nutri` — hub Nutrição (Sprint 29 Faixa C — abre Fase 3).
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -39,7 +39,12 @@ export default async function NutriHubPage() {
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>Nutrição</h1>
         <span style={{ color: 'var(--ev-text-muted)' }}>
@@ -91,7 +96,9 @@ export default async function NutriHubPage() {
           <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
             Com substituições
           </div>
-          <div style={{ fontSize: 'var(--ev-text-2xl)', fontWeight: 600 }}>{kpi.foods_with_subs}</div>
+          <div style={{ fontSize: 'var(--ev-text-2xl)', fontWeight: 600 }}>
+            {kpi.foods_with_subs}
+          </div>
         </div>
       </section>
 
@@ -104,12 +111,13 @@ export default async function NutriHubPage() {
             <Link href="/app/nutri/alimentos">/app/nutri/alimentos</Link>.
           </li>
           <li>
-            <strong>Plano alimentar versionado</strong> — editar gera nova versão (parent_meal_plan_id),
-            histórico preservado. Cálculo nutricional em tempo real soma macros + micros por gramas.
+            <strong>Plano alimentar versionado</strong> — editar gera nova versão
+            (parent_meal_plan_id), histórico preservado. Cálculo nutricional em tempo real soma
+            macros + micros por gramas.
           </li>
           <li>
-            <strong>Substituições calóricas</strong> — para cada item, top-N equivalentes ordenados por
-            proximidade calórica (ADR 0081 § rankEquivalents).
+            <strong>Substituições calóricas</strong> — para cada item, top-N equivalentes ordenados
+            por proximidade calórica (ADR 0081 § rankEquivalents).
           </li>
           <li>
             <strong>PDF com branding</strong> — configure logo + cores em{' '}

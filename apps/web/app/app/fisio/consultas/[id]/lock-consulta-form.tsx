@@ -38,8 +38,7 @@ export function LockConsultaForm({
       const r = await lockConsulta({
         consultaId,
         attempt,
-        signatureProvider:
-          attempt !== 'authenticated_mfa' ? 'placeholder-icp-provider' : null,
+        signatureProvider: attempt !== 'authenticated_mfa' ? 'placeholder-icp-provider' : null,
       })
       if (!r.ok) {
         setError(r.error.message)

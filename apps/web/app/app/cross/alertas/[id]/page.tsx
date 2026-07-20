@@ -1,3 +1,4 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/cross/alertas/[id]` — detalhe do alerta (Sprint 27 Faixa C).
  *
@@ -6,7 +7,6 @@
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -83,7 +83,12 @@ export default async function AlertDetailPage({ params }: PageProps) {
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>Alerta {alert.id.slice(0, 8)}</h1>
         <span style={{ color: 'var(--ev-text-muted)' }}>

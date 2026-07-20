@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 /**
  * POST /api/acesso/heartbeat — Sprint 08 Faixa B.
  *
@@ -6,7 +7,6 @@
  * e emite `device.offline` event.
  */
 import { pool } from '@repo/db/client'
-import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'

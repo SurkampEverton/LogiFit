@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { aiCommitteeDecisions, aiCommitteeMembers, aiCommittees, persons } from '@repo/db/schema'
 /**
  * `/app/settings/compliance/comite-ia` — gestão do Comitê de IA
  * (Sprint 01b fechamento — CFM 2.454/2026 + regra 28).
@@ -10,14 +12,6 @@
  * upload de ata em PDF (MinIO) + assinatura digital + workflow de aprovação.
  */
 import { desc, eq } from 'drizzle-orm'
-import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  aiCommitteeDecisions,
-  aiCommitteeMembers,
-  aiCommittees,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -86,9 +80,8 @@ export default async function ComiteIaPage() {
       <header className="space-y-1">
         <h1 className="text-3xl font-semibold tracking-tight">Comitê de IA</h1>
         <p className="text-sm text-[color:var(--ev-text-muted)]">
-          Resolução CFM 2.454/2026 + regra 28 LogiFit. Comitê interno obrigatório
-          pra features IA classe SaMD II+. Ata + composição mínima + decisões
-          documentadas.
+          Resolução CFM 2.454/2026 + regra 28 LogiFit. Comitê interno obrigatório pra features IA
+          classe SaMD II+. Ata + composição mínima + decisões documentadas.
         </p>
       </header>
 
@@ -96,13 +89,12 @@ export default async function ComiteIaPage() {
         <div className="rounded-xl border border-[color:var(--ev-warning, #f59e0b)] p-6 space-y-3">
           <p className="font-semibold">⚠ Comitê de IA não cadastrado</p>
           <p className="text-sm text-[color:var(--ev-text-muted)]">
-            Sem Comitê ativo, features de IA classe SaMD II+ (chat clínico,
-            sugestão diagnóstica, etc) ficam bloqueadas. Cadastre Comitê + ata.
+            Sem Comitê ativo, features de IA classe SaMD II+ (chat clínico, sugestão diagnóstica,
+            etc) ficam bloqueadas. Cadastre Comitê + ata.
           </p>
           <p className="text-xs text-[color:var(--ev-text-muted)]">
-            <strong>Composição mínima recomendada</strong> (LogiFit best practice):
-            Coordenador + 1 profissional regulado (médico/fisio/nutri/enf) +
-            1 TI/Dados + 1 representante paciente.
+            <strong>Composição mínima recomendada</strong> (LogiFit best practice): Coordenador + 1
+            profissional regulado (médico/fisio/nutri/enf) + 1 TI/Dados + 1 representante paciente.
           </p>
           <p className="text-xs text-[color:var(--ev-text-muted)]">
             Sprint 06+: form de cadastro + upload de ata em PDF.
@@ -144,9 +136,7 @@ export default async function ComiteIaPage() {
           <section className="rounded-xl border border-[color:var(--ev-border)] p-5 space-y-3">
             <h2 className="font-semibold">👥 Composição</h2>
             {members.length === 0 ? (
-              <p className="text-sm text-[color:var(--ev-text-muted)]">
-                Sem members cadastrados.
-              </p>
+              <p className="text-sm text-[color:var(--ev-text-muted)]">Sem members cadastrados.</p>
             ) : (
               <ul className="divide-y divide-[color:var(--ev-border)] text-sm">
                 {members
@@ -172,7 +162,10 @@ export default async function ComiteIaPage() {
             ) : (
               <ul className="space-y-3 text-sm">
                 {decisions.map((d) => (
-                  <li key={d.id} className="border-l-2 border-[color:var(--ev-border)] pl-3 space-y-1">
+                  <li
+                    key={d.id}
+                    className="border-l-2 border-[color:var(--ev-border)] pl-3 space-y-1"
+                  >
                     <div className="flex items-baseline justify-between gap-3">
                       <span className="font-medium">{d.subject}</span>
                       <span className="text-xs text-[color:var(--ev-text-muted)] tabular-nums">
@@ -203,9 +196,9 @@ export default async function ComiteIaPage() {
 
       <section className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-6 text-sm text-[color:var(--ev-text-muted)]">
         <p>
-          <strong>Sprint 06+:</strong> form de cadastro · upload de ata (MinIO) · workflow
-          de votação de decisões · hash chain sha256 das atas · gate de feature flag IA
-          clínica verificando `ai_committees.status='active'` antes de liberar.
+          <strong>Sprint 06+:</strong> form de cadastro · upload de ata (MinIO) · workflow de
+          votação de decisões · hash chain sha256 das atas · gate de feature flag IA clínica
+          verificando `ai_committees.status='active'` antes de liberar.
         </p>
       </section>
     </div>

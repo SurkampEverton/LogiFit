@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { memberEvents } from '@repo/db/schema'
 /**
  * `wrapMemberAction()` — wrapper LogiFit-specific de Server Action **do portal do paciente**.
  *
@@ -32,15 +34,9 @@
  *     },
  *   )
  */
-import { wrapAction, type WrapActionContext } from '@repo/errors'
-import { memberEvents } from '@repo/db/schema'
-import { db } from '@repo/db/client'
-import { z, type ZodTypeAny } from 'zod'
-import {
-  type MemberSessionClaims,
-  requireMemberSession,
-  withMemberContext,
-} from './member-session'
+import { type WrapActionContext, wrapAction } from '@repo/errors'
+import { type ZodTypeAny, z } from 'zod'
+import { type MemberSessionClaims, requireMemberSession, withMemberContext } from './member-session'
 
 /**
  * Kinds canônicos de evento do member portal (Sprint 02d3).
@@ -107,10 +103,7 @@ export interface WrappedMemberActionContext {
  */
 export function wrapMemberAction<TSchema extends ZodTypeAny, TData>(
   ctx: WrapMemberActionContext<TSchema>,
-  handler: (
-    input: z.infer<TSchema>,
-    wrapped: WrappedMemberActionContext,
-  ) => Promise<TData>,
+  handler: (input: z.infer<TSchema>, wrapped: WrappedMemberActionContext) => Promise<TData>,
 ): (rawInput: z.infer<TSchema>) => Promise<TData>
 export function wrapMemberAction<TArgs, TData>(
   ctx: WrapMemberActionContextNoSchema,

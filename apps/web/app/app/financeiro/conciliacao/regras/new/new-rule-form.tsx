@@ -6,7 +6,10 @@ import { createReconciliationRule } from '../actions'
 
 function parseBrlToCents(value: string): number {
   if (!value) return 0
-  const cleaned = value.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')
+  const cleaned = value
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.')
   const num = Number(cleaned)
   if (!Number.isFinite(num)) return 0
   return Math.round(num * 100)
@@ -161,9 +164,7 @@ export function NewReconciliationRuleForm() {
             <span>Sinal</span>
             <select
               value={amountSign}
-              onChange={(e) =>
-                setAmountSign(e.target.value as 'negative' | 'positive' | 'any')
-              }
+              onChange={(e) => setAmountSign(e.target.value as 'negative' | 'positive' | 'any')}
               className="ev-input"
             >
               <option value="any">Qualquer (entrada ou saída)</option>

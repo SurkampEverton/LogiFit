@@ -1,3 +1,4 @@
+import { pool } from '@repo/db/client'
 /**
  * /meu/treino — ficha de treino + sessões. Sprint 26 Faixa C (26b).
  *
@@ -7,7 +8,6 @@
  * `signedUrl(path, ttl)` exposto via Server Action.
  */
 import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { withMemberContext } from '../../lib/member-session'
 import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
 import { PassportNeedsLink } from '../_components/passport-needs-link'
@@ -150,9 +150,7 @@ export default async function MeuTreinoPage() {
                 </div>
               ) : null}
               {it.exercise_video_path ? (
-                <span className="ev-portal-muted">
-                  Vídeo demonstrativo disponível na execução
-                </span>
+                <span className="ev-portal-muted">Vídeo demonstrativo disponível na execução</span>
               ) : null}
             </li>
           ))}

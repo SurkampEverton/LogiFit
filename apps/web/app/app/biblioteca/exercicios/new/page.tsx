@@ -17,12 +17,9 @@ export default async function NewExercisePage() {
     <div className="mx-auto max-w-2xl px-6 py-8 space-y-6">
       <header className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Novo exercício
-          </h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Novo exercício</h1>
           <p className="text-sm text-[color:var(--ev-text-muted)]">
-            Cadastra no catálogo do tenant. Biblioteca global é gerenciada pela
-            LogiFit.
+            Cadastra no catálogo do tenant. Biblioteca global é gerenciada pela LogiFit.
           </p>
         </div>
         <Link

@@ -44,7 +44,11 @@ export async function GET(
 
   if (!secret) {
     return NextResponse.json(
-      { ok: false, error: 'NO_ACTIVE_SECRET', message: 'Tenant sem access_secret ativo — cadastre uma catraca primeiro' },
+      {
+        ok: false,
+        error: 'NO_ACTIVE_SECRET',
+        message: 'Tenant sem access_secret ativo — cadastre uma catraca primeiro',
+      },
       { status: 503 },
     )
   }

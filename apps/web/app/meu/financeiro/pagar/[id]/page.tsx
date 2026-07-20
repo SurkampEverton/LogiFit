@@ -1,3 +1,5 @@
+import { pool } from '@repo/db/client'
+import Link from 'next/link'
 /**
  * /meu/financeiro/pagar/[id] — checkout Asaas. Sprint 26 Faixa C (26b).
  *
@@ -9,8 +11,6 @@
  * redirect — exige ADR 0088 §checkout-embed.
  */
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { requireMemberSession, withMemberContext } from '../../../../lib/member-session'
 
 export const dynamic = 'force-dynamic'

@@ -10,7 +10,10 @@ interface Props {
 }
 
 function parseBrlToCents(value: string): number {
-  const cleaned = value.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')
+  const cleaned = value
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.')
   const num = Number(cleaned)
   if (!Number.isFinite(num) || num <= 0) return 0
   return Math.round(num * 100)
@@ -92,7 +95,12 @@ export function ARActions({ arId, status }: Props) {
       <h3 style={{ margin: 0 }}>Ações</h3>
       <div style={{ display: 'flex', gap: 'var(--ev-space-sm)', flexWrap: 'wrap' }}>
         {status === 'draft' && (
-          <button type="button" onClick={handleIssue} disabled={pending} className="ev-btn ev-btn-primary">
+          <button
+            type="button"
+            onClick={handleIssue}
+            disabled={pending}
+            className="ev-btn ev-btn-primary"
+          >
             Marcar como emitida
           </button>
         )}
@@ -106,7 +114,12 @@ export function ARActions({ arId, status }: Props) {
             >
               Registrar recebimento
             </button>
-            <button type="button" onClick={handleCancel} disabled={pending} className="ev-btn ev-btn-ghost">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={pending}
+              className="ev-btn ev-btn-ghost"
+            >
               Cancelar
             </button>
           </>
@@ -125,7 +138,9 @@ export function ARActions({ arId, status }: Props) {
           }}
         >
           <div style={{ display: 'flex', gap: 'var(--ev-space-sm)', flexWrap: 'wrap' }}>
-            <label style={{ flex: 1, minWidth: 140, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label
+              style={{ flex: 1, minWidth: 140, display: 'flex', flexDirection: 'column', gap: 4 }}
+            >
               <span>Valor (R$)</span>
               <input
                 type="text"
@@ -184,7 +199,12 @@ export function ARActions({ arId, status }: Props) {
             />
           </label>
           <div style={{ display: 'flex', gap: 'var(--ev-space-sm)' }}>
-            <button type="button" onClick={handleReceive} disabled={pending} className="ev-btn ev-btn-primary">
+            <button
+              type="button"
+              onClick={handleReceive}
+              disabled={pending}
+              className="ev-btn ev-btn-primary"
+            >
               Confirmar recebimento
             </button>
             <button

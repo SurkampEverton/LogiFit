@@ -1,3 +1,5 @@
+import { NextResponse } from 'next/server'
+import { z } from 'zod'
 /**
  * POST /api/ai/chat — Sprint 06 Faixa C (ADR 0064 + ADR 0075).
  *
@@ -18,8 +20,6 @@
  *   - SSE streaming exige API Route (não cabe em Server Action).
  */
 import { sendMessage } from '../../../app/assistente/actions'
-import { NextResponse } from 'next/server'
-import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -43,11 +43,16 @@ export async function POST(request: Request) {
 
   const result = await sendMessage(parsed)
   if (!result.ok) {
-    const status = result.error.code === 'AI_QUOTA_EXCEEDED' ? 402
-      : result.error.code === 'FORBIDDEN' ? 403
-      : result.error.code === 'NOT_FOUND' ? 404
-      : result.error.code === 'RATE_LIMITED' ? 429
-      : 500
+    const status =
+      result.error.code === 'AI_QUOTA_EXCEEDED'
+        ? 402
+        : result.error.code === 'FORBIDDEN'
+          ? 403
+          : result.error.code === 'NOT_FOUND'
+            ? 404
+            : result.error.code === 'RATE_LIMITED'
+              ? 429
+              : 500
     return NextResponse.json(result, { status })
   }
   return NextResponse.json(result)

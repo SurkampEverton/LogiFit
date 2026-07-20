@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { commissionPeriods, persons } from '@repo/db/schema'
 /**
  * `/app/rh/fechamento` — periods de fechamento (Sprint 23 Faixa C).
  */
 import { and, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { commissionPeriods, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -29,8 +29,7 @@ export default async function FechamentoPage({
   const status = params.status ?? 'all'
 
   const where = [eq(commissionPeriods.tenantId, tenantId)]
-  if (status !== 'all')
-    where.push(eq(commissionPeriods.status, status as 'draft'))
+  if (status !== 'all') where.push(eq(commissionPeriods.status, status as 'draft'))
 
   const rows = await db
     .select({
@@ -66,10 +65,9 @@ export default async function FechamentoPage({
 
       <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
         <p style={{ marginTop: 0, marginBottom: 0 }}>
-          Pipeline <strong>draft → approved → paid</strong>. closePeriod agrega
-          entries pendentes do mês; approvePeriod faz transição (requer permission
-          rh.approve); markPeriodPaid grava `asaas_transfer_id` quando Sprint 23b
-          integrar transferência real Asaas.
+          Pipeline <strong>draft → approved → paid</strong>. closePeriod agrega entries pendentes do
+          mês; approvePeriod faz transição (requer permission rh.approve); markPeriodPaid grava
+          `asaas_transfer_id` quando Sprint 23b integrar transferência real Asaas.
         </p>
       </div>
 

@@ -27,8 +27,8 @@ export default async function NovoDiaryPage({ searchParams }: PageProps) {
       <header>
         <h1 className="ev-portal-h1">Registrar refeição</h1>
         <p className="ev-portal-muted">
-          Registre o que comeu — pode ser texto livre ou selecionando alimentos do catálogo.
-          O nutri vai revisar e comentar.
+          Registre o que comeu — pode ser texto livre ou selecionando alimentos do catálogo. O nutri
+          vai revisar e comentar.
         </p>
       </header>
 

@@ -95,9 +95,7 @@ export function clearFeatureFlagCache(): void {
  * Útil em layout/page que precisa checar N flags pra rendering condicional
  * (ex: dashboard menu items por feature).
  */
-export async function getFeatureFlags(
-  keys: string[],
-): Promise<Record<string, boolean>> {
+export async function getFeatureFlags(keys: string[]): Promise<Record<string, boolean>> {
   const results = await Promise.all(keys.map((k) => isFeatureEnabled(k)))
   return Object.fromEntries(keys.map((k, i) => [k, results[i] ?? false]))
 }

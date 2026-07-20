@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { leadEvents, leadStages, leads, persons, proposals } from '@repo/db/schema'
 /**
  * `/app/vendas/leads/[id]` — detalhe do lead (Sprint 10 Faixa C).
  *
@@ -11,17 +13,9 @@
 import { and, asc, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import {
-  leadEvents,
-  leadStages,
-  leads,
-  persons,
-  proposals,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
-import { LeadStageSelector } from './lead-stage-selector'
 import { LeadActions } from './lead-actions'
+import { LeadStageSelector } from './lead-stage-selector'
 
 export const dynamic = 'force-dynamic'
 
@@ -184,9 +178,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
             </div>
             <div className="flex justify-between gap-2">
               <dt className="text-[color:var(--ev-text-muted)]">Criado em</dt>
-              <dd className="tabular-nums">
-                {leadRow.createdAt.toLocaleDateString('pt-BR')}
-              </dd>
+              <dd className="tabular-nums">{leadRow.createdAt.toLocaleDateString('pt-BR')}</dd>
             </div>
             <div className="flex justify-between gap-2">
               <dt className="text-[color:var(--ev-text-muted)]">Person vinculada</dt>
@@ -206,25 +198,18 @@ export default async function LeadDetailPage({ params }: PageProps) {
         <div className="rounded-xl border border-[color:var(--ev-border)] p-4 space-y-3">
           <h2 className="text-sm font-medium">Propostas ({proposalsRows.length})</h2>
           {proposalsRows.length === 0 ? (
-            <p className="text-xs text-[color:var(--ev-text-muted)]">
-              Nenhuma proposta enviada.
-            </p>
+            <p className="text-xs text-[color:var(--ev-text-muted)]">Nenhuma proposta enviada.</p>
           ) : (
             <ul className="space-y-2 text-sm">
               {proposalsRows.map((p) => (
-                <li
-                  key={p.id}
-                  className="rounded-md border border-[color:var(--ev-border)] p-2"
-                >
+                <li key={p.id} className="rounded-md border border-[color:var(--ev-border)] p-2">
                   <div className="flex justify-between items-center">
                     <div>
                       <div className="font-medium">v{p.version}</div>
                       <div className="text-xs text-[color:var(--ev-text-muted)]">
                         {formatCurrency(p.priceCents - p.discountCents)}
                         {p.discountCents > 0 && (
-                          <span className="ml-1 line-through">
-                            {formatCurrency(p.priceCents)}
-                          </span>
+                          <span className="ml-1 line-through">{formatCurrency(p.priceCents)}</span>
                         )}
                       </div>
                     </div>
@@ -245,9 +230,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
       <section className="rounded-xl border border-[color:var(--ev-border)] p-4 space-y-3">
         <h2 className="text-sm font-medium">Timeline</h2>
         {eventsRows.length === 0 ? (
-          <p className="text-xs text-[color:var(--ev-text-muted)]">
-            Nenhum evento registrado.
-          </p>
+          <p className="text-xs text-[color:var(--ev-text-muted)]">Nenhum evento registrado.</p>
         ) : (
           <ol className="space-y-2 text-sm">
             {eventsRows.map((e) => (

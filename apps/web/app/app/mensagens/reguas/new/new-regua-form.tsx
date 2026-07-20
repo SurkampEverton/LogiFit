@@ -57,9 +57,7 @@ export function NewReguaForm({ templates }: { templates: Template[] }) {
   }
 
   function toggleStopEvent(ev: string) {
-    setStopOn((prev) =>
-      prev.includes(ev) ? prev.filter((x) => x !== ev) : [...prev, ev],
-    )
+    setStopOn((prev) => (prev.includes(ev) ? prev.filter((x) => x !== ev) : [...prev, ev]))
   }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -85,7 +83,7 @@ export function NewReguaForm({ templates }: { templates: Template[] }) {
     }
 
     const dsl = {
-      trigger: { event: triggerEvent as typeof TRIGGER_EVENTS[number]['value'] },
+      trigger: { event: triggerEvent as (typeof TRIGGER_EVENTS)[number]['value'] },
       actions: actions.map((a) =>
         a.kind === 'send_message'
           ? {
@@ -247,9 +245,7 @@ export function NewReguaForm({ templates }: { templates: Template[] }) {
                     <span className="block font-medium">Template slug</span>
                     <select
                       value={a.templateSlug ?? ''}
-                      onChange={(e) =>
-                        updateAction(idx, { templateSlug: e.target.value })
-                      }
+                      onChange={(e) => updateAction(idx, { templateSlug: e.target.value })}
                       className="w-full rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-bg)] px-2 py-1"
                     >
                       <option value="">(escolha)</option>
@@ -271,9 +267,7 @@ export function NewReguaForm({ templates }: { templates: Template[] }) {
                   min={a.kind === 'wait' ? 1 : 0}
                   max="365"
                   value={a.delayDays}
-                  onChange={(e) =>
-                    updateAction(idx, { delayDays: Number(e.target.value) })
-                  }
+                  onChange={(e) => updateAction(idx, { delayDays: Number(e.target.value) })}
                   className="w-full rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-bg)] px-2 py-1"
                 />
               </label>
@@ -295,9 +289,7 @@ export function NewReguaForm({ templates }: { templates: Template[] }) {
                 onChange={() => toggleStopEvent(ev.value)}
               />
               <span>{ev.label}</span>
-              <code className="text-[10px] text-[color:var(--ev-text-muted)]">
-                {ev.value}
-              </code>
+              <code className="text-[10px] text-[color:var(--ev-text-muted)]">{ev.value}</code>
             </label>
           ))}
         </div>
@@ -313,8 +305,8 @@ export function NewReguaForm({ templates }: { templates: Template[] }) {
         </button>
       </div>
       <p className="text-xs text-[color:var(--ev-text-muted)] text-right">
-        Régua nasce <strong>inativa</strong>. Use o toggle na lista pra ativar quando
-        templates estiverem aprovados.
+        Régua nasce <strong>inativa</strong>. Use o toggle na lista pra ativar quando templates
+        estiverem aprovados.
       </p>
     </form>
   )

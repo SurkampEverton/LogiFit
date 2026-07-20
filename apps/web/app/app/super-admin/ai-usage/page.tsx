@@ -6,7 +6,7 @@
  */
 import { db } from '@repo/db/client'
 import { aiAuditLog, aiTenantUsage, toolsRegistry } from '@repo/db/schema'
-import { count, eq, sql, desc } from 'drizzle-orm'
+import { count, desc, eq } from 'drizzle-orm'
 import { getTranslations } from 'next-intl/server'
 import { requireFullSession } from '../../../lib/session'
 
@@ -91,7 +91,9 @@ export default async function AIUsageDashboard() {
             {t('top_tenants.empty')}
           </p>
         ) : (
-          <table style={{ width: '100%', marginTop: 'var(--ev-space-3)', borderCollapse: 'collapse' }}>
+          <table
+            style={{ width: '100%', marginTop: 'var(--ev-space-3)', borderCollapse: 'collapse' }}
+          >
             <thead>
               <tr style={{ borderBottom: '1px solid var(--ev-border)', textAlign: 'left' }}>
                 <th style={{ padding: 'var(--ev-space-2)', fontSize: 'var(--ev-text-xs)' }}>

@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { messageTemplates } from '@repo/db/schema'
 /**
  * `/app/mensagens/templates` — lista de templates do tenant (Sprint 13 Faixa C).
  */
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { messageTemplates } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -39,9 +39,7 @@ export default async function TemplatesListPage() {
       createdAt: messageTemplates.createdAt,
     })
     .from(messageTemplates)
-    .where(
-      and(eq(messageTemplates.tenantId, tenantId), isNull(messageTemplates.archivedAt)),
-    )
+    .where(and(eq(messageTemplates.tenantId, tenantId), isNull(messageTemplates.archivedAt)))
     .orderBy(desc(messageTemplates.createdAt))
 
   return (
@@ -71,8 +69,8 @@ export default async function TemplatesListPage() {
 
       {rows.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-6 text-sm text-[color:var(--ev-text-muted)]">
-          Nenhum template criado. Comece pelo botão "+ Novo template" — sugestão:
-          cobrança D+1, reengajamento, boas-vindas.
+          Nenhum template criado. Comece pelo botão "+ Novo template" — sugestão: cobrança D+1,
+          reengajamento, boas-vindas.
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -84,9 +82,7 @@ export default async function TemplatesListPage() {
               <header className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h3 className="font-medium leading-tight">{t.name}</h3>
-                  <code className="text-[10px] text-[color:var(--ev-text-muted)]">
-                    {t.slug}
-                  </code>
+                  <code className="text-[10px] text-[color:var(--ev-text-muted)]">{t.slug}</code>
                 </div>
                 <span
                   className="rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide shrink-0"

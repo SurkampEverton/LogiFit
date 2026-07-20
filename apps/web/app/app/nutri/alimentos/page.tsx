@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/nutri/alimentos` — busca + filtro do banco TACO + custom do tenant.
  *   Sprint 29 Faixa C.
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -60,7 +60,12 @@ export default async function AlimentosListPage({ searchParams }: PageProps) {
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>Alimentos</h1>
         <span style={{ color: 'var(--ev-text-muted)' }}>
@@ -139,8 +144,8 @@ export default async function AlimentosListPage({ searchParams }: PageProps) {
                   colSpan={7}
                   style={{ padding: 'var(--ev-space-md)', color: 'var(--ev-text-muted)' }}
                 >
-                  Nenhum alimento encontrado. Rode o seed{' '}
-                  <code>pnpm db:seed:nutri-foods</code> ou cadastre via "+ Novo alimento".
+                  Nenhum alimento encontrado. Rode o seed <code>pnpm db:seed:nutri-foods</code> ou
+                  cadastre via "+ Novo alimento".
                 </td>
               </tr>
             )}
@@ -155,16 +160,40 @@ export default async function AlimentosListPage({ searchParams }: PageProps) {
                 <td style={{ padding: 'var(--ev-space-2)', fontSize: 'var(--ev-text-xs)' }}>
                   {r.tenant_id ? '🏢 tenant' : '🌐 ' + r.source}
                 </td>
-                <td style={{ padding: 'var(--ev-space-2)', textAlign: 'right', fontFamily: 'monospace' }}>
+                <td
+                  style={{
+                    padding: 'var(--ev-space-2)',
+                    textAlign: 'right',
+                    fontFamily: 'monospace',
+                  }}
+                >
                   {r.nutrients?.kcal?.toFixed(0) ?? '—'}
                 </td>
-                <td style={{ padding: 'var(--ev-space-2)', textAlign: 'right', fontFamily: 'monospace' }}>
+                <td
+                  style={{
+                    padding: 'var(--ev-space-2)',
+                    textAlign: 'right',
+                    fontFamily: 'monospace',
+                  }}
+                >
                   {r.nutrients?.protein_g?.toFixed(1) ?? '—'}g
                 </td>
-                <td style={{ padding: 'var(--ev-space-2)', textAlign: 'right', fontFamily: 'monospace' }}>
+                <td
+                  style={{
+                    padding: 'var(--ev-space-2)',
+                    textAlign: 'right',
+                    fontFamily: 'monospace',
+                  }}
+                >
                   {r.nutrients?.carbohydrate_g?.toFixed(1) ?? '—'}g
                 </td>
-                <td style={{ padding: 'var(--ev-space-2)', textAlign: 'right', fontFamily: 'monospace' }}>
+                <td
+                  style={{
+                    padding: 'var(--ev-space-2)',
+                    textAlign: 'right',
+                    fontFamily: 'monospace',
+                  }}
+                >
                   {r.nutrients?.lipid_g?.toFixed(1) ?? '—'}g
                 </td>
               </tr>

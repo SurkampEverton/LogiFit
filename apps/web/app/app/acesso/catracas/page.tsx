@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { accessDevices, companies, persons, units } from '@repo/db/schema'
 /**
  * `/app/acesso/catracas` — lista catracas cadastradas + heartbeat status
  * (Sprint 08 Faixa C).
@@ -7,8 +9,6 @@
  */
 import { desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { accessDevices, companies, persons, units } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'

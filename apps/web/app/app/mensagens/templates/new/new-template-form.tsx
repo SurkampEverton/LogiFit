@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { useMemo, useState, useTransition } from 'react'
 import { createTemplate } from '../../actions'
 
 export function NewTemplateForm() {
@@ -58,7 +58,10 @@ export function NewTemplateForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-[color:var(--ev-border)] p-6">
+    <form
+      onSubmit={onSubmit}
+      className="space-y-4 rounded-xl border border-[color:var(--ev-border)] p-6"
+    >
       {error && (
         <div
           role="alert"
@@ -150,10 +153,8 @@ export function NewTemplateForm() {
           </div>
         )}
         <p className="text-[10px] text-[color:var(--ev-text-muted)]">
-          Sugestões:{' '}
-          <code>{`{{member.name}}`}</code>, <code>{`{{member.email}}`}</code>,{' '}
-          <code>{`{{invoice.amount}}`}</code>,{' '}
-          <code>{`{{invoice.due_date}}`}</code>
+          Sugestões: <code>{`{{member.name}}`}</code>, <code>{`{{member.email}}`}</code>,{' '}
+          <code>{`{{invoice.amount}}`}</code>, <code>{`{{invoice.due_date}}`}</code>
         </p>
       </div>
 

@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { chartOfAccounts } from '@repo/db/schema'
 /**
  * `/app/financeiro/plano-contas` — tree view do plano de contas hierárquico
  * (Sprint 15 Faixa C, ADR 0033).
@@ -8,8 +10,6 @@
  */
 import { and, asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { chartOfAccounts } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -84,8 +84,9 @@ export default async function PlanoContasPage() {
       {rows.length === 0 && (
         <div className="ev-card" style={{ padding: 'var(--ev-space-lg)' }}>
           <p style={{ marginTop: 0 }}>
-            Nenhuma conta cadastrada. Execute <code>pnpm --filter @repo/db db:seed:plano-contas</code> para
-            popular o plano brasileiro simplificado, ou crie manualmente.
+            Nenhuma conta cadastrada. Execute{' '}
+            <code>pnpm --filter @repo/db db:seed:plano-contas</code> para popular o plano brasileiro
+            simplificado, ou crie manualmente.
           </p>
         </div>
       )}

@@ -14,16 +14,12 @@
  * em header `x-device-token` na API `/api/acesso/checkin`.
  */
 
+import { createHash, randomBytes } from 'node:crypto'
 import { db } from '@repo/db/client'
-import {
-  accessBlocks,
-  accessDevices,
-  accessSecrets,
-} from '@repo/db/schema'
+import { accessBlocks, accessDevices, accessSecrets } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
 import { generateAccessSecret } from '@repo/security'
 import { and, eq, isNull } from 'drizzle-orm'
-import { randomBytes, createHash } from 'node:crypto'
 import { z } from 'zod'
 import { wrapServerAction } from '../../lib/wrap-action'
 
@@ -94,10 +90,7 @@ export const registerDevice = wrapServerAction(
       .select({ id: accessSecrets.id })
       .from(accessSecrets)
       .where(
-        and(
-          eq(accessSecrets.tenantId, session.logifit.tenantId),
-          eq(accessSecrets.active, true),
-        ),
+        and(eq(accessSecrets.tenantId, session.logifit.tenantId), eq(accessSecrets.active, true)),
       )
       .limit(1)
     if (existing.length === 0) {

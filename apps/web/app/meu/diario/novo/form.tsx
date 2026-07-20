@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 /**
  * Form de novo registro de diário — Sprint 31 Faixa C.
  *
@@ -7,7 +8,6 @@
  * Sprint 31b: picker de foods + foto + horário + measure caseira.
  */
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { logMeal } from '../actions'
 
 type MealName =

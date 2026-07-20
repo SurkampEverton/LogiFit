@@ -1,3 +1,4 @@
+import { AI_PLAN_LIMITS } from '@repo/ai'
 /**
  * `/app/settings/ia` — admin tenant: BYOK + cota + white-label (ADR 0064 +
  * ADR 0075).
@@ -12,7 +13,6 @@ import {
   aiTenantUsage,
   tenantAssistantSettings,
 } from '@repo/db/schema'
-import { AI_PLAN_LIMITS } from '@repo/ai'
 import { and, eq } from 'drizzle-orm'
 import { getTranslations } from 'next-intl/server'
 import { requireFullSession } from '../../../lib/session'
@@ -130,8 +130,7 @@ export default async function SettingsIAPage() {
             style={{
               width: `${Math.min(percent, 100)}%`,
               height: '100%',
-              backgroundColor:
-                percent >= 90 ? 'var(--ev-danger, #ef4444)' : 'var(--ev-primary)',
+              backgroundColor: percent >= 90 ? 'var(--ev-danger, #ef4444)' : 'var(--ev-primary)',
             }}
           />
         </div>

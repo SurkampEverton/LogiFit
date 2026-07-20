@@ -242,10 +242,9 @@ export async function verifySmsCode(input: unknown) {
   // 2. Verifica código (constant-time)
   if (!verifyOtpCode(code, otp.code_hash)) {
     // Incrementa attempts + retorna erro genérico (não revela "código quase certo")
-    await pool.query(
-      `UPDATE passport_signup_otps SET attempts = attempts + 1 WHERE id = $1`,
-      [otp.id],
-    )
+    await pool.query(`UPDATE passport_signup_otps SET attempts = attempts + 1 WHERE id = $1`, [
+      otp.id,
+    ])
     throw new ApiException({
       code: 'VALIDATION_ERROR',
       message: 'Código inválido',
@@ -299,10 +298,9 @@ export async function signupPatient(input: unknown) {
     id: string
     phone: string
     used_at: Date | null
-  }>(
-    `SELECT id, phone, used_at FROM passport_signup_otps WHERE id = $1 LIMIT 1`,
-    [parsed.data.smsOtpId],
-  )
+  }>(`SELECT id, phone, used_at FROM passport_signup_otps WHERE id = $1 LIMIT 1`, [
+    parsed.data.smsOtpId,
+  ])
   const otpRow = otp.rows[0]
   if (!otpRow || !otpRow.used_at) {
     throw new ApiException({

@@ -162,10 +162,7 @@ export function CashflowChart() {
                 style={{
                   fontSize: 'var(--ev-font-lg)',
                   fontWeight: 600,
-                  color:
-                    data.summary.minBalance < 0
-                      ? 'var(--ev-danger, #dc2626)'
-                      : 'inherit',
+                  color: data.summary.minBalance < 0 ? 'var(--ev-danger, #dc2626)' : 'inherit',
                 }}
               >
                 {formatBrl(data.summary.minBalance)}

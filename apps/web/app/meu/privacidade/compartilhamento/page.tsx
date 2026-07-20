@@ -1,3 +1,4 @@
+import { pool } from '@repo/db/client'
 /**
  * /meu/privacidade/compartilhamento — vínculos cross-tenant ativos.
  * Sprint 26 Faixa C (26b) — ADR 0077.
@@ -12,7 +13,6 @@
  * granular; banner "renovar consentimento" 30d antes de expires_at.
  */
 import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { withMemberContext } from '../../../lib/member-session'
 import { requireMemberOrPassport } from '../../../lib/require-member-or-passport'
 import { PassportNeedsLink } from '../../_components/passport-needs-link'
@@ -114,9 +114,9 @@ export default async function CompartilhamentoPage() {
       <header>
         <h1 className="ev-portal-h1">Compartilhamento</h1>
         <p className="ev-portal-muted">
-          Estabelecimentos que têm acesso aos seus dados. Você pode pausar ou revogar a
-          qualquer momento — efeito é imediato (próximas consultas do estabelecimento retornam
-          FORBIDDEN). Dados clínicos com retenção legal não são apagados, apenas isolados.
+          Estabelecimentos que têm acesso aos seus dados. Você pode pausar ou revogar a qualquer
+          momento — efeito é imediato (próximas consultas do estabelecimento retornam FORBIDDEN).
+          Dados clínicos com retenção legal não são apagados, apenas isolados.
         </p>
       </header>
 

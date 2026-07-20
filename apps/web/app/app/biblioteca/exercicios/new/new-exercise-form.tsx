@@ -16,7 +16,10 @@ export function NewExerciseForm() {
     const name = String(fd.get('name') ?? '').trim()
     const muscleGroupsRaw = String(fd.get('muscleGroups') ?? '').trim()
     const muscleGroups = muscleGroupsRaw
-      ? muscleGroupsRaw.split(',').map((s) => s.trim()).filter(Boolean)
+      ? muscleGroupsRaw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
       : []
     const metValue = Number(fd.get('metValue'))
     const level = String(fd.get('level')) as 'iniciante' | 'intermediario' | 'avancado'
@@ -45,7 +48,10 @@ export function NewExerciseForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-[color:var(--ev-border)] p-6">
+    <form
+      onSubmit={onSubmit}
+      className="space-y-4 rounded-xl border border-[color:var(--ev-border)] p-6"
+    >
       {error && (
         <div
           role="alert"
@@ -131,8 +137,8 @@ export function NewExerciseForm() {
       </div>
 
       <p className="text-xs text-[color:var(--ev-text-muted)]">
-        Grupos musculares separados por vírgula. MET via Compendium of Physical
-        Activities 2024 — guia: musculação leve 3-4, intensa 5-6, HIIT 8+.
+        Grupos musculares separados por vírgula. MET via Compendium of Physical Activities 2024 —
+        guia: musculação leve 3-4, intensa 5-6, HIIT 8+.
       </p>
 
       <div className="flex justify-end gap-2 pt-2">

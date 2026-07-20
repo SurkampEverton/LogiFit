@@ -1,9 +1,3 @@
-/**
- * `/app/financeiro/bancos/[id]/extrato` — extrato bancário (Sprint 17 Faixa C).
- */
-import { and, desc, eq, sql } from 'drizzle-orm'
-import Link from 'next/link'
-import { notFound } from 'next/navigation'
 import { db } from '@repo/db/client'
 import {
   accountsPayable,
@@ -11,6 +5,12 @@ import {
   bankAccounts,
   bankTransactions,
 } from '@repo/db/schema'
+/**
+ * `/app/financeiro/bancos/[id]/extrato` — extrato bancário (Sprint 17 Faixa C).
+ */
+import { and, desc, eq, sql } from 'drizzle-orm'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import { requireFullSession } from '../../../../../lib/session'
 import { OfxImportForm } from './ofx-import-form'
 
@@ -59,10 +59,7 @@ export default async function ExtratoPage({
   if (!account) notFound()
 
   const reconciledFilter = sp.reconciled ?? 'all'
-  const where = [
-    eq(bankTransactions.tenantId, tenantId),
-    eq(bankTransactions.bankAccountId, id),
-  ]
+  const where = [eq(bankTransactions.tenantId, tenantId), eq(bankTransactions.bankAccountId, id)]
   if (reconciledFilter === 'yes') where.push(sql`${bankTransactions.reconciledAt} IS NOT NULL`)
   if (reconciledFilter === 'no') where.push(sql`${bankTransactions.reconciledAt} IS NULL`)
 
@@ -97,10 +94,7 @@ export default async function ExtratoPage({
           {account.nickname ?? `${account.bankName} ${account.accountNumber}`}
         </h1>
         <span style={{ flex: 1 }} />
-        <Link
-          href={`/app/financeiro/bancos/${id}/conciliar`}
-          className="ev-btn ev-btn-primary"
-        >
+        <Link href={`/app/financeiro/bancos/${id}/conciliar`} className="ev-btn ev-btn-primary">
           Conciliar
         </Link>
         <Link href="/app/financeiro/bancos" className="ev-btn ev-btn-ghost">
@@ -116,9 +110,7 @@ export default async function ExtratoPage({
         }}
       >
         <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
-          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
-            Saldo atual
-          </div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Saldo atual</div>
           <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>
             {formatBrl(account.currentBalanceCents)}
           </div>
@@ -152,13 +144,9 @@ export default async function ExtratoPage({
           </div>
         </div>
         <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
-          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
-            Última sync
-          </div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Última sync</div>
           <div style={{ fontSize: 'var(--ev-font-sm)' }}>
-            {account.lastSyncedAt
-              ? new Date(account.lastSyncedAt).toLocaleString('pt-BR')
-              : '—'}
+            {account.lastSyncedAt ? new Date(account.lastSyncedAt).toLocaleString('pt-BR') : '—'}
           </div>
         </div>
       </div>

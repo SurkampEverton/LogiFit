@@ -90,11 +90,7 @@ export function AddAttachmentForm({ evolucaoId }: { evolucaoId: string }) {
       </label>
       <label className="ev-stack" style={{ gap: 4 }}>
         <span>Categoria</span>
-        <select
-          className="ev-input"
-          value={kind}
-          onChange={(e) => setKind(e.target.value as Kind)}
-        >
+        <select className="ev-input" value={kind} onChange={(e) => setKind(e.target.value as Kind)}>
           {KINDS.map((k) => (
             <option key={k.key} value={k.key}>
               {k.label}
@@ -124,9 +120,7 @@ export function AddAttachmentForm({ evolucaoId }: { evolucaoId: string }) {
           {pending ? 'Calculando hash + registrando...' : '+ Registrar metadata'}
         </button>
         {error && (
-          <span style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-danger)' }}>
-            {error}
-          </span>
+          <span style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-danger)' }}>{error}</span>
         )}
         {message && (
           <span style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-success, #16a34a)' }}>

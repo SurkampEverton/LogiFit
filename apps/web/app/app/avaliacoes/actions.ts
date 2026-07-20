@@ -39,7 +39,7 @@ import {
   members,
 } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
-import { and, asc, desc, eq, isNull, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, or } from 'drizzle-orm'
 import { z } from 'zod'
 import { wrapServerAction } from '../../lib/wrap-action'
 
@@ -139,10 +139,7 @@ export const createAssessmentType = wrapServerAction(
     action: 'assessment_type.create',
     resourceType: 'assessment_types',
   },
-  async (
-    input: z.infer<typeof CreateAssessmentTypeInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateAssessmentTypeInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateAssessmentTypeInputSchema.parse(input)
     const [row] = await db
       .insert(assessmentTypes)
@@ -174,16 +171,10 @@ export const createAssessmentType = wrapServerAction(
 
 export const listAssessmentTypes = wrapServerAction(
   { module: 'avaliacoes', action: 'assessment_type.list' },
-  async (
-    input: z.infer<typeof ListAssessmentTypesInputSchema>,
-    { session },
-  ) => {
+  async (input: z.infer<typeof ListAssessmentTypesInputSchema>, { session }) => {
     const parsed = ListAssessmentTypesInputSchema.parse(input)
     const tenantFilter = parsed.includeGlobal
-      ? or(
-          eq(assessmentTypes.tenantId, session.logifit.tenantId),
-          isNull(assessmentTypes.tenantId),
-        )
+      ? or(eq(assessmentTypes.tenantId, session.logifit.tenantId), isNull(assessmentTypes.tenantId))
       : eq(assessmentTypes.tenantId, session.logifit.tenantId)
 
     const conditions = [
@@ -221,19 +212,14 @@ export const listAssessmentTypes = wrapServerAction(
  */
 export const createAssessment = wrapServerAction(
   { module: 'avaliacoes', action: 'assessment.create', resourceType: 'assessments' },
-  async (
-    input: z.infer<typeof CreateAssessmentInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateAssessmentInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateAssessmentInputSchema.parse(input)
 
     // Sanity: member + type pertencem ao tenant (type pode ser global)
     const [m] = await db
       .select({ id: members.id })
       .from(members)
-      .where(
-        and(eq(members.id, parsed.memberId), eq(members.tenantId, session.logifit.tenantId)),
-      )
+      .where(and(eq(members.id, parsed.memberId), eq(members.tenantId, session.logifit.tenantId)))
       .limit(1)
     if (!m)
       throw new ApiException({
@@ -353,11 +339,7 @@ export const createAssessment = wrapServerAction(
         coxa: byKey.get('dobra_coxa'),
       }
       const hasDobras = Object.values(dobras).every((v) => v !== undefined)
-      if (
-        hasDobras &&
-        parsed.context?.ageYears &&
-        parsed.context?.sex
-      ) {
+      if (hasDobras && parsed.context?.ageYears && parsed.context?.sex) {
         const poll = calculatePollock7({
           tricipital: dobras.tricipital!,
           subescapular: dobras.subescapular!,
@@ -436,10 +418,7 @@ export const createAssessment = wrapServerAction(
 
 export const listMemberAssessments = wrapServerAction(
   { module: 'avaliacoes', action: 'assessment.list_by_member' },
-  async (
-    input: z.infer<typeof ListMemberAssessmentsInputSchema>,
-    { session },
-  ) => {
+  async (input: z.infer<typeof ListMemberAssessmentsInputSchema>, { session }) => {
     const parsed = ListMemberAssessmentsInputSchema.parse(input)
     const conditions = [
       eq(assessments.tenantId, session.logifit.tenantId),
@@ -471,10 +450,7 @@ export const listMemberAssessments = wrapServerAction(
 
 export const getAssessment = wrapServerAction(
   { module: 'avaliacoes', action: 'assessment.get', resourceType: 'assessments' },
-  async (
-    input: z.infer<typeof GetAssessmentInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof GetAssessmentInputSchema>, { session, setAuditResource }) => {
     const parsed = GetAssessmentInputSchema.parse(input)
     const [a] = await db
       .select({
@@ -537,10 +513,7 @@ export const getAssessment = wrapServerAction(
 
 export const compareAssessments = wrapServerAction(
   { module: 'avaliacoes', action: 'assessment.compare' },
-  async (
-    input: z.infer<typeof CompareAssessmentsInputSchema>,
-    { session },
-  ) => {
+  async (input: z.infer<typeof CompareAssessmentsInputSchema>, { session }) => {
     const parsed = CompareAssessmentsInputSchema.parse(input)
     const rows = await db
       .select({
@@ -570,10 +543,7 @@ export const compareAssessments = wrapServerAction(
 
 export const softDeleteAssessment = wrapServerAction(
   { module: 'avaliacoes', action: 'assessment.soft_delete', resourceType: 'assessments' },
-  async (
-    input: z.infer<typeof SoftDeleteAssessmentInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof SoftDeleteAssessmentInputSchema>, { session, setAuditResource }) => {
     const parsed = SoftDeleteAssessmentInputSchema.parse(input)
     const [row] = await db
       .update(assessments)
@@ -609,10 +579,7 @@ const GetLatestSummaryInputSchema = z.object({
 
 export const getLatestAssessmentSummary = wrapServerAction(
   { module: 'avaliacoes', action: 'assessment.latest_summary' },
-  async (
-    input: z.infer<typeof GetLatestSummaryInputSchema>,
-    { session },
-  ) => {
+  async (input: z.infer<typeof GetLatestSummaryInputSchema>, { session }) => {
     const parsed = GetLatestSummaryInputSchema.parse(input)
     const [latest] = await db
       .select({

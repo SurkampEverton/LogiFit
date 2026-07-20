@@ -1,5 +1,7 @@
 'use client'
 
+import { confirm } from '@repo/ui/messages'
+import { useRouter } from 'next/navigation'
 /**
  * Cancel button — chama cancelMyAppointment + reload.
  *
@@ -9,8 +11,6 @@
  * gestures pra UX mobile mais fluida.
  */
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { confirm } from '@repo/ui/messages'
 import { cancelMyAppointment } from '../actions'
 
 interface Props {
@@ -58,7 +58,11 @@ export function CancelButton({ appointmentId }: Props) {
       >
         {pending ? 'Cancelando...' : 'Cancelar'}
       </button>
-      {err ? <p className="ev-portal-muted" style={{ color: 'var(--ev-danger)' }}>{err}</p> : null}
+      {err ? (
+        <p className="ev-portal-muted" style={{ color: 'var(--ev-danger)' }}>
+          {err}
+        </p>
+      ) : null}
     </div>
   )
 }

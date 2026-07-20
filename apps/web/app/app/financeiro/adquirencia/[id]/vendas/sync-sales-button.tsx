@@ -25,9 +25,7 @@ export function SyncSalesButton({ connectionId }: { connectionId: string }) {
         setMessage(`Erro: ${r.error.message}`)
         return
       }
-      setMessage(
-        `✓ ${r.data.imported} importadas · ${r.data.skipped} duplicadas (idempotente)`,
-      )
+      setMessage(`✓ ${r.data.imported} importadas · ${r.data.skipped} duplicadas (idempotente)`)
       router.refresh()
     })
   }

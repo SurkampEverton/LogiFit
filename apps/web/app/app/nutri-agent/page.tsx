@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/nutri-agent` — dashboard de sugestões pendentes do Nutri-Agent IA.
  *   Sprint 34 Faixa C.
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -98,7 +98,12 @@ export default async function NutriAgentDashboardPage({ searchParams }: PageProp
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>Nutri-Agent IA</h1>
         <span style={{ color: 'var(--ev-text-muted)' }}>
@@ -116,12 +121,18 @@ export default async function NutriAgentDashboardPage({ searchParams }: PageProp
         }}
       >
         <div>
-          <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>Pendentes</div>
+          <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
+            Pendentes
+          </div>
           <div style={{ fontSize: 'var(--ev-text-2xl)', fontWeight: 600 }}>{kpi.pending}</div>
         </div>
         <div>
-          <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>Críticas</div>
-          <div style={{ fontSize: 'var(--ev-text-2xl)', fontWeight: 600, color: 'var(--ev-danger)' }}>
+          <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
+            Críticas
+          </div>
+          <div
+            style={{ fontSize: 'var(--ev-text-2xl)', fontWeight: 600, color: 'var(--ev-danger)' }}
+          >
             {kpi.critical}
           </div>
         </div>
@@ -132,14 +143,18 @@ export default async function NutriAgentDashboardPage({ searchParams }: PageProp
           <div style={{ fontSize: 'var(--ev-text-2xl)', fontWeight: 600 }}>{kpi.accepted_30d}</div>
         </div>
         <div>
-          <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>Runs 30d</div>
+          <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
+            Runs 30d
+          </div>
           <div style={{ fontSize: 'var(--ev-text-2xl)', fontWeight: 600 }}>{kpi.runs_30d}</div>
         </div>
         <div>
           <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
             Bloqueadas Comitê IA 30d
           </div>
-          <div style={{ fontSize: 'var(--ev-text-2xl)', fontWeight: 600, color: 'var(--ev-warning)' }}>
+          <div
+            style={{ fontSize: 'var(--ev-text-2xl)', fontWeight: 600, color: 'var(--ev-warning)' }}
+          >
             {kpi.blocked_30d}
           </div>
         </div>
@@ -215,8 +230,8 @@ export default async function NutriAgentDashboardPage({ searchParams }: PageProp
       )}
 
       <p style={{ color: 'var(--ev-text-muted)' }}>
-        <strong>UI completa (accept/reject inline + diff visual de proposedChanges)</strong> entra em
-        Sprint 34b. MVP entrega backend + lista read-only.
+        <strong>UI completa (accept/reject inline + diff visual de proposedChanges)</strong> entra
+        em Sprint 34b. MVP entrega backend + lista read-only.
       </p>
     </div>
   )

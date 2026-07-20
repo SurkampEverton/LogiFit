@@ -1,9 +1,9 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/nutri/suplementos` — catálogo (Sprint 30 Faixa C).
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -56,7 +56,12 @@ export default async function SuplementosListPage({ searchParams }: PageProps) {
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>Suplementação</h1>
         <span style={{ color: 'var(--ev-text-muted)' }}>
@@ -64,10 +69,7 @@ export default async function SuplementosListPage({ searchParams }: PageProps) {
         </span>
       </header>
 
-      <form
-        method="get"
-        style={{ display: 'flex', gap: 'var(--ev-space-sm)', flexWrap: 'wrap' }}
-      >
+      <form method="get" style={{ display: 'flex', gap: 'var(--ev-space-sm)', flexWrap: 'wrap' }}>
         <input
           type="text"
           name="q"
@@ -120,7 +122,10 @@ export default async function SuplementosListPage({ searchParams }: PageProps) {
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ padding: 'var(--ev-space-md)', color: 'var(--ev-text-muted)' }}>
+                <td
+                  colSpan={5}
+                  style={{ padding: 'var(--ev-space-md)', color: 'var(--ev-text-muted)' }}
+                >
                   Nenhum suplemento. Rode <code>pnpm db:seed:nutri-labs</code>.
                 </td>
               </tr>
@@ -137,7 +142,13 @@ export default async function SuplementosListPage({ searchParams }: PageProps) {
                   {KIND_LABEL[r.kind] ?? r.kind}
                 </td>
                 <td style={{ padding: 'var(--ev-space-2)' }}>{r.concentration ?? '—'}</td>
-                <td style={{ padding: 'var(--ev-space-2)', fontFamily: 'monospace', fontSize: 'var(--ev-text-xs)' }}>
+                <td
+                  style={{
+                    padding: 'var(--ev-space-2)',
+                    fontFamily: 'monospace',
+                    fontSize: 'var(--ev-text-xs)',
+                  }}
+                >
                   {r.anvisa_registration ?? '—'}
                 </td>
                 <td style={{ padding: 'var(--ev-space-2)', fontSize: 'var(--ev-text-xs)' }}>

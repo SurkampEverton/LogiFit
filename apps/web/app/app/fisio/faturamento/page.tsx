@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { billingGuides, members, persons } from '@repo/db/schema'
 /**
  * `/app/fisio/faturamento` — lista de guias TISS (Sprint 22 Faixa C).
  */
 import { and, desc, eq, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { billingGuides, members, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -121,19 +121,33 @@ export default async function FaturamentoPage({
         </div>
         <div>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Recebido</div>
-          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600, color: 'var(--ev-success, #16a34a)' }}>
+          <div
+            style={{
+              fontSize: 'var(--ev-font-lg)',
+              fontWeight: 600,
+              color: 'var(--ev-success, #16a34a)',
+            }}
+          >
             {formatBrl(Number(k.total_paid))}
           </div>
         </div>
         <div>
-          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Prontas / Enviadas</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
+            Prontas / Enviadas
+          </div>
           <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>
             {k.ready_count} / {k.sent_count}
           </div>
         </div>
         <div>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Glosadas</div>
-          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600, color: 'var(--ev-danger, #b91c1c)' }}>
+          <div
+            style={{
+              fontSize: 'var(--ev-font-lg)',
+              fontWeight: 600,
+              color: 'var(--ev-danger, #b91c1c)',
+            }}
+          >
             {k.glossed_count}
           </div>
         </div>
@@ -195,10 +209,7 @@ export default async function FaturamentoPage({
                     {g.paidAt ? new Date(g.paidAt).toLocaleDateString('pt-BR') : '—'}
                   </td>
                   <td>
-                    <Link
-                      href={`/app/fisio/faturamento/${g.id}`}
-                      className="ev-btn ev-btn-ghost"
-                    >
+                    <Link href={`/app/fisio/faturamento/${g.id}`} className="ev-btn ev-btn-ghost">
                       →
                     </Link>
                   </td>

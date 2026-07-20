@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { assessmentTypes, assessments, members, persons } from '@repo/db/schema'
 /**
  * `/app/avaliacoes` — lista geral de avaliações + catálogo de tipos (Sprint 12 Faixa C).
  *
@@ -5,13 +7,6 @@
  */
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  assessmentTypes,
-  assessments,
-  members,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -41,12 +36,7 @@ export default async function AvaliacoesHubPage() {
     .leftJoin(members, eq(members.id, assessments.memberId))
     .leftJoin(persons, eq(persons.id, members.personId))
     .leftJoin(assessmentTypes, eq(assessmentTypes.id, assessments.assessmentTypeId))
-    .where(
-      and(
-        eq(assessments.tenantId, tenantId),
-        isNull(assessments.softDeletedAt),
-      ),
-    )
+    .where(and(eq(assessments.tenantId, tenantId), isNull(assessments.softDeletedAt)))
     .orderBy(desc(assessments.performedAt))
     .limit(20)
 
@@ -75,8 +65,11 @@ export default async function AvaliacoesHubPage() {
         </h2>
         {recent.length === 0 ? (
           <p className="text-sm text-[color:var(--ev-text-muted)] italic">
-            Nenhuma avaliação registrada ainda. Vá em <Link href="/app/members" className="underline">members</Link> →
-            aba "Avaliações" pra registrar.
+            Nenhuma avaliação registrada ainda. Vá em{' '}
+            <Link href="/app/members" className="underline">
+              members
+            </Link>{' '}
+            → aba "Avaliações" pra registrar.
           </p>
         ) : (
           <ul className="space-y-2">
@@ -93,9 +86,7 @@ export default async function AvaliacoesHubPage() {
                     </span>
                   </div>
                   <div className="text-xs text-[color:var(--ev-text-muted)]">
-                    {a.typeCategory && (
-                      <>{CATEGORY_LABELS[a.typeCategory] ?? a.typeCategory} · </>
-                    )}
+                    {a.typeCategory && <>{CATEGORY_LABELS[a.typeCategory] ?? a.typeCategory} · </>}
                     {new Date(a.performedAt).toLocaleDateString('pt-BR', {
                       day: '2-digit',
                       month: '2-digit',

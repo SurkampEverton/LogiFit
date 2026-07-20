@@ -1,5 +1,6 @@
 'use client'
 
+import { GenUIMessage, type GenUIMessageBlockLike } from '@repo/ui/genui'
 /**
  * Form + render da demo Generative UI — Sprint 28.
  *
@@ -7,7 +8,6 @@
  * retornados via `<GenUIMessage>` de @repo/ui/genui.
  */
 import { useEffect, useState, useTransition } from 'react'
-import { GenUIMessage, type GenUIMessageBlockLike } from '@repo/ui/genui'
 import { composeGenUIResponse } from '../genui-actions'
 
 interface Props {

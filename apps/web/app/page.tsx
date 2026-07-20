@@ -9,9 +9,7 @@ export default async function Home() {
       <p className="max-w-prose text-center text-base text-[color:var(--ev-text-muted)]">
         {t('app.tagline')}
       </p>
-      <p className="text-sm text-[color:var(--ev-text-subtle)]">
-        {t('app.environment')}
-      </p>
+      <p className="text-sm text-[color:var(--ev-text-subtle)]">{t('app.environment')}</p>
     </main>
   )
 }

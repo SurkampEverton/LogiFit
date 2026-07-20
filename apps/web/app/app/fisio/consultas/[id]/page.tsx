@@ -1,12 +1,3 @@
-/**
- * `/app/fisio/consultas/[id]` — detalhe da consulta (Sprint 20 Faixa C).
- *
- * Em draft: editor SOAP + add CID/CIF + botão fechar.
- * Em locked/signed: readonly + hash + botão nota corretiva.
- */
-import { and, asc, desc, eq } from 'drizzle-orm'
-import Link from 'next/link'
-import { notFound } from 'next/navigation'
 import { db } from '@repo/db/client'
 import {
   consultaCids,
@@ -16,10 +7,19 @@ import {
   members,
   persons,
 } from '@repo/db/schema'
+/**
+ * `/app/fisio/consultas/[id]` — detalhe da consulta (Sprint 20 Faixa C).
+ *
+ * Em draft: editor SOAP + add CID/CIF + botão fechar.
+ * Em locked/signed: readonly + hash + botão nota corretiva.
+ */
+import { and, asc, desc, eq } from 'drizzle-orm'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import { requireFullSession } from '../../../../lib/session'
 import { ConsultaEditor } from './consulta-editor'
-import { LockConsultaForm } from './lock-consulta-form'
 import { CorrectionNoteForm } from './correction-note-form'
+import { LockConsultaForm } from './lock-consulta-form'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,9 +32,7 @@ const KIND_LABEL: Record<string, string> = {
   custom: 'Custom',
 }
 
-export default async function ConsultaDetailPage({
-  params,
-}: { params: Promise<{ id: string }> }) {
+export default async function ConsultaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const session = await requireFullSession(`/app/fisio/consultas/${id}`)
   const tenantId = session.logifit.tenantId
@@ -94,16 +92,26 @@ export default async function ConsultaDetailPage({
     .orderBy(desc(consultaCorrectionNotes.createdAt))
 
   const content = (c.content as Record<string, unknown>) ?? {}
-  const councilSnap = (c.councilSnapshot as
-    | { councilBody?: string; councilState?: string; councilNumber?: string }
-    | null) ?? null
+  const councilSnap =
+    (c.councilSnapshot as {
+      councilBody?: string
+      councilState?: string
+      councilNumber?: string
+    } | null) ?? null
   const isDraft = c.status === 'draft'
   const isAuthor = c.professionalUserId === session.user.id
   const isReadonly = !isDraft || !isAuthor
 
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
-      <header style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}>
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
+      >
         <h1 style={{ margin: 0 }}>
           Consulta {KIND_LABEL[c.kind] ?? c.kind} — {c.memberName ?? '—'}
         </h1>
@@ -169,7 +177,9 @@ export default async function ConsultaDetailPage({
 
       <h2>CID-11 vinculados ({cids.length})</h2>
       {cids.length === 0 ? (
-        <p style={{ color: 'var(--ev-muted)' }}>Nenhum CID. Pelo menos 1 principal antes de fechar.</p>
+        <p style={{ color: 'var(--ev-muted)' }}>
+          Nenhum CID. Pelo menos 1 principal antes de fechar.
+        </p>
       ) : (
         <table className="ev-table" style={{ width: '100%' }}>
           <thead>
@@ -224,10 +234,10 @@ export default async function ConsultaDetailPage({
           <h2>Fechar consulta</h2>
           <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
             <p style={{ marginTop: 0 }}>
-              Política <strong>{c.signatureMode}</strong> aplicada. Fechamento exige MFA
-              recente (&lt;15min) + registro profissional ativo coerente com o tipo da
-              consulta (ADR 0055). Após fechar, edição direta fica bloqueada —
-              correções viram <strong>nota corretiva</strong> append-only.
+              Política <strong>{c.signatureMode}</strong> aplicada. Fechamento exige MFA recente
+              (&lt;15min) + registro profissional ativo coerente com o tipo da consulta (ADR 0055).
+              Após fechar, edição direta fica bloqueada — correções viram{' '}
+              <strong>nota corretiva</strong> append-only.
             </p>
             <LockConsultaForm
               consultaId={id}
@@ -245,7 +255,13 @@ export default async function ConsultaDetailPage({
             <div style={{ fontSize: 'var(--ev-font-xs)' }}>
               <strong>Hash SHA-256 do conteúdo (regra 39):</strong>
             </div>
-            <div style={{ fontFamily: 'monospace', fontSize: 'var(--ev-font-xs)', wordBreak: 'break-all' }}>
+            <div
+              style={{
+                fontFamily: 'monospace',
+                fontSize: 'var(--ev-font-xs)',
+                wordBreak: 'break-all',
+              }}
+            >
               {c.signedHash ?? '—'}
             </div>
             {councilSnap && (
@@ -260,7 +276,9 @@ export default async function ConsultaDetailPage({
               </>
             )}
             {c.signatureProvider && (
-              <div style={{ marginTop: 8, fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
+              <div
+                style={{ marginTop: 8, fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}
+              >
                 Provider: {c.signatureProvider}
               </div>
             )}

@@ -16,8 +16,7 @@ export default async function NewTemplatePage() {
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Novo template</h1>
           <p className="text-sm text-[color:var(--ev-text-muted)]">
-            Use <code>{`{{member.name}}`}</code>, <code>{`{{invoice.amount}}`}</code>
-            , etc.
+            Use <code>{`{{member.name}}`}</code>, <code>{`{{invoice.amount}}`}</code>, etc.
           </p>
         </div>
         <Link

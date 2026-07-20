@@ -1,3 +1,4 @@
+import { pool } from '@repo/db/client'
 /**
  * /meu/perfil — dados cadastrais + sessões + senha + MFA + LGPD.
  *
@@ -15,7 +16,6 @@
  */
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { pool } from '@repo/db/client'
 import { getActiveSession } from '../../lib/active-session'
 import { withMemberContext } from '../../lib/member-session'
 import { ChangeEmailForm } from './change-email-form'
@@ -156,8 +156,7 @@ export default async function MeuPerfilPage() {
             </div>
           </div>
           <p className="ev-portal-muted" style={{ fontSize: 'var(--ev-text-xs)' }}>
-            Alterar nome/telefone entra em Sprint 02b5+ (requer flow de
-            confirmação adicional).
+            Alterar nome/telefone entra em Sprint 02b5+ (requer flow de confirmação adicional).
           </p>
         </section>
 
@@ -172,8 +171,7 @@ export default async function MeuPerfilPage() {
                 </div>
               ) : (
                 <div style={{ color: 'var(--ev-warning)' }}>
-                  ⚠ Não ativado —{' '}
-                  <Link href="/cadastro/mfa-setup">ativar agora</Link>
+                  ⚠ Não ativado — <Link href="/cadastro/mfa-setup">ativar agora</Link>
                 </div>
               )}
             </div>
@@ -203,22 +201,15 @@ export default async function MeuPerfilPage() {
                   <li key={s.id} className="ev-portal-list-item">
                     <div className="ev-portal-list-item--row">
                       <div>
-                        <div className="ev-portal-h3">
-                          {s.device_label ?? 'Dispositivo'}
-                        </div>
-                        <div
-                          className="ev-portal-muted"
-                          style={{ fontSize: 'var(--ev-text-xs)' }}
-                        >
+                        <div className="ev-portal-h3">{s.device_label ?? 'Dispositivo'}</div>
+                        <div className="ev-portal-muted" style={{ fontSize: 'var(--ev-text-xs)' }}>
                           Ativo até {formatDate(s.last_seen_at)}
                           {s.ip ? ` · IP ${s.ip}` : ''}
                           {s.mfa_verified_at ? ' · 🔐 MFA verificado' : ''}
                         </div>
                       </div>
                       {isCurrent ? (
-                        <span className="ev-portal-badge ev-portal-badge--success">
-                          Atual
-                        </span>
+                        <span className="ev-portal-badge ev-portal-badge--success">Atual</span>
                       ) : (
                         <PassportSessionRevokeButton
                           sessionId={s.id}
@@ -235,10 +226,7 @@ export default async function MeuPerfilPage() {
 
         <section className="ev-portal-section">
           <h2 className="ev-portal-h2">Privacidade</h2>
-          <Link
-            href="/meu/privacidade"
-            className="ev-portal-button ev-portal-button--ghost"
-          >
+          <Link href="/meu/privacidade" className="ev-portal-button ev-portal-button--ghost">
             Configurar consents e direitos LGPD
           </Link>
         </section>
@@ -260,9 +248,7 @@ export default async function MeuPerfilPage() {
           }}
         >
           ℹ️ Sessão criada em {formatDate(identity.created_at)}.
-          {identity.last_login_at
-            ? ` Último login: ${formatDate(identity.last_login_at)}.`
-            : ''}
+          {identity.last_login_at ? ` Último login: ${formatDate(identity.last_login_at)}.` : ''}
         </p>
       </div>
     )
@@ -336,8 +322,8 @@ export default async function MeuPerfilPage() {
           </div>
         </div>
         <p className="ev-portal-muted">
-          Para alterar dados, fale com a recepção. A edição direta pelo portal entra em
-          versão futura.
+          Para alterar dados, fale com a recepção. A edição direta pelo portal entra em versão
+          futura.
         </p>
       </section>
 
@@ -355,14 +341,11 @@ export default async function MeuPerfilPage() {
                       {s.device_label ?? s.user_agent?.slice(0, 40) ?? 'Dispositivo'}
                     </div>
                     <div className="ev-portal-muted">
-                      Ativo até {formatDate(s.last_seen_at)} · IP{' '}
-                      {s.created_ip ?? '—'}
+                      Ativo até {formatDate(s.last_seen_at)} · IP {s.created_ip ?? '—'}
                     </div>
                   </div>
                   {s.is_current ? (
-                    <span className="ev-portal-badge ev-portal-badge--success">
-                      Atual
-                    </span>
+                    <span className="ev-portal-badge ev-portal-badge--success">Atual</span>
                   ) : (
                     <RevokeSessionButton sessionId={s.id} />
                   )}
@@ -384,10 +367,7 @@ export default async function MeuPerfilPage() {
         >
           Compartilhamento entre estabelecimentos
         </Link>
-        <Link
-          href="/meu/privacidade/acessos"
-          className="ev-portal-button ev-portal-button--ghost"
-        >
+        <Link href="/meu/privacidade/acessos" className="ev-portal-button ev-portal-button--ghost">
           Quem viu meus dados
         </Link>
       </section>

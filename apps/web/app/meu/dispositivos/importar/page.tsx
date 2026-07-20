@@ -21,9 +21,9 @@ export default async function ImportarPage() {
       <header>
         <h1 className="ev-portal-h1">Importar arquivo</h1>
         <p className="ev-portal-muted">
-          Cole o conteúdo do seu CSV de bioimpedância (InBody, balança Omron exportada, etc.).
-          O sistema valida e ingere as leituras automaticamente. Drag-drop e suporte a FIT
-          (Garmin) entram em versão futura.
+          Cole o conteúdo do seu CSV de bioimpedância (InBody, balança Omron exportada, etc.). O
+          sistema valida e ingere as leituras automaticamente. Drag-drop e suporte a FIT (Garmin)
+          entram em versão futura.
         </p>
       </header>
 

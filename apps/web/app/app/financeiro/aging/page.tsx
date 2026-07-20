@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { accountsPayable, accountsReceivable, persons, suppliers } from '@repo/db/schema'
 /**
  * `/app/financeiro/aging` — relatório aging AP + AR (Sprint 15 Faixa C).
  *
@@ -8,15 +10,8 @@
  *   - 61-90 dias
  *   - 90+ dias
  */
-import { and, eq, isNotNull, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  accountsPayable,
-  accountsReceivable,
-  persons,
-  suppliers,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -129,8 +124,8 @@ export default async function AgingPage() {
       </header>
 
       <p style={{ color: 'var(--ev-muted)', marginTop: 0 }}>
-        Distribuição de lançamentos abertos por faixa de vencimento. AP em pending_approval/approved/scheduled;
-        AR em draft/issued/overdue.
+        Distribuição de lançamentos abertos por faixa de vencimento. AP em
+        pending_approval/approved/scheduled; AR em draft/issued/overdue.
       </p>
 
       <section className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
@@ -168,7 +163,9 @@ function BucketTable({ buckets, kind }: { buckets: AgingBucket[]; kind: 'pagar' 
                 : 'var(--ev-danger, #dc2626)'
         return (
           <div key={b.range} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}
+            >
               <span style={{ fontSize: 'var(--ev-font-sm)' }}>
                 <strong>{b.label}</strong>{' '}
                 <span style={{ color: 'var(--ev-muted)' }}>({b.count})</span>

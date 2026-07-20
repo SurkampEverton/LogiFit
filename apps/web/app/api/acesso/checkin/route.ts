@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 /**
  * POST /api/acesso/checkin — Sprint 08 Faixa B.
  *
@@ -16,7 +17,6 @@
  */
 import { pool } from '@repo/db/client'
 import { validateAccessToken } from '@repo/security'
-import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -34,10 +34,7 @@ function hashDeviceToken(token: string): string {
 export async function POST(request: Request) {
   const deviceToken = request.headers.get('x-device-token') ?? ''
   if (!deviceToken) {
-    return NextResponse.json(
-      { ok: false, error: 'missing device token' },
-      { status: 401 },
-    )
+    return NextResponse.json({ ok: false, error: 'missing device token' }, { status: 401 })
   }
   const tokenHash = hashDeviceToken(deviceToken)
 
@@ -62,10 +59,7 @@ export async function POST(request: Request) {
     )
     const device = deviceRes.rows[0]
     if (!device || device.revoked_at !== null) {
-      return NextResponse.json(
-        { ok: false, error: 'invalid device' },
-        { status: 401 },
-      )
+      return NextResponse.json({ ok: false, error: 'invalid device' }, { status: 401 })
     }
 
     // 2. Lookup secrets ativos
@@ -104,7 +98,12 @@ export async function POST(request: Request) {
       await client.query(
         `INSERT INTO access_events (tenant_id, device_id, member_id, kind, auth_mode, raw)
          VALUES ($1, $2, $3, 'denied_block', 'qr', $4::jsonb)`,
-        [device.tenant_id, device.id, memberId, JSON.stringify({ block_kind: block?.kind, reason: block?.reason })],
+        [
+          device.tenant_id,
+          device.id,
+          memberId,
+          JSON.stringify({ block_kind: block?.kind, reason: block?.reason }),
+        ],
       )
       return NextResponse.json({
         allow: false,
@@ -134,18 +133,15 @@ export async function POST(request: Request) {
     const channel = device.unit_id
       ? `acesso:${device.tenant_id}:${device.unit_id}`
       : `acesso:${device.tenant_id}:_`
-    await client.query(
-      `SELECT pg_notify($1, $2::text)`,
-      [
-        channel,
-        JSON.stringify({
-          event: `member.${kind}`,
-          member_id: memberId,
-          device_id: device.id,
-          at: new Date().toISOString(),
-        }),
-      ],
-    )
+    await client.query(`SELECT pg_notify($1, $2::text)`, [
+      channel,
+      JSON.stringify({
+        event: `member.${kind}`,
+        member_id: memberId,
+        device_id: device.id,
+        at: new Date().toISOString(),
+      }),
+    ])
 
     return NextResponse.json({
       allow: true,

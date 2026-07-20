@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { exercises } from '@repo/db/schema'
 /**
  * `/app/treinos/new` — wizard de criação de workout (Sprint 11 Faixa C).
  *
@@ -6,8 +8,6 @@
  */
 import { and, asc, eq, isNull, or } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { exercises } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 import { NewWorkoutForm } from './new-workout-form'
 

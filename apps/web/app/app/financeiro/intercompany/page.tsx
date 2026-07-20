@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { companies, intercompanyEntries, persons, tenants } from '@repo/db/schema'
 /**
  * `/app/financeiro/intercompany` — dashboard intercompany com matriz from×to (Sprint 16 Faixa C).
  */
 import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { companies, intercompanyEntries, persons, tenants } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -69,9 +69,7 @@ export default async function IntercompanyPage() {
       count: sql<number>`COUNT(*)::int`,
     })
     .from(intercompanyEntries)
-    .where(
-      and(eq(intercompanyEntries.tenantId, tenantId), isNull(intercompanyEntries.settledAt)),
-    )
+    .where(and(eq(intercompanyEntries.tenantId, tenantId), isNull(intercompanyEntries.settledAt)))
     .groupBy(intercompanyEntries.fromCompanyId, intercompanyEntries.toCompanyId)
     .orderBy(desc(sql`SUM(${intercompanyEntries.amountCents})`))
 
@@ -119,7 +117,11 @@ export default async function IntercompanyPage() {
       </header>
 
       {!isOwned && (
-        <div className="ev-alert ev-alert-warning" role="alert" style={{ padding: 'var(--ev-space-md)' }}>
+        <div
+          className="ev-alert ev-alert-warning"
+          role="alert"
+          style={{ padding: 'var(--ev-space-md)' }}
+        >
           <strong>Intercompany indisponível</strong> — topology={tenant?.topology}. Apenas{' '}
           <code>owned</code> permite IC (regra 25).
         </div>
@@ -216,7 +218,9 @@ export default async function IntercompanyPage() {
       </section>
 
       <section className="ev-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <header style={{ padding: 'var(--ev-space-md)', borderBottom: '1px solid var(--ev-border)' }}>
+        <header
+          style={{ padding: 'var(--ev-space-md)', borderBottom: '1px solid var(--ev-border)' }}
+        >
           <h2 style={{ margin: 0, fontSize: 'var(--ev-font-md)' }}>Lançamentos recentes</h2>
         </header>
         {recentEntries.length === 0 ? (
@@ -252,7 +256,10 @@ export default async function IntercompanyPage() {
                         {badge.label}
                       </span>
                       {e.requiresNfeTransfer && !e.nfeTransferEmissionId && (
-                        <span style={{ marginLeft: 4, fontSize: 'var(--ev-font-xs)' }} title="Requer NF-e">
+                        <span
+                          style={{ marginLeft: 4, fontSize: 'var(--ev-font-xs)' }}
+                          title="Requer NF-e"
+                        >
                           ⚠
                         </span>
                       )}

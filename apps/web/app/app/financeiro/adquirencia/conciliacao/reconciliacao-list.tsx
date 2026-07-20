@@ -106,8 +106,8 @@ export function ReconciliacaoList({ sales }: { sales: PendingSale[] }) {
 
             {sugs && sugs.length === 0 && (
               <p style={{ marginTop: 8, color: 'var(--ev-muted)' }}>
-                Nenhum candidato encontrado em ± 7 dias do settlement. Importe extrato
-                bancário ou aguarde settle.
+                Nenhum candidato encontrado em ± 7 dias do settlement. Importe extrato bancário ou
+                aguarde settle.
               </p>
             )}
 
@@ -133,9 +133,7 @@ export function ReconciliacaoList({ sales }: { sales: PendingSale[] }) {
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                       <strong>{formatBrl(sug.bankTx.amountCents)}</strong>
                       <span style={{ flex: 1 }} />
-                      <span style={{ fontWeight: 600 }}>
-                        {Math.round(sug.score * 100)}%
-                      </span>
+                      <span style={{ fontWeight: 600 }}>{Math.round(sug.score * 100)}%</span>
                     </div>
                     <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
                       {new Date(sug.bankTx.postedAt).toLocaleDateString('pt-BR')} ·{' '}

@@ -1,10 +1,10 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 /**
  * Branding form — Sprint 29 Faixa C.
  */
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { upsertBranding } from '../../nutri/actions'
 
 interface Props {
@@ -186,7 +186,8 @@ export function BrandingForm({ initial }: Props) {
       </div>
 
       <p style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
-        Upload de logo + assinatura digitalizada entra em Sprint 29b (depende MinIO storage adapter).
+        Upload de logo + assinatura digitalizada entra em Sprint 29b (depende MinIO storage
+        adapter).
       </p>
     </form>
   )

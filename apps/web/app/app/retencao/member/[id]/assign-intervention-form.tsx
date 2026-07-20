@@ -102,9 +102,7 @@ export function AssignInterventionForm({
           {pending ? 'Atribuindo...' : 'Atribuir intervenção'}
         </button>
         {message && (
-          <span style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
-            {message}
-          </span>
+          <span style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>{message}</span>
         )}
       </div>
     </form>

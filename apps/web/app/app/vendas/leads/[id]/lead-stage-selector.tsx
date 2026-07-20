@@ -65,11 +65,7 @@ export function LeadStageSelector({ leadId, currentStageId, stages }: Props) {
         })}
       </div>
       {error && (
-        <div
-          role="alert"
-          className="text-xs"
-          style={{ color: 'var(--ev-danger, #ef4444)' }}
-        >
+        <div role="alert" className="text-xs" style={{ color: 'var(--ev-danger, #ef4444)' }}>
           {error}
         </div>
       )}

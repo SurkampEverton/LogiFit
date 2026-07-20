@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { promotions } from '@repo/db/schema'
 /**
  * `/app/financeiro/promocoes` — lista cupons (Sprint 05 Faixa C).
  */
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { promotions } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -44,10 +44,7 @@ export default async function PromocoesPage({
   return (
     <div className="mx-auto max-w-6xl px-6 py-8 space-y-6">
       <nav className="text-sm">
-        <Link
-          href="/app/financeiro"
-          className="text-[color:var(--ev-text-muted)] hover:underline"
-        >
+        <Link href="/app/financeiro" className="text-[color:var(--ev-text-muted)] hover:underline">
           ← Voltar para Financeiro
         </Link>
       </nav>
@@ -71,9 +68,7 @@ export default async function PromocoesPage({
       <div className="flex items-center gap-3 text-sm">
         <Link
           href={
-            includeArchived
-              ? '/app/financeiro/promocoes'
-              : '/app/financeiro/promocoes?archived=1'
+            includeArchived ? '/app/financeiro/promocoes' : '/app/financeiro/promocoes?archived=1'
           }
           className="text-[color:var(--ev-primary)] hover:underline"
         >
@@ -120,9 +115,7 @@ export default async function PromocoesPage({
                   </td>
                   <td className="px-4 py-3 text-xs text-[color:var(--ev-text-muted)] tabular-nums">
                     {new Date(p.validFrom).toLocaleDateString('pt-BR')}
-                    {p.validTo
-                      ? ` → ${new Date(p.validTo).toLocaleDateString('pt-BR')}`
-                      : ' → ∞'}
+                    {p.validTo ? ` → ${new Date(p.validTo).toLocaleDateString('pt-BR')}` : ' → ∞'}
                   </td>
                   <td className="px-4 py-3">
                     {p.archivedAt ? (

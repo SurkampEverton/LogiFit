@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { billingGlosas, billingGuides, members, persons } from '@repo/db/schema'
 /**
  * `/app/fisio/glosas` — lista global de glosas (Sprint 22 Faixa C).
  */
 import { and, desc, eq, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { billingGlosas, billingGuides, members, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -110,9 +110,7 @@ export default async function GlosasPage({
           </div>
         </div>
         <div>
-          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
-            Recuperado
-          </div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Recuperado</div>
           <div
             style={{
               fontSize: 'var(--ev-font-lg)',
@@ -124,9 +122,7 @@ export default async function GlosasPage({
           </div>
         </div>
         <div>
-          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
-            Em aberto
-          </div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Em aberto</div>
           <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>{k.open_count}</div>
         </div>
       </section>

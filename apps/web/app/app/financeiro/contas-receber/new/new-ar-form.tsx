@@ -32,7 +32,10 @@ function dueIn(days: number): string {
 }
 
 function parseBrlToCents(value: string): number {
-  const cleaned = value.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')
+  const cleaned = value
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.')
   const num = Number(cleaned)
   if (!Number.isFinite(num) || num <= 0) return 0
   return Math.round(num * 100)
@@ -141,11 +144,7 @@ export function NewARForm({
 
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span>Pagador (opcional)</span>
-        <select
-          value={payerId}
-          onChange={(e) => setPayerId(e.target.value)}
-          className="ev-input"
-        >
+        <select value={payerId} onChange={(e) => setPayerId(e.target.value)} className="ev-input">
           <option value="">(sem pagador — recebimento anônimo)</option>
           {filteredPayers.slice(0, 50).map((p) => (
             <option key={p.id} value={p.id}>
@@ -229,7 +228,11 @@ export function NewARForm({
       </label>
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <input type="checkbox" checked={markIssued} onChange={(e) => setMarkIssued(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={markIssued}
+          onChange={(e) => setMarkIssued(e.target.checked)}
+        />
         <span>Marcar como emitida imediatamente (caso contrário fica em rascunho)</span>
       </label>
 

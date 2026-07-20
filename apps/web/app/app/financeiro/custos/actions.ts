@@ -63,8 +63,14 @@ const CreateCostEntryInputSchema = z.object({
 const ListCostEntriesInputSchema = z.object({
   companyId: z.string().uuid().optional(),
   categoryId: z.string().uuid().optional(),
-  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   limit: z.number().int().min(1).max(500).default(100),
 })
 
@@ -79,7 +85,10 @@ const CreateRecurringCostInputSchema = z.object({
   dayOfMonth: z.number().int().min(1).max(28),
   description: z.string().max(500).optional(),
   startsAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  endsAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  endsAt: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 })
 
 const ToggleRecurringCostInputSchema = z.object({
@@ -103,10 +112,7 @@ const ForecastInputSchema = z.object({
 
 export const createCostCategory = wrapServerAction(
   { module: 'custos', action: 'category.create', resourceType: 'cost_categories' },
-  async (
-    input: z.infer<typeof CreateCostCategoryInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateCostCategoryInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateCostCategoryInputSchema.parse(input)
     const [row] = await db
       .insert(costCategories)
@@ -134,10 +140,7 @@ export const createCostCategory = wrapServerAction(
 
 export const archiveCostCategory = wrapServerAction(
   { module: 'custos', action: 'category.archive', resourceType: 'cost_categories' },
-  async (
-    input: z.infer<typeof ArchiveCostCategoryInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ArchiveCostCategoryInputSchema>, { session, setAuditResource }) => {
     const parsed = ArchiveCostCategoryInputSchema.parse(input)
     const [row] = await db
       .update(costCategories)
@@ -190,10 +193,7 @@ export const listCostCategories = wrapServerAction(
 
 export const createCostEntry = wrapServerAction(
   { module: 'custos', action: 'entry.create', resourceType: 'cost_entries' },
-  async (
-    input: z.infer<typeof CreateCostEntryInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateCostEntryInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateCostEntryInputSchema.parse(input)
     const [row] = await db
       .insert(costEntries)
@@ -227,10 +227,7 @@ export const createCostEntry = wrapServerAction(
 
 export const listCostEntries = wrapServerAction(
   { module: 'custos', action: 'entry.list' },
-  async (
-    input: z.infer<typeof ListCostEntriesInputSchema>,
-    { session },
-  ) => {
+  async (input: z.infer<typeof ListCostEntriesInputSchema>, { session }) => {
     const parsed = ListCostEntriesInputSchema.parse(input)
     const conditions = [eq(costEntries.tenantId, session.logifit.tenantId)]
     if (parsed.companyId) conditions.push(eq(costEntries.companyId, parsed.companyId))
@@ -264,18 +261,12 @@ export const listCostEntries = wrapServerAction(
 
 export const deleteCostEntry = wrapServerAction(
   { module: 'custos', action: 'entry.delete', resourceType: 'cost_entries' },
-  async (
-    input: z.infer<typeof DeleteCostEntryInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof DeleteCostEntryInputSchema>, { session, setAuditResource }) => {
     const parsed = DeleteCostEntryInputSchema.parse(input)
     const [row] = await db
       .delete(costEntries)
       .where(
-        and(
-          eq(costEntries.id, parsed.entryId),
-          eq(costEntries.tenantId, session.logifit.tenantId),
-        ),
+        and(eq(costEntries.id, parsed.entryId), eq(costEntries.tenantId, session.logifit.tenantId)),
       )
       .returning({ id: costEntries.id })
     if (!row)
@@ -293,10 +284,7 @@ export const deleteCostEntry = wrapServerAction(
 
 export const createRecurringCost = wrapServerAction(
   { module: 'custos', action: 'recurring.create', resourceType: 'recurring_costs' },
-  async (
-    input: z.infer<typeof CreateRecurringCostInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateRecurringCostInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateRecurringCostInputSchema.parse(input)
     const [row] = await db
       .insert(recurringCosts)
@@ -326,10 +314,7 @@ export const createRecurringCost = wrapServerAction(
 
 export const toggleRecurringCost = wrapServerAction(
   { module: 'custos', action: 'recurring.toggle', resourceType: 'recurring_costs' },
-  async (
-    input: z.infer<typeof ToggleRecurringCostInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ToggleRecurringCostInputSchema>, { session, setAuditResource }) => {
     const parsed = ToggleRecurringCostInputSchema.parse(input)
     const [row] = await db
       .update(recurringCosts)
@@ -465,16 +450,8 @@ export const forecastRevenueAction = wrapServerAction(
       })
       .from(contracts)
       .innerJoin(plans, eq(plans.id, contracts.planId))
-      .where(
-        and(
-          eq(contracts.tenantId, session.logifit.tenantId),
-          eq(contracts.status, 'active'),
-        ),
-      )
-    const baselineMonthlyCents = baselineRows.reduce(
-      (acc, row) => acc + row.priceCents,
-      0,
-    )
+      .where(and(eq(contracts.tenantId, session.logifit.tenantId), eq(contracts.status, 'active')))
+    const baselineMonthlyCents = baselineRows.reduce((acc, row) => acc + row.priceCents, 0)
 
     // Churn heurístico: simples — contratos cancelados últimos 6m vs base ativa
     let churnRate = parsed.manualChurnRate ?? 0

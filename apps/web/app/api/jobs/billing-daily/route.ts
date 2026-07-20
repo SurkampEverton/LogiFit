@@ -1,3 +1,4 @@
+import { db } from '@repo/db/client'
 /**
  * POST /api/jobs/billing-daily — Sprint 04 Faixa D.
  *
@@ -14,7 +15,6 @@
  */
 import { sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
-import { db } from '@repo/db/client'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -65,9 +65,7 @@ export async function POST(request: Request) {
     const result = await db.execute<{ create_recurring_invoices: BillingDailyResult }>(
       sql`SELECT create_recurring_invoices() AS create_recurring_invoices`,
     )
-    const data = result.rows[0]?.create_recurring_invoices as
-      | BillingDailyResult
-      | undefined
+    const data = result.rows[0]?.create_recurring_invoices as BillingDailyResult | undefined
     if (!data) {
       throw new Error('create_recurring_invoices() returned empty')
     }

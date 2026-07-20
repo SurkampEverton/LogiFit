@@ -124,7 +124,13 @@ export function AnticipationForm({
             <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
               Taxa estimada
             </div>
-            <div style={{ fontSize: 'var(--ev-font-md)', fontWeight: 600, color: 'var(--ev-danger, #b91c1c)' }}>
+            <div
+              style={{
+                fontSize: 'var(--ev-font-md)',
+                fontWeight: 600,
+                color: 'var(--ev-danger, #b91c1c)',
+              }}
+            >
               − {formatBrl(summary.feeCents)} ({summary.ratePct.toFixed(2)}%)
             </div>
           </div>
@@ -132,20 +138,26 @@ export function AnticipationForm({
             <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
               Antecipado
             </div>
-            <div style={{ fontSize: 'var(--ev-font-md)', fontWeight: 600, color: 'var(--ev-success, #16a34a)' }}>
+            <div
+              style={{
+                fontSize: 'var(--ev-font-md)',
+                fontWeight: 600,
+                color: 'var(--ev-success, #16a34a)',
+              }}
+            >
               {formatBrl(summary.anticipated)}
             </div>
           </div>
           <div>
-            <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Dias média</div>
+            <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
+              Dias média
+            </div>
             <div style={{ fontSize: 'var(--ev-font-md)', fontWeight: 600 }}>{summary.avgDays}d</div>
           </div>
         </div>
       )}
 
-      {message && (
-        <div className="ev-banner ev-banner-info">{message}</div>
-      )}
+      {message && <div className="ev-banner ev-banner-info">{message}</div>}
 
       <table className="ev-table" style={{ width: '100%' }}>
         <thead>
@@ -164,11 +176,7 @@ export function AnticipationForm({
           {sales.map((s) => (
             <tr key={s.id}>
               <td>
-                <input
-                  type="checkbox"
-                  checked={selected.has(s.id)}
-                  onChange={() => toggle(s.id)}
-                />
+                <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggle(s.id)} />
               </td>
               <td style={{ fontSize: 'var(--ev-font-xs)' }}>{s.externalId.slice(-12)}</td>
               <td style={{ fontSize: 'var(--ev-font-xs)' }}>
@@ -176,9 +184,7 @@ export function AnticipationForm({
               </td>
               <td>{s.cardBrand}</td>
               <td>{s.installments}x</td>
-              <td style={{ textAlign: 'right', fontWeight: 600 }}>
-                {formatBrl(s.netAmountCents)}
-              </td>
+              <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatBrl(s.netAmountCents)}</td>
               <td style={{ fontSize: 'var(--ev-font-xs)' }}>{s.expectedSettlementDate}</td>
               <td>{daysUntil(s.expectedSettlementDate)}d</td>
             </tr>

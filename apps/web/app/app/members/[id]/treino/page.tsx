@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { members, persons, prescriptions, workoutSessions, workouts } from '@repo/db/schema'
 /**
  * `/app/members/[id]/treino` — ficha de treino do member (Sprint 11 Faixa C).
  *
@@ -7,14 +9,6 @@
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import {
-  members,
-  persons,
-  prescriptions,
-  workoutSessions,
-  workouts,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 import { PrescribeWorkoutForm } from './prescribe-form'
 import { StartSessionButton } from './start-session-button'
@@ -80,9 +74,7 @@ export default async function MemberTreinoPage({
       calculatedKcal: workoutSessions.calculatedKcal,
     })
     .from(workoutSessions)
-    .where(
-      and(eq(workoutSessions.tenantId, tenantId), eq(workoutSessions.memberId, id)),
-    )
+    .where(and(eq(workoutSessions.tenantId, tenantId), eq(workoutSessions.memberId, id)))
     .orderBy(desc(workoutSessions.startedAt))
     .limit(10)
 
@@ -111,9 +103,7 @@ export default async function MemberTreinoPage({
         >
           ← Voltar pro perfil
         </Link>
-        <h1 className="text-3xl font-semibold tracking-tight">
-          Treinos · {member.personName}
-        </h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Treinos · {member.personName}</h1>
         <p className="text-sm text-[color:var(--ev-text-muted)]">
           {activePrescriptions.length} prescrição(ões) ativa(s) · {recentSessions.length}{' '}
           sessão(ões) recente(s)
@@ -168,7 +158,7 @@ export default async function MemberTreinoPage({
                   <div className="min-w-0">
                     <h3 className="font-medium leading-tight truncate">
                       {p.kind === 'workout'
-                        ? p.workoutName ?? '(workout removido)'
+                        ? (p.workoutName ?? '(workout removido)')
                         : `Prescrição ${p.kind}`}
                     </h3>
                     <p className="text-xs text-[color:var(--ev-text-muted)]">
@@ -187,18 +177,11 @@ export default async function MemberTreinoPage({
                         Ver ficha
                       </Link>
                     )}
-                    {!activeSession && (
-                      <StartSessionButton
-                        prescriptionId={p.id}
-                        memberId={id}
-                      />
-                    )}
+                    {!activeSession && <StartSessionButton prescriptionId={p.id} memberId={id} />}
                   </div>
                 </header>
                 {p.notes && (
-                  <p className="text-xs text-[color:var(--ev-text-muted)] italic">
-                    {p.notes}
-                  </p>
+                  <p className="text-xs text-[color:var(--ev-text-muted)] italic">{p.notes}</p>
                 )}
               </li>
             ))}
@@ -241,8 +224,7 @@ export default async function MemberTreinoPage({
                   <div className="text-xs text-[color:var(--ev-text-muted)]">
                     {s.finishedAt
                       ? `Finalizada · ${Math.round(
-                          (new Date(s.finishedAt).getTime() -
-                            new Date(s.startedAt).getTime()) /
+                          (new Date(s.finishedAt).getTime() - new Date(s.startedAt).getTime()) /
                             60000,
                         )}min`
                       : 'Em andamento'}

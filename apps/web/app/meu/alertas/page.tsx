@@ -1,3 +1,4 @@
+import { pool } from '@repo/db/client'
 /**
  * /meu/alertas — paciente vê alertas de lesão envolvendo ele (Sprint 27 Faixa C).
  *
@@ -5,7 +6,6 @@
  * RLS member: `member_id = current_setting('app.member_id')`.
  */
 import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { withMemberContext } from '../../lib/member-session'
 import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
 import { PassportNeedsLink } from '../_components/passport-needs-link'
@@ -78,9 +78,8 @@ export default async function MeuAlertasPage() {
       <header>
         <h1 className="ev-portal-h1">Alertas de lesão</h1>
         <p className="ev-portal-muted">
-          Quando um profissional registra uma lesão sua, podemos adaptar seu treino
-          automaticamente. Você vê aqui tudo que envolve sua ficha — quem prescreveu o quê e
-          como foi resolvido.
+          Quando um profissional registra uma lesão sua, podemos adaptar seu treino automaticamente.
+          Você vê aqui tudo que envolve sua ficha — quem prescreveu o quê e como foi resolvido.
         </p>
       </header>
 
@@ -92,12 +91,9 @@ export default async function MeuAlertasPage() {
         <ol className="ev-portal-timeline">
           {rows.map((a) => (
             <li key={a.id} className="ev-portal-timeline-item">
-              <div className="ev-portal-h3">
-                {a.cid_description ?? a.primary_cid_code}
-              </div>
+              <div className="ev-portal-h3">{a.cid_description ?? a.primary_cid_code}</div>
               <div className="ev-portal-muted">
-                Registrado em {formatDate(a.created_at)} · CID{' '}
-                <code>{a.primary_cid_code}</code>
+                Registrado em {formatDate(a.created_at)} · CID <code>{a.primary_cid_code}</code>
               </div>
               <span
                 className={`ev-portal-badge ${STATUS_BADGE[a.status] ?? 'ev-portal-badge'}`}
@@ -105,9 +101,7 @@ export default async function MeuAlertasPage() {
               >
                 {STATUS_LABEL[a.status] ?? a.status}
               </span>
-              {a.adaptation_summary ? (
-                <p style={{ marginTop: 8 }}>{a.adaptation_summary}</p>
-              ) : null}
+              {a.adaptation_summary ? <p style={{ marginTop: 8 }}>{a.adaptation_summary}</p> : null}
             </li>
           ))}
         </ol>

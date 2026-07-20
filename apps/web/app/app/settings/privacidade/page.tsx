@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { dataSubjectRequests, persons } from '@repo/db/schema'
 /**
  * `/app/settings/privacidade` — fila DPO de Data Subject Requests (LGPD art. 18).
  *
@@ -10,8 +12,6 @@
  */
 import { and, desc, eq, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { dataSubjectRequests, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -117,8 +117,8 @@ export default async function PrivacidadePage({
       <header className="space-y-1">
         <h1 className="text-3xl font-semibold tracking-tight">Privacidade · DSR</h1>
         <p className="text-sm text-[color:var(--ev-text-muted)]">
-          Direitos do titular LGPD art. 18 · SLA 15 dias úteis (Resolução ANPD 2/2024).
-          Portal self-service `/meu/privacidade` no Sprint 26.
+          Direitos do titular LGPD art. 18 · SLA 15 dias úteis (Resolução ANPD 2/2024). Portal
+          self-service `/meu/privacidade` no Sprint 26.
         </p>
       </header>
 
@@ -181,7 +181,10 @@ export default async function PrivacidadePage({
         <div className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-8 text-center">
           <p className="text-[color:var(--ev-text-muted)]">
             Nenhuma DSR{' '}
-            {stateFilter && stateFilter !== 'all' ? `com estado "${STATE_LABEL[stateFilter]}"` : 'registrada'}.
+            {stateFilter && stateFilter !== 'all'
+              ? `com estado "${STATE_LABEL[stateFilter]}"`
+              : 'registrada'}
+            .
           </p>
           <p className="text-xs text-[color:var(--ev-text-muted)] mt-2">
             Titular pode solicitar via email <strong>privacidade@logifit.com.br</strong> (canal

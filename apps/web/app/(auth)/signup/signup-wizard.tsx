@@ -137,8 +137,8 @@ export function SignupWizard() {
       >
         <h2 className="text-xl font-semibold">Tenant criado!</h2>
         <p className="text-base text-[color:var(--ev-text-muted)]">
-          Enviamos um link mágico para <strong>{form.adminEmail}</strong>. Clique no link para
-          fazer o primeiro login.
+          Enviamos um link mágico para <strong>{form.adminEmail}</strong>. Clique no link para fazer
+          o primeiro login.
         </p>
         <p className="text-sm text-[color:var(--ev-text-muted)]">
           Subdomínio do tenant: <code>{form.empresaTenantSlug}.logifit.com.br</code>
@@ -220,9 +220,7 @@ export function SignupWizard() {
 
           <NavButtons
             onNext={() => setStep('unidade')}
-            nextDisabled={
-              !form.cnpj || !form.empresaRazaoSocial || !form.empresaTenantSlug
-            }
+            nextDisabled={!form.cnpj || !form.empresaRazaoSocial || !form.empresaTenantSlug}
           />
         </fieldset>
       )}
@@ -245,9 +243,7 @@ export function SignupWizard() {
               label="CEP"
               id="cep"
               value={form.unitAddress.cep}
-              onChange={(v) =>
-                setForm({ ...form, unitAddress: { ...form.unitAddress, cep: v } })
-              }
+              onChange={(v) => setForm({ ...form, unitAddress: { ...form.unitAddress, cep: v } })}
             />
             <Field
               label="Logradouro"

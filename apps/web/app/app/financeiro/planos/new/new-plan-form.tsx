@@ -151,9 +151,7 @@ export function NewPlanForm({ availableCompanies }: { availableCompanies: Compan
           <select
             id="cycle"
             value={billingCycle}
-            onChange={(e) =>
-              setBillingCycle(e.target.value as 'monthly' | 'quarterly' | 'yearly')
-            }
+            onChange={(e) => setBillingCycle(e.target.value as 'monthly' | 'quarterly' | 'yearly')}
             className="block w-full rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-input-bg)] px-3 py-2"
             style={{ minHeight: 'var(--ev-input-min, 48px)' }}
           >

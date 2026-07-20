@@ -14,13 +14,9 @@
  * - `getAssistantSettings()` — read pra layout/page consumir.
  */
 import { db } from '@repo/db/client'
-import {
-  aiProviderConfigs,
-  aiProviders,
-  tenantAssistantSettings,
-} from '@repo/db/schema'
+import { aiProviderConfigs, aiProviders, tenantAssistantSettings } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
-import { encryptSecret, decryptSecret } from '@repo/security'
+import { decryptSecret, encryptSecret } from '@repo/security'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { wrapServerAction } from '../../../lib/wrap-action'

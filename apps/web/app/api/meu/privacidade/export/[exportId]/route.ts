@@ -1,3 +1,4 @@
+import { pool } from '@repo/db/client'
 /**
  * GET /api/meu/privacidade/export/[exportId] — Sprint 26 Faixa C (26b).
  *
@@ -8,8 +9,7 @@
  * MVP: gera CSV inline a partir da query atual (sem materialização persistida).
  * Sprint 26c: job materializa em MinIO, esta rota só faz `signedUrl()` redirect.
  */
-import { NextRequest, NextResponse } from 'next/server'
-import { pool } from '@repo/db/client'
+import { type NextRequest, NextResponse } from 'next/server'
 import { getMemberSession, withMemberContext } from '../../../../../lib/member-session'
 
 export const runtime = 'nodejs'

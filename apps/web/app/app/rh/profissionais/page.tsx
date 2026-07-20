@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { persons, professionalContracts } from '@repo/db/schema'
 /**
  * `/app/rh/profissionais` — lista de contratos profissionais (Sprint 23 Faixa C).
  */
 import { desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { persons, professionalContracts } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -58,10 +58,9 @@ export default async function ProfissionaisPage() {
 
       <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
         <p style={{ marginTop: 0, marginBottom: 0 }}>
-          Cada contrato vincula <strong>person × company × service_type</strong>{' '}
-          com versão imutável após approve. Gate ADR 0055 valida{' '}
-          <code>professional_registrations</code> ativo coerente com o serviço
-          (fisio→CREFITO, personal→CREF, nutri→CRN, medico→CRM).
+          Cada contrato vincula <strong>person × company × service_type</strong> com versão imutável
+          após approve. Gate ADR 0055 valida <code>professional_registrations</code> ativo coerente
+          com o serviço (fisio→CREFITO, personal→CREF, nutri→CRN, medico→CRM).
         </p>
       </div>
 

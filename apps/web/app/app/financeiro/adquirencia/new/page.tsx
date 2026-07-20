@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { bankAccounts, companies, persons } from '@repo/db/schema'
 /**
  * `/app/financeiro/adquirencia/new` — formulário pra conectar maquininha (Sprint 18 Faixa C).
  */
 import { and, asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { bankAccounts, companies, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 import { NewAcquirerConnectionForm } from './new-acquirer-connection-form'
 
@@ -22,7 +22,11 @@ export default async function NewAdquirenciaPage() {
     .orderBy(asc(persons.name))
 
   const bankAccountsRows = await db
-    .select({ id: bankAccounts.id, nickname: bankAccounts.nickname, bankName: bankAccounts.bankName })
+    .select({
+      id: bankAccounts.id,
+      nickname: bankAccounts.nickname,
+      bankName: bankAccounts.bankName,
+    })
     .from(bankAccounts)
     .where(and(eq(bankAccounts.tenantId, tenantId)))
 
@@ -36,12 +40,14 @@ export default async function NewAdquirenciaPage() {
         </Link>
       </header>
 
-      <div className="ev-card" style={{ padding: 'var(--ev-space-md)', background: 'var(--ev-info-soft, #eff6ff)' }}>
-        <strong>MVP — provider mock no Sprint 18a:</strong>{' '}
-        Adapters reais (Cielo/Stone/Rede/GetNet/PagSeguro) entram no Sprint 18b
-        após POC com credentials sandbox. Use <code>mock</code> + sandbox=true
-        para gerar vendas determinísticas que exercitam toda a pipeline
-        (sync → conciliação → antecipação). ADR 0039.
+      <div
+        className="ev-card"
+        style={{ padding: 'var(--ev-space-md)', background: 'var(--ev-info-soft, #eff6ff)' }}
+      >
+        <strong>MVP — provider mock no Sprint 18a:</strong> Adapters reais
+        (Cielo/Stone/Rede/GetNet/PagSeguro) entram no Sprint 18b após POC com credentials sandbox.
+        Use <code>mock</code> + sandbox=true para gerar vendas determinísticas que exercitam toda a
+        pipeline (sync → conciliação → antecipação). ADR 0039.
       </div>
 
       <NewAcquirerConnectionForm

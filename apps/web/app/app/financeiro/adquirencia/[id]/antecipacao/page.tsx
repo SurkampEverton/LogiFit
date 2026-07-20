@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { acquirerConnections, acquirerSales, anticipations } from '@repo/db/schema'
 /**
  * `/app/financeiro/adquirencia/[id]/antecipacao` — solicitação de antecipação (Sprint 18 Faixa C).
  *
@@ -7,8 +9,6 @@
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import { acquirerConnections, acquirerSales, anticipations } from '@repo/db/schema'
 import { requireFullSession } from '../../../../../lib/session'
 import { AnticipationForm } from './anticipation-form'
 
@@ -18,9 +18,7 @@ function formatBrl(cents: number): string {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-export default async function AnticipationPage({
-  params,
-}: { params: Promise<{ id: string }> }) {
+export default async function AnticipationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const session = await requireFullSession(`/app/financeiro/adquirencia/${id}/antecipacao`)
   const tenantId = session.logifit.tenantId
@@ -86,10 +84,10 @@ export default async function AnticipationPage({
 
       <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
         <p style={{ marginTop: 0 }}>
-          Solicita antecipação de recebíveis pendentes. Provider aplica taxa
-          mensal sobre o valor original — quanto mais próximo do settlement, menor
-          o custo. <strong>Mock approva sempre com 1.99% a.m.</strong>; adapters
-          reais (Stone/Cielo) variam por contrato no Sprint 18b.
+          Solicita antecipação de recebíveis pendentes. Provider aplica taxa mensal sobre o valor
+          original — quanto mais próximo do settlement, menor o custo.{' '}
+          <strong>Mock approva sempre com 1.99% a.m.</strong>; adapters reais (Stone/Cielo) variam
+          por contrato no Sprint 18b.
         </p>
       </div>
 

@@ -13,14 +13,9 @@
  * Chama `forecastCashflow()` pure function e retorna array de pontos diários.
  */
 
-import { db } from '@repo/db/client'
 import { forecastCashflow } from '@repo/db/bancos'
-import {
-  accountsPayable,
-  accountsReceivable,
-  bankAccounts,
-  invoices,
-} from '@repo/db/schema'
+import { db } from '@repo/db/client'
+import { accountsPayable, accountsReceivable, bankAccounts, invoices } from '@repo/db/schema'
 import { and, eq, gte, isNull, lte, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { wrapServerAction } from '../../../lib/wrap-action'
@@ -32,14 +27,14 @@ const ForecastInputSchema = z.object({
 
 export const forecastCashflowAction = wrapServerAction(
   { module: 'financeiro', action: 'cashflow.forecast', resourceType: 'cashflow' },
-  async (
-    input: z.infer<typeof ForecastInputSchema> | undefined,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ForecastInputSchema> | undefined, { session, setAuditResource }) => {
     const parsed = ForecastInputSchema.parse(input ?? {})
 
     // Saldo atual
-    const whereBank = [eq(bankAccounts.tenantId, session.logifit.tenantId), isNull(bankAccounts.archivedAt)]
+    const whereBank = [
+      eq(bankAccounts.tenantId, session.logifit.tenantId),
+      isNull(bankAccounts.archivedAt),
+    ]
     if (parsed.companyId) whereBank.push(eq(bankAccounts.companyId, parsed.companyId))
     const [bal] = await db
       .select({
@@ -106,12 +101,18 @@ export const forecastCashflowAction = wrapServerAction(
       .where(and(...whereInv))
 
     const futureAps = aps.map((a) => ({
-      dueDate: typeof a.dueDate === 'string' ? a.dueDate : new Date(a.dueDate as Date).toISOString().slice(0, 10),
+      dueDate:
+        typeof a.dueDate === 'string'
+          ? a.dueDate
+          : new Date(a.dueDate as Date).toISOString().slice(0, 10),
       amountCents: a.amountCents,
     }))
     const futureArs = [
       ...ars.map((a) => ({
-        dueDate: typeof a.dueDate === 'string' ? a.dueDate : new Date(a.dueDate as Date).toISOString().slice(0, 10),
+        dueDate:
+          typeof a.dueDate === 'string'
+            ? a.dueDate
+            : new Date(a.dueDate as Date).toISOString().slice(0, 10),
         amountCents: a.amountCents,
       })),
       ...invs.map((i) => ({

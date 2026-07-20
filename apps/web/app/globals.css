@@ -454,7 +454,7 @@ body {
 }
 
 .ev-portal-timeline-item::before {
-  content: '';
+  content: "";
   position: absolute;
   left: calc(-1 * var(--ev-space-4) - 5px);
   top: 6px;

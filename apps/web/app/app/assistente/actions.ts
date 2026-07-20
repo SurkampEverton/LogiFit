@@ -16,16 +16,15 @@
  */
 
 import {
+  type AI_PLAN_LIMITS,
   type AssistantLayer,
   type AssistantPersona,
-  inferPersona,
-  AI_PLAN_LIMITS,
-  checkQuota,
   chatComplete,
-  resolveModelOrStubFromEnv,
+  checkQuota,
   getAvailableTools,
+  inferPersona,
+  resolveModelOrStubFromEnv,
 } from '@repo/ai'
-import { registerAllAITools } from '../../lib/ai-tools'
 import { db } from '@repo/db/client'
 import {
   aiAuditLog,
@@ -35,8 +34,9 @@ import {
   assistantSessions,
 } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
-import { and, count as sqlCount, eq, gt } from 'drizzle-orm'
+import { and, eq, gt, count as sqlCount } from 'drizzle-orm'
 import { z } from 'zod'
+import { registerAllAITools } from '../../lib/ai-tools'
 import { wrapServerAction } from '../../lib/wrap-action'
 
 // ─── Zod schemas ──────────────────────────────────────────────────────────
@@ -102,7 +102,9 @@ function planTierFromSession(roles: string[]): keyof typeof AI_PLAN_LIMITS {
   return 'starter'
 }
 
-async function getCurrentUsage(tenantId: string): Promise<{ monthlyUsed: number; dailyUsed: number }> {
+async function getCurrentUsage(
+  tenantId: string,
+): Promise<{ monthlyUsed: number; dailyUsed: number }> {
   const monthBucket = new Date().toISOString().slice(0, 7) // YYYY-MM
   const rows = await db
     .select({ calls: aiTenantUsage.callsCount })
@@ -200,8 +202,7 @@ export const newSession = wrapServerAction(
   async (input: z.infer<typeof NewSessionInput>, { session, setAuditResource }) => {
     const parsed = NewSessionInput.parse(input)
     const persona =
-      parsed.personaOverride ??
-      inferPersona({ roles: session.logifit.roles, isMember: false })
+      parsed.personaOverride ?? inferPersona({ roles: session.logifit.roles, isMember: false })
 
     const [row] = await db
       .insert(assistantSessions)
@@ -219,11 +220,12 @@ export const newSession = wrapServerAction(
         title: assistantSessions.title,
       })
 
-    if (!row) throw new ApiException({
-      code: 'INTERNAL_ERROR',
-      message: 'Falha ao criar sessão',
-      request_id: crypto.randomUUID(),
-    })
+    if (!row)
+      throw new ApiException({
+        code: 'INTERNAL_ERROR',
+        message: 'Falha ao criar sessão',
+        request_id: crypto.randomUUID(),
+      })
 
     setAuditResource(row.id)
     return { sessionId: row.id, persona: row.persona, title: row.title }
@@ -267,7 +269,9 @@ export const sendMessage = wrapServerAction(
         memberId: assistantSessions.memberId,
       })
       .from(assistantSessions)
-      .where(and(eq(assistantSessions.id, parsed.sessionId), eq(assistantSessions.tenantId, tenantId)))
+      .where(
+        and(eq(assistantSessions.id, parsed.sessionId), eq(assistantSessions.tenantId, tenantId)),
+      )
       .limit(1)
     if (sessionRow.length === 0) {
       throw new ApiException({
@@ -376,7 +380,11 @@ export const sendMessage = wrapServerAction(
 // ─── proposeAction (Camada 3) ────────────────────────────────────────────
 
 export const proposeAction = wrapServerAction(
-  { module: 'assistente', action: 'assistant.action.propose', resourceType: 'assistant_action_proposals' },
+  {
+    module: 'assistente',
+    action: 'assistant.action.propose',
+    resourceType: 'assistant_action_proposals',
+  },
   async (input: z.infer<typeof ProposeActionInput>, { session, setAuditResource }) => {
     const parsed = ProposeActionInput.parse(input)
 
@@ -413,7 +421,11 @@ export const proposeAction = wrapServerAction(
 // ─── confirmProposal ─────────────────────────────────────────────────────
 
 export const confirmProposal = wrapServerAction(
-  { module: 'assistente', action: 'assistant.action.confirm', resourceType: 'assistant_action_proposals' },
+  {
+    module: 'assistente',
+    action: 'assistant.action.confirm',
+    resourceType: 'assistant_action_proposals',
+  },
   async (input: z.infer<typeof ProposalIdInput>, { session, setAuditResource }) => {
     const parsed = ProposalIdInput.parse(input)
 
@@ -476,7 +488,11 @@ export const confirmProposal = wrapServerAction(
 // ─── rejectProposal ─────────────────────────────────────────────────────
 
 export const rejectProposal = wrapServerAction(
-  { module: 'assistente', action: 'assistant.action.reject', resourceType: 'assistant_action_proposals' },
+  {
+    module: 'assistente',
+    action: 'assistant.action.reject',
+    resourceType: 'assistant_action_proposals',
+  },
   async (input: z.infer<typeof ProposalIdInput>, { session, setAuditResource }) => {
     const parsed = ProposalIdInput.parse(input)
 

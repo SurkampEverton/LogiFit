@@ -31,8 +31,8 @@
  *     },
  *   )
  */
-import { wrapAction, type WrapActionContext } from '@repo/errors'
-import { z, type ZodTypeAny } from 'zod'
+import { type WrapActionContext, wrapAction } from '@repo/errors'
+import { type ZodTypeAny, z } from 'zod'
 import {
   type PassportSessionClaims,
   requirePassportMfa,
@@ -89,10 +89,7 @@ export interface WrappedPassportActionContext {
  */
 export function wrapPassportAction<TSchema extends ZodTypeAny, TData>(
   ctx: WrapPassportActionContext<TSchema>,
-  handler: (
-    input: z.infer<TSchema>,
-    wrapped: WrappedPassportActionContext,
-  ) => Promise<TData>,
+  handler: (input: z.infer<TSchema>, wrapped: WrappedPassportActionContext) => Promise<TData>,
 ): (rawInput: z.infer<TSchema>) => Promise<TData>
 export function wrapPassportAction<TArgs, TData>(
   ctx: WrapPassportActionContextNoSchema,

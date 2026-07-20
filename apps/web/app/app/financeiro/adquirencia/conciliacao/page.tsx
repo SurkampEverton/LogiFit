@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { acquirerConnections, acquirerSales } from '@repo/db/schema'
 /**
  * `/app/financeiro/adquirencia/conciliacao` — conciliação venda↔bank_tx (Sprint 18 Faixa C).
  *
@@ -6,8 +8,6 @@
  */
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { acquirerConnections, acquirerSales } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 import { ReconciliacaoList } from './reconciliacao-list'
 
@@ -63,18 +63,15 @@ export default async function ConciliacaoAdquirenciaPage() {
 
       <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
         <p style={{ marginTop: 0 }}>
-          Para cada venda settled/anticipated, busca extratos bancários (positivos)
-          em ± 7 dias do settlement esperado e mostra top-3 candidatos com score
-          (peso 55% valor + 35% data + 10% descrição). Verde &gt;90%, azul &gt;70%,
-          amarelo &gt;50%.
+          Para cada venda settled/anticipated, busca extratos bancários (positivos) em ± 7 dias do
+          settlement esperado e mostra top-3 candidatos com score (peso 55% valor + 35% data + 10%
+          descrição). Verde &gt;90%, azul &gt;70%, amarelo &gt;50%.
         </p>
       </div>
 
       {pending.length === 0 ? (
         <div className="ev-card" style={{ padding: 'var(--ev-space-lg)' }}>
-          <p style={{ marginTop: 0 }}>
-            Sem vendas pendentes de conciliação. ✓
-          </p>
+          <p style={{ marginTop: 0 }}>Sem vendas pendentes de conciliação. ✓</p>
         </div>
       ) : (
         <ReconciliacaoList

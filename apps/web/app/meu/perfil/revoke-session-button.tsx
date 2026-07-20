@@ -1,8 +1,8 @@
 'use client'
 
-import { useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { confirm } from '@repo/ui/messages'
+import { useRouter } from 'next/navigation'
+import { useTransition } from 'react'
 import { revokeMySession } from '../actions'
 
 interface Props {

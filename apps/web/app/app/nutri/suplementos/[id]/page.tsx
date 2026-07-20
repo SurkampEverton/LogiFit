@@ -1,9 +1,9 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/nutri/suplementos/[id]` — detalhe + interações (Sprint 30 Faixa C).
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -80,7 +80,12 @@ export default async function SupplementDetailPage({ params }: PageProps) {
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>{s.name}</h1>
         <span style={{ color: 'var(--ev-text-muted)' }}>
@@ -137,7 +142,13 @@ export default async function SupplementDetailPage({ params }: PageProps) {
                   borderRadius: 'var(--ev-radius-sm)',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                  }}
+                >
                   <strong>{it.interacts_with}</strong>
                   <span
                     style={{
@@ -149,7 +160,9 @@ export default async function SupplementDetailPage({ params }: PageProps) {
                     {SEVERITY_LABEL[it.severity] ?? it.severity}
                   </span>
                 </div>
-                <p style={{ margin: '4px 0 0 0', fontSize: 'var(--ev-text-sm)' }}>{it.description}</p>
+                <p style={{ margin: '4px 0 0 0', fontSize: 'var(--ev-text-sm)' }}>
+                  {it.description}
+                </p>
                 {it.source ? (
                   <small style={{ color: 'var(--ev-text-muted)' }}>Fonte: {it.source}</small>
                 ) : null}

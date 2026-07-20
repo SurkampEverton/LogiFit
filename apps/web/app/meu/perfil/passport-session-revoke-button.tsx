@@ -1,5 +1,7 @@
 'use client'
 
+import { confirm } from '@repo/ui/messages'
+import { useRouter } from 'next/navigation'
 /**
  * /meu/perfil — revoke session passport (Sprint 02b4 — passport_global).
  *
@@ -8,8 +10,6 @@
  * requireMfa: true })`.
  */
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { confirm } from '@repo/ui/messages'
 import { revokeMyPassportSession } from './passport-actions'
 
 interface Props {

@@ -31,7 +31,11 @@ const RegisterPushTokenSchema = z.object({
   deviceId: z.string().min(8).max(120).optional().nullable(),
   deviceModel: z.string().max(120).optional().nullable(),
   osVersion: z.string().max(40).optional().nullable(),
-  appVersion: z.string().regex(/^\d+\.\d+\.\d+$/).optional().nullable(),
+  appVersion: z
+    .string()
+    .regex(/^\d+\.\d+\.\d+$/)
+    .optional()
+    .nullable(),
   locale: z.string().max(20).default('pt-BR'),
 })
 
@@ -218,9 +222,7 @@ export async function checkAppVersion(input: unknown): Promise<VersionCheckResul
   const minRow = r.rows.find((x) => x.min_required)
   const minVersion = minRow?.version ?? null
 
-  const updateRequired = minVersion
-    ? compareSemver(parsed.currentVersion, minVersion) < 0
-    : false
+  const updateRequired = minVersion ? compareSemver(parsed.currentVersion, minVersion) < 0 : false
   const updateAvailable = compareSemver(parsed.currentVersion, latest.version) < 0
 
   return {

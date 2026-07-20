@@ -24,8 +24,8 @@
  *     await withMemberContext(session.member, async () => { ... })
  *   }
  */
-import { getMemberSession, type MemberSessionClaims } from './member-session'
-import { getPassportSession, type PassportSessionClaims } from './passport-session'
+import { type MemberSessionClaims, getMemberSession } from './member-session'
+import { type PassportSessionClaims, getPassportSession } from './passport-session'
 
 export type ActiveSession =
   | { kind: 'passport'; passport: PassportSessionClaims }

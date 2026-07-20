@@ -6,7 +6,7 @@
  * Pra navegação web normal, a página `/meu/login/verify` Server Component já
  * faz isso direto via Server Action.
  */
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { verifyMagicLink } from '../../../meu/actions'
 
 export const runtime = 'nodejs'

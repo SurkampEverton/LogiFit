@@ -1,3 +1,5 @@
+import { pool } from '@repo/db/client'
+import Link from 'next/link'
 /**
  * /meu — home do portal do paciente.
  *
@@ -21,8 +23,6 @@
  * pacientes legacy magic link continuam member_session. Sem session → /meu/login.
  */
 import { redirect } from 'next/navigation'
-import { pool } from '@repo/db/client'
-import Link from 'next/link'
 import { getActiveSession } from '../lib/active-session'
 
 export const dynamic = 'force-dynamic'
@@ -135,17 +135,18 @@ export default async function MyHomePage() {
           {summary.linkedTenants.length === 0 ? (
             <div className="ev-portal-callout" style={{ padding: 'var(--ev-space-md)' }}>
               <p style={{ fontSize: 'var(--ev-text-sm)' }}>
-                Você ainda não está vinculado a nenhuma empresa LogiFit. Quando
-                receber convite por WhatsApp/email, abra o link <code>/i/[token]</code>
+                Você ainda não está vinculado a nenhuma empresa LogiFit. Quando receber convite por
+                WhatsApp/email, abra o link <code>/i/[token]</code>
                 pra aceitar — ou peça pra sua academia/clínica enviar convite.
               </p>
               <p style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
-                Sprint 02b4 ativa "Convidar profissional/empresa" via{' '}
-                <code>/meu/convidar</code>.
+                Sprint 02b4 ativa "Convidar profissional/empresa" via <code>/meu/convidar</code>.
               </p>
             </div>
           ) : (
-            <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 'var(--ev-space-2)' }}>
+            <ul
+              style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 'var(--ev-space-2)' }}
+            >
               {summary.linkedTenants.map((t) => (
                 <li
                   key={t.linkId}
@@ -192,9 +193,9 @@ export default async function MyHomePage() {
             color: 'var(--ev-text-muted)',
           }}
         >
-          ⚠ Sprint 02b3 partial — dashboard passport básico. Sprint 02b4 adiciona
-          tenant picker + cards específicos por tenant ativo (agenda + financeiro +
-          treino + QR) + /meu/convidar (convite inverso).
+          ⚠ Sprint 02b3 partial — dashboard passport básico. Sprint 02b4 adiciona tenant picker +
+          cards específicos por tenant ativo (agenda + financeiro + treino + QR) + /meu/convidar
+          (convite inverso).
         </p>
       </div>
     )

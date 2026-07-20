@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { auditLog } from '@repo/db/schema'
 /**
  * `wrapServerAction()` — wrapper LogiFit-specific de Server Action (Sprint 01a Faixa F).
  *
@@ -26,15 +28,9 @@
  *     async ({ input, session }) => { ... }
  *   )
  */
-import { wrapAction, type WrapActionContext } from '@repo/errors'
-import { auditLog } from '@repo/db/schema'
-import { db } from '@repo/db/client'
+import { type WrapActionContext, wrapAction } from '@repo/errors'
 import { requireRecentMfaForAction } from '@repo/security'
-import {
-  type LogifitSessionClaims,
-  requireFullSession,
-  withSessionContext,
-} from './session'
+import { type LogifitSessionClaims, requireFullSession, withSessionContext } from './session'
 
 export interface WrapServerActionContext extends WrapActionContext {
   /** Nome canônico da ação no namespace 'resource.verb' (ex: 'person.create').
@@ -53,10 +49,7 @@ export interface WrappedActionContext {
   setAuditResource: (resourceId: string, extraPayload?: Record<string, unknown>) => void
 }
 
-type Handler<TArgs, TData> = (
-  args: TArgs,
-  ctx: WrappedActionContext,
-) => Promise<TData>
+type Handler<TArgs, TData> = (args: TArgs, ctx: WrappedActionContext) => Promise<TData>
 
 export function wrapServerAction<TArgs, TData>(
   ctx: WrapServerActionContext,

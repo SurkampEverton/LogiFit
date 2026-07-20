@@ -168,8 +168,7 @@ export function NewAssessmentForm({ memberId, types, defaultAgeYears, defaultSex
               Contexto p/ cálculos
             </h2>
             <p className="text-xs text-[color:var(--ev-text-muted)]">
-              Idade + sexo + altura permitem calcular IMC, % gordura Pollock, TMB
-              automaticamente.
+              Idade + sexo + altura permitem calcular IMC, % gordura Pollock, TMB automaticamente.
             </p>
             <div className="grid gap-3 sm:grid-cols-3">
               <label className="space-y-1 text-sm">
@@ -220,16 +219,15 @@ export function NewAssessmentForm({ memberId, types, defaultAgeYears, defaultSex
                     {f.label}
                     {f.unit && (
                       <span className="text-[color:var(--ev-text-muted)] font-normal">
-                        {' '}({f.unit})
+                        {' '}
+                        ({f.unit})
                       </span>
                     )}
                   </span>
                   {f.kind === 'enum' ? (
                     <select
                       value={values[f.key] ?? ''}
-                      onChange={(e) =>
-                        setValues((prev) => ({ ...prev, [f.key]: e.target.value }))
-                      }
+                      onChange={(e) => setValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
                       className="w-full rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-bg)] px-3 py-2"
                     >
                       <option value="">—</option>
@@ -243,9 +241,7 @@ export function NewAssessmentForm({ memberId, types, defaultAgeYears, defaultSex
                     <textarea
                       rows={2}
                       value={values[f.key] ?? ''}
-                      onChange={(e) =>
-                        setValues((prev) => ({ ...prev, [f.key]: e.target.value }))
-                      }
+                      onChange={(e) => setValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
                       className="w-full rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-bg)] px-3 py-2"
                     />
                   ) : (
@@ -255,9 +251,7 @@ export function NewAssessmentForm({ memberId, types, defaultAgeYears, defaultSex
                       min={f.min}
                       max={f.max}
                       value={values[f.key] ?? ''}
-                      onChange={(e) =>
-                        setValues((prev) => ({ ...prev, [f.key]: e.target.value }))
-                      }
+                      onChange={(e) => setValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
                       className="w-full rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-bg)] px-3 py-2"
                     />
                   )}

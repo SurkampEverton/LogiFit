@@ -62,9 +62,7 @@ export interface BuildPatientWhatsappShareInput {
  * Retorna `null` se phone vazio/inválido (caller mostra apenas botão
  * "Copy link" como fallback).
  */
-export function buildPatientWhatsappShareUrl(
-  input: BuildPatientWhatsappShareInput,
-): string | null {
+export function buildPatientWhatsappShareUrl(input: BuildPatientWhatsappShareInput): string | null {
   const phoneDigits = input.patientPhone.replace(/\D/g, '')
   if (!phoneDigits || phoneDigits.length < 10) return null
 

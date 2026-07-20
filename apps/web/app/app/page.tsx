@@ -9,12 +9,7 @@
  * Sprint 13+ régua de comunicação popula.
  */
 import { db } from '@repo/db/client'
-import {
-  appointments,
-  contracts,
-  invoices,
-  members,
-} from '@repo/db/schema'
+import { appointments, contracts, invoices, members } from '@repo/db/schema'
 import { and, count, eq, gte, isNull, lte, sql } from 'drizzle-orm'
 import Link from 'next/link'
 import { requireFullSession } from '../lib/session'
@@ -148,9 +143,7 @@ export default async function AppHomePage() {
   return (
     <div className="mx-auto max-w-7xl px-6 py-8 space-y-8">
       <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          Olá, {claims.username}
-        </h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Olá, {claims.username}</h1>
         <p className="text-[color:var(--ev-text-muted)]">
           Dashboard "Equilíbrio Vital" — KPIs do tenant em tempo (quase) real.
         </p>
@@ -253,7 +246,9 @@ export default async function AppHomePage() {
           <li>🤖 Assistente IA universal (Sprint 06 — 10% schemas done)</li>
           <li>🚪 Controle de acesso Academia (Sprint 08)</li>
           <li>🏆 Engajamento (Sprint 09)</li>
-          <li>📊 Dashboards role-aware /app/dashboard/recepcao|gerente|diretor (Sprint 07 Faixa B+)</li>
+          <li>
+            📊 Dashboards role-aware /app/dashboard/recepcao|gerente|diretor (Sprint 07 Faixa B+)
+          </li>
           <li>🔍 Command Palette Ctrl+K (Sprint 07 Faixa C)</li>
         </ul>
       </section>

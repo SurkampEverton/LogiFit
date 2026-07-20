@@ -1,3 +1,11 @@
+import { pool } from '@repo/db/client'
+import {
+  CONSENT_CATALOG,
+  type ConsentPurpose,
+  type ConsentRecord,
+  type RenewalStatus,
+  checkRenewalStatus,
+} from '@repo/db/portal-member'
 /**
  * /meu/privacidade — overview. Sprint 26 Faixa C (26b).
  *
@@ -10,17 +18,9 @@
  *   - Botões dos 8 direitos LGPD (cria `data_subject_requests`)
  */
 import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { withMemberContext } from '../../lib/member-session'
 import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
 import { PassportNeedsLink } from '../_components/passport-needs-link'
-import {
-  CONSENT_CATALOG,
-  checkRenewalStatus,
-  type ConsentPurpose,
-  type ConsentRecord,
-  type RenewalStatus,
-} from '@repo/db/portal-member'
 import { ConsentToggle } from './consent-toggle'
 
 export const dynamic = 'force-dynamic'
@@ -86,9 +86,9 @@ export default async function MeuPrivacidadePage() {
       <header>
         <h1 className="ev-portal-h1">Privacidade e dados</h1>
         <p className="ev-portal-muted">
-          Controle como seus dados são usados. LGPD art. 18 — você tem direito a confirmar,
-          acessar, corrigir, anonimizar, portar, ser informado, ser informado das consequências
-          e revogar consent a qualquer momento.
+          Controle como seus dados são usados. LGPD art. 18 — você tem direito a confirmar, acessar,
+          corrigir, anonimizar, portar, ser informado, ser informado das consequências e revogar
+          consent a qualquer momento.
         </p>
       </header>
 
@@ -141,9 +141,7 @@ export default async function MeuPrivacidadePage() {
                 {badgeClass && badgeLabel ? (
                   <span className={`ev-portal-badge ${badgeClass}`} style={{ marginTop: 4 }}>
                     {badgeLabel}
-                    {renewal?.daysUntilExpiry != null
-                      ? ` (${renewal.daysUntilExpiry}d)`
-                      : ''}
+                    {renewal?.daysUntilExpiry != null ? ` (${renewal.daysUntilExpiry}d)` : ''}
                   </span>
                 ) : null}
               </div>
@@ -173,7 +171,9 @@ export default async function MeuPrivacidadePage() {
           </li>
           <li className="ev-portal-list-item">
             <div className="ev-portal-h3">✏️ Corrigir dado errado (Direito III)</div>
-            <p className="ev-portal-muted">Pedir correção de informação incompleta ou desatualizada.</p>
+            <p className="ev-portal-muted">
+              Pedir correção de informação incompleta ou desatualizada.
+            </p>
             <Link
               href="/meu/privacidade/solicitar?kind=correction"
               className="ev-portal-button ev-portal-button--ghost"
@@ -196,7 +196,9 @@ export default async function MeuPrivacidadePage() {
           </li>
           <li className="ev-portal-list-item">
             <div className="ev-portal-h3">📦 Portabilidade (Direito V)</div>
-            <p className="ev-portal-muted">Export estruturado JSON + FHIR clínico + OFX financeiro.</p>
+            <p className="ev-portal-muted">
+              Export estruturado JSON + FHIR clínico + OFX financeiro.
+            </p>
             <Link
               href="/meu/privacidade/solicitar?kind=portability"
               className="ev-portal-button ev-portal-button--ghost"

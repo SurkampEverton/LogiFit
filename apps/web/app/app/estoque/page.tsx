@@ -1,9 +1,9 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/estoque` — hub estoque (Sprint 24 Faixa C).
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -108,37 +108,61 @@ export default async function EstoqueHubPage() {
           gap: 'var(--ev-space-md)',
         }}
       >
-        <Link href="/app/estoque/itens" className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
+        <Link
+          href="/app/estoque/itens"
+          className="ev-card"
+          style={{ padding: 'var(--ev-space-md)' }}
+        >
           <strong>📦 Itens</strong>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Catálogo SKU + saldos + cadastro
           </div>
         </Link>
-        <Link href="/app/estoque/entradas" className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
+        <Link
+          href="/app/estoque/entradas"
+          className="ev-card"
+          style={{ padding: 'var(--ev-space-md)' }}
+        >
           <strong>📥 Entradas</strong>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Compra / ajuste pra mais
           </div>
         </Link>
-        <Link href="/app/estoque/saidas" className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
+        <Link
+          href="/app/estoque/saidas"
+          className="ev-card"
+          style={{ padding: 'var(--ev-space-md)' }}
+        >
           <strong>📤 Saídas</strong>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Consumo / perda / ajuste pra menos
           </div>
         </Link>
-        <Link href="/app/estoque/vendas" className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
+        <Link
+          href="/app/estoque/vendas"
+          className="ev-card"
+          style={{ padding: 'var(--ev-space-md)' }}
+        >
           <strong>🛒 POS Vendas</strong>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Venda balcão (itens resale)
           </div>
         </Link>
-        <Link href="/app/estoque/inventario" className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
+        <Link
+          href="/app/estoque/inventario"
+          className="ev-card"
+          style={{ padding: 'var(--ev-space-md)' }}
+        >
           <strong>📋 Inventário</strong>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Contagem física + ajustes
           </div>
         </Link>
-        <Link href="/app/estoque/relatorios" className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
+        <Link
+          href="/app/estoque/relatorios"
+          className="ev-card"
+          style={{ padding: 'var(--ev-space-md)' }}
+        >
           <strong>📊 Relatórios</strong>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Estoque crítico + giro + parados

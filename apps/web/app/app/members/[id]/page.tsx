@@ -1,13 +1,10 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { listMemberAgenda } from '../../agenda/actions'
-import {
-  listMemberAchievements,
-  listMemberGoals,
-} from '../../engajamento/actions'
+import { getLatestAssessmentSummary } from '../../avaliacoes/actions'
+import { listMemberAchievements, listMemberGoals } from '../../engajamento/actions'
 import { listMemberFinanceiro } from '../../financeiro/actions'
 import { listMemberCredits } from '../../financeiro/ofertas/actions'
-import { getLatestAssessmentSummary } from '../../avaliacoes/actions'
 import { listMemberMessages } from '../../mensagens/actions'
 import { listMemberPrescriptions } from '../../treinos/actions'
 import { getMember, listTimeline } from '../actions'
@@ -65,9 +62,7 @@ export default async function MemberDetailPage({
   // Widget avaliações — Sprint 12 Faixa C (última avaliação + cálculos derivados)
   const latestAssessResult = await getLatestAssessmentSummary({ memberId: id })
   const latestAssessment = latestAssessResult.ok ? latestAssessResult.data.latest : null
-  const latestAssessmentCalcs = latestAssessResult.ok
-    ? latestAssessResult.data.calculations
-    : []
+  const latestAssessmentCalcs = latestAssessResult.ok ? latestAssessResult.data.calculations : []
 
   // Widget mensagens — Sprint 13 Faixa C (últimas 5 mensagens enviadas)
   const msgsResult = await listMemberMessages({ memberId: id, limit: 5 })
@@ -263,7 +258,10 @@ export default async function MemberDetailPage({
                   style: 'currency',
                   currency: 'BRL',
                 })}
-                /{activeContract.planBillingCycle === 'monthly' ? 'mês' : activeContract.planBillingCycle}
+                /
+                {activeContract.planBillingCycle === 'monthly'
+                  ? 'mês'
+                  : activeContract.planBillingCycle}
               </span>
             </div>
             <div className="flex items-center justify-between text-xs text-[color:var(--ev-text-muted)]">
@@ -323,14 +321,9 @@ export default async function MemberDetailPage({
           <h2 className="font-semibold flex items-center gap-2">🎟️ Créditos ativos</h2>
           <ul className="space-y-2 text-sm">
             {credits.map((c) => (
-              <li
-                key={c.id}
-                className="flex items-center justify-between gap-3 py-1"
-              >
+              <li key={c.id} className="flex items-center justify-between gap-3 py-1">
                 <div className="space-y-0.5 flex-1 min-w-0">
-                  <div className="font-medium">
-                    {c.serviceType.replace(/_/g, ' ')}
-                  </div>
+                  <div className="font-medium">{c.serviceType.replace(/_/g, ' ')}</div>
                   <div className="text-xs text-[color:var(--ev-text-muted)]">
                     {c.source === 'bundle' && 'do pacote'}
                     {c.source === 'purchase' && 'comprado'}
@@ -404,8 +397,7 @@ export default async function MemberDetailPage({
             {activeGoals.map((g) => {
               const current = Number(g.currentValue)
               const target = Number(g.targetValue)
-              const percent =
-                target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0
+              const percent = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0
               return (
                 <li key={g.id} className="space-y-1">
                   <div className="flex items-center justify-between gap-2">
@@ -458,7 +450,9 @@ export default async function MemberDetailPage({
               >
                 <div className="min-w-0">
                   <div className="font-medium truncate">
-                    {p.kind === 'workout' ? p.workoutName ?? '(workout removido)' : `Prescrição ${p.kind}`}
+                    {p.kind === 'workout'
+                      ? (p.workoutName ?? '(workout removido)')
+                      : `Prescrição ${p.kind}`}
                   </div>
                   <div className="text-xs text-[color:var(--ev-text-muted)]">
                     {p.workoutGoal && `${p.workoutGoal} · `}
@@ -494,17 +488,16 @@ export default async function MemberDetailPage({
         {latestAssessment === null ? (
           <p className="text-sm text-[color:var(--ev-text-muted)] italic">
             Nenhuma avaliação registrada.{' '}
-            <Link
-              href={`/app/members/${id}/avaliacoes/new`}
-              className="underline"
-            >
+            <Link href={`/app/members/${id}/avaliacoes/new`} className="underline">
               Registrar primeira
             </Link>
           </p>
         ) : (
           <div className="space-y-3">
             <div>
-              <div className="text-sm font-medium">{latestAssessment.typeName ?? '(tipo removido)'}</div>
+              <div className="text-sm font-medium">
+                {latestAssessment.typeName ?? '(tipo removido)'}
+              </div>
               <div className="text-xs text-[color:var(--ev-text-muted)]">
                 {new Date(latestAssessment.performedAt).toLocaleDateString('pt-BR', {
                   day: '2-digit',
@@ -524,14 +517,14 @@ export default async function MemberDetailPage({
                       {c.calcKey === 'imc'
                         ? 'IMC'
                         : c.calcKey === 'pct_gordura_pollock7'
-                        ? '% Gordura'
-                        : c.calcKey === 'tmb_mifflin'
-                        ? 'TMB'
-                        : c.calcKey === 'rcq'
-                        ? 'RCQ'
-                        : c.calcKey === 'massa_magra_kg'
-                        ? 'Mag. magra'
-                        : c.calcKey}
+                          ? '% Gordura'
+                          : c.calcKey === 'tmb_mifflin'
+                            ? 'TMB'
+                            : c.calcKey === 'rcq'
+                              ? 'RCQ'
+                              : c.calcKey === 'massa_magra_kg'
+                                ? 'Mag. magra'
+                                : c.calcKey}
                     </div>
                     <div className="font-medium tabular-nums">
                       {Number(c.value).toLocaleString('pt-BR', {
@@ -605,7 +598,8 @@ export default async function MemberDetailPage({
       {/* Slot futuro restante — Sprint 06 (IA Copilot já estará Sprint 06 done) */}
       <section className="rounded-md border border-dashed border-[color:var(--ev-border)] p-6 text-center text-xs text-[color:var(--ev-text-muted)]">
         <p>
-          Widget futuro: <strong>IA Copilot</strong> contextualizado ao member (Sprint 06 Faixa D pendente)
+          Widget futuro: <strong>IA Copilot</strong> contextualizado ao member (Sprint 06 Faixa D
+          pendente)
         </p>
       </section>
     </main>

@@ -1,9 +1,9 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/nutri/diario` — fila do nutri (entries pendentes review). Sprint 31 Faixa C.
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -51,7 +51,12 @@ export default async function NutriDiarioFilaPage() {
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>Fila de revisão · Diário alimentar</h1>
         <span style={{ color: 'var(--ev-text-muted)' }}>
@@ -106,10 +111,22 @@ export default async function NutriDiarioFilaPage() {
                     >
                       {r.free_text_description ?? '—'}
                     </td>
-                    <td style={{ padding: 'var(--ev-space-2)', textAlign: 'right', fontFamily: 'monospace' }}>
+                    <td
+                      style={{
+                        padding: 'var(--ev-space-2)',
+                        textAlign: 'right',
+                        fontFamily: 'monospace',
+                      }}
+                    >
                       {kcal != null ? kcal.toFixed(0) : '—'}
                     </td>
-                    <td style={{ padding: 'var(--ev-space-2)', textAlign: 'right', color: 'var(--ev-text-muted)' }}>
+                    <td
+                      style={{
+                        padding: 'var(--ev-space-2)',
+                        textAlign: 'right',
+                        color: 'var(--ev-text-muted)',
+                      }}
+                    >
                       {ageHours < 24 ? `${ageHours}h` : `${Math.round(ageHours / 24)}d`}
                     </td>
                   </tr>

@@ -4,7 +4,7 @@
  */
 import { db } from '@repo/db/client'
 import { supportTickets } from '@repo/db/schema'
-import { and, desc, eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import { getTranslations } from 'next-intl/server'
 import { requireFullSession } from '../../lib/session'
 
@@ -50,7 +50,15 @@ export default async function SuportePage() {
           {t('empty')}
         </div>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 'var(--ev-space-2)' }}>
+        <ul
+          style={{
+            listStyle: 'none',
+            padding: 0,
+            margin: 0,
+            display: 'grid',
+            gap: 'var(--ev-space-2)',
+          }}
+        >
           {tickets.map((tk) => (
             <li
               key={tk.id}
@@ -61,7 +69,13 @@ export default async function SuportePage() {
                 backgroundColor: 'var(--ev-surface)',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--ev-space-3)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: 'var(--ev-space-3)',
+                }}
+              >
                 <strong style={{ fontSize: 'var(--ev-text-sm)' }}>{tk.title}</strong>
                 <span
                   style={{

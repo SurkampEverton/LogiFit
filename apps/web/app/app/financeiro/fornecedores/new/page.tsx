@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { persons, suppliers } from '@repo/db/schema'
 /**
  * `/app/financeiro/fornecedores/new` — adicionar fornecedor (Sprint 15 Faixa C).
  *
@@ -5,10 +7,8 @@
  * defaults. PersonPicker rico fica Sprint 15+. Botão "cadastrar nova pessoa
  * antes" leva a `/app/pessoas/new` (Sprint 02).
  */
-import { and, asc, eq, isNull, notInArray, sql } from 'drizzle-orm'
+import { and, asc, eq, isNull, notInArray } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { persons, suppliers } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 import { NewSupplierForm } from './new-supplier-form'
 
@@ -60,8 +60,8 @@ export default async function NewSupplierPage() {
       {available.length === 0 ? (
         <div className="ev-card" style={{ padding: 'var(--ev-space-lg)' }}>
           <p style={{ marginTop: 0 }}>
-            Não há pessoas disponíveis para virar fornecedor. Cadastre uma pessoa (PJ ou PF) antes em{' '}
-            <Link href="/app/pessoas/new">/app/pessoas/new</Link>.
+            Não há pessoas disponíveis para virar fornecedor. Cadastre uma pessoa (PJ ou PF) antes
+            em <Link href="/app/pessoas/new">/app/pessoas/new</Link>.
           </p>
         </div>
       ) : (

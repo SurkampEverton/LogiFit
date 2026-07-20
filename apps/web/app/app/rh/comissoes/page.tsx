@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { commissionEntries, persons } from '@repo/db/schema'
 /**
  * `/app/rh/comissoes` — entries de comissão (Sprint 23 Faixa C).
  */
 import { desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { commissionEntries, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'

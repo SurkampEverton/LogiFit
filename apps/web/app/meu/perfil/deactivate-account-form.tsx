@@ -1,5 +1,7 @@
 'use client'
 
+import { confirm } from '@repo/ui/messages'
+import { useRouter } from 'next/navigation'
 /**
  * /meu/perfil — desativar conta (Sprint 02b4 — passport_global, LGPD art. 18 VI).
  *
@@ -13,8 +15,6 @@
  *   4. Após sucesso: mostra mensagem + redirect /meu/login após 5s (session revogada)
  */
 import { useEffect, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { confirm } from '@repo/ui/messages'
 import { deactivateAccount } from './passport-actions'
 
 interface Props {
@@ -95,8 +95,8 @@ export function DeactivateAccountForm({ email }: Props) {
         <h3 style={{ marginTop: 0 }}>✓ Conta desativada</h3>
         <p style={{ fontSize: 'var(--ev-text-sm)' }}>
           Você tem <strong>30 dias</strong> pra reativar entrando em contato com{' '}
-          <code>privacidade@logifit.com.br</code>. Após esse período, seus dados pessoais
-          serão excluídos definitivamente (LGPD art. 18 VI).
+          <code>privacidade@logifit.com.br</code>. Após esse período, seus dados pessoais serão
+          excluídos definitivamente (LGPD art. 18 VI).
         </p>
         <p style={{ fontSize: 'var(--ev-text-sm)', color: 'var(--ev-text-muted)' }}>
           Redirecionando pra /meu/login em alguns segundos...
@@ -131,14 +131,11 @@ export function DeactivateAccountForm({ email }: Props) {
     >
       <h3 style={{ marginTop: 0, color: 'var(--ev-danger)' }}>⚠ Desativar conta</h3>
       <p style={{ fontSize: 'var(--ev-text-sm)' }}>
-        Esta ação <strong>encerra todas as sessões</strong> e marca sua conta como
-        desativada. Você tem 30 dias pra reativar via suporte antes do hard delete LGPD
-        art. 18 VI.
+        Esta ação <strong>encerra todas as sessões</strong> e marca sua conta como desativada. Você
+        tem 30 dias pra reativar via suporte antes do hard delete LGPD art. 18 VI.
       </p>
 
-      <fieldset
-        style={{ border: '1px solid var(--ev-border)', padding: 'var(--ev-space-2)' }}
-      >
+      <fieldset style={{ border: '1px solid var(--ev-border)', padding: 'var(--ev-space-2)' }}>
         <legend style={{ fontSize: 'var(--ev-text-sm)' }}>Motivo</legend>
         <label style={{ display: 'block', fontSize: 'var(--ev-text-sm)' }}>
           <input

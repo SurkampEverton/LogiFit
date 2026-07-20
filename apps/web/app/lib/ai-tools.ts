@@ -59,7 +59,8 @@ export function registerAllAITools() {
     module: 'assistente',
     layer: 'action',
     label: 'Abrir ticket de suporte',
-    description: 'Abre ticket em support_tickets com contexto rico (tool calls, pergunta original, erro).',
+    description:
+      'Abre ticket em support_tickets com contexto rico (tool calls, pergunta original, erro).',
     showInPersonas: [
       'member',
       'professional_clinical',
@@ -76,7 +77,10 @@ export function registerAllAITools() {
       properties: {
         title: { type: 'string', minLength: 2, maxLength: 120 },
         description: { type: 'string', minLength: 2, maxLength: 4000 },
-        category: { type: 'string', enum: ['bug', 'question', 'feature_request', 'billing', 'other'] },
+        category: {
+          type: 'string',
+          enum: ['bug', 'question', 'feature_request', 'billing', 'other'],
+        },
       },
       required: ['title', 'description'],
     },
@@ -189,7 +193,8 @@ export function registerAllAITools() {
     module: 'financeiro',
     layer: 'insight',
     label: 'Inadimplentes',
-    description: 'Lista members com mensalidade vencida há N+ dias. Retorna member_id + nome + atraso.',
+    description:
+      'Lista members com mensalidade vencida há N+ dias. Retorna member_id + nome + atraso.',
     showInPersonas: ['admin', 'super_admin'],
     requiredPermissions: ['financeiro.read'],
     requiresConfirmation: false,
@@ -218,7 +223,8 @@ export function registerAllAITools() {
     module: 'fisio',
     layer: 'action',
     label: '[BLOCKED] Assinar evolução',
-    description: 'BLOQUEADO — ICP-Brasil/lacre autenticado exigem profissional via UI dedicada (ADR 0032).',
+    description:
+      'BLOQUEADO — ICP-Brasil/lacre autenticado exigem profissional via UI dedicada (ADR 0032).',
     showInPersonas: ['professional_clinical'],
     requiresConfirmation: true,
     blocked: { reason: 'CFM 2.299 / COFFITO 414 exigem assinatura humana via UI dedicada' },
@@ -229,9 +235,13 @@ export function registerAllAITools() {
     module: 'financeiro',
     layer: 'action',
     label: '[BLOCKED] Cobrar em lote',
-    description: 'BLOQUEADO — operação massa exige confirmação manual em /app/financeiro/cobrancas/lote.',
+    description:
+      'BLOQUEADO — operação massa exige confirmação manual em /app/financeiro/cobrancas/lote.',
     showInPersonas: ['admin'],
     requiresConfirmation: true,
-    blocked: { reason: 'Operação de cobrança em massa exige fluxo dedicado com preview e auditoria reforçada' },
+    blocked: {
+      reason:
+        'Operação de cobrança em massa exige fluxo dedicado com preview e auditoria reforçada',
+    },
   })
 }

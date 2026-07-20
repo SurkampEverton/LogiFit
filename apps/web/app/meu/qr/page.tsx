@@ -1,3 +1,5 @@
+import { pool } from '@repo/db/client'
+import { encodeQrString, generateQrPayload } from '@repo/db/portal-member'
 /**
  * /meu/qr — QR Code rotativo (acesso na catraca). Sprint 26 Faixa C (26b).
  *
@@ -11,8 +13,6 @@
 import { withMemberContext } from '../../lib/member-session'
 import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
 import { PassportNeedsLink } from '../_components/passport-needs-link'
-import { pool } from '@repo/db/client'
-import { generateQrPayload, encodeQrString } from '@repo/db/portal-member'
 import { QrLiveDisplay } from './qr-live-display'
 
 export const dynamic = 'force-dynamic'
@@ -73,8 +73,8 @@ export default async function MeuQrPage() {
       <div className="ev-portal-callout">
         <h2 className="ev-portal-h3">Como usar</h2>
         <p className="ev-portal-muted">
-          Aponte a tela para o leitor da catraca quando chegar. Se houver erro, aguarde o QR
-          renovar (max 60s).
+          Aponte a tela para o leitor da catraca quando chegar. Se houver erro, aguarde o QR renovar
+          (max 60s).
         </p>
       </div>
     </div>

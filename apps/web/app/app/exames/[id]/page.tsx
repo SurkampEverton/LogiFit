@@ -1,3 +1,4 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/exames/[id]` — detalhe + revisão do exame. Sprint 33 Faixa C.
  *
@@ -6,7 +7,6 @@
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -33,10 +33,27 @@ interface ExamFull {
   structured_data: {
     examType?: string
     laboratory?: string
-    analytes?: Array<{ code: string; label: string; value: number; unit: string; referenceHint?: string }>
+    analytes?: Array<{
+      code: string
+      label: string
+      value: number
+      unit: string
+      referenceHint?: string
+    }>
   } | null
-  draft_out_of_range: Array<{ code: string; value: number; unit: string; direction: string; severity: string }> | null
-  draft_patterns: Array<{ code: string; label: string; description: string; confidence: number }> | null
+  draft_out_of_range: Array<{
+    code: string
+    value: number
+    unit: string
+    direction: string
+    severity: string
+  }> | null
+  draft_patterns: Array<{
+    code: string
+    label: string
+    description: string
+    confidence: number
+  }> | null
   draft_follow_up: string[] | null
   draft_blocked: boolean | null
   draft_blocked_terms: string[] | null
@@ -90,7 +107,12 @@ export default async function ExamDetailPage({ params }: PageProps) {
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>Exame · {exam.member_name}</h1>
         <span style={{ color: 'var(--ev-text-muted)' }}>
@@ -139,7 +161,11 @@ export default async function ExamDetailPage({ params }: PageProps) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr
-                style={{ color: 'var(--ev-text-muted)', fontSize: 'var(--ev-text-xs)', textTransform: 'uppercase' }}
+                style={{
+                  color: 'var(--ev-text-muted)',
+                  fontSize: 'var(--ev-text-xs)',
+                  textTransform: 'uppercase',
+                }}
               >
                 <th style={{ textAlign: 'left', padding: 4 }}>Analito</th>
                 <th style={{ textAlign: 'left', padding: 4 }}>Code</th>
@@ -155,14 +181,22 @@ export default async function ExamDetailPage({ params }: PageProps) {
                 return (
                   <tr key={a.code} style={{ borderTop: '1px solid var(--ev-border)' }}>
                     <td style={{ padding: 4 }}>{a.label}</td>
-                    <td style={{ padding: 4, fontFamily: 'monospace', fontSize: 'var(--ev-text-xs)' }}>
+                    <td
+                      style={{ padding: 4, fontFamily: 'monospace', fontSize: 'var(--ev-text-xs)' }}
+                    >
                       {a.code}
                     </td>
                     <td style={{ padding: 4, textAlign: 'right', fontFamily: 'monospace' }}>
                       {a.value.toFixed(2)}
                     </td>
                     <td style={{ padding: 4 }}>{a.unit}</td>
-                    <td style={{ padding: 4, color: 'var(--ev-text-muted)', fontSize: 'var(--ev-text-xs)' }}>
+                    <td
+                      style={{
+                        padding: 4,
+                        color: 'var(--ev-text-muted)',
+                        fontSize: 'var(--ev-text-xs)',
+                      }}
+                    >
                       {a.referenceHint ?? '—'}
                     </td>
                     <td style={{ padding: 4, textAlign: 'center' }}>
@@ -209,7 +243,9 @@ export default async function ExamDetailPage({ params }: PageProps) {
           {patterns.length > 0 ? (
             <section className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
               <h2 style={{ marginTop: 0 }}>Padrões detectados ({patterns.length})</h2>
-              <ul style={{ display: 'grid', gap: 'var(--ev-space-2)', listStyle: 'none', padding: 0 }}>
+              <ul
+                style={{ display: 'grid', gap: 'var(--ev-space-2)', listStyle: 'none', padding: 0 }}
+              >
                 {patterns.map((p) => (
                   <li
                     key={p.code}
@@ -221,7 +257,9 @@ export default async function ExamDetailPage({ params }: PageProps) {
                     }}
                   >
                     <div style={{ fontWeight: 600 }}>{p.label}</div>
-                    <p style={{ margin: '4px 0 0 0', fontSize: 'var(--ev-text-sm)' }}>{p.description}</p>
+                    <p style={{ margin: '4px 0 0 0', fontSize: 'var(--ev-text-sm)' }}>
+                      {p.description}
+                    </p>
                     <small style={{ color: 'var(--ev-text-muted)' }}>
                       Confidence: {(p.confidence * 100).toFixed(0)}%
                     </small>
@@ -249,8 +287,8 @@ export default async function ExamDetailPage({ params }: PageProps) {
 
       <section className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
         <p style={{ color: 'var(--ev-text-muted)', margin: 0 }}>
-          <strong>UI de revisão completa (table editor + submit + publicação)</strong> entra em Sprint 33b.
-          MVP entrega backend completo + visualização read-only do draft IA.
+          <strong>UI de revisão completa (table editor + submit + publicação)</strong> entra em
+          Sprint 33b. MVP entrega backend completo + visualização read-only do draft IA.
         </p>
       </section>
 

@@ -37,10 +37,7 @@ export const listMemberAchievements = wrapServerAction(
         points: achievements.points,
       })
       .from(memberAchievements)
-      .innerJoin(
-        achievements,
-        eq(achievements.id, memberAchievements.achievementId),
-      )
+      .innerJoin(achievements, eq(achievements.id, memberAchievements.achievementId))
       .where(
         and(
           eq(memberAchievements.tenantId, session.logifit.tenantId),

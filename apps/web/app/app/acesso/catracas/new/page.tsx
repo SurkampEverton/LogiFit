@@ -1,8 +1,8 @@
+import { pool } from '@repo/db/client'
 /**
  * `/app/acesso/catracas/new` — wizard cadastro catraca (Sprint 08 Faixa C).
  */
 import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { requireFullSession } from '../../../../lib/session'
 import { NewCatracaForm } from './new-catraca-form'
 
@@ -26,9 +26,7 @@ export default async function NewCatracaPage() {
   let companies: CompanyOption[] = []
   let unitsList: UnitOption[] = []
   try {
-    await client.query("SELECT set_config('app.tenant_id', $1, false)", [
-      session.logifit.tenantId,
-    ])
+    await client.query("SELECT set_config('app.tenant_id', $1, false)", [session.logifit.tenantId])
     const cRes = await client.query<CompanyOption>(
       `SELECT c.id, c.name, c.type FROM companies c
        WHERE c.tenant_id = $1 AND c.archived_at IS NULL
@@ -62,8 +60,8 @@ export default async function NewCatracaPage() {
       <header className="space-y-1">
         <h1 className="text-3xl font-semibold tracking-tight">Cadastrar catraca</h1>
         <p className="text-sm text-[color:var(--ev-text-muted)]">
-          Após cadastrar, copie o token gerado — só aparece 1× (hash bcrypt fica no banco).
-          Catraca usa o token em header `x-device-token` para autenticar `/api/acesso/checkin`.
+          Após cadastrar, copie o token gerado — só aparece 1× (hash bcrypt fica no banco). Catraca
+          usa o token em header `x-device-token` para autenticar `/api/acesso/checkin`.
         </p>
       </header>
 

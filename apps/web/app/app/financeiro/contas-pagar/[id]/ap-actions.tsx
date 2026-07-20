@@ -2,13 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import {
-  approveAP,
-  cancelAP,
-  registerManualPayment,
-  rejectAP,
-  submitForApproval,
-} from '../actions'
+import { approveAP, cancelAP, registerManualPayment, rejectAP, submitForApproval } from '../actions'
 
 interface Props {
   apId: string
@@ -16,7 +10,10 @@ interface Props {
 }
 
 function parseBrlToCents(value: string): number {
-  const cleaned = value.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')
+  const cleaned = value
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.')
   const num = Number(cleaned)
   if (!Number.isFinite(num) || num <= 0) return 0
   return Math.round(num * 100)
@@ -208,7 +205,12 @@ export function APActions({ apId, status }: Props) {
             />
           </label>
           <div style={{ display: 'flex', gap: 'var(--ev-space-sm)' }}>
-            <button type="button" onClick={handleApprove} disabled={pending} className="ev-btn ev-btn-primary">
+            <button
+              type="button"
+              onClick={handleApprove}
+              disabled={pending}
+              className="ev-btn ev-btn-primary"
+            >
               Confirmar aprovação
             </button>
             <button
@@ -284,7 +286,9 @@ export function APActions({ apId, status }: Props) {
           }}
         >
           <div style={{ display: 'flex', gap: 'var(--ev-space-sm)', flexWrap: 'wrap' }}>
-            <label style={{ flex: 1, minWidth: 140, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label
+              style={{ flex: 1, minWidth: 140, display: 'flex', flexDirection: 'column', gap: 4 }}
+            >
               <span>Valor pago (R$)</span>
               <input
                 type="text"
@@ -344,7 +348,12 @@ export function APActions({ apId, status }: Props) {
             />
           </label>
           <div style={{ display: 'flex', gap: 'var(--ev-space-sm)' }}>
-            <button type="button" onClick={handlePay} disabled={pending} className="ev-btn ev-btn-primary">
+            <button
+              type="button"
+              onClick={handlePay}
+              disabled={pending}
+              className="ev-btn ev-btn-primary"
+            >
               Registrar pagamento
             </button>
             <button

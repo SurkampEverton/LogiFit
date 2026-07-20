@@ -1,20 +1,15 @@
+import { db } from '@repo/db/client'
+import { evolucaoAttachments, evolucoesSessao, members, persons } from '@repo/db/schema'
 /**
  * `/app/fisio/evolucoes/[id]` — detalhe + anexos (Sprint 21 Faixa C).
  */
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import {
-  evolucaoAttachments,
-  evolucoesSessao,
-  members,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
+import { AddAttachmentForm } from './add-attachment-form'
 import { EvolucaoEditor } from './evolucao-editor'
 import { LockEvolucaoButton } from './lock-evolucao-button'
-import { AddAttachmentForm } from './add-attachment-form'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,9 +35,7 @@ interface Soap {
   plano?: string | null
 }
 
-export default async function EvolucaoDetailPage({
-  params,
-}: { params: Promise<{ id: string }> }) {
+export default async function EvolucaoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const session = await requireFullSession(`/app/fisio/evolucoes/${id}`)
   const tenantId = session.logifit.tenantId
@@ -99,15 +92,19 @@ export default async function EvolucaoDetailPage({
 
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
-      <header style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}>
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
+      >
         <h1 style={{ margin: 0 }}>Evolução de sessão</h1>
         <span className="ev-badge">{e.status}</span>
         <span style={{ color: 'var(--ev-muted)' }}>{e.memberName ?? '—'}</span>
         <span style={{ flex: 1 }} />
-        <Link
-          href={`/app/fisio/pacientes/${e.memberId}/evolucoes`}
-          className="ev-btn ev-btn-ghost"
-        >
+        <Link href={`/app/fisio/pacientes/${e.memberId}/evolucoes`} className="ev-btn ev-btn-ghost">
           ← Voltar
         </Link>
       </header>
@@ -143,7 +140,10 @@ export default async function EvolucaoDetailPage({
           </thead>
           <tbody>
             {attachments.map((a) => {
-              const sb = SCAN_BADGE[a.scanStatus] ?? { label: a.scanStatus, bg: 'var(--ev-surface)' }
+              const sb = SCAN_BADGE[a.scanStatus] ?? {
+                label: a.scanStatus,
+                bg: 'var(--ev-surface)',
+              }
               return (
                 <tr key={a.id}>
                   <td>{KIND_LABEL[a.kind] ?? a.kind}</td>
@@ -177,9 +177,9 @@ export default async function EvolucaoDetailPage({
           <h2>Fechar evolução</h2>
           <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
             <p style={{ marginTop: 0 }}>
-              Calcula hash SHA-256 do SOAP+freeText+attachmentIds e marca como
-              fechada. Lacre autenticado (default) = MFA recente + audit chain;
-              ICP-Brasil = opcional pra fisio (COFFITO 414).
+              Calcula hash SHA-256 do SOAP+freeText+attachmentIds e marca como fechada. Lacre
+              autenticado (default) = MFA recente + audit chain; ICP-Brasil = opcional pra fisio
+              (COFFITO 414).
             </p>
             <LockEvolucaoButton evolucaoId={id} />
           </div>

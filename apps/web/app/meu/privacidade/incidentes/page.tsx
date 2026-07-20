@@ -34,8 +34,8 @@ export default async function IncidentesPage() {
       <header>
         <h1 className="ev-portal-h1">Incidentes de segurança</h1>
         <p className="ev-portal-muted">
-          A LGPD nos obriga (e nós queremos) avisar você em até 72 horas se algum
-          incidente envolveu seus dados. Aqui você vê o histórico completo.
+          A LGPD nos obriga (e nós queremos) avisar você em até 72 horas se algum incidente envolveu
+          seus dados. Aqui você vê o histórico completo.
         </p>
       </header>
 
@@ -43,9 +43,8 @@ export default async function IncidentesPage() {
         <div className="ev-portal-callout ev-portal-callout--success">
           <h2 className="ev-portal-h2">Nenhum incidente registrado</h2>
           <p>
-            Seus dados nunca foram afetados por incidente em nenhum dos estabelecimentos
-            vinculados. Estamos atentos 24/7 — qualquer evento te notifica aqui + por
-            email + push do app.
+            Seus dados nunca foram afetados por incidente em nenhum dos estabelecimentos vinculados.
+            Estamos atentos 24/7 — qualquer evento te notifica aqui + por email + push do app.
           </p>
         </div>
       ) : (

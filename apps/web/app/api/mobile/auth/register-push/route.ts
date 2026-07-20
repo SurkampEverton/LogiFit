@@ -8,7 +8,7 @@
  * substitui por header `Authorization: Bearer <token>` + lookup em
  * `mobile_sessions.refresh_token_hash`.
  */
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { registerPushToken } from '../../../../meu/mobile/actions'
 
 export const runtime = 'nodejs'

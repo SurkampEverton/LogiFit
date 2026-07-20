@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { cifCatalog } from '@repo/db/schema'
 /**
  * `/app/catalogos/cif` — visão read-only CIF (Sprint 20 Faixa C).
  */
 import { and, asc, eq, ilike, or, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { cifCatalog } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -27,8 +27,7 @@ export default async function CifCatalogPage({
   const component = params.component ?? ''
 
   const conds = [eq(cifCatalog.active, true)]
-  if (q)
-    conds.push(or(ilike(cifCatalog.code, `%${q}%`), ilike(cifCatalog.description, `%${q}%`))!)
+  if (q) conds.push(or(ilike(cifCatalog.code, `%${q}%`), ilike(cifCatalog.description, `%${q}%`))!)
   if (component) conds.push(eq(cifCatalog.component, component as 'body_functions'))
 
   const rows = await db
@@ -54,7 +53,13 @@ export default async function CifCatalogPage({
       </header>
 
       <form method="get" style={{ display: 'flex', gap: 8 }}>
-        <input className="ev-input" name="q" defaultValue={q} placeholder="Buscar" style={{ flex: 1 }} />
+        <input
+          className="ev-input"
+          name="q"
+          defaultValue={q}
+          placeholder="Buscar"
+          style={{ flex: 1 }}
+        />
         <select className="ev-input" name="component" defaultValue={component}>
           <option value="">Todos componentes</option>
           {Object.entries(COMPONENT_LABEL).map(([k, v]) => (

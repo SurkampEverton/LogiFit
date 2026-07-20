@@ -7,7 +7,7 @@
  *
  * Sprint 35b: rate limit por IP (regra 36) pra prevenir abuso.
  */
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { checkAppVersion } from '../../../../meu/mobile/actions'
 
 export const runtime = 'nodejs'

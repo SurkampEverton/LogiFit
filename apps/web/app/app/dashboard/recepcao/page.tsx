@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { accessEvents, appointments, invoices, members, persons } from '@repo/db/schema'
 /**
  * `/app/dashboard/recepcao` — dashboard role-aware recepção (Sprint 07 Faixa B).
  *
@@ -6,14 +8,6 @@
  */
 import { and, desc, eq, gte, lte } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  accessEvents,
-  appointments,
-  invoices,
-  members,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -113,9 +107,7 @@ export default async function DashboardRecepcaoPage() {
             </Link>
           </div>
           {todayAppointments.length === 0 ? (
-            <p className="text-sm text-[color:var(--ev-text-muted)] py-2">
-              Sem agendamentos hoje.
-            </p>
+            <p className="text-sm text-[color:var(--ev-text-muted)] py-2">Sem agendamentos hoje.</p>
           ) : (
             <ul className="divide-y divide-[color:var(--ev-border)]">
               {todayAppointments.map((a) => (

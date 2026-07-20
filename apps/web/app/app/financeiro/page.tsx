@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { contracts, invoices } from '@repo/db/schema'
 /**
  * `/app/financeiro` — visão geral financeiro (Sprint 04 Faixa C).
  *
@@ -6,8 +8,6 @@
  */
 import { and, eq, gte, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { contracts, invoices } from '@repo/db/schema'
 import { requireFullSession } from '../../lib/session'
 
 export const dynamic = 'force-dynamic'

@@ -70,7 +70,10 @@ export function NewLeadForm({ companies, stages }: Props) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-[color:var(--ev-border)] p-6">
+    <form
+      onSubmit={onSubmit}
+      className="space-y-4 rounded-xl border border-[color:var(--ev-border)] p-6"
+    >
       {error && (
         <div
           role="alert"
@@ -181,8 +184,8 @@ export function NewLeadForm({ companies, stages }: Props) {
       </div>
 
       <p className="text-xs text-[color:var(--ev-text-muted)]">
-        * Informe ao menos <strong>nome OU telefone</strong> pra captura mínima.
-        Person/CPF poderá ser preenchida depois quando lead avançar pra proposta.
+        * Informe ao menos <strong>nome OU telefone</strong> pra captura mínima. Person/CPF poderá
+        ser preenchida depois quando lead avançar pra proposta.
       </p>
 
       <div className="flex justify-end gap-2 pt-2">

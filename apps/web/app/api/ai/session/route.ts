@@ -1,9 +1,9 @@
+import { NextResponse } from 'next/server'
 /**
  * POST /api/ai/session — cria nova sessão do assistente (ADR 0075).
  * Delega ao Server Action `newSession`.
  */
 import { newSession } from '../../../app/assistente/actions'
-import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'

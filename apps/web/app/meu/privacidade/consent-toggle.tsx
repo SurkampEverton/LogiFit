@@ -1,5 +1,7 @@
 'use client'
 
+import type { ConsentPurpose } from '@repo/db/portal-member'
+import { useRouter } from 'next/navigation'
 /**
  * Consent toggle — chama updateMyConsent e re-renderiza.
  *
@@ -7,9 +9,7 @@
  * em iOS é tap-target pequeno demais — botão respeita 44px touch).
  */
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { updateMyConsent } from '../actions'
-import type { ConsentPurpose } from '@repo/db/portal-member'
 
 interface Props {
   purpose: ConsentPurpose

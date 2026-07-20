@@ -1,8 +1,8 @@
+import { pool } from '@repo/db/client'
 /**
  * `/app/financeiro/planos/new` — wizard novo plano (Sprint 04 Faixa C).
  */
 import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { requireFullSession } from '../../../../lib/session'
 import { NewPlanForm } from './new-plan-form'
 
@@ -21,9 +21,7 @@ export default async function NewPlanPage() {
   const client = await pool.connect()
   let companies: CompanyOption[] = []
   try {
-    await client.query("SELECT set_config('app.tenant_id', $1, false)", [
-      session.logifit.tenantId,
-    ])
+    await client.query("SELECT set_config('app.tenant_id', $1, false)", [session.logifit.tenantId])
     const r = await client.query<CompanyOption>(
       `SELECT c.id, c.name, c.type FROM companies c
        WHERE c.tenant_id = $1 AND c.archived_at IS NULL

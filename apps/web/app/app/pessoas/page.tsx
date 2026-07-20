@@ -24,8 +24,8 @@ export default async function PessoasPage({
         <div className="space-y-1">
           <h1 className="text-3xl font-semibold tracking-tight">Pessoas</h1>
           <p className="text-sm text-[color:var(--ev-text-muted)]">
-            Cadastro central PF/PJ (ADR 0047). Mesma pessoa pode ter múltiplos papéis (member,
-            user, supplier, profissional, company).
+            Cadastro central PF/PJ (ADR 0047). Mesma pessoa pode ter múltiplos papéis (member, user,
+            supplier, profissional, company).
           </p>
         </div>
         <Link
@@ -95,9 +95,7 @@ export default async function PessoasPage({
                     {p.kind === 'pf' ? 'PF' : 'PJ'}
                   </span>
                   {p.document && (
-                    <span className="text-sm text-[color:var(--ev-text-muted)]">
-                      {p.document}
-                    </span>
+                    <span className="text-sm text-[color:var(--ev-text-muted)]">{p.document}</span>
                   )}
                   {p.archivedAt && (
                     <span className="text-xs rounded-full bg-[color:var(--ev-warning-bg)] px-2 py-0.5">
@@ -105,9 +103,7 @@ export default async function PessoasPage({
                     </span>
                   )}
                 </div>
-                {p.email && (
-                  <p className="text-sm text-[color:var(--ev-text-muted)]">{p.email}</p>
-                )}
+                {p.email && <p className="text-sm text-[color:var(--ev-text-muted)]">{p.email}</p>}
               </li>
             ))}
           </ul>

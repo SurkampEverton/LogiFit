@@ -114,7 +114,10 @@ export default async function DrePage({
               <div className="text-xs uppercase tracking-wide text-[color:var(--ev-text-muted)]">
                 Receita paga
               </div>
-              <div className="text-2xl font-semibold tabular-nums mt-2" style={{ color: 'var(--ev-success, #22c55e)' }}>
+              <div
+                className="text-2xl font-semibold tabular-nums mt-2"
+                style={{ color: 'var(--ev-success, #22c55e)' }}
+              >
                 {formatBrl(dre.revenue.paidCents)}
               </div>
               <div className="text-[10px] text-[color:var(--ev-text-muted)] mt-1">
@@ -125,7 +128,10 @@ export default async function DrePage({
               <div className="text-xs uppercase tracking-wide text-[color:var(--ev-text-muted)]">
                 Pendente
               </div>
-              <div className="text-2xl font-semibold tabular-nums mt-2" style={{ color: 'var(--ev-warning, #eab308)' }}>
+              <div
+                className="text-2xl font-semibold tabular-nums mt-2"
+                style={{ color: 'var(--ev-warning, #eab308)' }}
+              >
                 {formatBrl(dre.revenue.pendingCents + dre.revenue.overdueCents)}
               </div>
               <div className="text-[10px] text-[color:var(--ev-text-muted)] mt-1">
@@ -136,11 +142,15 @@ export default async function DrePage({
               <div className="text-xs uppercase tracking-wide text-[color:var(--ev-text-muted)]">
                 Custos
               </div>
-              <div className="text-2xl font-semibold tabular-nums mt-2" style={{ color: 'var(--ev-danger, #ef4444)' }}>
+              <div
+                className="text-2xl font-semibold tabular-nums mt-2"
+                style={{ color: 'var(--ev-danger, #ef4444)' }}
+              >
                 {formatBrl(dre.costs.totalCents)}
               </div>
               <div className="text-[10px] text-[color:var(--ev-text-muted)] mt-1">
-                fixo {formatBrl(dre.costs.byType.fixedCents)} · var {formatBrl(dre.costs.byType.variableCents)}
+                fixo {formatBrl(dre.costs.byType.fixedCents)} · var{' '}
+                {formatBrl(dre.costs.byType.variableCents)}
               </div>
             </div>
             <div className="rounded-xl border border-[color:var(--ev-border)] bg-[color:var(--ev-surface)] p-5">
@@ -176,9 +186,7 @@ export default async function DrePage({
               <ul className="space-y-2">
                 {dre.costs.byCategory.map((c) => {
                   const percent =
-                    dre.costs.totalCents > 0
-                      ? (c.totalCents / dre.costs.totalCents) * 100
-                      : 0
+                    dre.costs.totalCents > 0 ? (c.totalCents / dre.costs.totalCents) * 100 : 0
                   return (
                     <li key={c.categoryId} className="space-y-1">
                       <div className="flex justify-between text-sm">

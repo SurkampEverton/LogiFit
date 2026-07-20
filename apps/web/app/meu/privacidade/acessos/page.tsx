@@ -1,3 +1,4 @@
+import { pool } from '@repo/db/client'
 /**
  * /meu/privacidade/acessos — timeline de leituras cross-tenant. Sprint 26 Faixa C (26b).
  *
@@ -8,7 +9,6 @@
  * gráfico "leituras por empresa", export CSV/PDF via `exportCrossTenantAccessLog`.
  */
 import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { withMemberContext } from '../../../lib/member-session'
 import { requireMemberOrPassport } from '../../../lib/require-member-or-passport'
 import { PassportNeedsLink } from '../../_components/passport-needs-link'

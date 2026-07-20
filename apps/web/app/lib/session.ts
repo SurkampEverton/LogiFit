@@ -1,3 +1,5 @@
+import { auth } from '@repo/auth/server'
+import { pool } from '@repo/db/client'
 /**
  * Session helpers pra Server Actions e Server Components.
  *
@@ -10,8 +12,6 @@
  */
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { auth } from '@repo/auth/server'
-import { pool } from '@repo/db/client'
 
 export interface LogifitSessionClaims {
   userId: string
@@ -32,9 +32,7 @@ export interface LogifitSessionClaims {
   mfaAt: Date | null
 }
 
-export type ServerSession = NonNullable<
-  Awaited<ReturnType<typeof auth.api.getSession>>
-> & {
+export type ServerSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>> & {
   logifit: LogifitSessionClaims | null
 }
 
@@ -134,7 +132,7 @@ export async function withElevatedContext<T>(
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
-    await client.query("SET LOCAL ROLE postgres")
+    await client.query('SET LOCAL ROLE postgres')
     await client.query("SELECT set_config('app.user_id', $1, true)", [authUserId])
     const result = await fn(client)
     await client.query('COMMIT')

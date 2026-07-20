@@ -1,11 +1,11 @@
+import { db } from '@repo/db/client'
+import { evolucoesSessao, members, persons } from '@repo/db/schema'
 /**
  * `/app/fisio/pacientes/[memberId]/timeline-evolucao` — timeline visual (Sprint 21 Faixa C).
  */
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import { evolucoesSessao, members, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -28,9 +28,7 @@ export default async function TimelineEvolucaoPage({
   params,
 }: { params: Promise<{ memberId: string }> }) {
   const { memberId } = await params
-  const session = await requireFullSession(
-    `/app/fisio/pacientes/${memberId}/timeline-evolucao`,
-  )
+  const session = await requireFullSession(`/app/fisio/pacientes/${memberId}/timeline-evolucao`)
   const tenantId = session.logifit.tenantId
 
   const [member] = await db
@@ -67,10 +65,7 @@ export default async function TimelineEvolucaoPage({
         <h1 style={{ margin: 0 }}>📈 Timeline — {member.name ?? '—'}</h1>
         <span style={{ color: 'var(--ev-muted)' }}>{rows.length} pontos</span>
         <span style={{ flex: 1 }} />
-        <Link
-          href={`/app/fisio/pacientes/${memberId}/evolucoes`}
-          className="ev-btn ev-btn-ghost"
-        >
+        <Link href={`/app/fisio/pacientes/${memberId}/evolucoes`} className="ev-btn ev-btn-ghost">
           ← Lista
         </Link>
       </header>
@@ -113,11 +108,10 @@ export default async function TimelineEvolucaoPage({
                     border: '2px solid var(--ev-surface, white)',
                   }}
                 />
-                <div
-                  className="ev-card"
-                  style={{ padding: 'var(--ev-space-md)', marginLeft: 8 }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                <div className="ev-card" style={{ padding: 'var(--ev-space-md)', marginLeft: 8 }}>
+                  <div
+                    style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}
+                  >
                     <strong>{new Date(r.createdAt).toLocaleString('pt-BR')}</strong>
                     <span className="ev-badge">{r.status}</span>
                     {r.attachmentsCount > 0 && (

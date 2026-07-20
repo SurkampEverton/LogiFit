@@ -1,16 +1,11 @@
+import { db } from '@repo/db/client'
+import { assessmentTypes, assessments, members, persons } from '@repo/db/schema'
 /**
  * `/app/members/[id]/avaliacoes` — tabela de avaliações do member (Sprint 12 Faixa C).
  */
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import {
-  assessmentTypes,
-  assessments,
-  members,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -90,8 +85,7 @@ export default async function MemberAvaliacoesPage({
 
       {rows.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-6 text-sm text-[color:var(--ev-text-muted)]">
-          Nenhuma avaliação registrada. Use o botão "+ Nova avaliação" pra
-          começar.
+          Nenhuma avaliação registrada. Use o botão "+ Nova avaliação" pra começar.
         </div>
       ) : (
         <ul className="space-y-2">
@@ -108,9 +102,7 @@ export default async function MemberAvaliacoesPage({
                   {a.typeName ?? '(tipo removido)'}
                 </Link>
                 <div className="text-xs text-[color:var(--ev-text-muted)]">
-                  {a.typeCategory && (
-                    <>{CATEGORY_LABELS[a.typeCategory] ?? a.typeCategory} · </>
-                  )}
+                  {a.typeCategory && <>{CATEGORY_LABELS[a.typeCategory] ?? a.typeCategory} · </>}
                   {new Date(a.performedAt).toLocaleDateString('pt-BR', {
                     day: '2-digit',
                     month: '2-digit',

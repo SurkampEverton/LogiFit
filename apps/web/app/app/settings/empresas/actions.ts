@@ -1,5 +1,7 @@
 'use server'
 
+import { db } from '@repo/db/client'
+import { type CompanyRow, companies, persons } from '@repo/db/schema'
 /**
  * Server Actions de companies (matriz/filial — Sprint 01a Faixa E).
  *
@@ -11,8 +13,6 @@
  */
 import { and, eq, isNull, notInArray } from 'drizzle-orm'
 import { z } from 'zod'
-import { db } from '@repo/db/client'
-import { companies, persons, type CompanyRow } from '@repo/db/schema'
 import { requireFullSession, withSessionContext } from '../../../lib/session'
 
 type ActionResult<T> =
@@ -60,9 +60,7 @@ export async function listAvailablePjPersons(): Promise<
 
   return withSessionContext(session.logifit, async () => {
     // Subquery: person_ids já vinculados a alguma company
-    const linkedIds = await db
-      .select({ personId: companies.personId })
-      .from(companies)
+    const linkedIds = await db.select({ personId: companies.personId }).from(companies)
 
     const linkedSet = new Set(linkedIds.map((r) => r.personId))
     const linkedArr = Array.from(linkedSet)
@@ -101,7 +99,11 @@ export async function createFilial(
   if (!parsed.success) {
     return {
       ok: false,
-      error: { code: 'VALIDATION_ERROR', message: 'dados inválidos', details: parsed.error.flatten() },
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'dados inválidos',
+        details: parsed.error.flatten(),
+      },
     }
   }
   const input = parsed.data
@@ -145,7 +147,10 @@ export async function createFilial(
       if (msg.includes('companies_person_per_tenant_uq')) {
         return {
           ok: false,
-          error: { code: 'PERSON_ALREADY_COMPANY', message: 'esta PJ já é uma company neste tenant' },
+          error: {
+            code: 'PERSON_ALREADY_COMPANY',
+            message: 'esta PJ já é uma company neste tenant',
+          },
         }
       }
       if (msg.includes('kind=pj')) {

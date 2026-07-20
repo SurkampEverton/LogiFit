@@ -25,7 +25,6 @@ import { pool } from '@repo/db/client'
 import { sendTransactional } from '@repo/email'
 import { ApiException } from '@repo/errors'
 import {
-  decryptSecret,
   encryptSecret,
   generateRecoveryCodes,
   hashPassword,
@@ -740,9 +739,7 @@ export const resendPassportEmailVerification = wrapPassportAction(
     )
     if (recent.rows.length > 0) {
       const ageMs = Date.now() - recent.rows[0]!.created_at.getTime()
-      const retryAfterSec = Math.ceil(
-        (EMAIL_VERIFICATION_RESEND_COOLDOWN_MS - ageMs) / 1000,
-      )
+      const retryAfterSec = Math.ceil((EMAIL_VERIFICATION_RESEND_COOLDOWN_MS - ageMs) / 1000)
       throw new ApiException({
         code: 'RATE_LIMITED',
         message: `Aguarde ${retryAfterSec}s antes de pedir outro reenvio (anti-spam).`,

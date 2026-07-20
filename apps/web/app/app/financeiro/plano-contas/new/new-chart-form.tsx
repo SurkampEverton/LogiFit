@@ -81,11 +81,7 @@ export function NewChartAccountForm({ parentOptions }: { parentOptions: ParentOp
 
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span>Conta pai (opcional)</span>
-        <select
-          value={parentId}
-          onChange={(e) => setParentId(e.target.value)}
-          className="ev-input"
-        >
+        <select value={parentId} onChange={(e) => setParentId(e.target.value)} className="ev-input">
           <option value="">(raiz — sem pai)</option>
           {filteredParents.map((p) => (
             <option key={p.id} value={p.id}>

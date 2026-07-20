@@ -101,9 +101,7 @@ export function NewFilialForm({ availablePersons }: { availablePersons: Availabl
         <select
           id="regime"
           value={regimeTributario}
-          onChange={(e) =>
-            setRegimeTributario(e.target.value as typeof regimeTributario)
-          }
+          onChange={(e) => setRegimeTributario(e.target.value as typeof regimeTributario)}
           className="block w-full rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-input-bg)] px-3 py-2 text-base"
           style={{ minHeight: 'var(--ev-input-min, 48px)' }}
         >

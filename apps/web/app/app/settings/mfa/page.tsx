@@ -1,6 +1,6 @@
+import { auth } from '@repo/auth/server'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { auth } from '@repo/auth/server'
 
 /**
  * /app/settings/mfa — gerenciamento de MFA do user atual.
@@ -27,8 +27,8 @@ export default async function MfaSettingsPage() {
       <header className="space-y-2">
         <h1 className="text-3xl font-semibold tracking-tight">Autenticação em dois fatores</h1>
         <p className="text-base text-[color:var(--ev-text-muted)]">
-          MFA reforça a segurança da sua conta. Profissionais de saúde devem habilitar
-          (regra 43 do LogiFit + ADR 0073).
+          MFA reforça a segurança da sua conta. Profissionais de saúde devem habilitar (regra 43 do
+          LogiFit + ADR 0073).
         </p>
       </header>
 
@@ -43,8 +43,8 @@ export default async function MfaSettingsPage() {
           Use Google Authenticator, Microsoft Authenticator, Authy ou 1Password.
         </p>
         <p className="text-sm rounded-md border border-dashed border-[color:var(--ev-border)] p-3 text-[color:var(--ev-text-muted)]">
-          Enrollment completo entra na Sprint 01a Faixa D (depende de página de
-          settings + email para enviar QR code link).
+          Enrollment completo entra na Sprint 01a Faixa D (depende de página de settings + email
+          para enviar QR code link).
         </p>
       </section>
 
@@ -71,8 +71,8 @@ export default async function MfaSettingsPage() {
           Códigos de recuperação
         </h2>
         <p className="text-sm text-[color:var(--ev-text-muted)]">
-          10 códigos one-time pra recuperar acesso se perder seu autenticador.
-          Mostrados <strong>UMA vez</strong> ao habilitar MFA.
+          10 códigos one-time pra recuperar acesso se perder seu autenticador. Mostrados{' '}
+          <strong>UMA vez</strong> ao habilitar MFA.
         </p>
       </section>
     </main>

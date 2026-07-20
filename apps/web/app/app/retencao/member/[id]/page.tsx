@@ -1,9 +1,3 @@
-/**
- * `/app/retencao/member/[id]` — detalhe predição + fatores + intervenções (Sprint 19 Faixa C).
- */
-import { and, desc, eq } from 'drizzle-orm'
-import Link from 'next/link'
-import { notFound } from 'next/navigation'
 import { db } from '@repo/db/client'
 import {
   churnFeaturesSnapshot,
@@ -13,10 +7,16 @@ import {
   persons,
   users,
 } from '@repo/db/schema'
+/**
+ * `/app/retencao/member/[id]` — detalhe predição + fatores + intervenções (Sprint 19 Faixa C).
+ */
+import { and, desc, eq } from 'drizzle-orm'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import { requireFullSession } from '../../../../lib/session'
-import { ScorePredictButton } from './score-predict-button'
 import { AssignInterventionForm } from './assign-intervention-form'
 import { CloseInterventionForm } from './close-intervention-form'
+import { ScorePredictButton } from './score-predict-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,9 +77,7 @@ export default async function MemberRiskDetailPage({
       snapshotId: churnPredictions.snapshotId,
     })
     .from(churnPredictions)
-    .where(
-      and(eq(churnPredictions.memberId, memberId), eq(churnPredictions.tenantId, tenantId)),
-    )
+    .where(and(eq(churnPredictions.memberId, memberId), eq(churnPredictions.tenantId, tenantId)))
     .orderBy(desc(churnPredictions.predictedAt))
     .limit(10)
 
@@ -134,8 +132,8 @@ export default async function MemberRiskDetailPage({
       {!latest ? (
         <div className="ev-card" style={{ padding: 'var(--ev-space-lg)' }}>
           <p style={{ marginTop: 0 }}>
-            Sem predição computada. Clique em "Calcular agora" pra rodar a Fase 1
-            (heurística + LLM quando habilitado).
+            Sem predição computada. Clique em "Calcular agora" pra rodar a Fase 1 (heurística + LLM
+            quando habilitado).
           </p>
         </div>
       ) : (
@@ -200,7 +198,12 @@ export default async function MemberRiskDetailPage({
           <h2>Fatores principais</h2>
           <div
             className="ev-card"
-            style={{ padding: 'var(--ev-space-md)', display: 'flex', flexDirection: 'column', gap: 8 }}
+            style={{
+              padding: 'var(--ev-space-md)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}
           >
             {factors.length === 0 ? (
               <p style={{ marginTop: 0, color: 'var(--ev-muted)' }}>—</p>
@@ -285,16 +288,14 @@ export default async function MemberRiskDetailPage({
                 <td style={{ fontSize: 'var(--ev-font-xs)' }}>
                   {i.closedAt ? new Date(i.closedAt).toLocaleString('pt-BR') : '—'}
                 </td>
-                <td>{i.outcome ? OUTCOME_LABEL[i.outcome] ?? i.outcome : '—'}</td>
+                <td>{i.outcome ? (OUTCOME_LABEL[i.outcome] ?? i.outcome) : '—'}</td>
                 <td style={{ fontSize: 'var(--ev-font-xs)' }}>
                   {i.notes ?? ''}
                   {i.outcomeNotes && (
                     <div style={{ color: 'var(--ev-muted)' }}>→ {i.outcomeNotes}</div>
                   )}
                 </td>
-                <td>
-                  {!i.closedAt && <CloseInterventionForm interventionId={i.id} />}
-                </td>
+                <td>{!i.closedAt && <CloseInterventionForm interventionId={i.id} />}</td>
               </tr>
             ))}
           </tbody>

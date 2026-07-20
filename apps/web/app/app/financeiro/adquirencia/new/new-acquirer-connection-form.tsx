@@ -102,8 +102,8 @@ export function NewAcquirerConnectionForm({
         </select>
         {provider !== 'mock' && (
           <small style={{ color: 'var(--ev-warning, #ca8a04)' }}>
-            ⚠ Adapter real ainda não disponível — Sprint 18b implementa após POC.
-            Mantenha sandbox=true; salvar com provider real falha por design no MVP.
+            ⚠ Adapter real ainda não disponível — Sprint 18b implementa após POC. Mantenha
+            sandbox=true; salvar com provider real falha por design no MVP.
           </small>
         )}
       </label>
@@ -159,18 +159,14 @@ export function NewAcquirerConnectionForm({
             autoComplete="off"
           />
           <small style={{ color: 'var(--ev-muted)' }}>
-            Sprint 18b cifrará via envelope AES-256-GCM (ADR 0073). No MVP é em claro
-            — use apenas sandbox.
+            Sprint 18b cifrará via envelope AES-256-GCM (ADR 0073). No MVP é em claro — use apenas
+            sandbox.
           </small>
         </label>
       )}
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <input
-          type="checkbox"
-          checked={sandbox}
-          onChange={(e) => setSandbox(e.target.checked)}
-        />
+        <input type="checkbox" checked={sandbox} onChange={(e) => setSandbox(e.target.checked)} />
         <span>Sandbox (endpoint de teste)</span>
       </label>
 

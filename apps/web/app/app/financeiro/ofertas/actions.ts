@@ -29,7 +29,6 @@ import {
   contracts,
   creditConsumptions,
   invoices,
-  members,
   planItems,
   plans,
   promotionUses,
@@ -38,7 +37,7 @@ import {
   referrals,
 } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
-import { and, eq, gte, isNull, lte, or, sql } from 'drizzle-orm'
+import { and, eq, gte, isNull, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { wrapServerAction } from '../../../lib/wrap-action'
 
@@ -47,7 +46,11 @@ import { wrapServerAction } from '../../../lib/wrap-action'
 const PromotionKindSchema = z.enum(['percent', 'fixed', 'trial_days'])
 
 const CreatePromotionInputSchema = z.object({
-  code: z.string().min(2).max(40).regex(/^[A-Z0-9_-]+$/i),
+  code: z
+    .string()
+    .min(2)
+    .max(40)
+    .regex(/^[A-Z0-9_-]+$/i),
   name: z.string().min(2).max(120),
   description: z.string().max(2000).optional(),
   kind: PromotionKindSchema,
@@ -234,10 +237,7 @@ export const applyPromotion = wrapServerAction(
         request_id: '',
       })
 
-    if (
-      promo.minAmountCents !== null &&
-      targetInvoice.amountCents < promo.minAmountCents
-    )
+    if (promo.minAmountCents !== null && targetInvoice.amountCents < promo.minAmountCents)
       throw new ApiException({
         code: 'CONFLICT',
         message: `Cupom exige valor mínimo de R$ ${(promo.minAmountCents / 100).toFixed(2)}`,
@@ -271,10 +271,7 @@ export const applyPromotion = wrapServerAction(
         .where(
           and(
             eq(promotions.id, promo.id),
-            or(
-              isNull(promotions.maxUses),
-              sql`${promotions.usesCount} < ${promotions.maxUses}`,
-            ),
+            or(isNull(promotions.maxUses), sql`${promotions.usesCount} < ${promotions.maxUses}`),
           ),
         )
         .returning({ id: promotions.id })
@@ -289,13 +286,12 @@ export const applyPromotion = wrapServerAction(
 
       // Update invoice amount + breakdown
       if (discountCents > 0 && targetInvoice) {
-        const existingBreakdown =
-          (targetInvoice.breakdown as Record<string, unknown> | null) ?? {
-            base: targetInvoice.amountCents,
-            overage_items: [],
-            discounts: [],
-            surcharges: [],
-          }
+        const existingBreakdown = (targetInvoice.breakdown as Record<string, unknown> | null) ?? {
+          base: targetInvoice.amountCents,
+          overage_items: [],
+          discounts: [],
+          surcharges: [],
+        }
         const discounts = (existingBreakdown.discounts as Array<unknown>) ?? []
         discounts.push({
           source: 'promotion',
@@ -498,7 +494,11 @@ export const subscribeBundle = wrapServerAction(
         })
         .returning({ id: invoices.id })
 
-      return { contractId: contract.id, invoiceId: invoice?.id, creditIds: credits.map((c) => c.id) }
+      return {
+        contractId: contract.id,
+        invoiceId: invoice?.id,
+        creditIds: credits.map((c) => c.id),
+      }
     })
 
     return result
@@ -517,10 +517,13 @@ export const consumeCredit = wrapServerAction(
   ) => {
     const memberId = z.string().uuid().parse(input.memberId)
     const serviceType = z.string().min(2).parse(input.serviceType)
-    const amount = z.number().int().min(1).default(1).parse(input.amount ?? 1)
-    const appointmentId = input.appointmentId
-      ? z.string().uuid().parse(input.appointmentId)
-      : null
+    const amount = z
+      .number()
+      .int()
+      .min(1)
+      .default(1)
+      .parse(input.amount ?? 1)
+    const appointmentId = input.appointmentId ? z.string().uuid().parse(input.appointmentId) : null
 
     // Busca crédito ativo + balance >= amount (FIFO: oldest expires_at first)
     const now = new Date()
@@ -533,10 +536,7 @@ export const consumeCredit = wrapServerAction(
           eq(appointmentCredits.memberId, memberId),
           eq(appointmentCredits.serviceType, serviceType),
           gte(appointmentCredits.balance, amount),
-          or(
-            isNull(appointmentCredits.expiresAt),
-            gte(appointmentCredits.expiresAt, now),
-          ),
+          or(isNull(appointmentCredits.expiresAt), gte(appointmentCredits.expiresAt, now)),
         ),
       )
       .orderBy(appointmentCredits.expiresAt, appointmentCredits.earnedAt)
@@ -607,10 +607,7 @@ export const listMemberCredits = wrapServerAction(
           eq(appointmentCredits.tenantId, session.logifit.tenantId),
           eq(appointmentCredits.memberId, memberId),
           gte(appointmentCredits.balance, 1),
-          or(
-            isNull(appointmentCredits.expiresAt),
-            gte(appointmentCredits.expiresAt, now),
-          ),
+          or(isNull(appointmentCredits.expiresAt), gte(appointmentCredits.expiresAt, now)),
         ),
       )
       .orderBy(appointmentCredits.expiresAt)

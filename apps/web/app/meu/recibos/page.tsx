@@ -1,3 +1,4 @@
+import { pool } from '@repo/db/client'
 /**
  * /meu/recibos — recibos / comprovantes pagos. Sprint 26 Faixa C (26b).
  *
@@ -5,7 +6,6 @@
  * via @react-pdf/renderer com timbre do tenant + assinatura digital opcional.
  */
 import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { withMemberContext } from '../../lib/member-session'
 import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
 import { PassportNeedsLink } from '../_components/passport-needs-link'

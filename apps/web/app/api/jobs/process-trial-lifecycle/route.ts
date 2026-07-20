@@ -1,3 +1,4 @@
+import { db } from '@repo/db/client'
 /**
  * POST /api/jobs/process-trial-lifecycle — cron handler (ADR 0066).
  *
@@ -24,7 +25,6 @@
  */
 import { sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
-import { db } from '@repo/db/client'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'

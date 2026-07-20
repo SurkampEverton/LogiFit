@@ -25,18 +25,8 @@
  */
 
 import { db } from '@repo/db/client'
-import {
-  extractTemplateVariables,
-  renderTemplate,
-  ReguaDslSchema,
-} from '@repo/db/mensagens'
-import {
-  members,
-  messageTemplates,
-  messagesSent,
-  persons,
-  reguas,
-} from '@repo/db/schema'
+import { ReguaDslSchema, extractTemplateVariables, renderTemplate } from '@repo/db/mensagens'
+import { members, messageTemplates, messagesSent, persons, reguas } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
@@ -93,10 +83,7 @@ const ListMemberMessagesInputSchema = z.object({
 
 export const createTemplate = wrapServerAction(
   { module: 'mensagens', action: 'template.create', resourceType: 'message_templates' },
-  async (
-    input: z.infer<typeof CreateTemplateInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateTemplateInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateTemplateInputSchema.parse(input)
     const variables = extractTemplateVariables(parsed.body)
     // Email exige subject; WhatsApp não
@@ -144,10 +131,7 @@ export const createTemplate = wrapServerAction(
 
 export const approveTemplate = wrapServerAction(
   { module: 'mensagens', action: 'template.approve', resourceType: 'message_templates' },
-  async (
-    input: z.infer<typeof ApproveTemplateInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ApproveTemplateInputSchema>, { session, setAuditResource }) => {
     const parsed = ApproveTemplateInputSchema.parse(input)
     const [row] = await db
       .update(messageTemplates)
@@ -208,10 +192,7 @@ export const listTemplates = wrapServerAction(
 
 export const createRegua = wrapServerAction(
   { module: 'mensagens', action: 'regua.create', resourceType: 'reguas' },
-  async (
-    input: z.infer<typeof CreateReguaInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateReguaInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateReguaInputSchema.parse(input)
     const [row] = await db
       .insert(reguas)
@@ -265,10 +246,7 @@ async function toggleReguaActive(
 
 export const activateRegua = wrapServerAction(
   { module: 'mensagens', action: 'regua.activate', resourceType: 'reguas' },
-  async (
-    input: z.infer<typeof ToggleReguaInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ToggleReguaInputSchema>, { session, setAuditResource }) => {
     const parsed = ToggleReguaInputSchema.parse(input)
     const id = await toggleReguaActive(parsed.reguaId, session.logifit.tenantId, true)
     setAuditResource(id, { active: true })
@@ -278,10 +256,7 @@ export const activateRegua = wrapServerAction(
 
 export const pauseRegua = wrapServerAction(
   { module: 'mensagens', action: 'regua.pause', resourceType: 'reguas' },
-  async (
-    input: z.infer<typeof ToggleReguaInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ToggleReguaInputSchema>, { session, setAuditResource }) => {
     const parsed = ToggleReguaInputSchema.parse(input)
     const id = await toggleReguaActive(parsed.reguaId, session.logifit.tenantId, false)
     setAuditResource(id, { active: false })
@@ -322,10 +297,7 @@ export const listReguas = wrapServerAction(
  */
 export const sendMessageManual = wrapServerAction(
   { module: 'mensagens', action: 'message.send_manual', resourceType: 'messages_sent' },
-  async (
-    input: z.infer<typeof SendMessageManualInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof SendMessageManualInputSchema>, { session, setAuditResource }) => {
     const parsed = SendMessageManualInputSchema.parse(input)
 
     // Resolve template + member
@@ -367,9 +339,7 @@ export const sendMessageManual = wrapServerAction(
       })
       .from(members)
       .innerJoin(persons, eq(persons.id, members.personId))
-      .where(
-        and(eq(members.id, parsed.memberId), eq(members.tenantId, session.logifit.tenantId)),
-      )
+      .where(and(eq(members.id, parsed.memberId), eq(members.tenantId, session.logifit.tenantId)))
       .limit(1)
     if (!m)
       throw new ApiException({
@@ -378,8 +348,7 @@ export const sendMessageManual = wrapServerAction(
         request_id: '',
       })
 
-    const recipient =
-      parsed.channel === 'email' ? m.personEmail : m.personPhone
+    const recipient = parsed.channel === 'email' ? m.personEmail : m.personPhone
     if (!recipient)
       throw new ApiException({
         code: 'VALIDATION_ERROR',
@@ -467,10 +436,7 @@ export const listMessages = wrapServerAction(
 
 export const listMemberMessages = wrapServerAction(
   { module: 'mensagens', action: 'message.list_by_member' },
-  async (
-    input: z.infer<typeof ListMemberMessagesInputSchema>,
-    { session },
-  ) => {
+  async (input: z.infer<typeof ListMemberMessagesInputSchema>, { session }) => {
     const parsed = ListMemberMessagesInputSchema.parse(input)
     const rows = await db
       .select({

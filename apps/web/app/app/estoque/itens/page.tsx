@@ -1,10 +1,9 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/estoque/itens` — catálogo de itens (Sprint 24 Faixa C).
  */
-import { asc, eq, sql } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { stockItems } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'

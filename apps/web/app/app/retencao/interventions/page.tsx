@@ -1,9 +1,9 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/retencao/interventions` — lista global de intervenções (Sprint 19 Faixa C).
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -91,8 +91,7 @@ export default async function InterventionsPage({
             href="/app/retencao/interventions?status=open"
             className="ev-btn ev-btn-ghost"
             style={{
-              borderColor:
-                status === 'open' ? 'var(--ev-primary)' : 'var(--ev-border)',
+              borderColor: status === 'open' ? 'var(--ev-primary)' : 'var(--ev-border)',
             }}
           >
             Abertas
@@ -101,8 +100,7 @@ export default async function InterventionsPage({
             href="/app/retencao/interventions?status=closed"
             className="ev-btn ev-btn-ghost"
             style={{
-              borderColor:
-                status === 'closed' ? 'var(--ev-primary)' : 'var(--ev-border)',
+              borderColor: status === 'closed' ? 'var(--ev-primary)' : 'var(--ev-border)',
             }}
           >
             Encerradas
@@ -143,9 +141,7 @@ export default async function InterventionsPage({
               return (
                 <tr key={i.id}>
                   <td>
-                    <Link href={`/app/retencao/member/${i.member_id}`}>
-                      {i.member_name}
-                    </Link>
+                    <Link href={`/app/retencao/member/${i.member_id}`}>{i.member_name}</Link>
                   </td>
                   <td style={{ fontWeight: 600 }}>
                     {i.prob_30d != null ? `${Math.round(Number(i.prob_30d) * 100)}%` : '—'}

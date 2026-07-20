@@ -93,10 +93,7 @@ const CreateProposalInputSchema = z
     validUntil: z.string().datetime(),
     notes: z.string().max(2000).optional(),
   })
-  .refine(
-    (v) => v.discountCents < v.priceCents,
-    'discount_cents deve ser menor que price_cents',
-  )
+  .refine((v) => v.discountCents < v.priceCents, 'discount_cents deve ser menor que price_cents')
   .refine(
     (v) => !(v.planId && v.bundlePlanId),
     'plan_id e bundle_plan_id são mutuamente exclusivos',
@@ -119,10 +116,7 @@ const ListLeadsInputSchema = z.object({
 
 export const createLead = wrapServerAction(
   { module: 'vendas', action: 'lead.create', resourceType: 'leads' },
-  async (
-    input: z.infer<typeof CreateLeadInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateLeadInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateLeadInputSchema.parse(input)
 
     // Resolve stage default (1º active asc por orderIdx) se não informado
@@ -131,12 +125,7 @@ export const createLead = wrapServerAction(
       const [defaultStage] = await db
         .select({ id: leadStages.id })
         .from(leadStages)
-        .where(
-          and(
-            eq(leadStages.tenantId, session.logifit.tenantId),
-            eq(leadStages.active, true),
-          ),
-        )
+        .where(and(eq(leadStages.tenantId, session.logifit.tenantId), eq(leadStages.active, true)))
         .orderBy(asc(leadStages.orderIdx))
         .limit(1)
       if (!defaultStage)
@@ -193,10 +182,7 @@ export const createLead = wrapServerAction(
 
 export const moveLeadToStage = wrapServerAction(
   { module: 'vendas', action: 'lead.move_stage', resourceType: 'leads' },
-  async (
-    input: z.infer<typeof MoveLeadToStageInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof MoveLeadToStageInputSchema>, { session, setAuditResource }) => {
     const parsed = MoveLeadToStageInputSchema.parse(input)
 
     return await db.transaction(async (tx) => {
@@ -274,10 +260,7 @@ export const moveLeadToStage = wrapServerAction(
 
 export const archiveLead = wrapServerAction(
   { module: 'vendas', action: 'lead.archive', resourceType: 'leads' },
-  async (
-    input: z.infer<typeof ArchiveLeadInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ArchiveLeadInputSchema>, { session, setAuditResource }) => {
     const parsed = ArchiveLeadInputSchema.parse(input)
     const [row] = await db
       .update(leads)
@@ -318,10 +301,7 @@ export const archiveLead = wrapServerAction(
 
 export const createProposal = wrapServerAction(
   { module: 'vendas', action: 'proposal.create', resourceType: 'proposals' },
-  async (
-    input: z.infer<typeof CreateProposalInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateProposalInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateProposalInputSchema.parse(input)
 
     // Garante lead pertence ao tenant + não arquivado
@@ -348,10 +328,7 @@ export const createProposal = wrapServerAction(
       .select({ v: sql<number>`coalesce(max(${proposals.version}), 0)` })
       .from(proposals)
       .where(
-        and(
-          eq(proposals.leadId, parsed.leadId),
-          eq(proposals.tenantId, session.logifit.tenantId),
-        ),
+        and(eq(proposals.leadId, parsed.leadId), eq(proposals.tenantId, session.logifit.tenantId)),
       )
     const nextVersion = (maxVersion?.v ?? 0) + 1
 
@@ -410,10 +387,7 @@ export const convertLeadToMember = wrapServerAction(
     action: 'lead.convert_to_member',
     resourceType: 'leads',
   },
-  async (
-    input: z.infer<typeof ConvertLeadToMemberInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ConvertLeadToMemberInputSchema>, { session, setAuditResource }) => {
     const parsed = ConvertLeadToMemberInputSchema.parse(input)
 
     return await db.transaction(async (tx) => {
@@ -427,12 +401,7 @@ export const convertLeadToMember = wrapServerAction(
           convertedToMemberId: leads.convertedToMemberId,
         })
         .from(leads)
-        .where(
-          and(
-            eq(leads.id, parsed.leadId),
-            eq(leads.tenantId, session.logifit.tenantId),
-          ),
-        )
+        .where(and(eq(leads.id, parsed.leadId), eq(leads.tenantId, session.logifit.tenantId)))
         .limit(1)
       if (!lead)
         throw new ApiException({
@@ -449,8 +418,7 @@ export const convertLeadToMember = wrapServerAction(
       if (!lead.personId)
         throw new ApiException({
           code: 'VALIDATION_ERROR',
-          message:
-            'Lead exige person_id pra conversão. Use upgradeLeadToPerson primeiro.',
+          message: 'Lead exige person_id pra conversão. Use upgradeLeadToPerson primeiro.',
           request_id: '',
         })
 
@@ -584,10 +552,7 @@ export const listLeads = wrapServerAction(
   { module: 'vendas', action: 'lead.list' },
   async (input: z.infer<typeof ListLeadsInputSchema>, { session }) => {
     const parsed = ListLeadsInputSchema.parse(input)
-    const conditions = [
-      eq(leads.tenantId, session.logifit.tenantId),
-      isNull(leads.archivedAt),
-    ]
+    const conditions = [eq(leads.tenantId, session.logifit.tenantId), isNull(leads.archivedAt)]
     if (parsed.stageId) conditions.push(eq(leads.stageId, parsed.stageId))
     if (parsed.assignedToUserId)
       conditions.push(eq(leads.assignedToUserId, parsed.assignedToUserId))
@@ -629,12 +594,7 @@ export const listLeadStages = wrapServerAction(
         color: leadStages.color,
       })
       .from(leadStages)
-      .where(
-        and(
-          eq(leadStages.tenantId, session.logifit.tenantId),
-          eq(leadStages.active, true),
-        ),
-      )
+      .where(and(eq(leadStages.tenantId, session.logifit.tenantId), eq(leadStages.active, true)))
       .orderBy(asc(leadStages.orderIdx))
 
     return { rows }

@@ -1,9 +1,9 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/rh` — hub RH (Sprint 23 Faixa C).
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -84,9 +84,7 @@ export default async function RhHubPage() {
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Periods em draft
           </div>
-          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>
-            {kpi.draft_periods}
-          </div>
+          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>{kpi.draft_periods}</div>
         </div>
         <div>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
@@ -112,25 +110,41 @@ export default async function RhHubPage() {
           gap: 'var(--ev-space-md)',
         }}
       >
-        <Link href="/app/rh/profissionais" className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
+        <Link
+          href="/app/rh/profissionais"
+          className="ev-card"
+          style={{ padding: 'var(--ev-space-md)' }}
+        >
           <strong>👥 Profissionais + Contratos</strong>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Cadastro + condições + versões
           </div>
         </Link>
-        <Link href="/app/rh/comissoes" className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
+        <Link
+          href="/app/rh/comissoes"
+          className="ev-card"
+          style={{ padding: 'var(--ev-space-md)' }}
+        >
           <strong>💰 Entries de comissão</strong>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Cálculos por evento (pendentes + included + reversed)
           </div>
         </Link>
-        <Link href="/app/rh/fechamento" className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
+        <Link
+          href="/app/rh/fechamento"
+          className="ev-card"
+          style={{ padding: 'var(--ev-space-md)' }}
+        >
           <strong>📅 Fechamento mensal</strong>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Periods draft → approved → paid
           </div>
         </Link>
-        <Link href="/app/rh/relatorios" className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
+        <Link
+          href="/app/rh/relatorios"
+          className="ev-card"
+          style={{ padding: 'var(--ev-space-md)' }}
+        >
           <strong>📊 Relatórios</strong>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Por profissional · procedimento · convênio

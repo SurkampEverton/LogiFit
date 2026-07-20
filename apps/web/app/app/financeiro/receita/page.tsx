@@ -1,16 +1,10 @@
+import { db } from '@repo/db/client'
+import { acquirerConnections, acquirerSales, companies, invoices, persons } from '@repo/db/schema'
 /**
  * `/app/financeiro/receita` — dashboard unificado online (Sprint 04) + presencial (Sprint 18).
  */
 import { and, asc, eq, gte, lte, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  acquirerConnections,
-  acquirerSales,
-  companies,
-  invoices,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -151,7 +145,9 @@ export default async function ReceitaUnificadaPage({
       >
         <div>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Online</div>
-          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>{formatBrl(onlineAmount)}</div>
+          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>
+            {formatBrl(onlineAmount)}
+          </div>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Asaas · {online?.count ?? 0} pagamentos · {pctOf(onlineAmount, total)}
           </div>
@@ -160,23 +156,31 @@ export default async function ReceitaUnificadaPage({
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Presencial (líquido)
           </div>
-          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>{formatBrl(presentialNet)}</div>
+          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>
+            {formatBrl(presentialNet)}
+          </div>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Maquininha · {presential?.count ?? 0} vendas · {pctOf(presentialNet, total)}
           </div>
         </div>
         <div>
-          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Total líquido</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
+            Total líquido
+          </div>
           <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>{formatBrl(total)}</div>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Online + presencial
           </div>
         </div>
         <div>
-          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
-            Custo taxas
-          </div>
-          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600, color: 'var(--ev-danger, #b91c1c)' }}>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Custo taxas</div>
+          <div
+            style={{
+              fontSize: 'var(--ev-font-lg)',
+              fontWeight: 600,
+              color: 'var(--ev-danger, #b91c1c)',
+            }}
+          >
             − {formatBrl(presentialFee)}
           </div>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
@@ -211,9 +215,7 @@ export default async function ReceitaUnificadaPage({
                   <td style={{ textAlign: 'right', color: 'var(--ev-muted)' }}>
                     {formatBrl(Number(p.feeCents))}
                   </td>
-                  <td style={{ textAlign: 'right' }}>
-                    {pctOf(Number(p.netCents), presentialNet)}
-                  </td>
+                  <td style={{ textAlign: 'right' }}>{pctOf(Number(p.netCents), presentialNet)}</td>
                 </tr>
               ))}
             </tbody>
@@ -241,9 +243,7 @@ export default async function ReceitaUnificadaPage({
                   <td style={{ textAlign: 'right', fontWeight: 600 }}>
                     {formatBrl(Number(c.netCents))}
                   </td>
-                  <td style={{ textAlign: 'right' }}>
-                    {pctOf(Number(c.netCents), presentialNet)}
-                  </td>
+                  <td style={{ textAlign: 'right' }}>{pctOf(Number(c.netCents), presentialNet)}</td>
                 </tr>
               ))}
             </tbody>

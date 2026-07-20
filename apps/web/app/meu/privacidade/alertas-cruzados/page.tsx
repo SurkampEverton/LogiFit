@@ -31,9 +31,9 @@ export default async function AlertasCruzadosPage() {
       <header>
         <h1 className="ev-portal-h1">Alertas cruzados</h1>
         <p className="ev-portal-muted">
-          Quando diferentes profissionais (fisio + personal + nutri) prescrevem coisas que
-          podem entrar em conflito, geramos um alerta. Você vê aqui o histórico completo +
-          justificativa do profissional se prosseguiu mesmo assim.
+          Quando diferentes profissionais (fisio + personal + nutri) prescrevem coisas que podem
+          entrar em conflito, geramos um alerta. Você vê aqui o histórico completo + justificativa
+          do profissional se prosseguiu mesmo assim.
         </p>
       </header>
 
@@ -41,8 +41,8 @@ export default async function AlertasCruzadosPage() {
         <div className="ev-portal-empty">
           Você não tem alertas cruzados no momento.
           <br />
-          Esta tela é atualizada automaticamente quando algum profissional registra
-          algo conflitante.
+          Esta tela é atualizada automaticamente quando algum profissional registra algo
+          conflitante.
         </div>
       ) : (
         <ol className="ev-portal-timeline">

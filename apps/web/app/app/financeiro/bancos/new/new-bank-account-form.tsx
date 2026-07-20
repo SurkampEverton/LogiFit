@@ -27,7 +27,10 @@ const COMMON_BANKS = [
 
 function parseBrlToCents(value: string): number {
   if (!value) return 0
-  const cleaned = value.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')
+  const cleaned = value
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.')
   const num = Number(cleaned)
   if (!Number.isFinite(num)) return 0
   return Math.round(num * 100)

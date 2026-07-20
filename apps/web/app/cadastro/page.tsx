@@ -29,8 +29,8 @@ export default async function CadastroPage({ searchParams }: PageProps) {
           Criar conta LogiFit
         </h1>
         <p className="ev-portal-muted" style={{ fontSize: 'var(--ev-text-sm)' }}>
-          Sua identidade fica com você. Cada empresa que você se conecta vê
-          apenas o que você autorizar.
+          Sua identidade fica com você. Cada empresa que você se conecta vê apenas o que você
+          autorizar.
         </p>
       </header>
 
@@ -89,8 +89,8 @@ export default async function CadastroPage({ searchParams }: PageProps) {
           textAlign: 'center',
         }}
       >
-        ⚠ Esta é uma versão backbone (Sprint 02b). Cadastro completo será habilitado
-        em Sprint 02b2 (depende ADR persons-without-tenant + Twilio/Turnstile prod).
+        ⚠ Esta é uma versão backbone (Sprint 02b). Cadastro completo será habilitado em Sprint 02b2
+        (depende ADR persons-without-tenant + Twilio/Turnstile prod).
       </p>
     </div>
   )

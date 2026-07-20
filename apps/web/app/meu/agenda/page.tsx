@@ -1,3 +1,4 @@
+import { pool } from '@repo/db/client'
 /**
  * /meu/agenda — agenda do paciente. Sprint 26 Faixa C (26b).
  *
@@ -8,7 +9,6 @@
  * RLS member: SELECT em appointments WHERE member_id = current_setting('app.member_id').
  */
 import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { withMemberContext } from '../../lib/member-session'
 import { requireMemberOrPassport } from '../../lib/require-member-or-passport'
 import { PassportNeedsLink } from '../_components/passport-needs-link'
@@ -98,8 +98,7 @@ export default async function MeuAgendaPage() {
         <h2 className="ev-portal-h2">Próximos</h2>
         {upcoming.length === 0 ? (
           <div className="ev-portal-empty">
-            Você não tem agendamentos próximos.{' '}
-            <Link href="/meu/agenda/novo">Agendar agora</Link>.
+            Você não tem agendamentos próximos. <Link href="/meu/agenda/novo">Agendar agora</Link>.
           </div>
         ) : (
           <ul className="ev-portal-list">

@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { permissions, rolePermissions, roles } from '@repo/db/schema'
 /**
  * `/app/settings/roles` — listagem de roles + permissions (Sprint 01b custom roles UI).
  *
@@ -8,8 +10,6 @@
  */
 import { asc, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { permissions, rolePermissions, roles } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -60,7 +60,10 @@ export default async function RolesPage() {
   return (
     <div className="mx-auto max-w-5xl px-6 py-8 space-y-6">
       <nav className="text-sm">
-        <Link href="/app/settings/users" className="text-[color:var(--ev-text-muted)] hover:underline">
+        <Link
+          href="/app/settings/users"
+          className="text-[color:var(--ev-text-muted)] hover:underline"
+        >
           ← Voltar para Usuários
         </Link>
       </nav>
@@ -68,8 +71,8 @@ export default async function RolesPage() {
       <header className="space-y-1">
         <h1 className="text-3xl font-semibold tracking-tight">Roles e permissões</h1>
         <p className="text-sm text-[color:var(--ev-text-muted)]">
-          Roles do sistema LogiFit + custom roles por tenant (Sprint 01b ADR 0019).
-          Editor de role_permissions completo em Sprint 02+.
+          Roles do sistema LogiFit + custom roles por tenant (Sprint 01b ADR 0019). Editor de
+          role_permissions completo em Sprint 02+.
         </p>
       </header>
 
@@ -88,11 +91,15 @@ export default async function RolesPage() {
             {allRoles.map((r) => (
               <tr key={r.id} className="border-t border-[color:var(--ev-border)]">
                 <td className="px-4 py-3 font-mono font-medium">{r.key}</td>
-                <td className="px-4 py-3 text-[color:var(--ev-text-muted)]">{r.description ?? '—'}</td>
+                <td className="px-4 py-3 text-[color:var(--ev-text-muted)]">
+                  {r.description ?? '—'}
+                </td>
                 <td className="px-4 py-3 tabular-nums">{countByRole.get(r.id) ?? 0}</td>
                 <td className="px-4 py-3">
                   {r.requiresMfa ? (
-                    <span className="text-xs text-[color:var(--ev-warning, #f59e0b)]">⚠ obrigatório</span>
+                    <span className="text-xs text-[color:var(--ev-warning, #f59e0b)]">
+                      ⚠ obrigatório
+                    </span>
                   ) : (
                     <span className="text-xs text-[color:var(--ev-text-muted)]">opcional</span>
                   )}
@@ -116,10 +123,7 @@ export default async function RolesPage() {
         </p>
         <div className="space-y-3">
           {Array.from(permsByCategory.entries()).map(([cat, list]) => (
-            <details
-              key={cat}
-              className="rounded-md border border-[color:var(--ev-border)] p-3"
-            >
+            <details key={cat} className="rounded-md border border-[color:var(--ev-border)] p-3">
               <summary className="cursor-pointer font-medium capitalize">
                 {cat} ({list.length})
               </summary>
@@ -127,9 +131,7 @@ export default async function RolesPage() {
                 {list.map((p) => (
                   <li key={p.key} className="flex items-center justify-between gap-3 py-1">
                     <span className="font-mono">{p.key}</span>
-                    <span className="text-[color:var(--ev-text-muted)] truncate">
-                      {p.label}
-                    </span>
+                    <span className="text-[color:var(--ev-text-muted)] truncate">{p.label}</span>
                     {p.isHighRisk && (
                       <span
                         className="text-[10px] px-1.5 py-0.5 rounded font-medium"
@@ -148,8 +150,8 @@ export default async function RolesPage() {
 
       <section className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-6 text-sm text-[color:var(--ev-text-muted)]">
         <p>
-          <strong>Sprint 02+</strong>: editor visual de role_permissions (checkboxes por categoria) +
-          form pra criar custom role per-tenant + interface para revogar/conceder permissions
+          <strong>Sprint 02+</strong>: editor visual de role_permissions (checkboxes por categoria)
+          + form pra criar custom role per-tenant + interface para revogar/conceder permissions
           individuais via `user_permission_grants` (ADR 0019).
         </p>
       </section>

@@ -265,9 +265,7 @@ export function NewWorkoutForm({ exercises }: Props) {
                       min="1"
                       max="20"
                       value={it.sets}
-                      onChange={(e) =>
-                        updateItem(idx, { sets: Number(e.target.value) })
-                      }
+                      onChange={(e) => updateItem(idx, { sets: Number(e.target.value) })}
                       className="w-full rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-bg)] px-2 py-1"
                     />
                   </label>
@@ -304,9 +302,7 @@ export function NewWorkoutForm({ exercises }: Props) {
                       min="0"
                       max="3600"
                       value={it.restSeconds}
-                      onChange={(e) =>
-                        updateItem(idx, { restSeconds: Number(e.target.value) })
-                      }
+                      onChange={(e) => updateItem(idx, { restSeconds: Number(e.target.value) })}
                       className="w-full rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-bg)] px-2 py-1"
                     />
                   </label>

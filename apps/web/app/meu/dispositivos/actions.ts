@@ -18,10 +18,10 @@
  * Sprint 32b: providers reais Garmin/Oura via safeFetch + envelope encryption tokens.
  */
 
+import { parseInBodyCsv, partitionValidReadings, resolveDeviceProvider } from '@repo/ai'
+import type { DeviceProviderName } from '@repo/ai'
 import { pool } from '@repo/db/client'
 import { ApiException } from '@repo/errors'
-import { resolveDeviceProvider, partitionValidReadings, parseInBodyCsv } from '@repo/ai'
-import type { DeviceProviderName } from '@repo/ai'
 import { z } from 'zod'
 import { wrapMemberAction } from '../../lib/wrap-member-action'
 
@@ -56,8 +56,16 @@ const DisconnectSchema = z.object({
 
 const ListReadingsSchema = z.object({
   observationCode: z.string().max(40).optional().nullable(),
-  fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
-  toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  fromDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .nullable(),
+  toDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .nullable(),
   limit: z.number().int().min(1).max(500).default(100),
 })
 
@@ -114,12 +122,7 @@ export const startConnection = wrapMemberAction(
     await pool.query(
       `INSERT INTO device_connections (tenant_id, member_id, provider, status, metadata)
        VALUES ($1, $2, $3::device_provider, 'pending', $4::jsonb)`,
-      [
-        session.tenantId,
-        session.memberId,
-        input.provider,
-        JSON.stringify({ state, redirectUri }),
-      ],
+      [session.tenantId, session.memberId, input.provider, JSON.stringify({ state, redirectUri })],
     )
 
     return { ok: true as const, authUrl, state }

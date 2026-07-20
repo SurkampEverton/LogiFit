@@ -1,24 +1,40 @@
+import { db } from '@repo/db/client'
+import { accountsPayable, persons, suppliers } from '@repo/db/schema'
 /**
  * `/app/financeiro/fornecedores/[id]` — detalhe do fornecedor + histórico AP.
  */
 import { and, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import { accountsPayable, persons, suppliers } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
 
 const AP_STATUS_BADGE: Record<string, { bg: string; fg: string; label: string }> = {
   draft: { bg: 'var(--ev-muted-bg, #e5e7eb)', fg: 'var(--ev-muted, #6b7280)', label: 'Rascunho' },
-  pending_approval: { bg: 'var(--ev-warning-bg, #fef3c7)', fg: 'var(--ev-warning, #92400e)', label: 'Aguardando' },
+  pending_approval: {
+    bg: 'var(--ev-warning-bg, #fef3c7)',
+    fg: 'var(--ev-warning, #92400e)',
+    label: 'Aguardando',
+  },
   approved: { bg: 'var(--ev-info-bg, #dbeafe)', fg: 'var(--ev-info, #1e40af)', label: 'Aprovada' },
-  rejected: { bg: 'var(--ev-danger-bg, #fee2e2)', fg: 'var(--ev-danger, #dc2626)', label: 'Rejeitada' },
+  rejected: {
+    bg: 'var(--ev-danger-bg, #fee2e2)',
+    fg: 'var(--ev-danger, #dc2626)',
+    label: 'Rejeitada',
+  },
   scheduled: { bg: 'var(--ev-info-bg, #dbeafe)', fg: 'var(--ev-info, #1e40af)', label: 'Agendada' },
   paid: { bg: 'var(--ev-success-bg, #dcfce7)', fg: 'var(--ev-success, #16a34a)', label: 'Paga' },
-  cancelled: { bg: 'var(--ev-muted-bg, #e5e7eb)', fg: 'var(--ev-muted, #6b7280)', label: 'Cancelada' },
-  reconciled: { bg: 'var(--ev-success-bg, #dcfce7)', fg: 'var(--ev-success, #16a34a)', label: 'Conciliada' },
+  cancelled: {
+    bg: 'var(--ev-muted-bg, #e5e7eb)',
+    fg: 'var(--ev-muted, #6b7280)',
+    label: 'Cancelada',
+  },
+  reconciled: {
+    bg: 'var(--ev-success-bg, #dcfce7)',
+    fg: 'var(--ev-success, #16a34a)',
+    label: 'Conciliada',
+  },
 }
 
 function formatBrl(cents: number): string {
@@ -114,14 +130,20 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
       >
         <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Total pago</div>
-          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>{formatBrl(totalPago)}</div>
+          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>
+            {formatBrl(totalPago)}
+          </div>
         </div>
         <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Em aberto</div>
-          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>{formatBrl(totalAberto)}</div>
+          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>
+            {formatBrl(totalAberto)}
+          </div>
         </div>
         <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
-          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Notas fiscais</div>
+          <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
+            Notas fiscais
+          </div>
           <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>{apHistory.length}</div>
         </div>
       </div>
@@ -149,7 +171,9 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
             <dd style={{ margin: 0 }}>{supplier.defaultPaymentMethod?.toUpperCase() ?? '—'}</dd>
             <dt style={{ color: 'var(--ev-muted)' }}>Prazo</dt>
             <dd style={{ margin: 0 }}>
-              {supplier.defaultPaymentTermDays != null ? `D+${supplier.defaultPaymentTermDays}` : '—'}
+              {supplier.defaultPaymentTermDays != null
+                ? `D+${supplier.defaultPaymentTermDays}`
+                : '—'}
             </dd>
             {bank?.pixKey && (
               <>

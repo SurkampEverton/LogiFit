@@ -15,15 +15,9 @@
  */
 
 import { db } from '@repo/db/client'
-import {
-  patientCompanyLinks,
-  patientLinkModules,
-  persons,
-  tenants,
-  users,
-} from '@repo/db/schema'
+import { patientCompanyLinks, patientLinkModules, persons, tenants, users } from '@repo/db/schema'
 import { and, eq } from 'drizzle-orm'
-import { NextResponse, type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -91,11 +85,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       dataLevels: patientLinkModules.dataLevels,
     })
     .from(patientLinkModules)
-    .where(
-      and(
-        eq(patientLinkModules.linkId, link.id),
-      ),
-    )
+    .where(and(eq(patientLinkModules.linkId, link.id)))
 
   // Mascarar nome (regra anti-fraude — só primeiro nome + iniciais)
   const maskedName = maskName(link.personMaskedName)

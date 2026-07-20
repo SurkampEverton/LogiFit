@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { companies, leadStages, persons } from '@repo/db/schema'
 /**
  * `/app/vendas/leads/new` — formulário rápido de captura de lead.
  *
@@ -6,8 +8,6 @@
  */
 import { and, asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { companies, leadStages, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 import { NewLeadForm } from './new-lead-form'
 

@@ -1,3 +1,11 @@
+import { db } from '@repo/db/client'
+import {
+  type MealInput,
+  type Nutrients,
+  calculateMealPlanNutrition,
+  compareAgainstTargets,
+  statusEmoji,
+} from '@repo/db/nutri'
 /**
  * `/app/nutri/planos/[id]` — detalhe do plano com refeições + items + totais
  *   nutricionais calculados + gaps vs targets. Sprint 29 Faixa C.
@@ -6,14 +14,6 @@
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  calculateMealPlanNutrition,
-  compareAgainstTargets,
-  statusEmoji,
-  type MealInput,
-  type Nutrients,
-} from '@repo/db/nutri'
 import { requireFullSession } from '../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -135,11 +135,17 @@ export default async function PlanoDetailPage({ params }: PageProps) {
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>{plan.name}</h1>
         <span style={{ color: 'var(--ev-text-muted)' }}>
-          v{plan.version} · {plan.active ? 'ativo' : 'inativo'} · {plan.member_name ?? plan.member_id}
+          v{plan.version} · {plan.active ? 'ativo' : 'inativo'} ·{' '}
+          {plan.member_name ?? plan.member_id}
         </span>
       </header>
 
@@ -161,7 +167,8 @@ export default async function PlanoDetailPage({ params }: PageProps) {
               <div style={{ fontSize: 'var(--ev-text-2xl)', fontWeight: 600 }}>
                 {g.current.toFixed(g.key === 'kcal' ? 0 : 1)}
                 <span style={{ fontSize: 'var(--ev-text-sm)', color: 'var(--ev-text-muted)' }}>
-                  {' '}/ {g.target}
+                  {' '}
+                  / {g.target}
                 </span>
               </div>
               <div style={{ fontSize: 'var(--ev-text-sm)' }}>
@@ -172,7 +179,9 @@ export default async function PlanoDetailPage({ params }: PageProps) {
           ))
         ) : (
           <div>
-            <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>kcal total</div>
+            <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
+              kcal total
+            </div>
             <div style={{ fontSize: 'var(--ev-text-2xl)', fontWeight: 600 }}>
               {nutrition.totals.kcal?.toFixed(0) ?? '0'}
             </div>
@@ -235,7 +244,9 @@ export default async function PlanoDetailPage({ params }: PageProps) {
                           }}
                         >
                           {Number(it.grams).toFixed(0)}g
-                          {it.measure ? <small style={{ color: 'var(--ev-text-muted)' }}> · {it.measure}</small> : null}
+                          {it.measure ? (
+                            <small style={{ color: 'var(--ev-text-muted)' }}> · {it.measure}</small>
+                          ) : null}
                         </td>
                         <td
                           style={{

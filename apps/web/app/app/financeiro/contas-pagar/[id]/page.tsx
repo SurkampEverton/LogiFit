@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { accountsPayable, apArPayments, chartOfAccounts, persons, suppliers } from '@repo/db/schema'
 /**
  * `/app/financeiro/contas-pagar/[id]` — detalhe AP + ações de workflow
  * (submit/approve/reject/cancel/pay manual). Sprint 15 Faixa C.
@@ -5,14 +7,6 @@
 import { and, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import {
-  accountsPayable,
-  apArPayments,
-  chartOfAccounts,
-  persons,
-  suppliers,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 import { APActions } from './ap-actions'
 
@@ -33,7 +27,11 @@ const STATUS_BADGE: Record<string, { bg: string; fg: string; label: string }> = 
   },
   scheduled: { bg: 'var(--ev-info-bg, #dbeafe)', fg: 'var(--ev-info, #1e40af)', label: 'Agendada' },
   paid: { bg: 'var(--ev-success-bg, #dcfce7)', fg: 'var(--ev-success, #16a34a)', label: 'Paga' },
-  cancelled: { bg: 'var(--ev-muted-bg, #e5e7eb)', fg: 'var(--ev-muted, #6b7280)', label: 'Cancelada' },
+  cancelled: {
+    bg: 'var(--ev-muted-bg, #e5e7eb)',
+    fg: 'var(--ev-muted, #6b7280)',
+    label: 'Cancelada',
+  },
   reconciled: {
     bg: 'var(--ev-success-bg, #dcfce7)',
     fg: 'var(--ev-success, #16a34a)',
@@ -152,7 +150,9 @@ export default async function APDetailPage({ params }: { params: Promise<{ id: s
         </div>
         <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>Pago</div>
-          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>{formatBrl(paidTotal)}</div>
+          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>
+            {formatBrl(paidTotal)}
+          </div>
         </div>
         <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>A pagar</div>
@@ -191,8 +191,7 @@ export default async function APDetailPage({ params }: { params: Promise<{ id: s
             </dd>
             <dt style={{ color: 'var(--ev-muted)' }}>Conta</dt>
             <dd style={{ margin: 0 }}>
-              <code style={{ fontSize: 'var(--ev-font-xs)' }}>{ap.chartCode}</code>{' '}
-              {ap.chartName}
+              <code style={{ fontSize: 'var(--ev-font-xs)' }}>{ap.chartCode}</code> {ap.chartName}
             </dd>
             <dt style={{ color: 'var(--ev-muted)' }}>Emissão</dt>
             <dd style={{ margin: 0 }}>{ap.issueDate}</dd>

@@ -1,3 +1,12 @@
+import { db } from '@repo/db/client'
+import {
+  exercises,
+  prescriptions,
+  workoutItems,
+  workoutSessionItems,
+  workoutSessions,
+  workouts,
+} from '@repo/db/schema'
 /**
  * `/app/members/[id]/treino/sessao/[sessionId]` — UI de execução de sessão
  * (Sprint 11 Faixa C).
@@ -9,15 +18,6 @@
 import { and, asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { db } from '@repo/db/client'
-import {
-  exercises,
-  prescriptions,
-  workoutItems,
-  workoutSessionItems,
-  workoutSessions,
-  workouts,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../../../../lib/session'
 import { SessionExecutionPanel } from './session-execution-panel'
 
@@ -29,9 +29,7 @@ export default async function SessionExecutionPage({
   params: Promise<{ id: string; sessionId: string }>
 }) {
   const { id: memberId, sessionId } = await params
-  const session = await requireFullSession(
-    `/app/members/${memberId}/treino/sessao/${sessionId}`,
-  )
+  const session = await requireFullSession(`/app/members/${memberId}/treino/sessao/${sessionId}`)
   const tenantId = session.logifit.tenantId
 
   const [s] = await db
@@ -43,12 +41,7 @@ export default async function SessionExecutionPage({
       memberId: workoutSessions.memberId,
     })
     .from(workoutSessions)
-    .where(
-      and(
-        eq(workoutSessions.id, sessionId),
-        eq(workoutSessions.tenantId, tenantId),
-      ),
-    )
+    .where(and(eq(workoutSessions.id, sessionId), eq(workoutSessions.tenantId, tenantId)))
     .limit(1)
   if (!s) notFound()
   if (s.memberId !== memberId) notFound()

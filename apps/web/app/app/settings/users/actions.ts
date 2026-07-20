@@ -1,5 +1,7 @@
 'use server'
 
+import { db } from '@repo/db/client'
+import { type UserRow, persons, roles, userRoles, userTenants, users } from '@repo/db/schema'
 /**
  * Server Actions de users (operadores do tenant — Sprint 01a Faixa E).
  *
@@ -16,15 +18,6 @@
  */
 import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
-import { db } from '@repo/db/client'
-import {
-  persons,
-  roles,
-  userRoles,
-  userTenants,
-  users,
-  type UserRow,
-} from '@repo/db/schema'
 import { requireFullSession, withSessionContext } from '../../../lib/session'
 
 type ActionResult<T> =
@@ -154,7 +147,11 @@ export async function createUser(
   if (!parsed.success) {
     return {
       ok: false,
-      error: { code: 'VALIDATION_ERROR', message: 'dados inválidos', details: parsed.error.flatten() },
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'dados inválidos',
+        details: parsed.error.flatten(),
+      },
     }
   }
   const input = parsed.data
@@ -219,7 +216,10 @@ export async function createUser(
         }
       }
       if (msg.includes('kind=pf')) {
-        return { ok: false, error: { code: 'PERSON_NOT_PF', message: 'person_id deve apontar pra PF' } }
+        return {
+          ok: false,
+          error: { code: 'PERSON_NOT_PF', message: 'person_id deve apontar pra PF' },
+        }
       }
       return { ok: false, error: { code: 'INTERNAL', message: msg.slice(0, 200) } }
     }

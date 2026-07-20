@@ -9,7 +9,7 @@
  * já implementa rate limit por (memberId, 15min). Sprint 26c adiciona segundo
  * limit por IP via `packages/security/rate-limits.ts` (regra 36 completa).
  */
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { requestMagicLink } from '../../../meu/actions'
 
 export const runtime = 'nodejs'

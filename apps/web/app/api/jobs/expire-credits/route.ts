@@ -1,3 +1,4 @@
+import { db } from '@repo/db/client'
 /**
  * POST /api/jobs/expire-credits — Sprint 05 Faixa D.
  *
@@ -9,7 +10,6 @@
  */
 import { sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
-import { db } from '@repo/db/client'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'

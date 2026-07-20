@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { consultaCids, consultaCifs, consultas, members, persons } from '@repo/db/schema'
 /**
  * `/app/fisio/consultas/[id]/pdf` — preview HTML do prontuário (Sprint 20 Faixa C).
  *
@@ -7,21 +9,11 @@
 import { and, asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import {
-  consultaCids,
-  consultaCifs,
-  consultas,
-  members,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
 
-export default async function ConsultaPdfPreview({
-  params,
-}: { params: Promise<{ id: string }> }) {
+export default async function ConsultaPdfPreview({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const session = await requireFullSession(`/app/fisio/consultas/${id}/pdf`)
   const tenantId = session.logifit.tenantId
@@ -71,12 +63,19 @@ export default async function ConsultaPdfPreview({
         className="no-print"
       >
         <h1 style={{ margin: 0 }}>PDF preview</h1>
-        <span style={{ color: 'var(--ev-muted)' }}>(Sprint 20b implementa @react-pdf/renderer real)</span>
+        <span style={{ color: 'var(--ev-muted)' }}>
+          (Sprint 20b implementa @react-pdf/renderer real)
+        </span>
         <span style={{ flex: 1 }} />
         <Link href={`/app/fisio/consultas/${id}`} className="ev-btn ev-btn-ghost">
           ← Consulta
         </Link>
-        <button onClick={() => window.print()} className="ev-btn ev-btn-primary" type="button" disabled>
+        <button
+          onClick={() => window.print()}
+          className="ev-btn ev-btn-primary"
+          type="button"
+          disabled
+        >
           🖨 Imprimir (próximo sprint)
         </button>
       </header>
@@ -160,7 +159,8 @@ export default async function ConsultaPdfPreview({
           {c.status !== 'draft' ? (
             <>
               <div>
-                <strong>Status:</strong> {c.status === 'signed' ? 'ASSINADO ICP-Brasil' : 'LACRADO (lacre autenticado)'}
+                <strong>Status:</strong>{' '}
+                {c.status === 'signed' ? 'ASSINADO ICP-Brasil' : 'LACRADO (lacre autenticado)'}
               </div>
               <div>
                 <strong>Método:</strong> {c.lockMethod}
@@ -185,9 +185,8 @@ export default async function ConsultaPdfPreview({
               </div>
               {council.councilBody && (
                 <div style={{ marginTop: 8 }}>
-                  <strong>Profissional executante:</strong>{' '}
-                  {council.councilBody as string}-{council.councilState as string}{' '}
-                  {council.councilNumber as string}
+                  <strong>Profissional executante:</strong> {council.councilBody as string}-
+                  {council.councilState as string} {council.councilNumber as string}
                 </div>
               )}
             </>

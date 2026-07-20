@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useMemo, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { createIntercompanyEntry } from '../actions'
 
 interface Company {
@@ -22,7 +22,10 @@ const KIND_LABELS: Record<Kind, string> = {
 }
 
 function parseBrlToCents(value: string): number {
-  const cleaned = value.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')
+  const cleaned = value
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.')
   const num = Number(cleaned)
   if (!Number.isFinite(num) || num <= 0) return 0
   return Math.round(num * 100)
@@ -40,8 +43,7 @@ export function NewICForm({ companies }: { companies: Company[] }) {
 
   const fromCompany = companies.find((c) => c.id === fromCompanyId)
   const toCompany = companies.find((c) => c.id === toCompanyId)
-  const cnpjsDistinct =
-    fromCompany && toCompany && fromCompany.personId !== toCompany.personId
+  const cnpjsDistinct = fromCompany && toCompany && fromCompany.personId !== toCompany.personId
   const willTriggerNfe = kind === 'goods' && cnpjsDistinct
 
   function submit(e: React.FormEvent) {
@@ -95,7 +97,9 @@ export function NewICForm({ companies }: { companies: Company[] }) {
             ))}
           </select>
         </label>
-        <span style={{ alignSelf: 'flex-end', padding: '8px 4px', color: 'var(--ev-muted)' }}>→</span>
+        <span style={{ alignSelf: 'flex-end', padding: '8px 4px', color: 'var(--ev-muted)' }}>
+          →
+        </span>
         <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span>Para (company beneficiária)</span>
           <select
@@ -132,11 +136,7 @@ export function NewICForm({ companies }: { companies: Company[] }) {
 
       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span>Tipo</span>
-        <select
-          value={kind}
-          onChange={(e) => setKind(e.target.value as Kind)}
-          className="ev-input"
-        >
+        <select value={kind} onChange={(e) => setKind(e.target.value as Kind)} className="ev-input">
           {Object.entries(KIND_LABELS).map(([k, label]) => (
             <option key={k} value={k}>
               {label}

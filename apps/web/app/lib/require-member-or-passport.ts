@@ -33,9 +33,7 @@ export type MemberOrPassportClaims =
       passportSessionId: string
     }
 
-export async function requireMemberOrPassport(
-  returnTo: string,
-): Promise<MemberOrPassportClaims> {
+export async function requireMemberOrPassport(returnTo: string): Promise<MemberOrPassportClaims> {
   const session = await getActiveSession()
   if (!session) {
     const url = new URL('/meu/login', 'http://placeholder')

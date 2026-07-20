@@ -1,9 +1,9 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/vigilancia` — hub vigilância sanitária (Sprint 25 Faixa C).
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -45,11 +45,9 @@ export default async function VigilanciaHubPage() {
 
       <div className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
         <p style={{ marginTop: 0, marginBottom: 0 }}>
-          Cadastro de equipamentos regulados (ANVISA RDC 657/2022) +
-          rastreabilidade clínica + cronograma de manutenção/calibração +
-          checklist de limpeza diária. Sprint 25b integra Datasus CNES +
-          fluxo NF-e remessa/retorno (ADR 0059) + bucket Storage para
-          certificados.
+          Cadastro de equipamentos regulados (ANVISA RDC 657/2022) + rastreabilidade clínica +
+          cronograma de manutenção/calibração + checklist de limpeza diária. Sprint 25b integra
+          Datasus CNES + fluxo NF-e remessa/retorno (ADR 0059) + bucket Storage para certificados.
         </p>
       </div>
 
@@ -66,7 +64,9 @@ export default async function VigilanciaHubPage() {
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Equipamentos ativos
           </div>
-          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>{kpi.equipment_count}</div>
+          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>
+            {kpi.equipment_count}
+          </div>
         </div>
         <div>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
@@ -127,7 +127,11 @@ export default async function VigilanciaHubPage() {
             Catálogo + cronograma de manutenção
           </div>
         </Link>
-        <Link href="/app/vigilancia/limpeza" className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
+        <Link
+          href="/app/vigilancia/limpeza"
+          className="ev-card"
+          style={{ padding: 'var(--ev-space-md)' }}
+        >
           <strong>🧼 Limpeza</strong>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Checklists + logs diários

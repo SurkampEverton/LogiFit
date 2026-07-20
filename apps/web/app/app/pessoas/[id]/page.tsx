@@ -1,8 +1,8 @@
-import Link from 'next/link'
-import { notFound } from 'next/navigation'
-import { eq } from 'drizzle-orm'
 import { db } from '@repo/db/client'
 import { persons } from '@repo/db/schema'
+import { eq } from 'drizzle-orm'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import { requireFullSession, withSessionContext } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'

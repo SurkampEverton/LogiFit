@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { companies, persons } from '@repo/db/schema'
 /**
  * `/app/financeiro/intercompany/new` — criar IC entry (Sprint 16 Faixa C).
  */
 import { asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { companies, persons } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 import { NewICForm } from './new-ic-form'
 

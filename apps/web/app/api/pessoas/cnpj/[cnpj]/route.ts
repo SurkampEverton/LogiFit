@@ -1,3 +1,4 @@
+import { lookupCnpj } from '@repo/cnpj'
 /**
  * GET /api/pessoas/cnpj/{cnpj} — endpoint REST pra UI consumir auto-fill.
  *
@@ -9,16 +10,12 @@
  * Server Action que força form submit.
  */
 import { NextResponse } from 'next/server'
-import { lookupCnpj } from '@repo/cnpj'
 import { getServerSession } from '../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ cnpj: string }> },
-) {
+export async function GET(_request: Request, { params }: { params: Promise<{ cnpj: string }> }) {
   const session = await getServerSession()
   if (!session) {
     return NextResponse.json(

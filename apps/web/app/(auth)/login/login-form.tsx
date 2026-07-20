@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import { authClient } from '@repo/auth/client'
+import { useState } from 'react'
 
 /**
  * Login via magic link (ADR 0092).
@@ -104,10 +104,7 @@ export function LoginForm({
 
       <p className="text-center text-sm text-[color:var(--ev-text-muted)]">
         Não tem conta?{' '}
-        <a
-          href="/signup"
-          className="font-medium text-[color:var(--ev-primary)] hover:underline"
-        >
+        <a href="/signup" className="font-medium text-[color:var(--ev-primary)] hover:underline">
           Criar tenant
         </a>
       </p>

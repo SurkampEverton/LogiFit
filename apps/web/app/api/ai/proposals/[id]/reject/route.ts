@@ -1,8 +1,8 @@
+import { NextResponse } from 'next/server'
 /**
  * POST /api/ai/proposals/[id]/reject — Sprint 06 Faixa C (ADR 0075).
  */
 import { rejectProposal } from '../../../../../app/assistente/actions'
-import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'

@@ -6,8 +6,8 @@
  */
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getMember } from '../../actions'
 import { listMemberAccess } from '../../../acesso/actions'
+import { getMember } from '../../actions'
 import { MemberQrDisplay } from './member-qr-display'
 
 export const dynamic = 'force-dynamic'
@@ -67,8 +67,8 @@ export default async function MemberQrPage({
       <MemberQrDisplay memberId={id} />
 
       <p className="text-xs text-center text-[color:var(--ev-text-muted)]">
-        Aproxime o celular do leitor da catraca. QR atualiza automaticamente a cada 60s
-        — não precisa salvar print.
+        Aproxime o celular do leitor da catraca. QR atualiza automaticamente a cada 60s — não
+        precisa salvar print.
       </p>
     </div>
   )

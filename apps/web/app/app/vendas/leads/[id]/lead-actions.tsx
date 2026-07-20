@@ -98,8 +98,8 @@ export function LeadActions({ leadId, hasPersonId, proposalsList }: Props) {
 
       {!hasPersonId && (
         <p className="text-xs text-[color:var(--ev-text-muted)]">
-          ℹ️ Conversão exige <strong>person_id confirmada</strong>. Avance pra estágio
-          "proposta" pra acionar o upgrade (Faixa D+).
+          ℹ️ Conversão exige <strong>person_id confirmada</strong>. Avance pra estágio "proposta" pra
+          acionar o upgrade (Faixa D+).
         </p>
       )}
 

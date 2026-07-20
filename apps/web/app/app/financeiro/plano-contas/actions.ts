@@ -15,11 +15,7 @@
  */
 
 import { db } from '@repo/db/client'
-import {
-  accountsPayable,
-  accountsReceivable,
-  chartOfAccounts,
-} from '@repo/db/schema'
+import { accountsPayable, accountsReceivable, chartOfAccounts } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -56,10 +52,7 @@ const ListChartAccountsInputSchema = z.object({
 
 export const createChartAccount = wrapServerAction(
   { module: 'financeiro', action: 'chart.create', resourceType: 'chart_of_accounts' },
-  async (
-    input: z.infer<typeof CreateChartAccountInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateChartAccountInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateChartAccountInputSchema.parse(input)
 
     if (parsed.parentId) {
@@ -121,10 +114,7 @@ export const createChartAccount = wrapServerAction(
 
 export const listChartAccounts = wrapServerAction(
   { module: 'financeiro', action: 'chart.list' },
-  async (
-    input: z.infer<typeof ListChartAccountsInputSchema> | undefined,
-    { session },
-  ) => {
+  async (input: z.infer<typeof ListChartAccountsInputSchema> | undefined, { session }) => {
     const parsed = ListChartAccountsInputSchema.parse(input ?? {})
     const where = [eq(chartOfAccounts.tenantId, session.logifit.tenantId)]
     if (parsed.kind) where.push(eq(chartOfAccounts.kind, parsed.kind))
@@ -182,10 +172,7 @@ export const listLeafAccounts = wrapServerAction(
 
 export const archiveChartAccount = wrapServerAction(
   { module: 'financeiro', action: 'chart.archive', resourceType: 'chart_of_accounts' },
-  async (
-    input: z.infer<typeof ArchiveChartAccountInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ArchiveChartAccountInputSchema>, { session, setAuditResource }) => {
     const parsed = ArchiveChartAccountInputSchema.parse(input)
 
     // Bloqueio: conta tem filhos ativos
@@ -249,10 +236,7 @@ export const archiveChartAccount = wrapServerAction(
 
 export const moveChartAccount = wrapServerAction(
   { module: 'financeiro', action: 'chart.move', resourceType: 'chart_of_accounts' },
-  async (
-    input: z.infer<typeof MoveChartAccountInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof MoveChartAccountInputSchema>, { session, setAuditResource }) => {
     const parsed = MoveChartAccountInputSchema.parse(input)
     if (parsed.newParentId === parsed.accountId) {
       throw new ApiException({
@@ -264,7 +248,11 @@ export const moveChartAccount = wrapServerAction(
 
     if (parsed.newParentId) {
       const [parent] = await db
-        .select({ id: chartOfAccounts.id, kind: chartOfAccounts.kind, parentId: chartOfAccounts.parentId })
+        .select({
+          id: chartOfAccounts.id,
+          kind: chartOfAccounts.kind,
+          parentId: chartOfAccounts.parentId,
+        })
         .from(chartOfAccounts)
         .where(
           and(

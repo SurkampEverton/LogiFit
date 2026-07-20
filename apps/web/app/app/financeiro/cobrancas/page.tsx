@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { contracts, invoices, members, persons, plans } from '@repo/db/schema'
 /**
  * `/app/financeiro/cobrancas` — lista invoices do tenant (Sprint 04 Faixa C).
  *
@@ -6,8 +8,6 @@
  */
 import { and, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { invoices, members, persons, plans, contracts } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -78,10 +78,7 @@ export default async function CobrancasPage({
   return (
     <div className="mx-auto max-w-6xl px-6 py-8 space-y-6">
       <nav className="text-sm">
-        <Link
-          href="/app/financeiro"
-          className="text-[color:var(--ev-text-muted)] hover:underline"
-        >
+        <Link href="/app/financeiro" className="text-[color:var(--ev-text-muted)] hover:underline">
           ← Voltar para Financeiro
         </Link>
       </nav>
@@ -143,10 +140,7 @@ export default async function CobrancasPage({
               {rows.map((inv) => (
                 <tr key={inv.id} className="border-t border-[color:var(--ev-border)]">
                   <td className="px-4 py-3 font-medium">
-                    <Link
-                      href={`/app/members/${inv.memberId}`}
-                      className="hover:underline"
-                    >
+                    <Link href={`/app/members/${inv.memberId}`} className="hover:underline">
                       {inv.personName}
                     </Link>
                   </td>

@@ -22,29 +22,22 @@
  *   - exportCrossTenantAccessLog — solicita export LGPD art. 18 V
  */
 
-import { pool } from '@repo/db/client'
-import { sendTransactional } from '@repo/email'
-import { ApiException } from '@repo/errors'
 import { randomUUID } from 'node:crypto'
+import { pool } from '@repo/db/client'
 import {
-  renderMagicLinkHtml,
-  renderMagicLinkText,
-} from '../lib/email-templates/magic-link'
-import {
+  type Vertical,
   decideCancellation,
   generateMagicLink,
   generateRefreshToken,
   hashToken,
   shouldRateLimit,
   verifyMagicLinkAgainstRow,
-  type Vertical,
 } from '@repo/db/portal-member'
+import { sendTransactional } from '@repo/email'
+import { ApiException } from '@repo/errors'
 import { z } from 'zod'
-import {
-  clearMemberCookie,
-  getMemberSession,
-  setMemberCookie,
-} from '../lib/member-session'
+import { renderMagicLinkHtml, renderMagicLinkText } from '../lib/email-templates/magic-link'
+import { clearMemberCookie, getMemberSession, setMemberCookie } from '../lib/member-session'
 import { wrapMemberAction } from '../lib/wrap-member-action'
 
 // ─── Zod schemas ────────────────────────────────────────────────────────
@@ -199,7 +192,6 @@ export async function requestMagicLink(input: unknown) {
 
   return { ok: true, sent: true }
 }
-
 
 // ─── verifyMagicLink (PRÉ-AUTH) ─────────────────────────────────────────
 /**

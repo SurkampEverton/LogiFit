@@ -11,7 +11,7 @@
  * Pode ser chamado múltiplas vezes — idempotente (cliques duplicados
  * em apps de email são comuns).
  */
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { verifyPassportEmail } from '../../../cadastro/actions'
 
 export const runtime = 'nodejs'
@@ -20,22 +20,16 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('t')
   if (!token) {
-    return NextResponse.redirect(
-      new URL('/cadastro/email-erro?reason=missing_token', req.url),
-    )
+    return NextResponse.redirect(new URL('/cadastro/email-erro?reason=missing_token', req.url))
   }
 
   try {
     const result = await verifyPassportEmail({ token })
     if (!result.ok) {
-      return NextResponse.redirect(
-        new URL('/cadastro/email-erro?reason=invalid', req.url),
-      )
+      return NextResponse.redirect(new URL('/cadastro/email-erro?reason=invalid', req.url))
     }
     const params = result.alreadyVerified ? '?already=1' : ''
-    return NextResponse.redirect(
-      new URL(`/cadastro/email-confirmado${params}`, req.url),
-    )
+    return NextResponse.redirect(new URL(`/cadastro/email-confirmado${params}`, req.url))
   } catch (err) {
     // ApiException tem `code` próprio; mapear pra `reason` URL-safe
     const code =

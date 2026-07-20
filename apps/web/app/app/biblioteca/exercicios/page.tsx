@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { exercises } from '@repo/db/schema'
 /**
  * `/app/biblioteca/exercicios` — catálogo de exercícios (Sprint 11 Faixa C).
  *
@@ -7,8 +9,6 @@
  */
 import { and, asc, eq, isNull, or, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { exercises } from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -75,9 +75,7 @@ export default async function CatalogoExerciciosPage({
     <div className="mx-auto max-w-[1200px] px-6 py-8 space-y-6">
       <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Biblioteca de exercícios
-          </h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Biblioteca de exercícios</h1>
           <p className="text-sm text-[color:var(--ev-text-muted)]">
             {rows.length} exercícios · biblioteca global LogiFit + tenant
           </p>
@@ -142,8 +140,7 @@ export default async function CatalogoExerciciosPage({
 
       {rows.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[color:var(--ev-border)] p-6 text-sm text-[color:var(--ev-text-muted)]">
-          Nenhum exercício encontrado. Tente afrouxar os filtros ou cadastre um
-          novo.
+          Nenhum exercício encontrado. Tente afrouxar os filtros ou cadastre um novo.
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -157,8 +154,10 @@ export default async function CatalogoExerciciosPage({
                 <span
                   className="rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide"
                   style={{
-                    backgroundColor: ex.tenantId === null ? 'var(--ev-info-bg, #dbeafe)' : 'var(--ev-bg)',
-                    color: ex.tenantId === null ? 'var(--ev-info, #1e40af)' : 'var(--ev-text-muted)',
+                    backgroundColor:
+                      ex.tenantId === null ? 'var(--ev-info-bg, #dbeafe)' : 'var(--ev-bg)',
+                    color:
+                      ex.tenantId === null ? 'var(--ev-info, #1e40af)' : 'var(--ev-text-muted)',
                     border: '1px solid var(--ev-border)',
                   }}
                 >
@@ -173,10 +172,7 @@ export default async function CatalogoExerciciosPage({
               <dl className="grid grid-cols-2 gap-1 text-xs text-[color:var(--ev-text-muted)]">
                 <div>
                   <dt className="inline">Nível: </dt>
-                  <dd
-                    className="inline font-medium"
-                    style={{ color: LEVEL_COLOR[ex.level] }}
-                  >
+                  <dd className="inline font-medium" style={{ color: LEVEL_COLOR[ex.level] }}>
                     {LEVEL_LABEL[ex.level]}
                   </dd>
                 </div>

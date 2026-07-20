@@ -10,12 +10,7 @@
  * com toast (regra 45 + ADR 0089). Sem fetch manual.
  */
 import { useState, useTransition } from 'react'
-import {
-  revokeByokKey,
-  saveAssistantName,
-  saveByokKey,
-  testByokKey,
-} from './actions'
+import { revokeByokKey, saveAssistantName, saveByokKey, testByokKey } from './actions'
 
 interface ProviderListItem {
   slug: string
@@ -47,7 +42,10 @@ export function AssistantNameForm({ initialName }: { initialName: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ev-space-3)' }}>
+    <form
+      onSubmit={onSubmit}
+      style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ev-space-3)' }}
+    >
       <label htmlFor="assistant-name" style={{ fontSize: 'var(--ev-text-sm)' }}>
         Nome do assistente
       </label>
@@ -89,8 +87,19 @@ export function AssistantNameForm({ initialName }: { initialName: string }) {
       >
         {pending ? 'Salvando…' : 'Salvar'}
       </button>
-      {msg && <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-success-text, #065f46)' }}>{msg}</div>}
-      {error && <div role="alert" style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-danger-text, #991b1b)' }}>{error}</div>}
+      {msg && (
+        <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-success-text, #065f46)' }}>
+          {msg}
+        </div>
+      )}
+      {error && (
+        <div
+          role="alert"
+          style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-danger-text, #991b1b)' }}
+        >
+          {error}
+        </div>
+      )}
     </form>
   )
 }
@@ -104,9 +113,7 @@ export function ByokForm({ providers }: { providers: ProviderListItem[] }) {
   const [providersState, setProvidersState] = useState(providers)
 
   function setProviderState(slug: string, patch: Partial<ProviderListItem>) {
-    setProvidersState((curr) =>
-      curr.map((p) => (p.slug === slug ? { ...p, ...patch } : p)),
-    )
+    setProvidersState((curr) => curr.map((p) => (p.slug === slug ? { ...p, ...patch } : p)))
   }
 
   async function onSave(e: React.FormEvent) {
@@ -114,7 +121,10 @@ export function ByokForm({ providers }: { providers: ProviderListItem[] }) {
     setMsg(null)
     setError(null)
     startTransition(async () => {
-      const result = await saveByokKey({ providerSlug: selectedSlug as ProviderListItem['slug'] as 'vertex-ai-gemini', apiKey })
+      const result = await saveByokKey({
+        providerSlug: selectedSlug as ProviderListItem['slug'] as 'vertex-ai-gemini',
+        apiKey,
+      })
       if (result.ok) {
         setMsg(`Key salva para ${selectedSlug}`)
         setApiKey('')
@@ -158,7 +168,10 @@ export function ByokForm({ providers }: { providers: ProviderListItem[] }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ev-space-4)' }}>
-      <form onSubmit={onSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ev-space-2)' }}>
+      <form
+        onSubmit={onSave}
+        style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ev-space-2)' }}
+      >
         <label htmlFor="byok-provider" style={{ fontSize: 'var(--ev-text-sm)' }}>
           Provider
         </label>
@@ -228,7 +241,15 @@ export function ByokForm({ providers }: { providers: ProviderListItem[] }) {
       </form>
 
       {/* Lista status dos providers */}
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 'var(--ev-space-2)' }}>
+      <ul
+        style={{
+          listStyle: 'none',
+          padding: 0,
+          margin: 0,
+          display: 'grid',
+          gap: 'var(--ev-space-2)',
+        }}
+      >
         {providersState.map((p) => (
           <li
             key={p.slug}
@@ -245,11 +266,7 @@ export function ByokForm({ providers }: { providers: ProviderListItem[] }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <strong style={{ fontSize: 'var(--ev-text-sm)' }}>{p.name}</strong>
               <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
-                {p.configured
-                  ? p.enabled
-                    ? 'ativo'
-                    : 'desabilitado'
-                  : 'não configurado'}
+                {p.configured ? (p.enabled ? 'ativo' : 'desabilitado') : 'não configurado'}
                 {p.lastTestedAt && p.lastTestResult && ` · último teste: ${p.lastTestResult}`}
               </div>
             </div>
@@ -297,10 +314,15 @@ export function ByokForm({ providers }: { providers: ProviderListItem[] }) {
       </ul>
 
       {msg && (
-        <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-success-text, #065f46)' }}>{msg}</div>
+        <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-success-text, #065f46)' }}>
+          {msg}
+        </div>
       )}
       {error && (
-        <div role="alert" style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-danger-text, #991b1b)' }}>
+        <div
+          role="alert"
+          style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-danger-text, #991b1b)' }}
+        >
           {error}
         </div>
       )}

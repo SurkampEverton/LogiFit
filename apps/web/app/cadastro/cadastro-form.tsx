@@ -1,5 +1,6 @@
 'use client'
 
+import { confirm } from '@repo/ui/messages'
 /**
  * Form 2-step cadastro proativo (Sprint 02b backbone — Path B).
  *
@@ -13,7 +14,6 @@
  * banner mostra código direto pro dev testar sem SMS real.
  */
 import { useState, useTransition } from 'react'
-import { confirm } from '@repo/ui/messages'
 import { requestSmsCode, signupPatient, verifySmsCode } from './actions'
 
 interface Props {
@@ -450,9 +450,9 @@ export function CadastroForm({ inviteToken }: Props) {
         >
           <h3 style={{ marginTop: 0 }}>⚠ Salve seus códigos de recuperação</h3>
           <p style={{ fontSize: 'var(--ev-text-sm)' }}>
-            Você ativou MFA. Estes são os <strong>10 códigos one-time</strong> pra recuperar a
-            conta se perder o celular. <strong>Cada código só funciona uma vez.</strong> Salve
-            agora — não conseguiremos mostrá-los de novo.
+            Você ativou MFA. Estes são os <strong>10 códigos one-time</strong> pra recuperar a conta
+            se perder o celular. <strong>Cada código só funciona uma vez.</strong> Salve agora — não
+            conseguiremos mostrá-los de novo.
           </p>
           <pre
             style={{
@@ -469,8 +469,15 @@ export function CadastroForm({ inviteToken }: Props) {
         </div>
       ) : null}
 
-      <p style={{ marginTop: 'var(--ev-space-md)', fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
-        Próximo passo (Sprint 02b3): enviar email de confirmação + ativar /meu/login + wizard MFA TOTP.
+      <p
+        style={{
+          marginTop: 'var(--ev-space-md)',
+          fontSize: 'var(--ev-text-xs)',
+          color: 'var(--ev-text-muted)',
+        }}
+      >
+        Próximo passo (Sprint 02b3): enviar email de confirmação + ativar /meu/login + wizard MFA
+        TOTP.
       </p>
     </section>
   )

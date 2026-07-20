@@ -14,8 +14,8 @@ export default async function EmpresasPage() {
         <div className="space-y-1">
           <h1 className="text-3xl font-semibold tracking-tight">Empresas</h1>
           <p className="text-sm text-[color:var(--ev-text-muted)]">
-            Matriz + filiais do seu tenant. Regra: 1 matriz por tenant; filiais herdam CNPJ
-            próprio mas operam sob a estrutura da matriz.
+            Matriz + filiais do seu tenant. Regra: 1 matriz por tenant; filiais herdam CNPJ próprio
+            mas operam sob a estrutura da matriz.
           </p>
         </div>
         <Link

@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { messageTemplates } from '@repo/db/schema'
 /**
  * `/app/mensagens/reguas/new` — wizard de criação de régua (Sprint 13 Faixa C).
  *
@@ -6,8 +8,6 @@
  */
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { messageTemplates } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 import { NewReguaForm } from './new-regua-form'
 
@@ -26,12 +26,7 @@ export default async function NewReguaPage() {
       approvalStatus: messageTemplates.approvalStatus,
     })
     .from(messageTemplates)
-    .where(
-      and(
-        eq(messageTemplates.tenantId, tenantId),
-        isNull(messageTemplates.archivedAt),
-      ),
-    )
+    .where(and(eq(messageTemplates.tenantId, tenantId), isNull(messageTemplates.archivedAt)))
     .orderBy(asc(messageTemplates.slug))
 
   return (

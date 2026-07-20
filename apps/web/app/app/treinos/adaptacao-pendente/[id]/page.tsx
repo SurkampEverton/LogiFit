@@ -1,3 +1,4 @@
+import { db } from '@repo/db/client'
 /**
  * `/app/treinos/adaptacao-pendente/[id]` — detalhe + confirmar/rejeitar.
  *   Sprint 27 Faixa C.
@@ -7,7 +8,6 @@
  */
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
 import { requireFullSession } from '../../../../lib/session'
 import { AdaptationActions } from './actions-buttons'
 
@@ -100,7 +100,12 @@ export default async function AdaptationDetailPage({ params }: PageProps) {
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header
-        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
       >
         <h1 style={{ margin: 0 }}>Adaptação · {row.original_workout_name ?? '—'}</h1>
         <span style={{ color: 'var(--ev-text-muted)' }}>{row.status}</span>
@@ -147,7 +152,9 @@ export default async function AdaptationDetailPage({ params }: PageProps) {
         {(changes.replaced ?? []).length > 0 && (
           <div style={{ marginTop: 'var(--ev-space-md)' }}>
             <h3 style={{ marginBottom: 'var(--ev-space-2)' }}>Substituições</h3>
-            <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 'var(--ev-space-2)' }}>
+            <ul
+              style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 'var(--ev-space-2)' }}
+            >
               {(changes.replaced ?? []).map((rep, i) => (
                 <li
                   key={i}
@@ -159,9 +166,10 @@ export default async function AdaptationDetailPage({ params }: PageProps) {
                   }}
                 >
                   <div>
-                    <s style={{ color: 'var(--ev-danger)' }}>item {rep.fromItemId.slice(0, 8)}</s>{' '}
-                    →{' '}
-                    <strong style={{ color: 'var(--ev-success-hover)' }}>{rep.toExerciseName}</strong>
+                    <s style={{ color: 'var(--ev-danger)' }}>item {rep.fromItemId.slice(0, 8)}</s> →{' '}
+                    <strong style={{ color: 'var(--ev-success-hover)' }}>
+                      {rep.toExerciseName}
+                    </strong>
                   </div>
                   <small style={{ color: 'var(--ev-text-muted)' }}>{rep.rationale}</small>
                 </li>
@@ -173,7 +181,9 @@ export default async function AdaptationDetailPage({ params }: PageProps) {
         {(changes.removed ?? []).length > 0 && (
           <div style={{ marginTop: 'var(--ev-space-md)' }}>
             <h3 style={{ marginBottom: 'var(--ev-space-2)' }}>Removidos (sem alternativa)</h3>
-            <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 'var(--ev-space-2)' }}>
+            <ul
+              style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 'var(--ev-space-2)' }}
+            >
               {(changes.removed ?? []).map((rm, i) => (
                 <li
                   key={i}

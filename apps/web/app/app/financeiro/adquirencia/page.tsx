@@ -1,15 +1,10 @@
+import { db } from '@repo/db/client'
+import { acquirerConnections, acquirerSales, companies, persons } from '@repo/db/schema'
 /**
  * `/app/financeiro/adquirencia` — lista de maquininhas conectadas (Sprint 18 Faixa C).
  */
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  acquirerConnections,
-  acquirerSales,
-  companies,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -85,7 +80,14 @@ export default async function AdquirenciaListPage() {
 
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
-      <header style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)', flexWrap: 'wrap' }}>
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 'var(--ev-space-md)',
+          flexWrap: 'wrap',
+        }}
+      >
         <h1 style={{ margin: 0 }}>Adquirência</h1>
         <span style={{ color: 'var(--ev-muted)' }}>{conns.length} maquininha(s)</span>
         <span style={{ flex: 1 }} />
@@ -108,25 +110,40 @@ export default async function AdquirenciaListPage() {
 
       <section
         className="ev-card"
-        style={{ padding: 'var(--ev-space-md)', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--ev-space-md)' }}
+        style={{
+          padding: 'var(--ev-space-md)',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 'var(--ev-space-md)',
+        }}
       >
         <div>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Receita bruta 30d
           </div>
-          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>{formatBrl(totalGross)}</div>
+          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>
+            {formatBrl(totalGross)}
+          </div>
         </div>
         <div>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Receita líquida 30d
           </div>
-          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>{formatBrl(totalNet)}</div>
+          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600 }}>
+            {formatBrl(totalNet)}
+          </div>
         </div>
         <div>
           <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
             Custo total taxas
           </div>
-          <div style={{ fontSize: 'var(--ev-font-lg)', fontWeight: 600, color: 'var(--ev-danger, #b91c1c)' }}>
+          <div
+            style={{
+              fontSize: 'var(--ev-font-lg)',
+              fontWeight: 600,
+              color: 'var(--ev-danger, #b91c1c)',
+            }}
+          >
             {formatBrl(totalGross - totalNet)}
           </div>
         </div>
@@ -135,13 +152,13 @@ export default async function AdquirenciaListPage() {
       {conns.length === 0 && (
         <div className="ev-card" style={{ padding: 'var(--ev-space-lg)' }}>
           <p style={{ marginTop: 0 }}>
-            Nenhuma maquininha conectada. Adicione Cielo / Stone / Rede / GetNet / PagSeguro
-            para sincronizar vendas presenciais com o financeiro.
+            Nenhuma maquininha conectada. Adicione Cielo / Stone / Rede / GetNet / PagSeguro para
+            sincronizar vendas presenciais com o financeiro.
           </p>
           <p style={{ color: 'var(--ev-muted)' }}>
-            <strong>MVP:</strong> use o provider <code>mock</code> com sandbox=true para testar
-            o fluxo completo (vendas determinísticas geradas localmente). Adapters reais
-            chegam no Sprint 18b quando houver credentials sandbox.
+            <strong>MVP:</strong> use o provider <code>mock</code> com sandbox=true para testar o
+            fluxo completo (vendas determinísticas geradas localmente). Adapters reais chegam no
+            Sprint 18b quando houver credentials sandbox.
           </p>
           <Link href="/app/financeiro/adquirencia/new" className="ev-btn ev-btn-primary">
             Adicionar maquininha
@@ -196,12 +213,21 @@ export default async function AdquirenciaListPage() {
               <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
                 {c.companyName ?? '—'}
               </div>
-              <div style={{ marginTop: 8, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 4 }}>
+              <div
+                style={{
+                  marginTop: 8,
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: 4,
+                }}
+              >
                 <div>
                   <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
                     Vendas 30d
                   </div>
-                  <div style={{ fontSize: 'var(--ev-font-md)', fontWeight: 600 }}>{a?.count ?? 0}</div>
+                  <div style={{ fontSize: 'var(--ev-font-md)', fontWeight: 600 }}>
+                    {a?.count ?? 0}
+                  </div>
                 </div>
                 <div>
                   <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)' }}>
@@ -212,7 +238,9 @@ export default async function AdquirenciaListPage() {
                   </div>
                 </div>
               </div>
-              <div style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)', marginTop: 4 }}>
+              <div
+                style={{ fontSize: 'var(--ev-font-xs)', color: 'var(--ev-muted)', marginTop: 4 }}
+              >
                 {c.lastSyncedAt
                   ? `Sync ${new Date(c.lastSyncedAt).toLocaleString('pt-BR')}`
                   : 'Nunca sincronizado — clique pra rodar 1ª sync'}

@@ -2,10 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useMemo, useState, useTransition } from 'react'
-import {
-  finishSession,
-  recordSessionItem,
-} from '../../../../../treinos/actions'
+import { finishSession, recordSessionItem } from '../../../../../treinos/actions'
 
 interface WorkoutItem {
   id: string
@@ -39,12 +36,7 @@ interface Props {
   recordedSets: RecordedSet[]
 }
 
-export function SessionExecutionPanel({
-  sessionId,
-  memberId,
-  items,
-  recordedSets,
-}: Props) {
+export function SessionExecutionPanel({ sessionId, memberId, items, recordedSets }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [finishing, startFinish] = useTransition()
@@ -63,9 +55,7 @@ export function SessionExecutionPanel({
   }, [recordedSets])
 
   // Drafts em memória (workoutItemId → setNumber → draft)
-  const [drafts, setDrafts] = useState<Record<string, Record<number, SetDraft>>>(
-    {},
-  )
+  const [drafts, setDrafts] = useState<Record<string, Record<number, SetDraft>>>({})
 
   function getDraft(itemId: string, setNum: number): SetDraft {
     return (
@@ -175,13 +165,10 @@ export function SessionExecutionPanel({
             </h2>
             <p className="text-xs text-[color:var(--ev-text-muted)]">
               {it.sets} séries × {it.reps} reps
-              {it.loadKg && ` · sugestão ${it.loadKg}kg`} · descanso{' '}
-              {it.restSeconds}s
+              {it.loadKg && ` · sugestão ${it.loadKg}kg`} · descanso {it.restSeconds}s
             </p>
             {it.notes && (
-              <p className="text-xs italic text-[color:var(--ev-text-muted)]">
-                {it.notes}
-              </p>
+              <p className="text-xs italic text-[color:var(--ev-text-muted)]">{it.notes}</p>
             )}
           </header>
 
@@ -203,12 +190,8 @@ export function SessionExecutionPanel({
                   return (
                     <tr key={setNum} className="border-t border-[color:var(--ev-border)]">
                       <td className="py-2 font-medium tabular-nums">{setNum}</td>
-                      <td className="py-2 tabular-nums">
-                        {recorded.repsPerformed ?? '—'}
-                      </td>
-                      <td className="py-2 tabular-nums">
-                        {recorded.weightKg ?? '—'}
-                      </td>
+                      <td className="py-2 tabular-nums">{recorded.repsPerformed ?? '—'}</td>
+                      <td className="py-2 tabular-nums">{recorded.weightKg ?? '—'}</td>
                       <td className="py-2 tabular-nums">{recorded.rpe ?? '—'}</td>
                       <td className="py-2 text-xs" style={{ color: 'var(--ev-success, #22c55e)' }}>
                         ✓ registrado
@@ -239,9 +222,7 @@ export function SessionExecutionPanel({
                         max="999"
                         step="0.5"
                         value={draft.weightKg}
-                        onChange={(e) =>
-                          updateDraft(it.id, setNum, { weightKg: e.target.value })
-                        }
+                        onChange={(e) => updateDraft(it.id, setNum, { weightKg: e.target.value })}
                         className="w-20 rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-bg)] px-2 py-1"
                       />
                     </td>
@@ -251,9 +232,7 @@ export function SessionExecutionPanel({
                         min="1"
                         max="10"
                         value={draft.rpe}
-                        onChange={(e) =>
-                          updateDraft(it.id, setNum, { rpe: e.target.value })
-                        }
+                        onChange={(e) => updateDraft(it.id, setNum, { rpe: e.target.value })}
                         className="w-16 rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-bg)] px-2 py-1"
                       />
                     </td>
@@ -276,7 +255,10 @@ export function SessionExecutionPanel({
       ))}
 
       {showFinishPanel ? (
-        <section className="rounded-xl border-2 p-5 space-y-4" style={{ borderColor: 'var(--ev-primary)' }}>
+        <section
+          className="rounded-xl border-2 p-5 space-y-4"
+          style={{ borderColor: 'var(--ev-primary)' }}
+        >
           <h2 className="font-semibold">Finalizar sessão</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="space-y-1 text-sm">

@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { bankAccounts, bankTransactions } from '@repo/db/schema'
 /**
  * `/app/financeiro/bancos/[id]/conciliar` — sugestões de conciliação (Sprint 17 Faixa C).
  *
@@ -6,8 +8,6 @@
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import { bankAccounts, bankTransactions } from '@repo/db/schema'
 import { requireFullSession } from '../../../../../lib/session'
 import { ConciliacaoList } from './conciliacao-list'
 

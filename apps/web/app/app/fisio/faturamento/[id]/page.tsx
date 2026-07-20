@@ -1,17 +1,11 @@
+import { db } from '@repo/db/client'
+import { billingGlosas, billingGuideItems, billingGuides, members, persons } from '@repo/db/schema'
 /**
  * `/app/fisio/faturamento/[id]` — detalhe da guia + XML preview (Sprint 22 Faixa C).
  */
 import { and, asc, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db } from '@repo/db/client'
-import {
-  billingGlosas,
-  billingGuideItems,
-  billingGuides,
-  members,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -21,9 +15,7 @@ function formatBrl(cents: number | null | undefined): string {
   return (Number(cents) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-export default async function GuideDetailPage({
-  params,
-}: { params: Promise<{ id: string }> }) {
+export default async function GuideDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const session = await requireFullSession(`/app/fisio/faturamento/${id}`)
   const tenantId = session.logifit.tenantId
@@ -65,13 +57,14 @@ export default async function GuideDetailPage({
     .where(and(eq(billingGlosas.guideId, id), eq(billingGlosas.tenantId, tenantId)))
     .orderBy(desc(billingGlosas.receivedAt))
 
-  const profSnap = (g.professionalSnapshot as {
-    name?: string
-    councilBody?: string
-    councilState?: string
-    councilNumber?: string
-    cbosCode?: string
-  } | null) ?? null
+  const profSnap =
+    (g.professionalSnapshot as {
+      name?: string
+      councilBody?: string
+      councilState?: string
+      councilNumber?: string
+      cbosCode?: string
+    } | null) ?? null
 
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
@@ -129,11 +122,14 @@ export default async function GuideDetailPage({
       </section>
 
       <section className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
-        <div><strong>Paciente:</strong> {g.memberName ?? '—'}</div>
-        <div><strong>Criada:</strong> {new Date(g.createdAt).toLocaleString('pt-BR')}</div>
         <div>
-          <strong>Enviada:</strong>{' '}
-          {g.sentAt ? new Date(g.sentAt).toLocaleString('pt-BR') : '—'}
+          <strong>Paciente:</strong> {g.memberName ?? '—'}
+        </div>
+        <div>
+          <strong>Criada:</strong> {new Date(g.createdAt).toLocaleString('pt-BR')}
+        </div>
+        <div>
+          <strong>Enviada:</strong> {g.sentAt ? new Date(g.sentAt).toLocaleString('pt-BR') : '—'}
         </div>
         <div>
           <strong>Paga:</strong> {g.paidAt ? new Date(g.paidAt).toLocaleString('pt-BR') : '—'}

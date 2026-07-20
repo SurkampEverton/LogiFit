@@ -1,3 +1,5 @@
+import { db } from '@repo/db/client'
+import { appointments, contracts, invoices, members, persons } from '@repo/db/schema'
 /**
  * `/app/dashboard/gerente` — dashboard gerente de company (Sprint 07 Faixa D).
  *
@@ -6,14 +8,6 @@
  */
 import { and, count, desc, eq, gte, lte, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  appointments,
-  contracts,
-  invoices,
-  members,
-  persons,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -189,9 +183,7 @@ export default async function DashboardGerentePage() {
       <section className="rounded-xl border border-[color:var(--ev-border)] p-5 space-y-3">
         <h2 className="font-semibold flex items-center gap-2">📤 Members arquivados recentes</h2>
         {recentlyArchived.length === 0 ? (
-          <p className="text-sm text-[color:var(--ev-text-muted)] py-2">
-            Nenhum churn recente. 🎉
-          </p>
+          <p className="text-sm text-[color:var(--ev-text-muted)] py-2">Nenhum churn recente. 🎉</p>
         ) : (
           <ul className="divide-y divide-[color:var(--ev-border)] text-sm">
             {recentlyArchived.map((m) => (

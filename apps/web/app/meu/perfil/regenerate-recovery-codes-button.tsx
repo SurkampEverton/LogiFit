@@ -1,5 +1,6 @@
 'use client'
 
+import { confirm } from '@repo/ui/messages'
 /**
  * /meu/perfil — regenerar recovery codes (Sprint 02b4 — passport_global).
  *
@@ -7,7 +8,6 @@
  * (requireMfa) + exibe codes plain inline (única chance — paciente salva).
  */
 import { useState, useTransition } from 'react'
-import { confirm } from '@repo/ui/messages'
 import { regenerateRecoveryCodes } from './passport-actions'
 
 export function RegenerateRecoveryCodesButton() {
@@ -31,9 +31,7 @@ export function RegenerateRecoveryCodesButton() {
           | { ok: false; error?: { code?: string; message?: string } }
         if ('ok' in r && !r.ok) {
           if (r.error?.code === 'MFA_RECENT_REQUIRED') {
-            setErr(
-              'Verificação MFA expirou (>15min) — faça login de novo pra regenerar códigos',
-            )
+            setErr('Verificação MFA expirou (>15min) — faça login de novo pra regenerar códigos')
             return
           }
           setErr(r.error?.message ?? 'Falha ao regenerar códigos')
@@ -67,8 +65,8 @@ export function RegenerateRecoveryCodesButton() {
       >
         <h3 style={{ marginTop: 0 }}>⚠ Novos códigos de recuperação</h3>
         <p style={{ fontSize: 'var(--ev-text-sm)' }}>
-          Cada código só funciona <strong>uma vez</strong>. Códigos antigos foram
-          invalidados. Salve agora — não conseguiremos mostrar de novo.
+          Cada código só funciona <strong>uma vez</strong>. Códigos antigos foram invalidados. Salve
+          agora — não conseguiremos mostrar de novo.
         </p>
         <pre
           style={{

@@ -18,9 +18,7 @@ import { wrapServerAction } from '../../lib/wrap-action'
 const OpenTicketInput = z.object({
   title: z.string().min(2).max(120),
   description: z.string().min(2).max(4000),
-  category: z
-    .enum(['bug', 'question', 'feature_request', 'billing', 'other'])
-    .default('other'),
+  category: z.enum(['bug', 'question', 'feature_request', 'billing', 'other']).default('other'),
   context: z.record(z.string(), z.unknown()).optional(),
   openedByAssistant: z.boolean().default(false),
 })

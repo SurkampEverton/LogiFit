@@ -1,10 +1,10 @@
+import { db } from '@repo/db/client'
+import { allocationRules, tenants } from '@repo/db/schema'
 /**
  * `/app/financeiro/rateio/regras` — lista allocation_rules (Sprint 16 Faixa C).
  */
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import { allocationRules, tenants } from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -88,7 +88,8 @@ export default async function AllocationRulesPage() {
       {rows.length === 0 && isOwned && (
         <div className="ev-card" style={{ padding: 'var(--ev-space-lg)' }}>
           <p style={{ marginTop: 0 }}>
-            Nenhuma regra cadastrada. Cadastre a primeira para começar a ratear contas entre filiais.
+            Nenhuma regra cadastrada. Cadastre a primeira para começar a ratear contas entre
+            filiais.
           </p>
           <Link href="/app/financeiro/rateio/regras/new" className="ev-btn ev-btn-primary">
             Criar primeira regra

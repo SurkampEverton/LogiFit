@@ -1,3 +1,4 @@
+import { db } from '@repo/db/client'
 /**
  * POST /api/jobs/expire-passport-global-sessions — Sprint 02b3 (ADR 0094).
  *
@@ -16,7 +17,6 @@
  */
 import { sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
-import { db } from '@repo/db/client'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -94,9 +94,7 @@ export async function POST(request: Request) {
       remaining_active: remainingActive,
     }
 
-    console.log(
-      JSON.stringify({ level: 'info', job: 'expire-passport-global-sessions', ...data }),
-    )
+    console.log(JSON.stringify({ level: 'info', job: 'expire-passport-global-sessions', ...data }))
     return NextResponse.json({ ok: true, data })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)

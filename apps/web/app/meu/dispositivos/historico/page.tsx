@@ -1,8 +1,8 @@
+import { pool } from '@repo/db/client'
 /**
  * /meu/dispositivos/historico — leituras ingeridas. Sprint 32 Faixa C.
  */
 import Link from 'next/link'
-import { pool } from '@repo/db/client'
 import { withMemberContext } from '../../../lib/member-session'
 import { requireMemberOrPassport } from '../../../lib/require-member-or-passport'
 import { PassportNeedsLink } from '../../_components/passport-needs-link'

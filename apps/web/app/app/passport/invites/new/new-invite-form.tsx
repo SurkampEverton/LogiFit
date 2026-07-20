@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 /**
  * Client form pra criar invite cross-tenant (Sprint 02b8).
  *
@@ -13,7 +14,6 @@
  *   4. Botão "Criar outro" reseta form
  */
 import { useState, useTransition } from 'react'
-import Link from 'next/link'
 import { sendPatientInviteSimple } from '../../actions'
 
 interface PatientOption {
@@ -135,14 +135,20 @@ export function NewInviteForm({
     return (
       <section
         className="ev-card"
-        style={{ padding: 'var(--ev-space-md)', display: 'flex', flexDirection: 'column', gap: 'var(--ev-space-md)' }}
+        style={{
+          padding: 'var(--ev-space-md)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--ev-space-md)',
+        }}
       >
         <div>
           <h2 className="text-xl font-semibold" style={{ marginBottom: 'var(--ev-space-2)' }}>
             ✓ Convite criado
           </h2>
           <p style={{ color: 'var(--ev-text-muted)', fontSize: 'var(--ev-text-sm)' }}>
-            Paciente: <strong>{selectedPatient?.name}</strong> · Link: <code>{result.linkId.slice(0, 8)}…</code>
+            Paciente: <strong>{selectedPatient?.name}</strong> · Link:{' '}
+            <code>{result.linkId.slice(0, 8)}…</code>
           </p>
         </div>
 
@@ -227,7 +233,14 @@ export function NewInviteForm({
 
         {/* 3. COPY LINK (sempre disponível) */}
         <div>
-          <div style={{ display: 'flex', gap: 'var(--ev-space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: 'var(--ev-space-2)',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+            }}
+          >
             <input
               type="text"
               readOnly
@@ -268,7 +281,12 @@ export function NewInviteForm({
     <form
       onSubmit={handleSubmit}
       className="ev-card"
-      style={{ padding: 'var(--ev-space-md)', display: 'flex', flexDirection: 'column', gap: 'var(--ev-space-md)' }}
+      style={{
+        padding: 'var(--ev-space-md)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'var(--ev-space-md)',
+      }}
     >
       <div>
         <label htmlFor="patient" style={{ display: 'block', marginBottom: 'var(--ev-space-1)' }}>
@@ -292,8 +310,15 @@ export function NewInviteForm({
           ))}
         </select>
         {patients.length === 0 && (
-          <p style={{ color: 'var(--ev-text-muted)', fontSize: 'var(--ev-text-xs)', marginTop: 'var(--ev-space-1)' }}>
-            Nenhum paciente cadastrado. Crie um em <Link href="/app/members/new">/app/members/new</Link> primeiro.
+          <p
+            style={{
+              color: 'var(--ev-text-muted)',
+              fontSize: 'var(--ev-text-xs)',
+              marginTop: 'var(--ev-space-1)',
+            }}
+          >
+            Nenhum paciente cadastrado. Crie um em{' '}
+            <Link href="/app/members/new">/app/members/new</Link> primeiro.
           </p>
         )}
       </div>
@@ -339,15 +364,19 @@ export function NewInviteForm({
           ))}
         </select>
         {professionals.length === 0 && (
-          <p style={{ color: 'var(--ev-text-muted)', fontSize: 'var(--ev-text-xs)', marginTop: 'var(--ev-space-1)' }}>
+          <p
+            style={{
+              color: 'var(--ev-text-muted)',
+              fontSize: 'var(--ev-text-xs)',
+              marginTop: 'var(--ev-space-1)',
+            }}
+          >
             Nenhum profissional registrado. Adicione roles em /app/settings/roles primeiro.
           </p>
         )}
       </div>
 
-      {err && (
-        <p style={{ color: 'var(--ev-danger)', fontSize: 'var(--ev-text-sm)' }}>{err}</p>
-      )}
+      {err && <p style={{ color: 'var(--ev-danger)', fontSize: 'var(--ev-text-sm)' }}>{err}</p>}
 
       <div style={{ display: 'flex', gap: 'var(--ev-space-2)' }}>
         <button

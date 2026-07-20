@@ -1,3 +1,4 @@
+import { headers } from 'next/headers'
 /**
  * /i/[token] — landing page do invite de passaporte cross-tenant (Sprint 02 fechamento).
  *
@@ -14,7 +15,6 @@
  * Não expõe dados sensíveis — só metadata. Aceite/recusa acontece após login.
  */
 import Link from 'next/link'
-import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
@@ -108,15 +108,21 @@ export default async function InviteLandingPage({ params }: PageProps) {
           Convite de {invite.tenantName}
         </h1>
         <p className="ev-portal-muted" style={{ fontSize: 'var(--ev-text-sm)' }}>
-          {invite.invitedByName ? `Enviado por ${invite.invitedByName}` : 'Empresa cadastrada na LogiFit'}
+          {invite.invitedByName
+            ? `Enviado por ${invite.invitedByName}`
+            : 'Empresa cadastrada na LogiFit'}
           {invite.invitedAt ? ` · ${new Date(invite.invitedAt).toLocaleDateString('pt-BR')}` : ''}
         </p>
       </header>
 
-      <section className="ev-card" style={{ padding: 'var(--ev-space-md)', marginBottom: 'var(--ev-space-md)' }}>
+      <section
+        className="ev-card"
+        style={{ padding: 'var(--ev-space-md)', marginBottom: 'var(--ev-space-md)' }}
+      >
         <p>
-          Olá, <strong>{invite.personMaskedName}</strong>. A empresa <strong>{invite.tenantName}</strong>{' '}
-          quer se conectar ao seu passaporte na LogiFit para acompanhar:
+          Olá, <strong>{invite.personMaskedName}</strong>. A empresa{' '}
+          <strong>{invite.tenantName}</strong> quer se conectar ao seu passaporte na LogiFit para
+          acompanhar:
         </p>
         <ul style={{ listStyle: 'none', padding: 0, marginTop: 'var(--ev-space-2)' }}>
           {invite.modules.map((m) => {
@@ -143,18 +149,23 @@ export default async function InviteLandingPage({ params }: PageProps) {
         </ul>
       </section>
 
-      <section className="ev-card" style={{ padding: 'var(--ev-space-md)', marginBottom: 'var(--ev-space-md)' }}>
+      <section
+        className="ev-card"
+        style={{ padding: 'var(--ev-space-md)', marginBottom: 'var(--ev-space-md)' }}
+      >
         <h3 style={{ marginTop: 0 }}>Dados que serão compartilhados:</h3>
         <ul>
           {dataLevelsRequested.identidade && <li>📇 Identidade (nome, contato)</li>}
           {dataLevelsRequested.antropometria && <li>📏 Antropometria (peso, altura, %BF)</li>}
           {dataLevelsRequested.treino && <li>💪 Treino (workout, frequência, RPE)</li>}
-          {dataLevelsRequested.clinico && <li>🩺 Clínico (sintomas, restrições, CIDs — apenas resumo)</li>}
+          {dataLevelsRequested.clinico && (
+            <li>🩺 Clínico (sintomas, restrições, CIDs — apenas resumo)</li>
+          )}
         </ul>
         <p style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
           Notas privadas do profissional, dados financeiros e prontuário CFM original{' '}
-          <strong>nunca cruzam empresas</strong>. Você pode revogar este vínculo a qualquer momento em{' '}
-          <code>/meu/privacidade</code>.
+          <strong>nunca cruzam empresas</strong>. Você pode revogar este vínculo a qualquer momento
+          em <code>/meu/privacidade</code>.
         </p>
       </section>
 
@@ -177,8 +188,15 @@ export default async function InviteLandingPage({ params }: PageProps) {
               Criar minha conta LogiFit
             </Link>
           </div>
-          <p style={{ marginTop: 'var(--ev-space-md)', fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)' }}>
-            Cadastro proativo (`/cadastro`) entra em Sprint 02b — depende provisionamento Twilio SMS + Cloudflare Turnstile.
+          <p
+            style={{
+              marginTop: 'var(--ev-space-md)',
+              fontSize: 'var(--ev-text-xs)',
+              color: 'var(--ev-text-muted)',
+            }}
+          >
+            Cadastro proativo (`/cadastro`) entra em Sprint 02b — depende provisionamento Twilio SMS
+            + Cloudflare Turnstile.
           </p>
         </section>
       ) : invite.status === 'already_accepted' ? (
@@ -193,7 +211,10 @@ export default async function InviteLandingPage({ params }: PageProps) {
           <h3 style={{ marginTop: 0 }}>✓ Convite já aceito</h3>
           <p>
             Você já aceitou este convite{' '}
-            {invite.acceptedAt ? `em ${new Date(invite.acceptedAt).toLocaleDateString('pt-BR')}` : ''}.
+            {invite.acceptedAt
+              ? `em ${new Date(invite.acceptedAt).toLocaleDateString('pt-BR')}`
+              : ''}
+            .
           </p>
           <Link href="/meu/privacidade" className="ev-portal-button">
             Ver minhas conexões
@@ -226,9 +247,7 @@ interface DataLevelsAggregate {
   clinico: boolean
 }
 
-function aggregateDataLevels(
-  modules: InviteResponse['invite']['modules'],
-): DataLevelsAggregate {
+function aggregateDataLevels(modules: InviteResponse['invite']['modules']): DataLevelsAggregate {
   const seed: DataLevelsAggregate = {
     identidade: false,
     antropometria: false,
