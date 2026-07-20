@@ -25,15 +25,7 @@
  *   - DPO acesso via permission especial (Sprint 02b3)
  */
 import { sql } from 'drizzle-orm'
-import {
-  date,
-  index,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-  uuid,
-} from 'drizzle-orm/pg-core'
+import { date, index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { passportSignupOtps } from './passport-signup'
 
 export const passportGlobalIdentities = pgTable(

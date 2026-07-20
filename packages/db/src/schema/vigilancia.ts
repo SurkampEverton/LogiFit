@@ -87,9 +87,7 @@ export const maintenanceStatusEnum = pgEnum('maintenance_status', [
 export const equipment = pgTable(
   'equipment',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -119,7 +117,9 @@ export const equipment = pgTable(
   },
   (t) => [
     uniqueIndex('eq_serial_global_uq').on(t.manufacturer, t.serialNumber),
-    index('eq_tenant_company_idx').on(t.tenantId, t.companyId).where(sql`status != 'decommissioned'`),
+    index('eq_tenant_company_idx')
+      .on(t.tenantId, t.companyId)
+      .where(sql`status != 'decommissioned'`),
     index('eq_tenant_status_idx').on(t.tenantId, t.status),
     index('eq_kind_idx').on(t.tenantId, t.kind),
     check(
@@ -135,9 +135,7 @@ export const equipment = pgTable(
 export const equipmentMaintenance = pgTable(
   'equipment_maintenance',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     equipmentId: uuid('equipment_id')
       .notNull()
@@ -171,10 +169,7 @@ export const equipmentMaintenance = pgTable(
     index('em_equipment_planned_idx').on(t.equipmentId, t.plannedFor),
     index('em_tenant_status_idx').on(t.tenantId, t.status, t.plannedFor),
     index('em_overdue_idx').on(t.plannedFor).where(sql`status IN ('scheduled', 'overdue')`),
-    check(
-      'em_completed_consistent',
-      sql`(status != 'completed' OR performed_at IS NOT NULL)`,
-    ),
+    check('em_completed_consistent', sql`(status != 'completed' OR performed_at IS NOT NULL)`),
     check(
       'em_external_consistent',
       sql`(external_location = false OR external_supplier_id IS NOT NULL)`,
@@ -191,9 +186,7 @@ export const equipmentMaintenance = pgTable(
 export const equipmentUsageLog = pgTable(
   'equipment_usage_log',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     equipmentId: uuid('equipment_id')
       .notNull()
@@ -220,10 +213,7 @@ export const equipmentUsageLog = pgTable(
     index('eul_equipment_idx').on(t.equipmentId, t.usedAt),
     index('eul_tenant_used_at_idx').on(t.tenantId, t.usedAt),
     index('eul_appointment_idx').on(t.appointmentId).where(sql`appointment_id IS NOT NULL`),
-    check(
-      'eul_duration_positive',
-      sql`(duration_minutes IS NULL OR duration_minutes > 0)`,
-    ),
+    check('eul_duration_positive', sql`(duration_minutes IS NULL OR duration_minutes > 0)`),
   ],
 )
 
@@ -232,9 +222,7 @@ export const equipmentUsageLog = pgTable(
 export const cleaningChecklists = pgTable(
   'cleaning_checklists',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -264,9 +252,7 @@ export const cleaningChecklists = pgTable(
 export const cleaningLogs = pgTable(
   'cleaning_logs',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()

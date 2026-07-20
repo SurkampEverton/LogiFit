@@ -45,9 +45,9 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { cidCatalog, consultas } from './fisio'
-import { exercises, workouts } from './treinos'
-import { members } from './members'
 import { users } from './identity'
+import { members } from './members'
+import { exercises, workouts } from './treinos'
 
 // ─── Enums ───────────────────────────────────────────────────────────────
 
@@ -93,9 +93,7 @@ export const adaptationStatusEnum = pgEnum('adaptation_status', [
 export const cidExerciseContraindications = pgTable(
   'cid_exercise_contraindications',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     /** NULL = global LogiFit; NOT NULL = tenant override (extensão local) */
     tenantId: uuid('tenant_id'),
     cidCode: text('cid_code')
@@ -176,9 +174,7 @@ export const cidExerciseContraindications = pgTable(
 export const memberInjuryAlerts = pgTable(
   'member_injury_alerts',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -262,9 +258,7 @@ export const memberInjuryAlerts = pgTable(
 export const workoutAdaptations = pgTable(
   'workout_adaptations',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     alertId: uuid('alert_id')
       .notNull()

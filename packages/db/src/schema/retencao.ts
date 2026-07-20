@@ -24,7 +24,6 @@
  */
 import { sql } from 'drizzle-orm'
 import {
-  bigint,
   boolean,
   check,
   index,
@@ -38,8 +37,8 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { members } from './members'
 import { users } from './identity'
+import { members } from './members'
 
 // ─── Enums ───────────────────────────────────────────────────────────────
 
@@ -104,9 +103,7 @@ export const churnRiskBandEnum = pgEnum('churn_risk_band', [
 export const churnFeaturesSnapshot = pgTable(
   'churn_features_snapshot',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -137,9 +134,7 @@ export const churnFeaturesSnapshot = pgTable(
 export const churnPredictions = pgTable(
   'churn_predictions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -164,8 +159,7 @@ export const churnPredictions = pgTable(
     validUntil: timestamp('valid_until', { withTimezone: true }).notNull(),
   },
   (t) => [
-    index('churn_pred_tenant_band_idx')
-      .on(t.tenantId, t.riskBand, t.predictedAt),
+    index('churn_pred_tenant_band_idx').on(t.tenantId, t.riskBand, t.predictedAt),
     index('churn_pred_member_idx').on(t.memberId, t.predictedAt),
     uniqueIndex('churn_pred_snapshot_uq').on(t.snapshotId),
     check('churn_prob_30d_range', sql`prob_30d >= 0 AND prob_30d <= 1`),
@@ -185,9 +179,7 @@ export const churnPredictions = pgTable(
 export const churnInterventions = pgTable(
   'churn_interventions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -208,9 +200,7 @@ export const churnInterventions = pgTable(
     outcomeNotes: text('outcome_notes'),
   },
   (t) => [
-    index('churn_intv_tenant_open_idx')
-      .on(t.tenantId, t.assignedAt)
-      .where(sql`closed_at IS NULL`),
+    index('churn_intv_tenant_open_idx').on(t.tenantId, t.assignedAt).where(sql`closed_at IS NULL`),
     index('churn_intv_member_idx').on(t.memberId, t.assignedAt),
     index('churn_intv_assigned_to_idx').on(t.assignedToUserId).where(sql`closed_at IS NULL`),
   ],
@@ -227,9 +217,7 @@ export const churnInterventions = pgTable(
 export const churnEvents = pgTable(
   'churn_events',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()

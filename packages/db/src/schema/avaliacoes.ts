@@ -61,11 +61,7 @@ export const assessmentCategoryEnum = pgEnum('assessment_category', [
   'custom', // tenant define livre
 ])
 
-export const assessmentVerticalEnum = pgEnum('assessment_vertical', [
-  'academia',
-  'fisio',
-  'nutri',
-])
+export const assessmentVerticalEnum = pgEnum('assessment_vertical', ['academia', 'fisio', 'nutri'])
 
 export const measurementSourceEnum = pgEnum('measurement_source', [
   'manual', // profissional digitou
@@ -117,9 +113,7 @@ export const photoKindEnum = pgEnum('assessment_photo_kind', [
 export const assessmentTypes = pgTable(
   'assessment_types',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     /** NULL = template global LogiFit (read-only via RLS) */
     tenantId: uuid('tenant_id'),
     name: text('name').notNull(),
@@ -167,9 +161,7 @@ export const assessmentTypes = pgTable(
 export const assessments = pgTable(
   'assessments',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -191,9 +183,7 @@ export const assessments = pgTable(
   (t) => [
     index('assessments_tenant_member_idx').on(t.tenantId, t.memberId, t.performedAt),
     index('assessments_type_idx').on(t.assessmentTypeId),
-    index('assessments_active_idx')
-      .on(t.tenantId, t.memberId)
-      .where(sql`soft_deleted_at IS NULL`),
+    index('assessments_active_idx').on(t.tenantId, t.memberId).where(sql`soft_deleted_at IS NULL`),
   ],
 )
 
@@ -210,9 +200,7 @@ export const assessments = pgTable(
 export const assessmentMeasurements = pgTable(
   'assessment_measurements',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     assessmentId: uuid('assessment_id')
       .notNull()
@@ -252,9 +240,7 @@ export const assessmentMeasurements = pgTable(
 export const assessmentPhotos = pgTable(
   'assessment_photos',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     assessmentId: uuid('assessment_id')
       .notNull()
@@ -293,9 +279,7 @@ export const assessmentPhotos = pgTable(
 export const assessmentCalculations = pgTable(
   'assessment_calculations',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     assessmentId: uuid('assessment_id')
       .notNull()

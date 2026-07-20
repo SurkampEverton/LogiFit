@@ -81,27 +81,20 @@ export const proposalStateEnum = pgEnum('proposal_state', [
 ])
 
 // ─── ai_providers (global, sem tenant) ──────────────────────────────────
-export const aiProviders = pgTable(
-  'ai_providers',
-  {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
-    slug: text('slug').notNull().unique(), // 'vertex-ai-gemini', 'anthropic', 'openai', 'groq', 'maritaca'
-    name: text('name').notNull(), // 'Vertex AI (Google Gemini)'
-    apiBaseUrl: text('api_base_url').notNull(),
-    enabled: boolean('enabled').notNull().default(true),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-)
+export const aiProviders = pgTable('ai_providers', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  slug: text('slug').notNull().unique(), // 'vertex-ai-gemini', 'anthropic', 'openai', 'groq', 'maritaca'
+  name: text('name').notNull(), // 'Vertex AI (Google Gemini)'
+  apiBaseUrl: text('api_base_url').notNull(),
+  enabled: boolean('enabled').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
 
 // ─── ai_models (global) ─────────────────────────────────────────────────
 export const aiModels = pgTable(
   'ai_models',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     providerId: uuid('provider_id')
       .notNull()
       .references(() => aiProviders.id, { onDelete: 'restrict' }),
@@ -125,9 +118,7 @@ export const aiModels = pgTable(
 export const aiTaskRouting = pgTable(
   'ai_task_routing',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     task: aiTaskEnum('task').notNull(),
     modelId: uuid('model_id')
       .notNull()
@@ -151,9 +142,7 @@ export const aiTaskRouting = pgTable(
 export const aiProviderConfigs = pgTable(
   'ai_provider_configs',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     providerId: uuid('provider_id')
       .notNull()
@@ -165,9 +154,7 @@ export const aiProviderConfigs = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [
-    uniqueIndex('ai_provider_configs_tenant_provider_uq').on(t.tenantId, t.providerId),
-  ],
+  (t) => [uniqueIndex('ai_provider_configs_tenant_provider_uq').on(t.tenantId, t.providerId)],
 )
 
 // ─── ai_tenant_usage (cota mensal) ──────────────────────────────────────
@@ -180,9 +167,7 @@ export const aiProviderConfigs = pgTable(
 export const aiTenantUsage = pgTable(
   'ai_tenant_usage',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     monthBucket: text('month_bucket').notNull(), // 'YYYY-MM'
     callsCount: integer('calls_count').notNull().default(0),
@@ -192,9 +177,7 @@ export const aiTenantUsage = pgTable(
     cacheHits: integer('cache_hits').notNull().default(0),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [
-    uniqueIndex('ai_tenant_usage_tenant_month_uq').on(t.tenantId, t.monthBucket),
-  ],
+  (t) => [uniqueIndex('ai_tenant_usage_tenant_month_uq').on(t.tenantId, t.monthBucket)],
 )
 
 // ─── ai_audit_log (tenant) ──────────────────────────────────────────────
@@ -208,9 +191,7 @@ export const aiTenantUsage = pgTable(
 export const aiAuditLog = pgTable(
   'ai_audit_log',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     userId: uuid('user_id').references(() => users.id),
     sessionId: uuid('session_id'), // FK pra assistant_sessions (set null on delete)
@@ -245,9 +226,7 @@ export const aiAuditLog = pgTable(
 export const assistantSessions = pgTable(
   'assistant_sessions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     userId: uuid('user_id')
       .notNull()
@@ -262,9 +241,7 @@ export const assistantSessions = pgTable(
   },
   (t) => [
     index('assistant_sessions_tenant_user_idx').on(t.tenantId, t.userId, t.updatedAt),
-    index('assistant_sessions_active_idx')
-      .on(t.tenantId, t.userId)
-      .where(sql`archived_at IS NULL`),
+    index('assistant_sessions_active_idx').on(t.tenantId, t.userId).where(sql`archived_at IS NULL`),
   ],
 )
 
@@ -272,9 +249,7 @@ export const assistantSessions = pgTable(
 export const assistantMessages = pgTable(
   'assistant_messages',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     sessionId: uuid('session_id')
       .notNull()
@@ -305,9 +280,7 @@ export const assistantMessages = pgTable(
 export const assistantActionProposals = pgTable(
   'assistant_action_proposals',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     sessionId: uuid('session_id')
       .notNull()
@@ -328,9 +301,7 @@ export const assistantActionProposals = pgTable(
   },
   (t) => [
     index('action_proposals_tenant_user_idx').on(t.tenantId, t.userId, t.createdAt),
-    index('action_proposals_pending_idx')
-      .on(t.tenantId)
-      .where(sql`state = 'pending'`),
+    index('action_proposals_pending_idx').on(t.tenantId).where(sql`state = 'pending'`),
   ],
 )
 

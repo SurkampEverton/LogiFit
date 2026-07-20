@@ -15,7 +15,6 @@
  */
 import { sql } from 'drizzle-orm'
 import {
-  boolean,
   check,
   index,
   jsonb,
@@ -90,9 +89,7 @@ export const pamReasonEnum = pgEnum('pam_reason', [
 export const aiCommittees = pgTable(
   'ai_committees',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     name: text('name').notNull(),
     status: committeeStatusEnum('status').notNull().default('draft'),
@@ -104,9 +101,7 @@ export const aiCommittees = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    uniqueIndex('ai_committees_tenant_active_uq')
-      .on(t.tenantId)
-      .where(sql`status = 'active'`),
+    uniqueIndex('ai_committees_tenant_active_uq').on(t.tenantId).where(sql`status = 'active'`),
     index('ai_committees_tenant_idx').on(t.tenantId),
   ],
 )
@@ -114,9 +109,7 @@ export const aiCommittees = pgTable(
 export const aiCommitteeMembers = pgTable(
   'ai_committee_members',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     committeeId: uuid('committee_id')
       .notNull()
@@ -139,9 +132,7 @@ export const aiCommitteeMembers = pgTable(
 export const aiCommitteeDecisions = pgTable(
   'ai_committee_decisions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     committeeId: uuid('committee_id')
       .notNull()
@@ -155,9 +146,7 @@ export const aiCommitteeDecisions = pgTable(
     recordedByUserId: uuid('recorded_by_user_id').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [
-    index('ai_committee_decisions_committee_idx').on(t.committeeId, t.decidedAt),
-  ],
+  (t) => [index('ai_committee_decisions_committee_idx').on(t.committeeId, t.decidedAt)],
 )
 
 // ─── PAM (Privileged Access Management) ──────────────────────────────────
@@ -178,9 +167,7 @@ export const aiCommitteeDecisions = pgTable(
 export const privilegedSessions = pgTable(
   'privileged_sessions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     operatorUserId: uuid('operator_user_id')
       .notNull()
       .references(() => users.id),
@@ -199,9 +186,7 @@ export const privilegedSessions = pgTable(
   (t) => [
     index('privileged_sessions_target_idx').on(t.targetTenantId, t.createdAt),
     index('privileged_sessions_operator_idx').on(t.operatorUserId, t.createdAt),
-    index('privileged_sessions_active_idx')
-      .on(t.targetTenantId)
-      .where(sql`state = 'active'`),
+    index('privileged_sessions_active_idx').on(t.targetTenantId).where(sql`state = 'active'`),
     check(
       'privileged_sessions_state_valid',
       sql`${t.state} IN ('pending', 'active', 'closed', 'rejected')`,
@@ -225,9 +210,7 @@ export const privilegedSessions = pgTable(
 export const dataSubjectRequests = pgTable(
   'data_subject_requests',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     subjectPersonId: uuid('subject_person_id').references(() => persons.id),
     subjectEmail: text('subject_email'), // se não tem person cadastrada

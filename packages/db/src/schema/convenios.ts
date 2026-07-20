@@ -63,10 +63,7 @@ export const tussCategoryEnum = pgEnum('tuss_category', [
   'gasoterapia',
 ])
 
-export const tussImportSourceEnum = pgEnum('tuss_import_source', [
-  'ans_oficio_circular',
-  'manual',
-])
+export const tussImportSourceEnum = pgEnum('tuss_import_source', ['ans_oficio_circular', 'manual'])
 
 export const guideKindEnum = pgEnum('billing_guide_kind', [
   'consulta', // guia de consulta
@@ -92,12 +89,7 @@ export const authorizationStatusEnum = pgEnum('authorization_status', [
   'expired',
 ])
 
-export const batchStatusEnum = pgEnum('batch_status', [
-  'draft',
-  'sent',
-  'returned',
-  'cancelled',
-])
+export const batchStatusEnum = pgEnum('batch_status', ['draft', 'sent', 'returned', 'cancelled'])
 
 export const glosaStatusEnum = pgEnum('glosa_status', [
   'glossed', // recebida
@@ -111,9 +103,7 @@ export const glosaStatusEnum = pgEnum('glosa_status', [
 export const insurancePlans = pgTable(
   'insurance_plans',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     /** Null = global LogiFit; UUID = customizado por tenant */
     tenantId: uuid('tenant_id'),
     name: text('name').notNull(),
@@ -162,9 +152,7 @@ export const tussCatalog = pgTable(
 export const tussCatalogImports = pgTable(
   'tuss_catalog_imports',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     version: text('version').notNull(),
     source: tussImportSourceEnum('source').notNull(),
     importedAt: timestamp('imported_at', { withTimezone: true }).notNull().defaultNow(),
@@ -185,9 +173,7 @@ export const tussCatalogImports = pgTable(
 export const insuranceAgreements = pgTable(
   'insurance_agreements',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -209,9 +195,7 @@ export const insuranceAgreements = pgTable(
   },
   (t) => [
     index('agreement_tenant_company_idx').on(t.tenantId, t.companyId),
-    uniqueIndex('agreement_company_plan_uq')
-      .on(t.companyId, t.planId)
-      .where(sql`active = true`),
+    uniqueIndex('agreement_company_plan_uq').on(t.companyId, t.planId).where(sql`active = true`),
   ],
 )
 
@@ -242,9 +226,7 @@ export const insuranceProcedurePrices = pgTable(
 export const memberInsurances = pgTable(
   'member_insurances',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -275,9 +257,7 @@ export const memberInsurances = pgTable(
 export const authorizations = pgTable(
   'authorizations',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberInsuranceId: uuid('member_insurance_id')
       .notNull()
@@ -302,8 +282,10 @@ export const authorizations = pgTable(
     index('auth_tenant_status_idx').on(t.tenantId, t.status),
     index('auth_member_insurance_idx').on(t.memberInsuranceId, t.requestedAt),
     check('auth_qty_positive', sql`quantity_requested > 0`),
-    check('auth_qty_used_le_authorized',
-      sql`(quantity_authorized IS NULL OR quantity_used <= quantity_authorized)`),
+    check(
+      'auth_qty_used_le_authorized',
+      sql`(quantity_authorized IS NULL OR quantity_used <= quantity_authorized)`,
+    ),
   ],
 )
 
@@ -312,9 +294,7 @@ export const authorizations = pgTable(
 export const billingGuides = pgTable(
   'billing_guides',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -361,10 +341,7 @@ export const billingGuides = pgTable(
     index('bg_tenant_status_idx').on(t.tenantId, t.status),
     index('bg_member_idx').on(t.memberId, t.createdAt),
     check('bg_total_positive', sql`total_cents >= 0`),
-    check(
-      'bg_paid_le_total',
-      sql`(paid_amount_cents IS NULL OR paid_amount_cents <= total_cents)`,
-    ),
+    check('bg_paid_le_total', sql`(paid_amount_cents IS NULL OR paid_amount_cents <= total_cents)`),
   ],
 )
 
@@ -373,9 +350,7 @@ export const billingGuides = pgTable(
 export const billingGuideItems = pgTable(
   'billing_guide_items',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     guideId: uuid('guide_id')
       .notNull()
@@ -409,9 +384,7 @@ export const billingGuideItems = pgTable(
 export const billingBatches = pgTable(
   'billing_batches',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     agreementId: uuid('agreement_id')
       .notNull()
@@ -442,9 +415,7 @@ export const billingBatches = pgTable(
 export const billingGlosas = pgTable(
   'billing_glosas',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     guideId: uuid('guide_id')
       .notNull()

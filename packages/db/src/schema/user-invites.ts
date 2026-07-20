@@ -17,9 +17,7 @@ import { users } from './identity'
 export const userInvites = pgTable(
   'user_invites',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     email: text('email').notNull(),
     /** Nome sugerido pelo admin (aceite pode corrigir) */

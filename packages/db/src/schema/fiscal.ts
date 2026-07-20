@@ -50,8 +50,8 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { companies } from './identity'
 import { invoices } from './financeiro'
+import { companies } from './identity'
 
 // ─── Enums ───────────────────────────────────────────────────────────────
 
@@ -81,10 +81,7 @@ export const fiscalEventKindEnum = pgEnum('fiscal_event_kind', [
   'inutilizacao', // inutiliza faixa de numeração pulada
 ])
 
-export const fiscalProviderEnvEnum = pgEnum('fiscal_provider_env', [
-  'homologacao',
-  'producao',
-])
+export const fiscalProviderEnvEnum = pgEnum('fiscal_provider_env', ['homologacao', 'producao'])
 
 export const fiscalTaxRegimeEnum = pgEnum('fiscal_tax_regime', [
   'simples_nacional',
@@ -113,9 +110,7 @@ export const fiscalTaxRegimeEnum = pgEnum('fiscal_tax_regime', [
 export const fiscalEmissions = pgTable(
   'fiscal_emissions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -169,18 +164,9 @@ export const fiscalEmissions = pgTable(
       .on(t.tenantId, t.kind, t.chave)
       .where(sql`chave IS NOT NULL`),
     /** Unique numeração emitida por company + kind + serie + numero pra detectar duplicate write */
-    uniqueIndex('fiscal_emissions_numeracao_uq').on(
-      t.companyId,
-      t.kind,
-      t.serie,
-      t.numero,
-    ),
+    uniqueIndex('fiscal_emissions_numeracao_uq').on(t.companyId, t.kind, t.serie, t.numero),
     /** Inbox por tenant ordenado por created_at desc */
-    index('fiscal_emissions_tenant_status_idx').on(
-      t.tenantId,
-      t.status,
-      t.createdAt.desc(),
-    ),
+    index('fiscal_emissions_tenant_status_idx').on(t.tenantId, t.status, t.createdAt.desc()),
     /** Lookup pelo provider_ref no webhook callback */
     uniqueIndex('fiscal_emissions_provider_ref_uq')
       .on(t.tenantId, t.provider, t.providerRef)
@@ -230,9 +216,7 @@ export const fiscalEmissions = pgTable(
 export const fiscalEvents = pgTable(
   'fiscal_events',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     emissionId: uuid('emission_id').references(() => fiscalEmissions.id, {
       onDelete: 'restrict',
@@ -263,11 +247,7 @@ export const fiscalEvents = pgTable(
   },
   (t) => [
     /** Inbox de eventos por tenant */
-    index('fiscal_events_tenant_idx').on(
-      t.tenantId,
-      t.status,
-      t.createdAt.desc(),
-    ),
+    index('fiscal_events_tenant_idx').on(t.tenantId, t.status, t.createdAt.desc()),
     /** Por emissão (cancelamento + CC-e) */
     index('fiscal_events_emission_idx').on(t.emissionId, t.createdAt.desc()),
     /** Provider ref lookup */
@@ -303,9 +283,7 @@ export const fiscalEvents = pgTable(
 export const fiscalNumberingSequences = pgTable(
   'fiscal_numbering_sequences',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -324,17 +302,9 @@ export const fiscalNumberingSequences = pgTable(
   },
   (t) => [
     /** 1 sequência ativa por (company, kind, serie, env) */
-    uniqueIndex('fiscal_numbering_sequences_uq').on(
-      t.companyId,
-      t.kind,
-      t.serie,
-      t.environment,
-    ),
+    uniqueIndex('fiscal_numbering_sequences_uq').on(t.companyId, t.kind, t.serie, t.environment),
     check('fiscal_numbering_sequences_next_positive', sql`next_numero >= 1`),
-    check(
-      'fiscal_numbering_sequences_serie_positive',
-      sql`serie >= 1 AND serie <= 999`,
-    ),
+    check('fiscal_numbering_sequences_serie_positive', sql`serie >= 1 AND serie <= 999`),
   ],
 )
 
@@ -351,9 +321,7 @@ export const fiscalNumberingSequences = pgTable(
 export const fiscalServiceCatalog = pgTable(
   'fiscal_service_catalog',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -387,10 +355,7 @@ export const fiscalServiceCatalog = pgTable(
       .on(t.tenantId, t.companyId)
       .where(sql`active = true`),
     /** ISS rate sanity: 0-500 bp (0-5%) */
-    check(
-      'fiscal_service_catalog_iss_range',
-      sql`iss_rate_bp >= 0 AND iss_rate_bp <= 500`,
-    ),
+    check('fiscal_service_catalog_iss_range', sql`iss_rate_bp >= 0 AND iss_rate_bp <= 500`),
   ],
 )
 

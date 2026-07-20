@@ -19,7 +19,6 @@
  */
 import { sql } from 'drizzle-orm'
 import {
-  boolean,
   index,
   integer,
   jsonb,
@@ -76,12 +75,7 @@ export const auditLog = pgTable(
 // Alertas críticos de sistema (ADR 0071). Sprint 02+ amplia com role-based
 // visibility (`min_role` filter) + trigger que cria `security_incidents`
 // quando severity=critical + category in (security, data_leak, compliance).
-export const alertSeverityEnum = pgEnum('alert_severity', [
-  'info',
-  'warning',
-  'error',
-  'critical',
-])
+export const alertSeverityEnum = pgEnum('alert_severity', ['info', 'warning', 'error', 'critical'])
 
 export const alertCategoryEnum = pgEnum('alert_category', [
   'security',
@@ -150,9 +144,7 @@ export const systemAlertOccurrences = pgTable(
     memberId: uuid('member_id'), // LGPD link — Sprint 02+ pluga
     payload: jsonb('payload'),
   },
-  (t) => [
-    index('system_alert_occurrences_alert_idx').on(t.alertId, t.occurredAt.desc()),
-  ],
+  (t) => [index('system_alert_occurrences_alert_idx').on(t.alertId, t.occurredAt.desc())],
 )
 
 export type AuditLogRow = typeof auditLog.$inferSelect

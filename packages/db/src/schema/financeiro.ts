@@ -23,8 +23,8 @@ import { sql } from 'drizzle-orm'
 import {
   boolean,
   check,
-  integer,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -61,9 +61,7 @@ export const paymentMethodEnum = pgEnum('payment_method', ['boleto', 'pix', 'cre
 export const plans = pgTable(
   'plans',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -96,9 +94,7 @@ export const plans = pgTable(
 export const contracts = pgTable(
   'contracts',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -128,9 +124,7 @@ export const contracts = pgTable(
   (t) => [
     index('contracts_tenant_member_idx').on(t.tenantId, t.memberId),
     index('contracts_tenant_plan_idx').on(t.tenantId, t.planId),
-    index('contracts_active_idx')
-      .on(t.tenantId, t.companyId)
-      .where(sql`status = 'active'`),
+    index('contracts_active_idx').on(t.tenantId, t.companyId).where(sql`status = 'active'`),
     check('contracts_billing_day_range', sql`${t.billingDay} BETWEEN 1 AND 28`),
   ],
 )
@@ -139,9 +133,7 @@ export const contracts = pgTable(
 export const invoices = pgTable(
   'invoices',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -178,9 +170,7 @@ export const invoices = pgTable(
 export const payments = pgTable(
   'payments',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     invoiceId: uuid('invoice_id')
       .notNull()
@@ -212,9 +202,7 @@ export const payments = pgTable(
 export const asaasKeys = pgTable(
   'asaas_keys',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
     apiKey: text('api_key').notNull(), // TODO Sprint 04+ envelope encryption
@@ -242,9 +230,7 @@ export const asaasKeys = pgTable(
 export const webhookEvents = pgTable(
   'webhook_events',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     source: text('source').notNull(), // 'asaas' | 'focus-nfe' | etc
     externalId: text('external_id').notNull(),
     receivedAt: timestamp('received_at', { withTimezone: true }).notNull().defaultNow(),

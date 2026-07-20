@@ -1,32 +1,4 @@
-/**
- * Schemas Drizzle das tabelas BetterAuth (ADR 0092).
- *
- * BetterAuth requer 4 tabelas core + 2 opcionais (twoFactor):
- *   - auth_user          — identidade base (uuid, email, emailVerified)
- *   - auth_session       — sessões ativas (revoke por dispositivo via /meu/sessoes)
- *   - auth_account       — vínculo com providers (magic-link, oauth-google, credentials)
- *   - auth_verification  — tokens temporários (magic link, email change, etc.)
- *   - auth_two_factor    — TOTP secret + WebAuthn credentials
- *   - auth_passkey       — WebAuthn credentials (passkeys)
- *
- * Prefixo `auth_` deixa claro que são owned pelo BetterAuth (não confundir
- * com nossa table `users` em `@repo/db/schema/identity.ts` que tem person_id
- * + tenant_id + auth_user_id FK pra `auth_user.id`).
- *
- * **Importante:** BetterAuth NÃO conhece tenant_id — é single-tenant por design.
- * Multi-tenant é implementado **acima**: cookie carrega `session.id` BetterAuth +
- * `tenant_id` injetado via plugin customSession + middleware Next.js seta
- * `app.tenant_id` antes de cada query. Ver `packages/auth/src/config/custom-session.ts`.
- */
-import { sql } from 'drizzle-orm'
-import {
-  boolean,
-  index,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-} from 'drizzle-orm/pg-core'
+import { boolean, index, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
 
 // ─── auth_user ────────────────────────────────────────────────────────────
 export const authUser = pgTable(

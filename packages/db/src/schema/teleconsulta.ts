@@ -40,8 +40,8 @@ import {
 } from 'drizzle-orm/pg-core'
 import { appointments } from './agenda'
 import { consultas } from './fisio'
-import { members } from './members'
 import { users } from './identity'
+import { members } from './members'
 
 // ─── Enums ───────────────────────────────────────────────────────────────
 
@@ -66,9 +66,7 @@ export const teleconsultaStatusEnum = pgEnum('teleconsulta_status', [
 export const teleconsultationSessions = pgTable(
   'teleconsultation_sessions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     /** Appointment de origem (Sprint 03 com kind='online' ou flag is_online) */
     appointmentId: uuid('appointment_id')

@@ -106,9 +106,7 @@ export const acquirerReconcileActionEnum = pgEnum('acquirer_reconcile_action', [
 export const acquirerConnections = pgTable(
   'acquirer_connections',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -135,9 +133,7 @@ export const acquirerConnections = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    index('acq_conn_tenant_company_idx')
-      .on(t.tenantId, t.companyId)
-      .where(sql`active = true`),
+    index('acq_conn_tenant_company_idx').on(t.tenantId, t.companyId).where(sql`active = true`),
     index('acq_conn_status_idx').on(t.status).where(sql`status IN ('active', 'error')`),
     uniqueIndex('acq_conn_merchant_uq').on(t.provider, t.merchantId),
   ],
@@ -161,9 +157,7 @@ export const acquirerConnections = pgTable(
 export const acquirerSales = pgTable(
   'acquirer_sales',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -227,9 +221,7 @@ export const acquirerSales = pgTable(
 export const anticipations = pgTable(
   'anticipations',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     connectionId: uuid('connection_id')
       .notNull()
@@ -281,9 +273,7 @@ export const anticipations = pgTable(
 export const acquirerReconciliationRules = pgTable(
   'acquirer_reconciliation_rules',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     name: text('name').notNull(),
     condition: jsonb('condition').notNull(),
@@ -299,9 +289,7 @@ export const acquirerReconciliationRules = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    index('acq_rules_tenant_priority_idx')
-      .on(t.tenantId, t.priority)
-      .where(sql`active = true`),
+    index('acq_rules_tenant_priority_idx').on(t.tenantId, t.priority).where(sql`active = true`),
     uniqueIndex('acq_rules_tenant_name_uq').on(t.tenantId, t.name),
   ],
 )

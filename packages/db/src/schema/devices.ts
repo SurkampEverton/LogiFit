@@ -45,8 +45,8 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { members } from './members'
 import { users } from './identity'
+import { members } from './members'
 
 // ─── Enums ───────────────────────────────────────────────────────────────
 
@@ -85,9 +85,7 @@ export const deviceIncidentKindEnum = pgEnum('device_incident_kind', [
 export const deviceConnections = pgTable(
   'device_connections',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -138,9 +136,7 @@ export const deviceConnections = pgTable(
 export const deviceReadings = pgTable(
   'device_readings',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -164,19 +160,11 @@ export const deviceReadings = pgTable(
   },
   (t) => [
     /** Lookup quente: leituras recentes do member por código (UI gráficos) */
-    index('device_readings_member_code_idx').on(
-      t.memberId,
-      t.observationCode,
-      t.measuredAt.desc(),
-    ),
+    index('device_readings_member_code_idx').on(t.memberId, t.observationCode, t.measuredAt.desc()),
     /** Range por tenant (admin panel) */
     index('device_readings_tenant_at_idx').on(t.tenantId, t.measuredAt.desc()),
     /** Sync job: dedup por (connection, observation_code, measured_at) */
-    uniqueIndex('device_readings_dedup_uq').on(
-      t.connectionId,
-      t.observationCode,
-      t.measuredAt,
-    ),
+    uniqueIndex('device_readings_dedup_uq').on(t.connectionId, t.observationCode, t.measuredAt),
     check('device_readings_value_finite', sql`${t.value} IS NOT NULL`),
   ],
 )
@@ -214,10 +202,7 @@ export const deviceReadingsDailySummary = pgTable(
       t.observationCode,
       t.observedDate.desc(),
     ),
-    check(
-      'device_readings_summary_min_max',
-      sql`${t.minValue} <= ${t.maxValue}`,
-    ),
+    check('device_readings_summary_min_max', sql`${t.minValue} <= ${t.maxValue}`),
   ],
 )
 
@@ -232,9 +217,7 @@ export const deviceReadingsDailySummary = pgTable(
 export const deviceReadingsCurated = pgTable(
   'device_readings_curated',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -267,37 +250,29 @@ export const deviceReadingsCurated = pgTable(
 
 // ─── device_sync_cursors ─────────────────────────────────────────────────
 
-export const deviceSyncCursors = pgTable(
-  'device_sync_cursors',
-  {
-    connectionId: uuid('connection_id')
-      .primaryKey()
-      .references(() => deviceConnections.id, { onDelete: 'cascade' }),
-    lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
-    /** Cursor opaco do provider (timestamp, nextPageToken, etc.) */
-    cursorPayload: jsonb('cursor_payload'),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-)
+export const deviceSyncCursors = pgTable('device_sync_cursors', {
+  connectionId: uuid('connection_id')
+    .primaryKey()
+    .references(() => deviceConnections.id, { onDelete: 'cascade' }),
+  lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
+  /** Cursor opaco do provider (timestamp, nextPageToken, etc.) */
+  cursorPayload: jsonb('cursor_payload'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
 
 // ─── device_consents ─────────────────────────────────────────────────────
 
 export const deviceConsents = pgTable(
   'device_consents',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
       .references(() => members.id, { onDelete: 'cascade' }),
     provider: deviceProviderEnum('provider').notNull(),
     /** Finalidades autorizadas (texto livre): 'academia_hr', 'nutri_weight', 'fisio_rom', etc. */
-    purposes: text('purposes')
-      .array()
-      .notNull()
-      .default(sql`'{}'::text[]`),
+    purposes: text('purposes').array().notNull().default(sql`'{}'::text[]`),
     /** Permite leitura de dado cru (HR minuto-a-minuto), exige permission `devices.read_raw` */
     rawDataAccessGranted: boolean('raw_data_access_granted').notNull().default(false),
     grantedAt: timestamp('granted_at', { withTimezone: true }).notNull().defaultNow(),
@@ -320,9 +295,7 @@ export const deviceConsents = pgTable(
 export const deviceIncidents = pgTable(
   'device_incidents',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     connectionId: uuid('connection_id').references(() => deviceConnections.id, {
       onDelete: 'cascade',

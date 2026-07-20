@@ -60,9 +60,7 @@ export const mobileSessionStatusEnum = pgEnum('mobile_session_status', [
 export const mobileAppVersions = pgTable(
   'mobile_app_versions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     platform: mobilePlatformEnum('platform').notNull(),
     /** Semver completo: '1.2.3' */
     version: text('version').notNull(),
@@ -95,9 +93,7 @@ export const mobileAppVersions = pgTable(
 export const mobilePushTokens = pgTable(
   'mobile_push_tokens',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -148,9 +144,7 @@ export const mobilePushTokens = pgTable(
 export const mobileSessions = pgTable(
   'mobile_sessions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()

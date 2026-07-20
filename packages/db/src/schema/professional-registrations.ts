@@ -30,8 +30,8 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { persons } from './persons'
 import { users } from './identity'
+import { persons } from './persons'
 
 export const councilBodyEnum = pgEnum('council_body', [
   'CRM', // médico
@@ -75,9 +75,7 @@ export const professionalRegistrations = pgTable(
     specialty: text('specialty'), // 'cardiologia', 'pediatria', etc — texto livre
     cboCode: text('cbo_code'), // Classificação Brasileira de Ocupações
 
-    situation: professionalSituationEnum('situation')
-      .notNull()
-      .default('pending_verification'),
+    situation: professionalSituationEnum('situation').notNull().default('pending_verification'),
 
     issuedAt: date('issued_at'), // quando o conselho emitiu
     verifiedAt: timestamp('verified_at', { withTimezone: true }),

@@ -87,9 +87,7 @@ export const tenants = pgTable(
     mode: tenantModeEnum('mode').notNull().default('multi'),
 
     // Trial + lifecycle (ADR 0066)
-    subscriptionStatus: subscriptionStatusEnum('subscription_status')
-      .notNull()
-      .default('trialing'),
+    subscriptionStatus: subscriptionStatusEnum('subscription_status').notNull().default('trialing'),
     trialEndsAt: timestamp('trial_ends_at', { withTimezone: true }),
 
     // Sharding preparado (ADR 0072) — não usado no MVP
@@ -101,10 +99,7 @@ export const tenants = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [
-    uniqueIndex('tenants_slug_uq').on(t.slug),
-    index('tenants_group_id_idx').on(t.groupId),
-  ],
+  (t) => [uniqueIndex('tenants_slug_uq').on(t.slug), index('tenants_group_id_idx').on(t.groupId)],
 )
 
 // ─── companies ─────────────────────────────────────────────────────────────

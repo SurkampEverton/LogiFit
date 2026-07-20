@@ -83,9 +83,7 @@ export const appointmentStatusEnum = pgEnum('appointment_status', [
 export const resources = pgTable(
   'resources',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -103,9 +101,7 @@ export const resources = pgTable(
     index('resources_tenant_company_idx').on(t.tenantId, t.companyId),
     index('resources_tenant_kind_idx').on(t.tenantId, t.kind),
     index('resources_instructor_idx').on(t.instructorUserId),
-    index('resources_active_idx')
-      .on(t.tenantId, t.companyId)
-      .where(sql`archived_at IS NULL`),
+    index('resources_active_idx').on(t.tenantId, t.companyId).where(sql`archived_at IS NULL`),
   ],
 )
 
@@ -127,9 +123,7 @@ export const resources = pgTable(
 export const recurringSlots = pgTable(
   'recurring_slots',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     resourceId: uuid('resource_id')
       .notNull()
@@ -144,9 +138,7 @@ export const recurringSlots = pgTable(
   },
   (t) => [
     index('recurring_slots_resource_idx').on(t.resourceId),
-    index('recurring_slots_tenant_active_idx')
-      .on(t.tenantId)
-      .where(sql`active = true`),
+    index('recurring_slots_tenant_active_idx').on(t.tenantId).where(sql`active = true`),
   ],
 )
 
@@ -169,9 +161,7 @@ export const recurringSlots = pgTable(
 export const appointments = pgTable(
   'appointments',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     resourceId: uuid('resource_id')
       .notNull()
@@ -213,9 +203,7 @@ export const appointments = pgTable(
 export const appointmentWaitlist = pgTable(
   'appointment_waitlist',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     recurringSlotId: uuid('recurring_slot_id')
       .notNull()

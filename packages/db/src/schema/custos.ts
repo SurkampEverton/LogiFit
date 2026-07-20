@@ -56,9 +56,7 @@ export const costCategoryTypeEnum = pgEnum('cost_category_type', [
 export const costCategories = pgTable(
   'cost_categories',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     slug: text('slug').notNull(),
     name: text('name').notNull(),
@@ -71,9 +69,7 @@ export const costCategories = pgTable(
   },
   (t) => [
     uniqueIndex('cost_categories_tenant_slug_uq').on(t.tenantId, t.slug),
-    index('cost_categories_tenant_type_idx')
-      .on(t.tenantId, t.type)
-      .where(sql`archived_at IS NULL`),
+    index('cost_categories_tenant_type_idx').on(t.tenantId, t.type).where(sql`archived_at IS NULL`),
   ],
 )
 
@@ -93,9 +89,7 @@ export const costCategories = pgTable(
 export const costEntries = pgTable(
   'cost_entries',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -134,9 +128,7 @@ export const costEntries = pgTable(
 export const recurringCosts = pgTable(
   'recurring_costs',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -157,9 +149,7 @@ export const recurringCosts = pgTable(
   },
   (t) => [
     index('recurring_costs_tenant_company_idx').on(t.tenantId, t.companyId),
-    index('recurring_costs_active_idx')
-      .on(t.dayOfMonth)
-      .where(sql`active = true`),
+    index('recurring_costs_active_idx').on(t.dayOfMonth).where(sql`active = true`),
     check('recurring_costs_amount_positive', sql`${t.amountCents} > 0`),
     check(
       'recurring_costs_day_of_month_range',

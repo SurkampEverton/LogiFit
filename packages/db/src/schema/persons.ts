@@ -12,7 +12,6 @@
  */
 import { sql } from 'drizzle-orm'
 import {
-  boolean,
   date,
   index,
   jsonb,

@@ -35,8 +35,8 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { contracts, invoices, plans } from './financeiro'
-import { members } from './members'
 import { users } from './identity'
+import { members } from './members'
 
 // ─── Enums ───────────────────────────────────────────────────────────────
 
@@ -67,9 +67,7 @@ export const creditSourceEnum = pgEnum('credit_source', [
 export const promotions = pgTable(
   'promotions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     code: text('code').notNull(),
     name: text('name').notNull(),
@@ -94,10 +92,7 @@ export const promotions = pgTable(
       .where(sql`active = true AND archived_at IS NULL`),
     check('promotions_value_non_negative', sql`${t.value} >= 0`),
     check('promotions_uses_non_negative', sql`${t.usesCount} >= 0`),
-    check(
-      'promotions_max_uses_valid',
-      sql`${t.maxUses} IS NULL OR ${t.maxUses} > 0`,
-    ),
+    check('promotions_max_uses_valid', sql`${t.maxUses} IS NULL OR ${t.maxUses} > 0`),
   ],
 )
 
@@ -105,9 +100,7 @@ export const promotions = pgTable(
 export const promotionUses = pgTable(
   'promotion_uses',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     promotionId: uuid('promotion_id')
       .notNull()
@@ -179,9 +172,7 @@ export const planItems = pgTable(
 export const appointmentCredits = pgTable(
   'appointment_credits',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -208,10 +199,7 @@ export const appointmentCredits = pgTable(
       .where(sql`balance > 0`),
     check('credits_balance_non_negative', sql`${t.balance} >= 0`),
     check('credits_initial_positive', sql`${t.initialQuantity} > 0`),
-    check(
-      'credits_balance_le_initial',
-      sql`${t.balance} <= ${t.initialQuantity}`,
-    ),
+    check('credits_balance_le_initial', sql`${t.balance} <= ${t.initialQuantity}`),
   ],
 )
 
@@ -219,9 +207,7 @@ export const appointmentCredits = pgTable(
 export const creditConsumptions = pgTable(
   'credit_consumptions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     creditId: uuid('credit_id')
       .notNull()
@@ -248,9 +234,7 @@ export const creditConsumptions = pgTable(
 export const referrals = pgTable(
   'referrals',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     referrerMemberId: uuid('referrer_member_id')
       .notNull()
@@ -271,10 +255,7 @@ export const referrals = pgTable(
       .where(sql`active = true`),
     index('referrals_tenant_active_idx').on(t.tenantId).where(sql`active = true`),
     check('referrals_uses_non_negative', sql`${t.usesCount} >= 0`),
-    check(
-      'referrals_max_uses_valid',
-      sql`${t.maxUses} IS NULL OR ${t.maxUses} > 0`,
-    ),
+    check('referrals_max_uses_valid', sql`${t.maxUses} IS NULL OR ${t.maxUses} > 0`),
   ],
 )
 
@@ -282,9 +263,7 @@ export const referrals = pgTable(
 export const referralUses = pgTable(
   'referral_uses',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     referralId: uuid('referral_id')
       .notNull()

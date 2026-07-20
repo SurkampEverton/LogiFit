@@ -37,8 +37,8 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { members } from './members'
 import { users } from './identity'
+import { members } from './members'
 import { mealPlans } from './nutri'
 
 // ─── Enums ───────────────────────────────────────────────────────────────
@@ -85,9 +85,7 @@ export const nutriAgentSuggestionSeverityEnum = pgEnum('nutri_agent_suggestion_s
 export const nutriAgentRuns = pgTable(
   'nutri_agent_runs',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -126,9 +124,7 @@ export const nutriAgentRuns = pgTable(
 export const nutriAgentSuggestions = pgTable(
   'nutri_agent_suggestions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     runId: uuid('run_id')
       .notNull()
@@ -208,9 +204,7 @@ export const nutriAgentSuggestions = pgTable(
 export const nutriAgentMetricsSnapshot = pgTable(
   'nutri_agent_metrics_snapshot',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     runId: uuid('run_id')
       .notNull()

@@ -94,11 +94,7 @@ export const consents = pgTable(
   },
   (t) => [
     // Histórico cronológico — última row por (person, purpose, scope) determina estado
-    index('consents_person_purpose_idx').on(
-      t.personId,
-      t.purpose,
-      t.createdAt.desc(),
-    ),
+    index('consents_person_purpose_idx').on(t.personId, t.purpose, t.createdAt.desc()),
     index('consents_tenant_idx').on(t.tenantId),
     // Lookup pra "consents ativos por person"
     uniqueIndex('consents_active_uq')

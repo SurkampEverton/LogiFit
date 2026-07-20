@@ -25,15 +25,7 @@
  * + sessão 30d separada de operador.
  */
 import { sql } from 'drizzle-orm'
-import {
-  boolean,
-  index,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-  uuid,
-} from 'drizzle-orm/pg-core'
+import { boolean, index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { members } from './members'
 
 // ─── member_auth_tokens ──────────────────────────────────────────────────
@@ -55,9 +47,7 @@ import { members } from './members'
 export const memberAuthTokens = pgTable(
   'member_auth_tokens',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -101,9 +91,7 @@ export const memberAuthTokens = pgTable(
 export const memberSessions = pgTable(
   'member_sessions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -156,9 +144,7 @@ export const memberSessions = pgTable(
 export const memberConsents = pgTable(
   'member_consents',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()

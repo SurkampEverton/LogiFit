@@ -31,9 +31,9 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
+import { contracts, plans } from './financeiro'
 import { companies, units, users } from './identity'
 import { members } from './members'
-import { contracts, plans } from './financeiro'
 import { persons } from './persons'
 
 // ─── Enums ───────────────────────────────────────────────────────────────
@@ -84,9 +84,7 @@ export const trialOutcomeEnum = pgEnum('trial_outcome', [
 export const leadStages = pgTable(
   'lead_stages',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     slug: text('slug').notNull(),
     name: text('name').notNull(),
@@ -108,9 +106,7 @@ export const leadStages = pgTable(
 export const leads = pgTable(
   'leads',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -157,9 +153,7 @@ export const leads = pgTable(
 export const leadEvents = pgTable(
   'lead_events',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     leadId: uuid('lead_id')
       .notNull()
@@ -181,9 +175,7 @@ export const leadEvents = pgTable(
 export const trialClasses = pgTable(
   'trial_classes',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     leadId: uuid('lead_id')
       .notNull()
@@ -210,9 +202,7 @@ export const trialClasses = pgTable(
 export const proposals = pgTable(
   'proposals',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     leadId: uuid('lead_id')
       .notNull()
@@ -243,12 +233,13 @@ export const proposals = pgTable(
   (t) => [
     index('proposals_tenant_lead_idx').on(t.tenantId, t.leadId),
     index('proposals_tenant_status_idx').on(t.tenantId, t.status),
-    index('proposals_active_idx')
-      .on(t.tenantId, t.leadId)
-      .where(sql`status IN ('draft', 'sent')`),
+    index('proposals_active_idx').on(t.tenantId, t.leadId).where(sql`status IN ('draft', 'sent')`),
     check('proposals_price_non_negative', sql`${t.priceCents} >= 0`),
     check('proposals_discount_non_negative', sql`${t.discountCents} >= 0`),
     check('proposals_discount_lt_price', sql`${t.discountCents} < ${t.priceCents}`),
-    check('proposals_one_plan_xor_bundle', sql`(plan_id IS NOT NULL)::int + (bundle_plan_id IS NOT NULL)::int <= 1`),
+    check(
+      'proposals_one_plan_xor_bundle',
+      sql`(plan_id IS NOT NULL)::int + (bundle_plan_id IS NOT NULL)::int <= 1`,
+    ),
   ],
 )

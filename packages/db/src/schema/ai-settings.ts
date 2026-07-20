@@ -18,7 +18,11 @@ export const tenantAssistantSettings = pgTable('tenant_assistant_settings', {
   tenantId: uuid('tenant_id').primaryKey(),
   assistantName: text('assistant_name').notNull().default('Copilot'),
   defaultPersona: text('default_persona').notNull().default('admin'),
-  enabledPersonas: jsonb('enabled_personas').notNull().default(sql`'["member","admin","recepcao","professional_clinical","professional_coach"]'::jsonb`),
+  enabledPersonas: jsonb('enabled_personas')
+    .notNull()
+    .default(
+      sql`'["member","admin","recepcao","professional_clinical","professional_coach"]'::jsonb`,
+    ),
   /** 'strict' (default) | 'permissive' (Sprint 06+ exige Comitê IA cadastrado) */
   classifierStrictness: text('classifier_strictness').notNull().default('strict'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

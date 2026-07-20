@@ -48,8 +48,8 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { members } from './members'
 import { users } from './identity'
+import { members } from './members'
 
 // ─── Enums ───────────────────────────────────────────────────────────────
 
@@ -60,10 +60,7 @@ export const examDocumentSourceEnum = pgEnum('exam_document_source', [
   'lab_integration_future',
 ])
 
-export const examDocumentSensitivityEnum = pgEnum('exam_document_sensitivity', [
-  'normal',
-  'high',
-])
+export const examDocumentSensitivityEnum = pgEnum('exam_document_sensitivity', ['normal', 'high'])
 
 export const examDocumentStatusEnum = pgEnum('exam_document_status', [
   'uploaded', // recém-chegado; aguarda scan + OCR
@@ -74,19 +71,14 @@ export const examDocumentStatusEnum = pgEnum('exam_document_status', [
   'failed', // erro técnico (OCR falhou, IA bloqueou tudo)
 ])
 
-export const aiClassifierStrictnessEnum = pgEnum('ai_classifier_strictness', [
-  'strict',
-  'moderate',
-])
+export const aiClassifierStrictnessEnum = pgEnum('ai_classifier_strictness', ['strict', 'moderate'])
 
 // ─── exam_documents ─────────────────────────────────────────────────────
 
 export const examDocuments = pgTable(
   'exam_documents',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -156,9 +148,7 @@ export const examDocuments = pgTable(
 export const examExtractions = pgTable(
   'exam_extractions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     examDocumentId: uuid('exam_document_id')
       .notNull()
@@ -195,9 +185,7 @@ export const examExtractions = pgTable(
 export const examInterpretationsDraft = pgTable(
   'exam_interpretations_draft',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     examDocumentId: uuid('exam_document_id')
       .notNull()
@@ -230,9 +218,7 @@ export const examInterpretationsDraft = pgTable(
 export const examInterpretationsFinal = pgTable(
   'exam_interpretations_final',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     examDocumentId: uuid('exam_document_id')
       .notNull()
@@ -260,9 +246,7 @@ export const examInterpretationsFinal = pgTable(
 export const examReviewEdits = pgTable(
   'exam_review_edits',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     examDocumentId: uuid('exam_document_id')
       .notNull()
@@ -283,23 +267,20 @@ export const examReviewEdits = pgTable(
 
 // ─── tenant_exam_ai_settings ─────────────────────────────────────────────
 
-export const tenantExamAiSettings = pgTable(
-  'tenant_exam_ai_settings',
-  {
-    tenantId: uuid('tenant_id').primaryKey(),
-    /** Opt-out de extração IA (mantém só OCR) */
-    aiExtractionEnabled: boolean('ai_extraction_enabled').notNull().default(true),
-    /** Opt-out de interpretação IA (extração roda; interpretação pula) */
-    aiInterpretationEnabled: boolean('ai_interpretation_enabled').notNull().default(true),
-    /** Strictness do classificador de output (strict bloqueia mais frases) */
-    classifierStrictness: aiClassifierStrictnessEnum('classifier_strictness')
-      .notNull()
-      .default('strict'),
-    /** Provider preferido (override do default Sprint 06) */
-    preferredModel: text('preferred_model'),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-)
+export const tenantExamAiSettings = pgTable('tenant_exam_ai_settings', {
+  tenantId: uuid('tenant_id').primaryKey(),
+  /** Opt-out de extração IA (mantém só OCR) */
+  aiExtractionEnabled: boolean('ai_extraction_enabled').notNull().default(true),
+  /** Opt-out de interpretação IA (extração roda; interpretação pula) */
+  aiInterpretationEnabled: boolean('ai_interpretation_enabled').notNull().default(true),
+  /** Strictness do classificador de output (strict bloqueia mais frases) */
+  classifierStrictness: aiClassifierStrictnessEnum('classifier_strictness')
+    .notNull()
+    .default('strict'),
+  /** Provider preferido (override do default Sprint 06) */
+  preferredModel: text('preferred_model'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
 
 export type ExamDocumentRow = typeof examDocuments.$inferSelect
 export type ExamExtractionRow = typeof examExtractions.$inferSelect

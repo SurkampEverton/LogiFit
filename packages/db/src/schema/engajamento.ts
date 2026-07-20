@@ -73,12 +73,7 @@ export const goalKindEnum = pgEnum('goal_kind', [
   'custom',
 ])
 
-export const goalStatusEnum = pgEnum('goal_status', [
-  'active',
-  'reached',
-  'missed',
-  'abandoned',
-])
+export const goalStatusEnum = pgEnum('goal_status', ['active', 'reached', 'missed', 'abandoned'])
 
 export const goalMeasurementSourceEnum = pgEnum('goal_measurement_source', [
   'antropometria', // medição em avaliação física (Sprint 12)
@@ -92,9 +87,7 @@ export const goalMeasurementSourceEnum = pgEnum('goal_measurement_source', [
 export const achievements = pgTable(
   'achievements',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     name: text('name').notNull(),
     description: text('description'),
@@ -149,9 +142,7 @@ export const memberAchievements = pgTable(
 export const rewardsCatalog = pgTable(
   'rewards_catalog',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     name: text('name').notNull(),
     description: text('description'),
@@ -188,9 +179,7 @@ export const rewardsCatalog = pgTable(
 export const rewardGrants = pgTable(
   'reward_grants',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -223,9 +212,7 @@ export const rewardGrants = pgTable(
 export const goals = pgTable(
   'goals',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -247,9 +234,7 @@ export const goals = pgTable(
   },
   (t) => [
     index('goals_tenant_member_idx').on(t.tenantId, t.memberId, t.status),
-    index('goals_active_idx')
-      .on(t.tenantId, t.memberId)
-      .where(sql`status = 'active'`),
+    index('goals_active_idx').on(t.tenantId, t.memberId).where(sql`status = 'active'`),
   ],
 )
 
@@ -257,9 +242,7 @@ export const goals = pgTable(
 export const goalMeasurements = pgTable(
   'goal_measurements',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     goalId: uuid('goal_id')
       .notNull()

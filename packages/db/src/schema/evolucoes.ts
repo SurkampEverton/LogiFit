@@ -77,9 +77,7 @@ export const evolucaoStatusEnum = pgEnum('evolucao_status', [
 export const evolucoesSessao = pgTable(
   'evolucoes_sessao',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -114,14 +112,15 @@ export const evolucoesSessao = pgTable(
   (t) => [
     index('evol_tenant_member_idx').on(t.tenantId, t.memberId, t.createdAt),
     index('evol_tenant_prof_idx').on(t.professionalUserId, t.createdAt),
-    uniqueIndex('evol_appointment_uq')
-      .on(t.appointmentId)
-      .where(sql`appointment_id IS NOT NULL`),
+    uniqueIndex('evol_appointment_uq').on(t.appointmentId).where(sql`appointment_id IS NOT NULL`),
     check(
       'evol_signed_consistent',
       sql`(status != 'signed' OR (signed_at IS NOT NULL AND signed_hash IS NOT NULL))`,
     ),
-    check('evol_locked_consistent', sql`(status NOT IN ('locked','signed') OR locked_at IS NOT NULL)`),
+    check(
+      'evol_locked_consistent',
+      sql`(status NOT IN ('locked','signed') OR locked_at IS NOT NULL)`,
+    ),
   ],
 )
 
@@ -130,9 +129,7 @@ export const evolucoesSessao = pgTable(
 export const evolucaoAttachments = pgTable(
   'evolucao_attachments',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     evolucaoId: uuid('evolucao_id')
       .notNull()

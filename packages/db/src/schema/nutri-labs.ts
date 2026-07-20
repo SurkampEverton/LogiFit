@@ -45,8 +45,8 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { consultas } from './fisio'
-import { members } from './members'
 import { users } from './identity'
+import { members } from './members'
 
 // ─── Enums ───────────────────────────────────────────────────────────────
 
@@ -107,9 +107,7 @@ export const labResultDirectionEnum = pgEnum('lab_result_direction', ['above', '
 export const supplements = pgTable(
   'supplements',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     /** NULL = global LogiFit; NOT NULL = custom do tenant */
     tenantId: uuid('tenant_id'),
     name: text('name').notNull(),
@@ -155,9 +153,7 @@ export const supplements = pgTable(
 export const supplementInteractions = pgTable(
   'supplement_interactions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     /** NULL = curadoria global */
     tenantId: uuid('tenant_id'),
     supplementId: uuid('supplement_id')
@@ -175,8 +171,11 @@ export const supplementInteractions = pgTable(
     index('supplement_interactions_supp_idx').on(t.supplementId, t.severity),
     index('supplement_interactions_lookup_idx').on(t.interactsWithNormalized, t.supplementId),
     /** Unique (supplement, interactsWith) — evita duplicar */
-    uniqueIndex('supplement_interactions_uq')
-      .on(t.tenantId, t.supplementId, t.interactsWithNormalized),
+    uniqueIndex('supplement_interactions_uq').on(
+      t.tenantId,
+      t.supplementId,
+      t.interactsWithNormalized,
+    ),
   ],
 )
 
@@ -190,9 +189,7 @@ export const supplementInteractions = pgTable(
 export const supplementPrescriptions = pgTable(
   'supplement_prescriptions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -223,14 +220,9 @@ export const supplementPrescriptions = pgTable(
   },
   (t) => [
     index('supp_presc_tenant_member_idx').on(t.tenantId, t.memberId, t.startedAt),
-    index('supp_presc_active_idx')
-      .on(t.tenantId, t.memberId)
-      .where(sql`status = 'active'`),
+    index('supp_presc_active_idx').on(t.tenantId, t.memberId).where(sql`status = 'active'`),
     index('supp_presc_consulta_idx').on(t.consultaId),
-    check(
-      'supp_presc_duration_positive',
-      sql`${t.durationDays} IS NULL OR ${t.durationDays} > 0`,
-    ),
+    check('supp_presc_duration_positive', sql`${t.durationDays} IS NULL OR ${t.durationDays} > 0`),
     check(
       'supp_presc_ended_after_started',
       sql`${t.endedAt} IS NULL OR ${t.endedAt} >= ${t.startedAt}`,
@@ -243,9 +235,7 @@ export const supplementPrescriptions = pgTable(
 export const labAnalytes = pgTable(
   'lab_analytes',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     /** Code canônico (ex: 'glicose_jejum', 'vitamina_d_25oh', 'tsh') */
     code: text('code').notNull().unique(),
     name: text('name').notNull(),
@@ -274,9 +264,7 @@ export const labAnalytes = pgTable(
 export const labReferenceRanges = pgTable(
   'lab_reference_ranges',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     analyteId: uuid('analyte_id')
       .notNull()
       .references(() => labAnalytes.id, { onDelete: 'cascade' }),
@@ -309,9 +297,7 @@ export const labReferenceRanges = pgTable(
 export const labResults = pgTable(
   'lab_results',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()

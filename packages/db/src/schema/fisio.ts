@@ -136,26 +136,21 @@ export const cifCatalog = pgTable(
 
 // ─── signature_policies (catálogo global ADR 0032) ─────────────────────
 
-export const signaturePolicies = pgTable(
-  'signature_policies',
-  {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
-    profession: text('profession').notNull().unique(), // 'medico' | 'fisio' | 'nutri' | 'personal' | 'enfermeiro'
-    mode: signatureModeEnum('mode').notNull(),
-    /** 'A1' | 'A3' | NULL — só aplica quando mode contém ICP */
-    minCertLevel: text('min_cert_level'),
-    requiresMfa: boolean('requires_mfa').notNull().default(true),
-    requiresAuditChain: boolean('requires_audit_chain').notNull().default(true),
-    requiresAuthenticatedSession: boolean('requires_authenticated_session').notNull().default(true),
-    sourceNorm: text('source_norm').notNull(), // 'CFM 2.299/2021' etc
-    retentionYears: integer('retention_years').notNull().default(20), // Lei 13.787/2018
-    notes: text('notes'),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-)
+export const signaturePolicies = pgTable('signature_policies', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  profession: text('profession').notNull().unique(), // 'medico' | 'fisio' | 'nutri' | 'personal' | 'enfermeiro'
+  mode: signatureModeEnum('mode').notNull(),
+  /** 'A1' | 'A3' | NULL — só aplica quando mode contém ICP */
+  minCertLevel: text('min_cert_level'),
+  requiresMfa: boolean('requires_mfa').notNull().default(true),
+  requiresAuditChain: boolean('requires_audit_chain').notNull().default(true),
+  requiresAuthenticatedSession: boolean('requires_authenticated_session').notNull().default(true),
+  sourceNorm: text('source_norm').notNull(), // 'CFM 2.299/2021' etc
+  retentionYears: integer('retention_years').notNull().default(20), // Lei 13.787/2018
+  notes: text('notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
 
 // ─── tenant_signature_overrides (endurecer per tenant) ─────────────────
 
@@ -183,9 +178,7 @@ export const tenantSignatureOverrides = pgTable(
 export const consultas = pgTable(
   'consultas',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -292,9 +285,7 @@ export const consultaCifs = pgTable(
 export const consultaCorrectionNotes = pgTable(
   'consulta_correction_notes',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     consultaId: uuid('consulta_id')
       .notNull()

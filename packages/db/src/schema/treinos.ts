@@ -97,9 +97,7 @@ export const prescriptionKindEnum = pgEnum('prescription_kind', [
 export const exercises = pgTable(
   'exercises',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     /** NULL = template global LogiFit (read-only); NOT NULL = biblioteca do tenant */
     tenantId: uuid('tenant_id'),
     name: text('name').notNull(),
@@ -119,9 +117,7 @@ export const exercises = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    index('exercises_tenant_active_idx')
-      .on(t.tenantId, t.active)
-      .where(sql`archived_at IS NULL`),
+    index('exercises_tenant_active_idx').on(t.tenantId, t.active).where(sql`archived_at IS NULL`),
     index('exercises_global_idx')
       .on(t.active)
       .where(sql`tenant_id IS NULL AND active = true AND archived_at IS NULL`),
@@ -147,9 +143,7 @@ export const exercises = pgTable(
 export const workouts = pgTable(
   'workouts',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     name: text('name').notNull(),
     description: text('description'),
@@ -163,9 +157,7 @@ export const workouts = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    index('workouts_tenant_active_idx')
-      .on(t.tenantId)
-      .where(sql`archived_at IS NULL`),
+    index('workouts_tenant_active_idx').on(t.tenantId).where(sql`archived_at IS NULL`),
     index('workouts_parent_idx').on(t.parentWorkoutId),
     check('workouts_version_positive', sql`${t.version} > 0`),
   ],
@@ -185,9 +177,7 @@ export const workouts = pgTable(
 export const workoutItems = pgTable(
   'workout_items',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     workoutId: uuid('workout_id')
       .notNull()
@@ -238,9 +228,7 @@ export const workoutItems = pgTable(
 export const prescriptions = pgTable(
   'prescriptions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -259,9 +247,7 @@ export const prescriptions = pgTable(
   (t) => [
     index('prescriptions_tenant_member_idx').on(t.tenantId, t.memberId),
     index('prescriptions_kind_ref_idx').on(t.kind, t.refId),
-    index('prescriptions_active_idx')
-      .on(t.tenantId, t.memberId)
-      .where(sql`active = true`),
+    index('prescriptions_active_idx').on(t.tenantId, t.memberId).where(sql`active = true`),
     check('prescriptions_ref_required', sql`kind = 'custom' OR ref_id IS NOT NULL`),
     check(
       'prescriptions_ends_after_starts',
@@ -288,9 +274,7 @@ export const prescriptions = pgTable(
 export const workoutSessions = pgTable(
   'workout_sessions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     prescriptionId: uuid('prescription_id')
       .notNull()
@@ -308,9 +292,7 @@ export const workoutSessions = pgTable(
   (t) => [
     index('workout_sessions_tenant_member_idx').on(t.tenantId, t.memberId, t.startedAt),
     index('workout_sessions_prescription_idx').on(t.prescriptionId),
-    index('workout_sessions_active_idx')
-      .on(t.tenantId, t.memberId)
-      .where(sql`finished_at IS NULL`),
+    index('workout_sessions_active_idx').on(t.tenantId, t.memberId).where(sql`finished_at IS NULL`),
     check(
       'workout_sessions_rpe_range',
       sql`${t.overallRpe} IS NULL OR (${t.overallRpe} >= 1 AND ${t.overallRpe} <= 10)`,
@@ -336,9 +318,7 @@ export const workoutSessions = pgTable(
 export const workoutSessionItems = pgTable(
   'workout_session_items',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     sessionId: uuid('session_id')
       .notNull()

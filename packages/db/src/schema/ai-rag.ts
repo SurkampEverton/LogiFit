@@ -64,9 +64,7 @@ export const aiDocSourceEnum = pgEnum('ai_doc_source', [
 export const aiDocuments = pgTable(
   'ai_documents',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id'), // null = global
     source: aiDocSourceEnum('source').notNull(),
     sourcePath: text('source_path').notNull(), // 'docs/decisions/0064-...md'
@@ -90,9 +88,7 @@ export const aiDocuments = pgTable(
 export const aiDocumentChunks = pgTable(
   'ai_document_chunks',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id'), // null = global (herda do parent document)
     documentId: uuid('document_id')
       .notNull()
@@ -118,9 +114,7 @@ export const aiDocumentChunks = pgTable(
 export const aiSemanticCache = pgTable(
   'ai_semantic_cache',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     queryText: text('query_text').notNull(),
     queryEmbedding: vector768('query_embedding').notNull(),
@@ -148,9 +142,7 @@ export const aiSemanticCache = pgTable(
 export const memberInsights = pgTable(
   'member_insights',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id').notNull(),
     insightKey: text('insight_key').notNull(),
@@ -189,9 +181,7 @@ export const supportTicketStatusEnum = pgEnum('support_ticket_status', [
 export const supportTickets = pgTable(
   'support_tickets',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     userId: uuid('user_id').notNull(),
     category: supportTicketCategoryEnum('category').notNull().default('other'),

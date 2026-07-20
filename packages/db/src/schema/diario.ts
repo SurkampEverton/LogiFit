@@ -43,9 +43,9 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
+import { users } from './identity'
 import { members } from './members'
 import { mealPlans } from './nutri'
-import { users } from './identity'
 
 // ─── Enums ───────────────────────────────────────────────────────────────
 
@@ -84,9 +84,7 @@ export const mealNameEnum = pgEnum('meal_name_enum', [
 export const mealLogEntries = pgTable(
   'meal_log_entries',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -191,9 +189,7 @@ export const foodLogDailySummary = pgTable(
 export const mealLogReviews = pgTable(
   'meal_log_reviews',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     entryId: uuid('entry_id')
       .notNull()

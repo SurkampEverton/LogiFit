@@ -90,9 +90,7 @@ export const commissionPeriodStatusEnum = pgEnum('commission_period_status', [
 export const professionalContracts = pgTable(
   'professional_contracts',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -148,9 +146,7 @@ export const professionalContracts = pgTable(
 export const commissionRules = pgTable(
   'commission_rules',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     contractId: uuid('contract_id')
       .notNull()
       .references(() => professionalContracts.id, { onDelete: 'cascade' }),
@@ -169,14 +165,8 @@ export const commissionRules = pgTable(
   },
   (t) => [
     index('cr_contract_priority_idx').on(t.contractId, t.priority).where(sql`active = true`),
-    check(
-      'cr_at_least_one',
-      sql`(service_type IS NOT NULL OR tuss_code IS NOT NULL)`,
-    ),
-    check(
-      'cr_value_provided',
-      sql`(percent IS NOT NULL OR amount_cents IS NOT NULL)`,
-    ),
+    check('cr_at_least_one', sql`(service_type IS NOT NULL OR tuss_code IS NOT NULL)`),
+    check('cr_value_provided', sql`(percent IS NOT NULL OR amount_cents IS NOT NULL)`),
   ],
 )
 
@@ -185,9 +175,7 @@ export const commissionRules = pgTable(
 export const commissionEntries = pgTable(
   'commission_entries',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     contractId: uuid('contract_id')
       .notNull()
@@ -243,9 +231,7 @@ export const commissionEntries = pgTable(
 export const commissionPeriods = pgTable(
   'commission_periods',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     personId: uuid('person_id')
       .notNull()

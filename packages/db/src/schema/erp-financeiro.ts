@@ -59,11 +59,7 @@ export const chartAccountKindEnum = pgEnum('chart_account_kind', [
   'custo', // custos diretos (insumos, serviços contratados)
 ])
 
-export const approvalRuleScopeEnum = pgEnum('approval_rule_scope', [
-  'ap',
-  'ar',
-  'both',
-])
+export const approvalRuleScopeEnum = pgEnum('approval_rule_scope', ['ap', 'ar', 'both'])
 
 export const apStatusEnum = pgEnum('ap_status', [
   'draft', // criada, ainda não submetida
@@ -119,9 +115,7 @@ export const apPaymentMethodEnum = pgEnum('ap_payment_method', [
 export const chartOfAccounts = pgTable(
   'chart_of_accounts',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     code: text('code').notNull(),
     name: text('name').notNull(),
@@ -159,9 +153,7 @@ export const chartOfAccounts = pgTable(
 export const suppliers = pgTable(
   'suppliers',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     personId: uuid('person_id')
       .notNull()
@@ -205,9 +197,7 @@ export const suppliers = pgTable(
 export const approvalRules = pgTable(
   'approval_rules',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     name: text('name').notNull(),
     scope: approvalRuleScopeEnum('scope').notNull(),
@@ -221,13 +211,8 @@ export const approvalRules = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    index('approval_rules_tenant_scope_idx')
-      .on(t.tenantId, t.scope)
-      .where(sql`active = true`),
-    check(
-      'approval_rules_min_non_negative',
-      sql`${t.minAmountCents} >= 0`,
-    ),
+    index('approval_rules_tenant_scope_idx').on(t.tenantId, t.scope).where(sql`active = true`),
+    check('approval_rules_min_non_negative', sql`${t.minAmountCents} >= 0`),
     check(
       'approval_rules_max_after_min',
       sql`${t.maxAmountCents} IS NULL OR ${t.maxAmountCents} >= ${t.minAmountCents}`,
@@ -264,9 +249,7 @@ export const approvalRules = pgTable(
 export const accountsPayable = pgTable(
   'accounts_payable',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -279,9 +262,7 @@ export const accountsPayable = pgTable(
     amountCents: bigint('amount_cents', { mode: 'number' }).notNull(),
     /** Sprint 15b — FK pra tax_natures (ADR 0061). NULL no MVP. */
     taxNatureId: uuid('tax_nature_id'),
-    retentionTotalCents: bigint('retention_total_cents', { mode: 'number' })
-      .notNull()
-      .default(0),
+    retentionTotalCents: bigint('retention_total_cents', { mode: 'number' }).notNull().default(0),
     netAmountCents: bigint('net_amount_cents', { mode: 'number' }).notNull(),
     issueDate: date('issue_date').notNull(),
     dueDate: date('due_date').notNull(),
@@ -310,18 +291,13 @@ export const accountsPayable = pgTable(
     index('accounts_payable_supplier_idx').on(t.supplierId),
     index('accounts_payable_chart_idx').on(t.chartAccountId),
     index('accounts_payable_company_idx').on(t.companyId, t.dueDate),
-    uniqueIndex('accounts_payable_doc_key_uq')
-      .on(t.docKey)
-      .where(sql`doc_key IS NOT NULL`),
+    uniqueIndex('accounts_payable_doc_key_uq').on(t.docKey).where(sql`doc_key IS NOT NULL`),
     check('accounts_payable_amount_positive', sql`${t.amountCents} > 0`),
     check(
       'accounts_payable_net_consistent',
       sql`${t.netAmountCents} = ${t.amountCents} - ${t.retentionTotalCents}`,
     ),
-    check(
-      'accounts_payable_retention_non_negative',
-      sql`${t.retentionTotalCents} >= 0`,
-    ),
+    check('accounts_payable_retention_non_negative', sql`${t.retentionTotalCents} >= 0`),
     check('accounts_payable_due_after_issue', sql`${t.dueDate} >= ${t.issueDate}`),
   ],
 )
@@ -340,9 +316,7 @@ export const accountsPayable = pgTable(
 export const accountsReceivable = pgTable(
   'accounts_receivable',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -376,10 +350,7 @@ export const accountsReceivable = pgTable(
     index('accounts_receivable_chart_idx').on(t.chartAccountId),
     index('accounts_receivable_payer_idx').on(t.payerPersonId),
     check('accounts_receivable_amount_positive', sql`${t.amountCents} > 0`),
-    check(
-      'accounts_receivable_due_after_issue',
-      sql`${t.dueDate} >= ${t.issueDate}`,
-    ),
+    check('accounts_receivable_due_after_issue', sql`${t.dueDate} >= ${t.issueDate}`),
   ],
 )
 
@@ -397,9 +368,7 @@ export const accountsReceivable = pgTable(
 export const apArPayments = pgTable(
   'ap_ar_payments',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     sourceType: text('source_type').notNull(), // 'ap' | 'ar'
     sourceId: uuid('source_id').notNull(),
@@ -414,9 +383,6 @@ export const apArPayments = pgTable(
   (t) => [
     index('ap_ar_payments_source_idx').on(t.sourceType, t.sourceId),
     index('ap_ar_payments_tenant_paid_idx').on(t.tenantId, t.paidAt),
-    check(
-      'ap_ar_payments_source_type_valid',
-      sql`${t.sourceType} IN ('ap', 'ar')`,
-    ),
+    check('ap_ar_payments_source_type_valid', sql`${t.sourceType} IN ('ap', 'ar')`),
   ],
 )

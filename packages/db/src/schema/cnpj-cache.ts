@@ -1,18 +1,3 @@
-/**
- * `cnpj_cache` — cache GLOBAL de consultas CNPJ (ADR 0048).
- *
- * Sem `tenant_id`: dado público da Receita Federal compartilhado entre todos
- * os tenants. Reduz requests em 95%+ ao BrasilAPI/ReceitaWS/CNPJá!.
- *
- * `tenant_cnpj_settings` — POR TENANT: qual provider primário, fallback,
- * credenciais (API key CNPJá! cifrada se aplicável).
- *
- * RLS:
- *   - `cnpj_cache` é leitura LIVRE pra qualquer tenant autenticado (USING true)
- *     mas WRITE só via Server Action server-side.
- *   - `tenant_cnpj_settings` segue regra 1 (RLS por tenant_id).
- */
-import { sql } from 'drizzle-orm'
 import { boolean, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 
 export const cnpjCache = pgTable('cnpj_cache', {

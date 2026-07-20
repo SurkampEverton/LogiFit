@@ -49,11 +49,7 @@ export const accessEventKindEnum = pgEnum('access_event_kind', [
   'manual', // recepção registrou manualmente
 ])
 
-export const accessAuthModeEnum = pgEnum('access_auth_mode', [
-  'qr',
-  'facial',
-  'manual',
-])
+export const accessAuthModeEnum = pgEnum('access_auth_mode', ['qr', 'facial', 'manual'])
 
 export const accessBlockKindEnum = pgEnum('access_block_kind', [
   'manual', // operador bloqueou manualmente (ex: aluno suspenso por má conduta)
@@ -76,9 +72,7 @@ export const accessBlockKindEnum = pgEnum('access_block_kind', [
 export const accessDevices = pgTable(
   'access_devices',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -94,9 +88,7 @@ export const accessDevices = pgTable(
   },
   (t) => [
     index('access_devices_tenant_unit_idx').on(t.tenantId, t.unitId),
-    index('access_devices_active_idx')
-      .on(t.tenantId, t.companyId)
-      .where(sql`revoked_at IS NULL`),
+    index('access_devices_active_idx').on(t.tenantId, t.companyId).where(sql`revoked_at IS NULL`),
   ],
 )
 
@@ -114,20 +106,14 @@ export const accessDevices = pgTable(
 export const accessSecrets = pgTable(
   'access_secrets',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     secret: text('secret').notNull(), // base64 de 32 bytes
     active: boolean('active').notNull().default(true),
     rotatedAt: timestamp('rotated_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [
-    index('access_secrets_tenant_active_idx')
-      .on(t.tenantId)
-      .where(sql`active = true`),
-  ],
+  (t) => [index('access_secrets_tenant_active_idx').on(t.tenantId).where(sql`active = true`)],
 )
 
 // ─── access_events (append-only) ────────────────────────────────────────
@@ -141,9 +127,7 @@ export const accessSecrets = pgTable(
 export const accessEvents = pgTable(
   'access_events',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     deviceId: uuid('device_id').references(() => accessDevices.id, { onDelete: 'set null' }),
     memberId: uuid('member_id').references(() => members.id, { onDelete: 'set null' }),
@@ -179,9 +163,7 @@ export const accessEvents = pgTable(
 export const accessBlocks = pgTable(
   'access_blocks',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -198,9 +180,7 @@ export const accessBlocks = pgTable(
   },
   (t) => [
     index('access_blocks_tenant_member_idx').on(t.tenantId, t.memberId),
-    index('access_blocks_active_idx')
-      .on(t.tenantId, t.memberId)
-      .where(sql`resolved_at IS NULL`),
+    index('access_blocks_active_idx').on(t.tenantId, t.memberId).where(sql`resolved_at IS NULL`),
     check(
       'access_blocks_resolved_consistency',
       sql`(resolved_at IS NULL AND resolved_reason IS NULL) OR (resolved_at IS NOT NULL AND resolved_reason IS NOT NULL)`,

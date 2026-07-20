@@ -98,9 +98,7 @@ export const intercompanyKindEnum = pgEnum('intercompany_kind', [
 export const allocationRules = pgTable(
   'allocation_rules',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     name: text('name').notNull(),
     kind: allocationRuleKindEnum('kind').notNull(),
@@ -185,9 +183,7 @@ export const apAllocations = pgTable(
 export const intercompanyEntries = pgTable(
   'intercompany_entries',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     fromCompanyId: uuid('from_company_id')
       .notNull()

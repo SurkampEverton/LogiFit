@@ -54,9 +54,7 @@ export const nfeProviderEnum = pgEnum('nfe_recepcao_provider', [
 export const companyCertificates = pgTable(
   'company_certificates',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -81,12 +79,8 @@ export const companyCertificates = pgTable(
     revokedAt: timestamp('revoked_at', { withTimezone: true }),
   },
   (t) => [
-    index('cert_company_active_idx')
-      .on(t.companyId)
-      .where(sql`status = 'active'`),
-    index('cert_expiring_soon_idx')
-      .on(t.expiresAt)
-      .where(sql`status = 'active'`),
+    index('cert_company_active_idx').on(t.companyId).where(sql`status = 'active'`),
+    index('cert_expiring_soon_idx').on(t.expiresAt).where(sql`status = 'active'`),
   ],
 )
 
@@ -95,9 +89,7 @@ export const companyCertificates = pgTable(
 export const nfeSefazCursors = pgTable(
   'nfe_sefaz_cursors',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -113,7 +105,5 @@ export const nfeSefazCursors = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [
-    uniqueIndex('nfe_cursors_company_provider_uq').on(t.companyId, t.provider),
-  ],
+  (t) => [uniqueIndex('nfe_cursors_company_provider_uq').on(t.companyId, t.provider)],
 )

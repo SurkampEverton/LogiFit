@@ -19,9 +19,7 @@ import { boolean, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-c
 export const alertSubscribers = pgTable(
   'alert_subscribers',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     eventKind: text('event_kind').notNull(), // ex: 'appointment.no_show', 'contract.overdue'
     targetRole: text('target_role').notNull(), // ex: 'recepcao', 'gerente', 'personal'

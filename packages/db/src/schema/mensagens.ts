@@ -58,11 +58,7 @@ import { members } from './members'
 
 // ─── Enums ───────────────────────────────────────────────────────────────
 
-export const messageChannelEnum = pgEnum('message_channel', [
-  'whatsapp',
-  'email',
-  'sms',
-])
+export const messageChannelEnum = pgEnum('message_channel', ['whatsapp', 'email', 'sms'])
 
 export const messageTemplateApprovalEnum = pgEnum('message_template_approval', [
   'draft', // edição em curso
@@ -108,9 +104,7 @@ export const messageStatusEnum = pgEnum('message_status', [
 export const messageProviders = pgTable(
   'message_providers',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     channel: messageChannelEnum('channel').notNull(),
     /** 'twilio' / 'gupshup' / 'zapi' / 'resend' / 'ses' */
@@ -124,9 +118,7 @@ export const messageProviders = pgTable(
   },
   (t) => [
     index('message_providers_tenant_channel_idx').on(t.tenantId, t.channel),
-    index('message_providers_active_idx')
-      .on(t.tenantId, t.channel)
-      .where(sql`active = true`),
+    index('message_providers_active_idx').on(t.tenantId, t.channel).where(sql`active = true`),
   ],
 )
 
@@ -147,9 +139,7 @@ export const messageProviders = pgTable(
 export const messageTemplates = pgTable(
   'message_templates',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     channel: messageChannelEnum('channel').notNull(),
     slug: text('slug').notNull(), // ex: 'cobranca_d1', 'reengajamento_15d'
@@ -202,9 +192,7 @@ export const messageTemplates = pgTable(
 export const reguas = pgTable(
   'reguas',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     name: text('name').notNull(),
     description: text('description'),
@@ -248,9 +236,7 @@ export const reguas = pgTable(
 export const reguaExecutions = pgTable(
   'regua_executions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     reguaId: uuid('regua_id')
       .notNull()
       .references(() => reguas.id, { onDelete: 'cascade' }),
@@ -268,9 +254,7 @@ export const reguaExecutions = pgTable(
   },
   (t) => [
     index('regua_executions_tenant_state_idx').on(t.tenantId, t.state),
-    index('regua_executions_pending_idx')
-      .on(t.nextActionAt)
-      .where(sql`state = 'running'`),
+    index('regua_executions_pending_idx').on(t.nextActionAt).where(sql`state = 'running'`),
     index('regua_executions_member_idx').on(t.memberId),
   ],
 )
@@ -295,9 +279,7 @@ export const reguaExecutions = pgTable(
 export const messagesSent = pgTable(
   'messages_sent',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id').references(() => members.id, { onDelete: 'set null' }),
     channel: messageChannelEnum('channel').notNull(),
@@ -329,10 +311,7 @@ export const messagesSent = pgTable(
     index('messages_sent_tenant_status_idx').on(t.tenantId, t.status),
     index('messages_sent_provider_id_idx').on(t.providerMessageId),
     index('messages_sent_regua_idx').on(t.reguaExecutionId),
-    check(
-      'messages_sent_cost_non_negative',
-      sql`${t.costCents} IS NULL OR ${t.costCents} >= 0`,
-    ),
+    check('messages_sent_cost_non_negative', sql`${t.costCents} IS NULL OR ${t.costCents} >= 0`),
   ],
 )
 

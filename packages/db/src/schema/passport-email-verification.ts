@@ -77,7 +77,6 @@ export const passportEmailVerificationTokens = pgTable(
   ],
 )
 
-export type PassportEmailVerificationTokenRow =
-  typeof passportEmailVerificationTokens.$inferSelect
+export type PassportEmailVerificationTokenRow = typeof passportEmailVerificationTokens.$inferSelect
 export type PassportEmailVerificationTokenInsert =
   typeof passportEmailVerificationTokens.$inferInsert

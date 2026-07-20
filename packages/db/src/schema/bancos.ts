@@ -25,7 +25,6 @@ import { sql } from 'drizzle-orm'
 import {
   bigint,
   boolean,
-  check,
   index,
   integer,
   jsonb,
@@ -78,9 +77,7 @@ export const certificateKindEnum = pgEnum('certificate_kind', [
 export const bankAccounts = pgTable(
   'bank_accounts',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -93,7 +90,9 @@ export const bankAccounts = pgTable(
     kind: bankAccountKindEnum('kind').notNull().default('business'),
     /** Saldo inicial registrado pelo operador (centavos). */
     openingBalanceCents: bigint('opening_balance_cents', { mode: 'number' }).notNull().default(0),
-    openingBalanceAt: timestamp('opening_balance_at', { withTimezone: true }).notNull().defaultNow(),
+    openingBalanceAt: timestamp('opening_balance_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     /** Saldo cacheado — atualizado por sync ou conciliação. */
     currentBalanceCents: bigint('current_balance_cents', { mode: 'number' }).notNull().default(0),
     lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
@@ -123,9 +122,7 @@ export const bankAccounts = pgTable(
 export const openfinanceConnections = pgTable(
   'openfinance_connections',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -164,9 +161,7 @@ export const openfinanceConnections = pgTable(
 export const bankTransactions = pgTable(
   'bank_transactions',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     bankAccountId: uuid('bank_account_id')
       .notNull()
@@ -223,9 +218,7 @@ export const bankTransactions = pgTable(
 export const reconciliationRules = pgTable(
   'reconciliation_rules',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     name: text('name').notNull(),
     condition: jsonb('condition').notNull(),
@@ -244,9 +237,7 @@ export const reconciliationRules = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    index('rec_rules_tenant_priority_idx')
-      .on(t.tenantId, t.priority)
-      .where(sql`active = true`),
+    index('rec_rules_tenant_priority_idx').on(t.tenantId, t.priority).where(sql`active = true`),
     uniqueIndex('rec_rules_tenant_name_uq').on(t.tenantId, t.name),
   ],
 )

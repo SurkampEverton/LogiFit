@@ -129,9 +129,7 @@ export const mealPlanGoalEnum = pgEnum('meal_plan_goal', [
 export const foods = pgTable(
   'foods',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     /** NULL = global LogiFit; NOT NULL = tenant custom */
     tenantId: uuid('tenant_id'),
     source: foodSourceEnum('source').notNull(),
@@ -212,9 +210,7 @@ export const foodMeasures = pgTable(
 export const foodEquivalences = pgTable(
   'food_equivalences',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     /** NULL = curadoria global LogiFit; NOT NULL = tenant override */
     tenantId: uuid('tenant_id'),
     foodIdA: uuid('food_id_a')
@@ -254,9 +250,7 @@ export const foodEquivalences = pgTable(
 export const mealPlans = pgTable(
   'meal_plans',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     memberId: uuid('member_id')
       .notNull()
@@ -294,10 +288,7 @@ export const mealPlans = pgTable(
       .where(sql`active = true AND archived_at IS NULL`),
     index('meal_plans_parent_idx').on(t.parentMealPlanId),
     check('meal_plans_version_positive', sql`${t.version} > 0`),
-    check(
-      'meal_plans_ends_after_starts',
-      sql`${t.endsAt} IS NULL OR ${t.endsAt} > ${t.startsAt}`,
-    ),
+    check('meal_plans_ends_after_starts', sql`${t.endsAt} IS NULL OR ${t.endsAt} > ${t.startsAt}`),
   ],
 )
 
@@ -310,9 +301,7 @@ export const mealPlans = pgTable(
 export const mealPlanMeals = pgTable(
   'meal_plan_meals',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     mealPlanId: uuid('meal_plan_id')
       .notNull()
@@ -340,9 +329,7 @@ export const mealPlanMeals = pgTable(
 export const mealItems = pgTable(
   'meal_items',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     mealId: uuid('meal_id')
       .notNull()
@@ -370,25 +357,22 @@ export const mealItems = pgTable(
  * 1 row por tenant. Usado pra geração de PDF do plano alimentar + outros
  * docs futuros (recibos, atestados). Logo/assinatura em MinIO (Sprint 26+).
  */
-export const tenantBranding = pgTable(
-  'tenant_branding',
-  {
-    tenantId: uuid('tenant_id').primaryKey(),
-    /** MinIO path pra logo (servido via signed URL) */
-    logoStoragePath: text('logo_storage_path'),
-    /** Hex color principal (default #3498DB = ev-primary) */
-    primaryColor: text('primary_color').notNull().default('#3498DB'),
-    /** Logo width em px no PDF (default 120) */
-    logoWidthPx: integer('logo_width_px').notNull().default(120),
-    /** MinIO path pra assinatura digitalizada (opcional, fora ICP-Brasil) */
-    signatureStoragePath: text('signature_storage_path'),
-    /** Nome do profissional padrão (footer do PDF) */
-    professionalNameDefault: text('professional_name_default'),
-    /** Texto livre pro rodapé (CNPJ + endereço + telefone) */
-    footerText: text('footer_text'),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-)
+export const tenantBranding = pgTable('tenant_branding', {
+  tenantId: uuid('tenant_id').primaryKey(),
+  /** MinIO path pra logo (servido via signed URL) */
+  logoStoragePath: text('logo_storage_path'),
+  /** Hex color principal (default #3498DB = ev-primary) */
+  primaryColor: text('primary_color').notNull().default('#3498DB'),
+  /** Logo width em px no PDF (default 120) */
+  logoWidthPx: integer('logo_width_px').notNull().default(120),
+  /** MinIO path pra assinatura digitalizada (opcional, fora ICP-Brasil) */
+  signatureStoragePath: text('signature_storage_path'),
+  /** Nome do profissional padrão (footer do PDF) */
+  professionalNameDefault: text('professional_name_default'),
+  /** Texto livre pro rodapé (CNPJ + endereço + telefone) */
+  footerText: text('footer_text'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
 
 export type FoodRow = typeof foods.$inferSelect
 export type FoodMeasureRow = typeof foodMeasures.$inferSelect

@@ -24,17 +24,9 @@
  * Sprint 01b adiciona consents + grants complexos).
  */
 import { sql } from 'drizzle-orm'
-import {
-  boolean,
-  index,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-  uuid,
-} from 'drizzle-orm/pg-core'
-import { companies, units, users } from './identity'
+import { boolean, index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { authUser } from './better-auth'
+import { companies, units, users } from './identity'
 
 // ─── roles ────────────────────────────────────────────────────────────────
 // Roles canônicas (system=true) são criadas no seed inicial e NÃO podem ser
@@ -65,9 +57,7 @@ export const roles = pgTable(
     uniqueIndex('roles_system_key_uq')
       .on(t.key)
       .where(sql`${t.tenantId} IS NULL`),
-    uniqueIndex('roles_tenant_key_uq')
-      .on(t.tenantId, t.key)
-      .where(sql`${t.tenantId} IS NOT NULL`),
+    uniqueIndex('roles_tenant_key_uq').on(t.tenantId, t.key).where(sql`${t.tenantId} IS NOT NULL`),
     index('roles_tenant_id_idx').on(t.tenantId),
   ],
 )
