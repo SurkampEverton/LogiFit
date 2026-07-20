@@ -133,6 +133,15 @@ export const companies = pgTable(
     // CNES (Cadastro Nacional de Estabelecimentos de Saúde — Fase 2 fisio/nutri)
     cnesCode: text('cnes_code'),
 
+    /**
+     * Documentos que a empresa emite — espelham as habilitações do cadastro
+     * Focus. Default conservador: só NFS-e, que é o caso de uso central;
+     * NF-e/NFC-e só em quem vende produto.
+     */
+    habilitaNfse: boolean('habilita_nfse').notNull().default(true),
+    habilitaNfe: boolean('habilita_nfe').notNull().default(false),
+    habilitaNfce: boolean('habilita_nfce').notNull().default(false),
+
     /** Id desta company no cadastro da conta Focus NFe do tenant (ADR 0105) */
     focusEmpresaId: text('focus_empresa_id'),
     /**

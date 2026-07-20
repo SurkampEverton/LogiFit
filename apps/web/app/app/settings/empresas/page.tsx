@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { requireFullSession } from '../../../lib/session'
 import { listCompanies } from './actions'
-import { CompanyFiscalEdit } from './fiscal-edit'
+import { type CompanyAddress, CompanyRegistrationEdit } from './fiscal-edit'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,14 +63,28 @@ export default async function EmpresasPage() {
                 {c.im ? `IM: ${c.im}` : 'IM: —'}
                 {' · '}
                 {c.regimeTributario ? `Regime: ${c.regimeTributario}` : 'Regime: —'}
+                {' · '}
+                {(c.address as CompanyAddress | null)?.logradouro
+                  ? 'Endereço: ok'
+                  : 'Endereço: incompleto'}
                 {c.municipalCredentialsConfiguredAt &&
                   ` · portal municipal configurado em ${c.municipalCredentialsConfiguredAt.toLocaleDateString('pt-BR')}`}
               </p>
-              <CompanyFiscalEdit
-                companyId={c.id}
-                initialIe={c.ie}
-                initialIm={c.im}
-                initialRegime={c.regimeTributario}
+              <CompanyRegistrationEdit
+                initial={{
+                  companyId: c.id,
+                  name: c.personName,
+                  displayName: c.displayName,
+                  email: c.email,
+                  phone: c.phone,
+                  address: (c.address as CompanyAddress | null) ?? null,
+                  ie: c.ie,
+                  im: c.im,
+                  regime: c.regimeTributario,
+                  habilitaNfse: c.habilitaNfse,
+                  habilitaNfe: c.habilitaNfe,
+                  habilitaNfce: c.habilitaNfce,
+                }}
               />
             </li>
           ))}

@@ -400,6 +400,13 @@
       "when": 1779565673955,
       "tag": "0064_codigo_tributacao_nacional",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1779565674955,
+      "tag": "0065_company_habilitacoes_fiscais",
+      "breakpoints": true
     }
   ]
 }

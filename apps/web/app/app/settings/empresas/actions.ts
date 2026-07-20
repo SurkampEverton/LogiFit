@@ -24,7 +24,18 @@ type ActionResult<T> =
 
 // ─── listCompanies ────────────────────────────────────────────────────────
 export async function listCompanies(): Promise<
-  ActionResult<Array<CompanyRow & { personName: string; document: string | null }>>
+  ActionResult<
+    Array<
+      CompanyRow & {
+        personName: string
+        displayName: string | null
+        document: string | null
+        email: string | null
+        phone: string | null
+        address: unknown
+      }
+    >
+  >
 > {
   const session = await requireFullSession('/app/settings/empresas')
 
@@ -40,12 +51,19 @@ export async function listCompanies(): Promise<
         im: companies.im,
         regimeTributario: companies.regimeTributario,
         cnesCode: companies.cnesCode,
+        habilitaNfse: companies.habilitaNfse,
+        habilitaNfe: companies.habilitaNfe,
+        habilitaNfce: companies.habilitaNfce,
         focusEmpresaId: companies.focusEmpresaId,
         municipalCredentialsConfiguredAt: companies.municipalCredentialsConfiguredAt,
         createdAt: companies.createdAt,
         updatedAt: companies.updatedAt,
         personName: persons.name,
+        displayName: persons.displayName,
         document: persons.document,
+        email: persons.email,
+        phone: persons.phone,
+        address: persons.address,
       })
       .from(companies)
       .innerJoin(persons, eq(persons.id, companies.personId))
@@ -179,53 +197,101 @@ export async function createFilial(
   })
 }
 
-// ─── updateCompanyFiscal ──────────────────────────────────────────────────
+// ─── updateCompanyRegistration ────────────────────────────────────────────
 
-const UpdateCompanyFiscalSchema = z.object({
+/** Endereço no shape que `persons.address` documenta e que a Focus espera. */
+const AddressSchema = z.object({
+  cep: z.string().trim().max(9).optional(),
+  logradouro: z.string().trim().max(200).optional(),
+  numero: z.string().trim().max(20).optional(),
+  complemento: z.string().trim().max(100).optional(),
+  bairro: z.string().trim().max(100).optional(),
+  cidade: z.string().trim().max(100).optional(),
+  uf: z.string().trim().length(2).optional(),
+})
+
+const UpdateCompanyRegistrationSchema = z.object({
   companyId: z.string().uuid(),
-  /** Inscrição Estadual — NF-e produto */
+  // Identificação (mora em persons — regra 22: CNPJ no cadastro central)
+  name: z.string().trim().min(2).max(200).optional(),
+  displayName: z.string().trim().max(200).nullable().optional(),
+  email: z.string().trim().email().nullable().optional(),
+  phone: z.string().trim().max(30).nullable().optional(),
+  address: AddressSchema.nullable().optional(),
+  // Fiscal (mora em companies)
   ie: z.string().trim().max(50).nullable().optional(),
-  /** Inscrição Municipal — exigida pra NFS-e na maioria dos municípios */
   im: z.string().trim().max(50).nullable().optional(),
   regimeTributario: z.enum(['simples', 'presumido', 'real', 'mei']).nullable().optional(),
+  habilitaNfse: z.boolean().optional(),
+  habilitaNfe: z.boolean().optional(),
+  habilitaNfce: z.boolean().optional(),
 })
 
 /**
- * Edita os dados fiscais da empresa (IE, IM, regime tributário).
+ * Cadastro completo da empresa — identificação, contato, endereço, dados
+ * fiscais e habilitações.
  *
- * Existiam só no `createFilial`: depois de criada, não havia como corrigir
- * pela interface — inscrição municipal faltando obrigava mexer no banco.
- * Como a IM é exigida pra NFS-e na maior parte dos municípios, isso travava
- * onboarding fiscal sem dar caminho ao operador (descoberto em 2026-07-20).
+ * Escreve em duas tabelas porque a identidade vive em `persons` (regra 22) e o
+ * que é específico de pessoa jurídica operante vive em `companies`. Transação
+ * para não deixar metade gravada.
+ *
+ * Cobre exatamente o que o cadastro de empresa na Focus exige: sem endereço
+ * completo e e-mail não há como criar a empresa lá — e até aqui esses campos
+ * não tinham tela, só existiam no schema.
  */
-export const updateCompanyFiscal = wrapServerAction(
-  { module: 'settings', action: 'company.update_fiscal', resourceType: 'company' },
-  async (input: z.infer<typeof UpdateCompanyFiscalSchema>, { session, setAuditResource }) => {
+export const updateCompanyRegistration = wrapServerAction(
+  { module: 'settings', action: 'company.update_registration', resourceType: 'company' },
+  async (input: z.infer<typeof UpdateCompanyRegistrationSchema>, { session, setAuditResource }) => {
     await requirePermission(session.logifit.userId, 'fiscal.admin')
-    const parsed = UpdateCompanyFiscalSchema.parse(input)
+    const parsed = UpdateCompanyRegistrationSchema.parse(input)
+    const tenantId = session.logifit.tenantId
 
-    const [updated] = await db
-      .update(companies)
-      .set({
-        ...(parsed.ie !== undefined ? { ie: parsed.ie || null } : {}),
-        ...(parsed.im !== undefined ? { im: parsed.im || null } : {}),
-        ...(parsed.regimeTributario !== undefined
-          ? { regimeTributario: parsed.regimeTributario }
-          : {}),
-        updatedAt: new Date(),
-      })
-      .where(
-        and(eq(companies.id, parsed.companyId), eq(companies.tenantId, session.logifit.tenantId)),
-      )
-      .returning({ id: companies.id, ie: companies.ie, im: companies.im })
-    if (!updated)
+    const [company] = await db
+      .select({ id: companies.id, personId: companies.personId })
+      .from(companies)
+      .where(and(eq(companies.id, parsed.companyId), eq(companies.tenantId, tenantId)))
+      .limit(1)
+    if (!company)
       throw new ApiException({
         code: 'NOT_FOUND',
         message: 'Empresa não encontrada neste tenant',
         request_id: '',
       })
 
-    setAuditResource(updated.id, { im: updated.im, ie: updated.ie })
-    return { id: updated.id }
+    await db.transaction(async (tx) => {
+      const personPatch: Record<string, unknown> = {}
+      if (parsed.name !== undefined) personPatch.name = parsed.name
+      if (parsed.displayName !== undefined) personPatch.displayName = parsed.displayName || null
+      if (parsed.email !== undefined) personPatch.email = parsed.email || null
+      if (parsed.phone !== undefined) personPatch.phone = parsed.phone || null
+      if (parsed.address !== undefined) {
+        // Endereço vazio vira NULL em vez de objeto de campos em branco —
+        // assim "não informado" é distinguível de "informado vazio".
+        const filled = parsed.address
+          ? Object.fromEntries(Object.entries(parsed.address).filter(([, v]) => v))
+          : {}
+        personPatch.address = Object.keys(filled).length > 0 ? filled : null
+      }
+      if (Object.keys(personPatch).length > 0) {
+        personPatch.updatedAt = new Date()
+        await tx.update(persons).set(personPatch).where(eq(persons.id, company.personId))
+      }
+
+      const companyPatch: Record<string, unknown> = {}
+      if (parsed.ie !== undefined) companyPatch.ie = parsed.ie || null
+      if (parsed.im !== undefined) companyPatch.im = parsed.im || null
+      if (parsed.regimeTributario !== undefined)
+        companyPatch.regimeTributario = parsed.regimeTributario
+      if (parsed.habilitaNfse !== undefined) companyPatch.habilitaNfse = parsed.habilitaNfse
+      if (parsed.habilitaNfe !== undefined) companyPatch.habilitaNfe = parsed.habilitaNfe
+      if (parsed.habilitaNfce !== undefined) companyPatch.habilitaNfce = parsed.habilitaNfce
+      if (Object.keys(companyPatch).length > 0) {
+        companyPatch.updatedAt = new Date()
+        await tx.update(companies).set(companyPatch).where(eq(companies.id, company.id))
+      }
+    })
+
+    setAuditResource(company.id, { fields: Object.keys(parsed).filter((k) => k !== 'companyId') })
+    return { id: company.id }
   },
 )
