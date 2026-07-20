@@ -6,6 +6,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprint 01c: convite de contador externo (débito 6 — ADR 0103) 2026-07-19
+
+O portal do contador existia mas nenhum contador conseguia entrar — faltava o convite:
+
+- **`user_invites`** (migration 0058 + RLS): token **nunca em claro** (sha256; o valor só existe na URL do email), TTL 7 dias, revogável, unique parcial garantindo 1 convite pendente por (tenant, email). MVP restrito à role `contador_externo` via CHECK.
+- **`/app/settings/contador`** — criar (email + nome), listar com status (Pendente/Aceito/Revogado/Expirado) e revogar. Gate `fiscal.admin`; email transacional via `@repo/email` (Mailhog em dev, Brevo em prod).
+- **`/convite/[token]` público + `POST /api/invites/accept`** — provisiona `auth_user` → `persons` → `users` → `user_tenants` → `user_roles` numa única transação elevada. **Aceite não cria sessão** (evita session fixation por link de email): o contador entra pelo magic link normal e cai no setup de MFA.
+- **Validado E2E em dev**: convite enviado → link do Mailhog → aceite → contador provisionado com role `contador_externo` no tenant certo, `is_default` correto e CPF gravado. Reuso do token e token inválido respondem o mesmo erro genérico (não vaza qual caso).
+- **Bug corrigido durante o teste**: `NextResponse` reaproveitado como constante entre requests devolvia corpo vazio na segunda chamada (body stream é de uso único) — virou função.
+
 ### Build — Pesquisa global real: search_index + /api/search + palette (débito 4 — ADR 0062 fase 1) 2026-07-19
 
 O Command Palette (Ctrl+K) deixou de ser lista estática — agora busca dados reais:

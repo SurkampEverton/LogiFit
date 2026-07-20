@@ -175,3 +175,6 @@ export * from './pos'
 
 // Sprint 04b — Billing de uso mensal (ADR 0102 + ADR 0066; débito do Sprint 04): tenant_usage_snapshots (1 row por tenant+year_month; 4 cotas do plano — members/notas/IA/storage). Escrita só via job aggregate-usage-snapshots (UPSERT idempotente); leitura tenant próprio + super_admin.
 export * from './billing'
+
+// Sprint 01c — Convites de staff (ADR 0103; débito #6 da auditoria 36b): user_invites (token_hash sha256 + TTL 7d + revogável + unique pendente por tenant+email). MVP só contador_externo (CHECK); aceite provisiona auth_user+person+user+role sem criar sessão.
+export * from './user-invites'

@@ -351,6 +351,13 @@
       "when": 1779561670955,
       "tag": "0057_search_index",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1779562670955,
+      "tag": "0058_user_invites",
+      "breakpoints": true
     }
   ]
 }

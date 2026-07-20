@@ -91,7 +91,7 @@ Durante o Sprint 36b, 6 estruturas citadas como "entregues" ou "esperadas" por s
 | 3 | ~~`tenant_usage_snapshots` (ADR 0066)~~ | Sprint 04 | **✅ Resolvido 2026-07-19** — [ADR 0102](decisions/0102-tenant-usage-snapshots.md): tabela + job `aggregate-usage-snapshots` (cron diário; validado E2E dev — 7 tenants). Falta UI plano + fatura overage (Sprint 04 fase 2) |
 | 4 | ~~`search_index` + FTS (ADR 0062, regra 30)~~ | Sprint 07 Faixa D | **✅ Fase 1 resolvida 2026-07-19** — tabela + triggers SECURITY DEFINER (persons/members/fiscal_emissions) + backfill + pg_trgm/unaccent + `GET /api/search` (tsvector pt + trigram + gate `has_permission`) + palette consultando com debounce; isolamento de tenant validado E2E. Expansão de kinds (appointments, AP/AR, prontuário sensível c/ audit) por sprint dono |
 | 5 | `tax_natures` / `tax_retentions` por tributo (ADR 0061) | "Sprint 15b" | Relatório `/app/fiscal/retencoes` por tributo (AP/comissões só têm agregado `retention_total_cents`) |
-| 6 | Tabela de invites de staff (`createContadorInvite`) | Sprint 01b | Convite de contador externo via magic link + `/app/settings/contador` |
+| 6 | ~~Tabela de invites de staff (`createContadorInvite`)~~ | Sprint 01b | **✅ Resolvido 2026-07-19** — [ADR 0103](decisions/0103-user-invites-staff.md): `user_invites` (token sha256, TTL 7d, revogável) + `/app/settings/contador` (criar/listar/revogar, email via @repo/email) + `/convite/[token]` público + `POST /api/invites/accept` provisionando auth_user→person→user→role em transação elevada. Validado E2E: convite → email → aceite → contador com role `contador_externo`; reuso de token bloqueado |
 
 ## Decisões pendentes (viram ADRs quando resolvidas)
 
