@@ -89,7 +89,7 @@ Durante o Sprint 36b, 6 estruturas citadas como "entregues" ou "esperadas" por s
 | 1 | ~~Tabela de vendas/POS com itens + pagamentos~~ | Sprint 24 (entregou só estoque) | **✅ Resolvido 2026-07-19** — [ADR 0101](decisions/0101-pos-vendas-schema.md): `sales`+`sale_items`+`sale_payments` + NCM/CEST em `stock_items` + SAs `emitNfeProductFromSale`/`emitNfceFromSale`. Falta UI POS (Sprint 24b fase 2) |
 | 2 | `nfe_returns` (ADR 0058) | "Sprint 15b" (nunca existiu) | Emissão NF-e devolução |
 | 3 | ~~`tenant_usage_snapshots` (ADR 0066)~~ | Sprint 04 | **✅ Resolvido 2026-07-19** — [ADR 0102](decisions/0102-tenant-usage-snapshots.md): tabela + job `aggregate-usage-snapshots` (cron diário; validado E2E dev — 7 tenants). Falta UI plano + fatura overage (Sprint 04 fase 2) |
-| 4 | `search_index` + FTS (ADR 0062, regra 30) | Sprint 07 Faixa D | Pesquisa global real — Command Palette segue lista estática |
+| 4 | ~~`search_index` + FTS (ADR 0062, regra 30)~~ | Sprint 07 Faixa D | **✅ Fase 1 resolvida 2026-07-19** — tabela + triggers SECURITY DEFINER (persons/members/fiscal_emissions) + backfill + pg_trgm/unaccent + `GET /api/search` (tsvector pt + trigram + gate `has_permission`) + palette consultando com debounce; isolamento de tenant validado E2E. Expansão de kinds (appointments, AP/AR, prontuário sensível c/ audit) por sprint dono |
 | 5 | `tax_natures` / `tax_retentions` por tributo (ADR 0061) | "Sprint 15b" | Relatório `/app/fiscal/retencoes` por tributo (AP/comissões só têm agregado `retention_total_cents`) |
 | 6 | Tabela de invites de staff (`createContadorInvite`) | Sprint 01b | Convite de contador externo via magic link + `/app/settings/contador` |
 

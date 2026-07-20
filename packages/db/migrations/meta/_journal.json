@@ -344,6 +344,13 @@
       "when": 1779560670955,
       "tag": "0056_usage_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1779561670955,
+      "tag": "0057_search_index",
+      "breakpoints": true
     }
   ]
 }

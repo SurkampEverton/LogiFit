@@ -6,6 +6,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Pesquisa global real: search_index + /api/search + palette (débito 4 — ADR 0062 fase 1) 2026-07-19
+
+O Command Palette (Ctrl+K) deixou de ser lista estática — agora busca dados reais:
+
+- **Tabela `search_index`** (migration 0057) com `search_vector` tsvector português gerado + índices GIN (FTS e trigram), extensões `pg_trgm`/`unaccent`, e RLS SELECT-only por tenant — escrita exclusiva via funções `SECURITY DEFINER` disparadas por triggers das tabelas-fonte.
+- **Triggers + backfill** pra 3 kinds da fase 1: `persons` (250 rows), `members` (73), `fiscal_emissions` (3) — cada sprint dono adiciona os seus (regra 30 agora tem infra de verdade).
+- **`GET /api/search`** — full-text + trigram fuzzy + substring, com gate de `required_permission` via `has_permission()` (emissões exigem `fiscal.read`; recepção não vê o que não pode abrir).
+- **Palette integrado**: resultados "Dado" (📇 pessoa, 👥 member, 🧾 nota) aparecem junto de rotas/ações com debounce 200ms + abort. Validado E2E em dev: busca "Carlos" retornou pessoa + 2 NFS-e do tenant e **provou o isolamento** — o "Carlos Aluno" de outro tenant não vazou.
+
 ### Build — Sprints 24b + 04b: schemas de vendas/POS e billing de uso (débitos 1 e 3 quitados) 2026-07-19
 
 Dois dos seis débitos de schema da auditoria do 36b resolvidos no mesmo dia:

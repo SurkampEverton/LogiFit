@@ -23,7 +23,22 @@ interface CommandItem {
   hint?: string
   href?: string
   emoji: string
-  category: 'navigation' | 'action'
+  category: 'navigation' | 'action' | 'data'
+}
+
+/** Resultado do GET /api/search (search_index — ADR 0062 fase 1). */
+interface SearchApiResult {
+  kind: string
+  label: string
+  subtitle: string | null
+  url: string
+  isSensitive: boolean
+}
+
+const SEARCH_KIND_EMOJI: Record<string, string> = {
+  person: '📇',
+  member: '👥',
+  fiscal_emission: '🧾',
 }
 
 const CANONICAL_ITEMS: CommandItem[] = [
@@ -270,14 +285,51 @@ export function CommandPalette() {
   const [selectedIdx, setSelectedIdx] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const [serverItems, setServerItems] = useState<CommandItem[]>([])
+
   // Filtra: se query começa com `>`, só actions; `/`, só navigation; senão tudo
   const filterMode = query.startsWith('>') ? 'action' : query.startsWith('/') ? 'navigation' : 'all'
   const searchTerm = query.startsWith('>') || query.startsWith('/') ? query.slice(1).trim() : query
 
-  const items = CANONICAL_ITEMS.filter(
+  const staticItems = CANONICAL_ITEMS.filter(
     (it) =>
       (filterMode === 'all' || it.category === filterMode) && fuzzyMatch(searchTerm, it.label),
-  ).slice(0, 12)
+  ).slice(0, 8)
+
+  const items = filterMode === 'all' ? [...staticItems, ...serverItems].slice(0, 15) : staticItems
+
+  // Busca server-side no search_index (ADR 0062) — debounce 200ms + abort
+  useEffect(() => {
+    if (filterMode !== 'all' || searchTerm.length < 2) {
+      setServerItems([])
+      return
+    }
+    const controller = new AbortController()
+    const timer = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(searchTerm)}`, { signal: controller.signal })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((body: { ok: boolean; data?: { results: SearchApiResult[] } } | null) => {
+          if (!body?.ok || !body.data) return
+          setServerItems(
+            body.data.results.map((r, i) => ({
+              id: `srv-${r.kind}-${i}`,
+              label: r.isSensitive ? `⚠️ ${r.label}` : r.label,
+              hint: r.subtitle ?? undefined,
+              href: r.url,
+              emoji: SEARCH_KIND_EMOJI[r.kind] ?? '🔎',
+              category: 'data' as const,
+            })),
+          )
+        })
+        .catch(() => {
+          /* abort/rede — mantém resultados anteriores */
+        })
+    }, 200)
+    return () => {
+      controller.abort()
+      clearTimeout(timer)
+    }
+  }, [searchTerm, filterMode])
 
   // Ctrl+K / Cmd+K abre
   useEffect(() => {
@@ -374,7 +426,8 @@ export function CommandPalette() {
           <ul className="max-h-[60vh] overflow-y-auto">
             {items.length === 0 ? (
               <li className="px-4 py-6 text-center text-sm text-[color:var(--ev-text-muted)]">
-                Nada encontrado. Sprint 07+ adiciona busca de Pessoas/Members via search_index.
+                Nada encontrado — busca cobre rotas, ações, pessoas, alunos/pacientes e notas
+                fiscais.
               </li>
             ) : (
               items.map((item, i) => (
@@ -414,7 +467,11 @@ export function CommandPalette() {
                             : 'var(--ev-text-muted)',
                       }}
                     >
-                      {item.category === 'action' ? 'Ação' : 'Rota'}
+                      {item.category === 'action'
+                        ? 'Ação'
+                        : item.category === 'data'
+                          ? 'Dado'
+                          : 'Rota'}
                     </span>
                   </button>
                 </li>
