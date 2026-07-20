@@ -66,7 +66,8 @@ export const sales = pgTable(
     /** Total líquido em centavos (Σ items − desconto) */
     totalCents: bigint('total_cents', { mode: 'number' }).notNull(),
     discountCents: bigint('discount_cents', { mode: 'number' }).notNull().default(0),
-    soldByUserId: uuid('sold_by_user_id').references(() => users.id),
+    /** FK users.id (migration 0060) — NUNCA auth_user.id; SET NULL preserva a venda */
+    soldByUserId: uuid('sold_by_user_id').references(() => users.id, { onDelete: 'set null' }),
     soldAt: timestamp('sold_at', { withTimezone: true }).notNull().defaultNow(),
     notes: text('notes'),
     cancelledAt: timestamp('cancelled_at', { withTimezone: true }),

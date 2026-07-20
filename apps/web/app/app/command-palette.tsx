@@ -306,6 +306,7 @@ export function CommandPalette() {
     }
     const controller = new AbortController()
     const timer = setTimeout(() => {
+      // safe-fetch-exempt: rota same-origin do próprio app (path relativo, sem host) — safeFetch existe pra SSRF em URL externa
       fetch(`/api/search?q=${encodeURIComponent(searchTerm)}`, { signal: controller.signal })
         .then((r) => (r.ok ? r.json() : null))
         .then((body: { ok: boolean; data?: { results: SearchApiResult[] } } | null) => {

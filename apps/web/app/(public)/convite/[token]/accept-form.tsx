@@ -29,6 +29,7 @@ export function AcceptInviteForm({
     setPending(true)
     setError(null)
     try {
+      // safe-fetch-exempt: rota same-origin do próprio app (path relativo, sem host) — safeFetch existe pra SSRF em URL externa
       const res = await fetch('/api/invites/accept', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },

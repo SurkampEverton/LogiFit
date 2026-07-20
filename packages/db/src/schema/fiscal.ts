@@ -51,7 +51,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { invoices } from './financeiro'
-import { companies } from './identity'
+import { companies, users } from './identity'
 
 // ─── Enums ───────────────────────────────────────────────────────────────
 
@@ -156,7 +156,10 @@ export const fiscalEmissions = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     /** Usuário que disparou (audit) */
-    createdByUserId: uuid('created_by_user_id'),
+    /** FK users.id (migration 0060) — NUNCA auth_user.id; SET NULL preserva o documento fiscal */
+    createdByUserId: uuid('created_by_user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
   },
   (t) => [
     /** Unique chave por tenant + kind quando não-null (NULL não viola unique) */
@@ -243,7 +246,10 @@ export const fiscalEvents = pgTable(
     submittedAt: timestamp('submitted_at', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    createdByUserId: uuid('created_by_user_id'),
+    /** FK users.id (migration 0060) — NUNCA auth_user.id; SET NULL preserva o documento fiscal */
+    createdByUserId: uuid('created_by_user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
   },
   (t) => [
     /** Inbox de eventos por tenant */

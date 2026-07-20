@@ -365,6 +365,13 @@
       "when": 1779563670955,
       "tag": "0059_retencoes",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1779564670955,
+      "tag": "0060_user_fk_integrity",
+      "breakpoints": true
     }
   ]
 }

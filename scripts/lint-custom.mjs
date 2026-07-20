@@ -143,7 +143,8 @@ function checkNoRawFetch(file, lines) {
 //   - Arquivos `tokens.css` / `globals.css` (definem os próprios tokens)
 //   - Arquivos `seed-*.ts` / `seed*.ts` (cores de dado por tenant, não tema)
 //   - Arquivos `*.test.ts` / `*.test.tsx` (fixtures)
-//   - Pasta `**/pdf/**` (PDF renderer não suporta CSS custom properties)
+//   - Pasta `**/pdf/**` e arquivos `*-pdf.tsx` (@react-pdf/renderer não
+//     suporta CSS custom properties — `var(--ev-*)` não resolve no PDF)
 //   - Pasta `**/email-templates/**` (clients de email — Outlook/Gmail/iOS Mail
 //     não suportam CSS custom properties; cores inline literal são exigência)
 //   - Arquivos `manifest.webmanifest*` (PWA manifest JSON, não CSS)
@@ -156,7 +157,7 @@ const RE_VAR_FALLBACK_HEX = /var\(\s*--[\w-]+\s*,\s*#[0-9A-Fa-f]{3,8}\s*\)/g
 const TOKENS_FILE = /packages[\\/]ui[\\/]src[\\/]tokens\.css$/
 const APP_GLOBALS = /apps[\\/]web[\\/]app[\\/]globals\.css$/
 const SEED_FILE = /[\\/]seed[a-zA-Z0-9_-]*\.ts$/
-const PDF_PATH = /[\\/]pdf[\\/]/
+const PDF_PATH = /[\\/]pdf[\\/]|-pdf\.tsx?$/
 const EMAIL_TEMPLATES_PATH = /[\\/]email-templates[\\/]/
 const MANIFEST_PATH = /manifest\.webmanifest/
 const RE_DEFAULT_CALL = /\.default\(\s*['"]#[0-9A-Fa-f]{3,8}['"]/
@@ -451,6 +452,33 @@ function checkAiBlockRespected(file, lines) {
 }
 
 // ───────────────────────────────────────────────────────────
+// 10. no-auth-user-id-in-user-fk
+//
+// Colunas `*_user_id` (exceto `auth_user_id`) referenciam `users.id` — o id
+// LogiFit —, NUNCA `auth_user.id` do BetterAuth. Passar `session.user.id`
+// nelas gera FK violation onde há FK, e — pior — grava ID inexistente em
+// silêncio onde não há. Bug real: 90 ocorrências em 25 arquivos mantiveram a
+// criação de contas a pagar quebrada desde o Sprint 15 (roadmap 2026-07-20).
+//
+// Correto: `session.logifit.userId`. Exceções legítimas (`authUserId`,
+// `actorAuthUserId`) são reconhecidas pelo nome do campo.
+// ───────────────────────────────────────────────────────────
+const RE_USER_FK_ASSIGN = /\b(\w*[uU]serId)\s*:\s*session\.user\.id\b/
+const AUTH_FIELD_OK = /^(actor)?[aA]uthUserId$/
+function checkNoAuthUserIdInUserFk(file, lines) {
+  if (file.includes('.test.')) return
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (isCommentLine(line)) continue
+    const m = line.match(RE_USER_FK_ASSIGN)
+    if (!m) continue
+    if (AUTH_FIELD_OK.test(m[1])) continue
+    if (hasExemption(lines, i, '// auth-user-id-exempt:')) continue
+    report('no-auth-user-id-in-user-fk', file, i + 1, line)
+  }
+}
+
+// ───────────────────────────────────────────────────────────
 
 const codeFiles = SCAN_DIRS.flatMap((d) => walk(join(ROOT, d), CODE_EXTS))
 const cssFiles = SCAN_DIRS.flatMap((d) => walk(join(ROOT, d), CSS_EXTS))
@@ -466,6 +494,7 @@ for (const file of codeFiles) {
   checkHighRiskActionMfa(file, lines)
   checkCrossTenantReadMustLog(file, lines)
   checkAiBlockRespected(file, lines)
+  checkNoAuthUserIdInUserFk(file, lines)
 }
 
 for (const file of cssFiles) {

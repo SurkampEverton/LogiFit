@@ -6,6 +6,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fix — Integridade de `*_user_id`: dados reparados, FKs criadas, lint ativo 2026-07-20
+
+Fecha as 3 pendências do bug sistêmico corrigido mais cedo:
+
+- **Auditoria genérica** de toda coluna `*_user_id` uuid do schema (não só as 5 tabelas suspeitas): **2 linhas inválidas**, ambas em `fiscal_emissions`, reparadas mapeando `auth_user → users` do mesmo tenant. `audit_log` estava limpo.
+- **Migration `0060_user_fk_integrity`** (idempotente): repara linhas órfãs — o que não mapear vira `NULL`, porque autor desconhecido é melhor que ID mentiroso — e cria as FKs de `fiscal_emissions`, `fiscal_events` e `sales` com `ON DELETE SET NULL` (apagar usuário não pode apagar documento fiscal — Lei 13.787). `audit_log` fica sem FK **de propósito**: trilha append-only sobrevive à remoção do usuário (regra 5).
+- **Lint custom `no-auth-user-id-in-user-fk`** — validado injetando a regressão de propósito (pegou 7 ocorrências) e restaurando. Exceção por nome pra `authUserId`/`actorAuthUserId`.
+- **`pnpm lint:custom` ficou verde** — estava vermelho desde 25/mai por 20 hex hardcoded no `memorial-pdf.tsx`. A exceção cobria `**/pdf/**` mas não `*-pdf.tsx`; ampliada, já que `@react-pdf/renderer` não resolve `var(--ev-*)`. Lint sempre-vermelho é lint ignorado.
+
 ### Fix — Bug sistêmico: `session.user.id` gravado em colunas que referenciam `users.id` 2026-07-20
 
 Descoberto ao fiar as retenções em contas a pagar. **90 atribuições em 25 arquivos** passavam o id do `auth_user` (BetterAuth) para colunas de FK de `users.id`:

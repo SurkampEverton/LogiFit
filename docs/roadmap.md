@@ -91,7 +91,15 @@ Como se manifestava — e por que passou despercebido tanto tempo:
 | `accounts_payable` | ✅ sim | **Criação de AP quebrada desde o Sprint 15** — violação de FK; a tela nunca funcionou |
 | `fiscal_emissions`, `fiscal_events`, `sales`, `stock_movements`, `commission_entries` | ❌ não | **Pior**: gravava ID inexistente em silêncio — trilha de auditoria apontando pra lugar nenhum |
 
-Corrigido em massa (script determinístico + typecheck verde), preservando `authUserId`/`actorAuthUserId`, que legitimamente recebem o id do BetterAuth. **Ações pendentes**: (a) auditar dados já gravados com ID inválido nas 5 tabelas sem FK; (b) adicionar as FKs faltantes pra o banco falhar ruidosamente no futuro; (c) lint custom `no-auth-user-id-in-user-fk`.
+Corrigido em massa (script determinístico + typecheck verde), preservando `authUserId`/`actorAuthUserId`, que legitimamente recebem o id do BetterAuth.
+
+**Fechado por completo em 2026-07-20** — as 3 pendências foram resolvidas:
+
+- **(a) Dados auditados** — varredura genérica de toda coluna `*_user_id` uuid do schema (não só as 5 suspeitas): **2 linhas inválidas**, ambas em `fiscal_emissions`, reparadas pelo mapeamento `auth_user → users` do mesmo tenant. `audit_log.actor_user_id` estava limpo (o wrapper já usava o campo certo). Dano pequeno porque o uso real ainda é baixo — em produção com volume teria sido caro.
+- **(b) FKs adicionadas** (migration `0060_user_fk_integrity`, idempotente): `fiscal_emissions`, `fiscal_events` e `sales` com `ON DELETE SET NULL` — apagar usuário não pode apagar documento fiscal (Lei 13.787). `audit_log` fica **sem FK de propósito**: a trilha é append-only e sobrevive à remoção do usuário (regra 5).
+- **(c) Lint `no-auth-user-id-in-user-fk`** ativo em `pnpm lint:custom` — validado injetando a regressão (pegou 7 ocorrências) e restaurando. Exceção por nome de campo pra `authUserId`/`actorAuthUserId`; escape consciente via `// auth-user-id-exempt:`.
+
+Bônus: `pnpm lint:custom` passou a **ficar verde** — estava vermelho desde 2026-05-25 por 20 hex hardcoded no `memorial-pdf.tsx`. A exceção da regra cobria `**/pdf/**` mas não `*-pdf.tsx`; ampliada, já que `@react-pdf/renderer` não resolve `var(--ev-*)`. Lint sempre-vermelho é lint ignorado.
 
 O wrapper de Server Action passou a logar `dev_original_message` + stack em desenvolvimento — sem isso um `INTERNAL_ERROR` vira "estamos investigando" e o dev fica cego (foi o que escondeu este bug).
 
