@@ -37,6 +37,8 @@ export async function listCompanies(): Promise<
         im: companies.im,
         regimeTributario: companies.regimeTributario,
         cnesCode: companies.cnesCode,
+        focusEmpresaId: companies.focusEmpresaId,
+        municipalCredentialsConfiguredAt: companies.municipalCredentialsConfiguredAt,
         createdAt: companies.createdAt,
         updatedAt: companies.updatedAt,
         personName: persons.name,

@@ -43,6 +43,45 @@ const REDACT_KEYS = new Set([
   'exame',
 ])
 
+/**
+ * Segmentos que tornam uma chave composta sensível.
+ *
+ * O match exato de `REDACT_KEYS` deixava passar nomes compostos reais —
+ * `senha_responsavel` (portal municipal, Focus NFe), `senhaPortal`,
+ * `client_secret`, `userPassword`. Vazariam em claro no `audit_log`, no
+ * GlitchTip e no envelope de erro.
+ *
+ * Comparamos por **segmento** (não substring) para não redigir demais:
+ * `secretary` continua visível porque seu único segmento é `secretary`,
+ * enquanto `client_secret` tem o segmento `secret`.
+ */
+const REDACT_SEGMENTS = new Set([
+  'password',
+  'passwd',
+  'senha',
+  'token',
+  'secret',
+  'apikey',
+  'jwt',
+  'credential',
+  'credencial',
+])
+
+/** `senhaResponsavel` / `senha_responsavel` / `SENHA-PORTAL` → ['senha','responsavel'] */
+function keySegments(key: string): string[] {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+}
+
+function shouldRedact(key: string): boolean {
+  const lower = key.toLowerCase()
+  if (REDACT_KEYS.has(lower)) return true
+  return keySegments(key).some((seg) => REDACT_SEGMENTS.has(seg))
+}
+
 export function maskCpf(cpf: string): string {
   return cpf.replace(CPF_RE, '$1.***.***-$4')
 }
@@ -70,7 +109,7 @@ export function sanitize<T>(input: T): T {
   if (Array.isArray(input)) return input.map((v) => sanitize(v)) as T
   const out: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
-    out[k] = REDACT_KEYS.has(k.toLowerCase()) ? '[REDACTED]' : sanitize(v)
+    out[k] = shouldRedact(k) ? '[REDACTED]' : sanitize(v)
   }
   return out as T
 }

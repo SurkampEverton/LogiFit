@@ -1,8 +1,11 @@
+import { findMunicipalityNfseProfile } from '@repo/ai'
 import { db } from '@repo/db/client'
 import {
+  companies,
   fiscalNumberingSequences,
   fiscalProviderCredentials,
   fiscalServiceCatalog,
+  persons,
 } from '@repo/db/schema'
 /**
  * `/app/settings/fiscal` — Wizard onboarding fiscal (Sprint 36 Faixa C — esqueleto).
@@ -15,10 +18,11 @@ import {
  *   - Step 4: séries e numeração inicial por tipo
  *   - Step 5: teste de emissão homologação (mock data com 1 NFS-e fake)
  */
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { requireFullSession } from '../../../lib/session'
 import { FiscalCredentialsForm } from './credentials-form'
+import { type MunicipalCompanyOption, MunicipalCredentialsForm } from './municipal-credentials-form'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,6 +55,38 @@ export default async function FiscalSettingsPage() {
     })
     .from(fiscalNumberingSequences)
     .where(eq(fiscalNumberingSequences.tenantId, tenantId))
+
+  // Companies com catálogo: só elas emitem NFS-e, e o município do catálogo é
+  // que diz qual série o portal espera (perfis em @repo/ai — ADR 0105).
+  const companyRows = await db
+    .select({
+      id: companies.id,
+      name: persons.name,
+      type: companies.type,
+      configuredAt: companies.municipalCredentialsConfiguredAt,
+      municipalityCode: fiscalServiceCatalog.municipalityCode,
+    })
+    .from(companies)
+    .innerJoin(persons, eq(persons.id, companies.personId))
+    .innerJoin(
+      fiscalServiceCatalog,
+      and(eq(fiscalServiceCatalog.companyId, companies.id), eq(fiscalServiceCatalog.active, true)),
+    )
+    .where(eq(companies.tenantId, tenantId))
+    .orderBy(persons.name)
+
+  const municipalCompanies: MunicipalCompanyOption[] = []
+  for (const row of companyRows) {
+    if (municipalCompanies.some((c) => c.id === row.id)) continue // 1 linha por company
+    const profile = findMunicipalityNfseProfile(row.municipalityCode)
+    municipalCompanies.push({
+      id: row.id,
+      name: `${row.name} (${row.type})`,
+      suggestedSerie: profile?.defaultRpsSerie ?? null,
+      municipalityLabel: profile ? `${profile.name}/${profile.uf} · ${profile.system}` : null,
+      configuredAt: row.configuredAt?.toLocaleDateString('pt-BR') ?? null,
+    })
+  }
 
   const credentialsOk = credentials.some((c) => c.active)
   const servicesOk = services.some((s) => s.active)
@@ -101,6 +137,15 @@ export default async function FiscalSettingsPage() {
           </>
         }
       />
+
+      {credentialsOk && municipalCompanies.length > 0 && (
+        <Step
+          index={1.5}
+          title="Credenciais do portal municipal"
+          done={municipalCompanies.some((c) => c.configuredAt !== null)}
+          body={<MunicipalCredentialsForm companies={municipalCompanies} />}
+        />
+      )}
 
       <Step
         index={2}

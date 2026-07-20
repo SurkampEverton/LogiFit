@@ -379,6 +379,13 @@
       "when": 1779565670955,
       "tag": "0061_nfe_returns",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1779565671955,
+      "tag": "0062_focus_empresa_link",
+      "breakpoints": true
     }
   ]
 }

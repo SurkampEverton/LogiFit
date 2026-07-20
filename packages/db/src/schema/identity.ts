@@ -133,6 +133,16 @@ export const companies = pgTable(
     // CNES (Cadastro Nacional de Estabelecimentos de Saúde — Fase 2 fisio/nutri)
     cnesCode: text('cnes_code'),
 
+    /** Id desta company no cadastro da conta Focus NFe do tenant (ADR 0105) */
+    focusEmpresaId: text('focus_empresa_id'),
+    /**
+     * Quando login/senha do portal municipal foram enviados à Focus.
+     * As credenciais **não** são armazenadas — repassadas e descartadas.
+     */
+    municipalCredentialsConfiguredAt: timestamp('municipal_credentials_configured_at', {
+      withTimezone: true,
+    }),
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

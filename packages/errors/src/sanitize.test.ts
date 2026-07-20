@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  maskCnpj,
-  maskCpf,
-  maskEmail,
-  maskPhone,
-  sanitize,
-  sanitizeString,
-} from './sanitize'
+import { maskCnpj, maskCpf, maskEmail, maskPhone, sanitize, sanitizeString } from './sanitize'
 
 describe('maskCpf', () => {
   it('mascara CPF formatado', () => {
@@ -84,10 +77,7 @@ describe('sanitize (recursivo)', () => {
   })
 
   it('arrays sanitizam cada item', () => {
-    expect(sanitize(['joao@x.com', 'maria@y.com'])).toEqual([
-      'j***@x.com',
-      'm***@y.com',
-    ])
+    expect(sanitize(['joao@x.com', 'maria@y.com'])).toEqual(['j***@x.com', 'm***@y.com'])
   })
 
   it('chave password redact total', () => {
@@ -127,5 +117,36 @@ describe('sanitize (recursivo)', () => {
 
   it('preserva keys não-sensíveis', () => {
     expect(sanitize({ id: 'abc', name: 'João' })).toEqual({ id: 'abc', name: 'João' })
+  })
+})
+
+describe('sanitize — chaves compostas', () => {
+  // O match exato deixava passar nomes compostos reais: a senha do portal
+  // municipal (`senha_responsavel`, Focus NFe) vazaria em claro no audit_log.
+  it('redige chave composta em snake_case', () => {
+    expect(sanitize({ senha_responsavel: 'hunter2' })).toEqual({
+      senha_responsavel: '[REDACTED]',
+    })
+    expect(sanitize({ client_secret: 'x' })).toEqual({ client_secret: '[REDACTED]' })
+  })
+
+  it('redige chave composta em camelCase', () => {
+    expect(sanitize({ senhaPortal: 'x' })).toEqual({ senhaPortal: '[REDACTED]' })
+    expect(sanitize({ userPassword: 'x' })).toEqual({ userPassword: '[REDACTED]' })
+    expect(sanitize({ focusApiToken: 'x' })).toEqual({ focusApiToken: '[REDACTED]' })
+  })
+
+  it('não redige demais — segmento, não substring', () => {
+    // 'secretary' contém 'secret' mas é um segmento só; 'tokenizer' idem.
+    expect(sanitize({ secretary: 'Ana', tokenizer: 'bpe' })).toEqual({
+      secretary: 'Ana',
+      tokenizer: 'bpe',
+    })
+  })
+
+  it('redige dentro de objeto aninhado com chave composta', () => {
+    expect(sanitize({ focus: { login_responsavel: 'joao', senha_responsavel: 'x' } })).toEqual({
+      focus: { login_responsavel: 'joao', senha_responsavel: '[REDACTED]' },
+    })
   })
 })
