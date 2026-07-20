@@ -6,6 +6,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fix — Emissão rejeitada era gravada como "Na fila" (achatamento de status) 2026-07-20
+
+Encontrado pela **primeira emissão real contra a Focus NFe**. A nota voltou rejeitada com `empresa_nao_habilitada`, mas a UI mostrou "Na fila" — o operador ficaria esperando indefinidamente um documento fiscal que nunca viria, sem nenhum sinal de erro. Dois bugs independentes na mesma trajetória:
+
+- **Provider** (`focus-nfe.ts`): erro da Focus chega como `{codigo, mensagem}` **sem** campo `status` e **fora** do par HTTP 400/422 — caía no default `queued` de `mapEmissionStatus`. Novo `isFocusErrorBody()` cobre emissões *e* eventos (cancelamento/CC-e teriam o mesmo fantasma); `extractRejection` passa a prefixar o código (`[empresa_nao_habilitada] ...`) pro operador conseguir buscar no suporte.
+- **Persistência** (`fiscal/actions.ts`): **7 sites** faziam `status === 'completed' ? 'completed' : 'queued'`, descartando `rejected` (junto com o motivo) e `processing`. Substituídos por `providerOutcome()` — função pura em `@repo/ai/fiscal/outcome.ts`, com teste próprio, que também garante o fallback textual exigido pelo CHECK `*_rejected_consistency`.
+- **Validado E2E**: a mesma emissão que aparecia "Na fila" agora mostra **Rejeitada** com o motivo completo e o botão "Tentar novamente". 4 emissões travadas no dev foram reclassificadas a partir do `payload`.
+- **Bloqueio externo remanescente**: a empresa precisa ter usuário e senha do portal municipal de Campo Largo/PR cadastrados junto ao suporte Focus NFe — é pendência do provider/prefeitura, não do LogiFit.
+
 ### Build — Sprint 17b: devolução de compra desacoplada (débito 2 — o último) 2026-07-20
 
 Fecha a auditoria de débitos de schema do Sprint 36b: **6 de 6 quitados**.

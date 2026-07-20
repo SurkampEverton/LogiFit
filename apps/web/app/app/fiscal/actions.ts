@@ -25,7 +25,12 @@
  * e instancia `FocusNfeProvider`. Mock é check-bloqueado em produção.
  */
 
-import { type FiscalEmissionKind, type FiscalProvider, resolveCfop } from '@repo/ai'
+import {
+  type FiscalEmissionKind,
+  type FiscalProvider,
+  providerOutcome,
+  resolveCfop,
+} from '@repo/ai'
 import { db } from '@repo/db/client'
 import {
   companies,
@@ -415,7 +420,8 @@ export const emitNfseFromInvoice = wrapServerAction(
     })
 
     // 5. Persiste emissão
-    const status = result.status === 'completed' ? 'completed' : 'queued'
+    const outcome = providerOutcome(result)
+    const status = outcome.status
     const [row] = await db
       .insert(fiscalEmissions)
       .values({
@@ -423,6 +429,7 @@ export const emitNfseFromInvoice = wrapServerAction(
         companyId: inv.companyId,
         kind: 'nfse',
         status,
+        rejectionReason: outcome.rejectionReason,
         provider: provider.name,
         sourceKind: 'invoice',
         sourceId: inv.id,
@@ -446,7 +453,7 @@ export const emitNfseFromInvoice = wrapServerAction(
           result: result.raw,
         },
         submittedAt: new Date(),
-        completedAt: status === 'completed' ? new Date() : null,
+        completedAt: outcome.completedAt,
         cancelDeadlineAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h
         createdByUserId: session.logifit.userId,
       })
@@ -518,7 +525,8 @@ export const emitNfseManual = wrapServerAction(
       inscricaoMunicipal: company.im,
     })
 
-    const status = result.status === 'completed' ? 'completed' : 'queued'
+    const outcome = providerOutcome(result)
+    const status = outcome.status
     const [row] = await db
       .insert(fiscalEmissions)
       .values({
@@ -526,6 +534,7 @@ export const emitNfseManual = wrapServerAction(
         companyId: parsed.companyId,
         kind: 'nfse',
         status,
+        rejectionReason: outcome.rejectionReason,
         provider: provider.name,
         sourceKind: 'manual',
         sourceId: null,
@@ -548,7 +557,7 @@ export const emitNfseManual = wrapServerAction(
           result: result.raw,
         },
         submittedAt: new Date(),
-        completedAt: status === 'completed' ? new Date() : null,
+        completedAt: outcome.completedAt,
         cancelDeadlineAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         createdByUserId: session.logifit.userId,
       })
@@ -670,7 +679,8 @@ async function persistSaleEmission(params: {
   recipient: { id: string; document: string | null; name: string } | null
   createdByUserId: string
 }) {
-  const status = params.result.status === 'completed' ? 'completed' : 'queued'
+  const outcome = providerOutcome(params.result)
+  const status = outcome.status
   const [row] = await db
     .insert(fiscalEmissions)
     .values({
@@ -678,6 +688,7 @@ async function persistSaleEmission(params: {
       companyId: params.companyId,
       kind: params.kind,
       status,
+      rejectionReason: outcome.rejectionReason,
       provider: params.providerName as 'mock',
       sourceKind: 'sale',
       sourceId: params.saleId,
@@ -693,7 +704,7 @@ async function persistSaleEmission(params: {
       recipientDocument: params.recipient?.document ?? null,
       payload: { input: { saleId: params.saleId }, result: params.result.raw },
       submittedAt: new Date(),
-      completedAt: status === 'completed' ? new Date() : null,
+      completedAt: outcome.completedAt,
       cancelDeadlineAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       createdByUserId: params.createdByUserId,
     })
@@ -940,7 +951,8 @@ export const emitNfeReturn = wrapServerAction(
       },
     )
 
-    const status = result.status === 'completed' ? 'completed' : 'queued'
+    const outcome = providerOutcome(result)
+    const status = outcome.status
     const [row] = await db
       .insert(fiscalEmissions)
       .values({
@@ -948,6 +960,7 @@ export const emitNfeReturn = wrapServerAction(
         companyId: ret.companyId,
         kind: 'nfe_return',
         status,
+        rejectionReason: outcome.rejectionReason,
         provider: provider.name as 'mock',
         sourceKind: 'nfe_return',
         sourceId: ret.id,
@@ -965,7 +978,7 @@ export const emitNfeReturn = wrapServerAction(
           result: result.raw,
         },
         submittedAt: new Date(),
-        completedAt: status === 'completed' ? new Date() : null,
+        completedAt: outcome.completedAt,
         cancelDeadlineAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         createdByUserId: session.logifit.userId,
       })
@@ -1058,6 +1071,7 @@ export const cancelEmission = wrapServerAction(
     })
 
     // Transação: insere evento + marca emission cancelled
+    const outcome = providerOutcome(result)
     await db.transaction(async (tx) => {
       await tx.insert(fiscalEvents).values({
         tenantId: session.logifit.tenantId,
@@ -1065,10 +1079,11 @@ export const cancelEmission = wrapServerAction(
         kind: 'cancellation',
         providerRef: result.providerRef,
         justification: parsed.justification,
-        status: result.status === 'completed' ? 'completed' : 'queued',
+        status: outcome.status,
+        rejectionReason: outcome.rejectionReason,
         payload: result.raw,
         submittedAt: new Date(),
-        completedAt: result.status === 'completed' ? new Date() : null,
+        completedAt: outcome.completedAt,
         createdByUserId: session.logifit.userId,
       })
       if (result.status === 'completed') {
@@ -1170,6 +1185,7 @@ export const issueCce = wrapServerAction(
       sequence: nextSequence,
     })
 
+    const outcome = providerOutcome(result)
     const [row] = await db
       .insert(fiscalEvents)
       .values({
@@ -1178,10 +1194,11 @@ export const issueCce = wrapServerAction(
         kind: 'cce',
         providerRef: result.providerRef,
         justification: parsed.correction,
-        status: result.status === 'completed' ? 'completed' : 'queued',
+        status: outcome.status,
+        rejectionReason: outcome.rejectionReason,
         payload: { sequence: nextSequence, result: result.raw },
         submittedAt: new Date(),
-        completedAt: result.status === 'completed' ? new Date() : null,
+        completedAt: outcome.completedAt,
         createdByUserId: session.logifit.userId,
       })
       .returning({ id: fiscalEvents.id })
@@ -1228,6 +1245,7 @@ export const inutilizeRange = wrapServerAction(
       year: parsed.year,
     })
 
+    const outcome = providerOutcome(result)
     const [row] = await db
       .insert(fiscalEvents)
       .values({
@@ -1241,10 +1259,11 @@ export const inutilizeRange = wrapServerAction(
         numeroFrom: parsed.numeroFrom,
         numeroTo: parsed.numeroTo,
         justification: parsed.justification,
-        status: result.status === 'completed' ? 'completed' : 'queued',
+        status: outcome.status,
+        rejectionReason: outcome.rejectionReason,
         payload: { year: parsed.year, result: result.raw },
         submittedAt: new Date(),
-        completedAt: result.status === 'completed' ? new Date() : null,
+        completedAt: outcome.completedAt,
         createdByUserId: session.logifit.userId,
       })
       .returning({ id: fiscalEvents.id })

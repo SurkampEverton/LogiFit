@@ -103,6 +103,8 @@ function resourceFor(kind: FiscalEmissionKind): 'nfse' | 'nfe' | 'nfce' {
 
 interface FocusResponseBody {
   status?: string
+  /** Código de ERRO da Focus (ex: 'empresa_nao_habilitada') — não confundir com `status` */
+  codigo?: string
   chave_nfe?: string
   chave?: string
   codigo_verificacao?: string
@@ -114,6 +116,17 @@ interface FocusResponseBody {
   mensagem?: string
   erros?: Array<{ mensagem?: string; codigo?: string }>
   [key: string]: unknown
+}
+
+/**
+ * Erro da Focus vem como `{codigo, mensagem}` SEM campo `status` — e pode
+ * chegar com HTTP fora do par 400/422 (403 em `empresa_nao_habilitada`, por
+ * exemplo). Sem esta checagem o default de `mapEmissionStatus` classificaria
+ * como `queued`, e o operador ficaria esperando uma nota que nunca vem.
+ * Descoberto no primeiro teste contra a Focus real (2026-07-20).
+ */
+function isFocusErrorBody(body: FocusResponseBody): boolean {
+  return body.status === undefined && typeof body.codigo === 'string' && body.codigo.length > 0
 }
 
 function mapEmissionStatus(focusStatus: string | undefined): EmissionResult['status'] {
@@ -133,7 +146,10 @@ function mapEmissionStatus(focusStatus: string | undefined): EmissionResult['sta
 
 function extractRejection(body: FocusResponseBody): string | null {
   if (body.mensagem_sefaz) return body.mensagem_sefaz
-  if (body.mensagem) return body.mensagem
+  // Erro da Focus: prefixa o código pra o operador conseguir buscar no suporte
+  if (body.mensagem) {
+    return body.codigo ? `[${body.codigo}] ${body.mensagem}` : body.mensagem
+  }
   if (body.erros?.length) {
     return body.erros.map((e) => e.mensagem ?? e.codigo ?? 'erro desconhecido').join('; ')
   }
@@ -210,8 +226,9 @@ export class FocusNfeProvider implements FiscalProvider {
     httpStatus: number,
     body: FocusResponseBody,
   ): EmissionResult {
-    // 400/422 = payload/SEFAZ rejeitou — resultado de negócio, não exceção
-    const rejected = httpStatus === 400 || httpStatus === 422
+    // 4xx de negócio (payload/SEFAZ/cadastro) = rejeição, não exceção.
+    // Inclui body de erro `{codigo, mensagem}` que chega em outros status.
+    const rejected = httpStatus === 400 || httpStatus === 422 || isFocusErrorBody(body)
     const status = rejected ? 'rejected' : mapEmissionStatus(body.status)
     return {
       providerRef,
@@ -229,7 +246,9 @@ export class FocusNfeProvider implements FiscalProvider {
     httpStatus: number,
     body: FocusResponseBody,
   ): EventResult {
-    const rejected = httpStatus === 400 || httpStatus === 422
+    // Mesma armadilha da emissão: erro de cadastro `{codigo, mensagem}` chega
+    // fora do par 400/422 e cairia no `processing` do else — evento fantasma.
+    const rejected = httpStatus === 400 || httpStatus === 422 || isFocusErrorBody(body)
     const focusStatus = body.status
     let status: EventResult['status']
     if (rejected || focusStatus === 'erro_cancelamento' || focusStatus === 'erro') {

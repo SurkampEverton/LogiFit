@@ -15,6 +15,7 @@
  *   - resolveFiscalProvider(tenantId, credentials) factory
  */
 export * from './provider'
+export * from './outcome'
 export * from './mock'
 export * from './cfop-resolver'
 export * from './focus-nfe'

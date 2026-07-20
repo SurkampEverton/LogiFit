@@ -114,6 +114,49 @@ describe('FocusNfeProvider', () => {
     expect(result.rejectionReason).toBe('Rejeição 539: duplicidade')
   })
 
+  // Caso real (2026-07-20, primeira emissão contra a Focus de verdade):
+  // empresa sem credencial do município. A Focus responde `{codigo, mensagem}`
+  // SEM campo `status`, e NÃO no par 400/422 — antes do fix isso caía no
+  // default `queued` e o operador ficava esperando nota que nunca chegaria.
+  it.each([404, 200, 202])(
+    'erro de cadastro da Focus (HTTP %i) vira rejected, não queued',
+    async (httpStatus) => {
+      const fetchFn = vi.fn<FiscalFetchFn>(async () =>
+        jsonResponse(httpStatus, {
+          codigo: 'empresa_nao_habilitada',
+          mensagem: 'É necessário configurar o usuário e senha desta empresa neste município.',
+        }),
+      )
+      const result = await providerWith(fetchFn).emitNfse(NFSE_INPUT)
+      expect(result.status).toBe('rejected')
+      expect(result.rejectionReason).toContain('empresa_nao_habilitada')
+      expect(result.rejectionReason).toContain('município')
+    },
+  )
+
+  it('202 sem corpo de erro segue queued (não confunde enfileiramento com falha)', async () => {
+    const fetchFn = vi.fn<FiscalFetchFn>(async () => jsonResponse(202, {}))
+    const result = await providerWith(fetchFn).emitNfse(NFSE_INPUT)
+    expect(result.status).toBe('queued')
+  })
+
+  it('evento com erro de cadastro da Focus também vira rejected, não processing', async () => {
+    const fetchFn = vi.fn<FiscalFetchFn>(async () =>
+      jsonResponse(200, {
+        codigo: 'empresa_nao_habilitada',
+        mensagem: 'É necessário configurar o usuário e senha desta empresa neste município.',
+      }),
+    )
+    const result = await providerWith(fetchFn).cancel({
+      providerRef: 'lf-nfse-x-1-1',
+      chave: '1'.repeat(44),
+      justification: 'Emitida em duplicidade por erro operacional',
+      kind: 'nfse',
+    })
+    expect(result.status).toBe('rejected')
+    expect(result.rejectionReason).toContain('empresa_nao_habilitada')
+  })
+
   it('429 lança FiscalProviderRateLimitError', async () => {
     const fetchFn = vi.fn<FiscalFetchFn>(async () => jsonResponse(429, {}))
     await expect(providerWith(fetchFn).emitNfse(NFSE_INPUT)).rejects.toThrow(
