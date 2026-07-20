@@ -11,10 +11,15 @@
 
 import { FOCUS_NFE_HOSTS } from '@repo/ai'
 import { db } from '@repo/db/client'
-import { companies, fiscalProviderCredentials, persons } from '@repo/db/schema'
+import {
+  companies,
+  fiscalNumberingSequences,
+  fiscalProviderCredentials,
+  persons,
+} from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
 import { encryptSecretParts, safeFetch } from '@repo/security'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { resolveFiscalProvider } from '../../../lib/fiscal-provider'
 import { resolveFocusAccountToken } from '../../../lib/focus-account'
@@ -370,5 +375,104 @@ export const getFiscalCredentialsStatus = wrapServerAction(
       lastValidationStatus: creds.lastValidationStatus,
       updatedAt: creds.updatedAt.toISOString(),
     }
+  },
+)
+
+// ─── Séries e numeração ───────────────────────────────────────────────────
+
+const SetNumberingSchema = z.object({
+  companyId: z.string().uuid(),
+  kind: z.enum([
+    'nfse',
+    'nfe',
+    'nfce',
+    'nfe_return',
+    'nfe_transfer',
+    'nfe_conserto_out',
+    'nfe_conserto_return',
+    'nfe_self_entry',
+  ]),
+  serie: z.number().int().min(1).max(999),
+  environment: z.enum(['homologacao', 'producao']),
+  nextNumero: z.number().int().min(1).max(999_999_999),
+})
+
+/**
+ * Define série e próximo número de um tipo de documento.
+ *
+ * Necessário na migração de outro sistema: quem já emitiu até a nota 4.312
+ * precisa continuar de 4.313, não recomeçar do 1. Sem esta tela a sequência
+ * só nascia na primeira emissão, sempre em 1.
+ *
+ * **Recuar a numeração é bloqueado.** Repetir um número já usado gera dois
+ * documentos com a mesma identificação na mesma série — o fisco trata como
+ * duplicidade, e a segunda nota é rejeitada ou, pior, autorizada em conflito.
+ * Avançar é livre: pular número é irregularidade menor, resolvida por
+ * inutilização de faixa.
+ */
+export const setNumberingSequence = wrapServerAction(
+  { module: 'fiscal', action: 'numbering.set', resourceType: 'fiscal_numbering_sequences' },
+  async (input: z.infer<typeof SetNumberingSchema>, { session, setAuditResource }) => {
+    await requirePermission(session.logifit.userId, 'fiscal.admin')
+    const parsed = SetNumberingSchema.parse(input)
+    const tenantId = session.logifit.tenantId
+
+    const [company] = await db
+      .select({ id: companies.id })
+      .from(companies)
+      .where(and(eq(companies.id, parsed.companyId), eq(companies.tenantId, tenantId)))
+      .limit(1)
+    if (!company)
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Empresa não encontrada neste tenant',
+        request_id: '',
+      })
+
+    const { rows } = await db.execute(sql`
+      SELECT id, last_used_numero
+        FROM fiscal_numbering_sequences
+       WHERE tenant_id = ${tenantId}
+         AND company_id = ${parsed.companyId}
+         AND kind = ${parsed.kind}::fiscal_emission_kind
+         AND serie = ${parsed.serie}
+         AND environment = ${parsed.environment}::fiscal_provider_env
+       LIMIT 1
+    `)
+    const existing = (rows as Array<{ id: string; last_used_numero: string | null }>)[0]
+
+    const lastUsed = existing?.last_used_numero ? Number(existing.last_used_numero) : 0
+    if (existing && parsed.nextNumero <= lastUsed)
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: `Esta série já emitiu até o nº ${lastUsed}. O próximo número precisa ser maior — repetir numeração gera duplicidade perante o fisco.`,
+        request_id: '',
+      })
+
+    if (existing) {
+      await db.execute(sql`
+        UPDATE fiscal_numbering_sequences
+           SET next_numero = ${parsed.nextNumero}, updated_at = now()
+         WHERE id = ${existing.id}
+      `)
+    } else {
+      await db.insert(fiscalNumberingSequences).values({
+        tenantId,
+        companyId: parsed.companyId,
+        kind: parsed.kind,
+        serie: parsed.serie,
+        nextNumero: parsed.nextNumero,
+        lastUsedNumero: parsed.nextNumero - 1,
+        environment: parsed.environment,
+      })
+    }
+
+    setAuditResource(parsed.companyId, {
+      kind: parsed.kind,
+      serie: parsed.serie,
+      environment: parsed.environment,
+      nextNumero: parsed.nextNumero,
+    })
+    return { ok: true as const }
   },
 )

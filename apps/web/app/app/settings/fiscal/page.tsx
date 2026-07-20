@@ -21,8 +21,10 @@ import {
 import { and, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { requireFullSession } from '../../../lib/session'
+import { CatalogManager } from './catalogo/catalog-client'
 import { FiscalCredentialsForm } from './credentials-form'
 import { type MunicipalCompanyOption, MunicipalCredentialsForm } from './municipal-credentials-form'
+import { NumberingForm } from './numbering-form'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,19 +44,34 @@ export default async function FiscalSettingsPage() {
     .where(eq(fiscalProviderCredentials.tenantId, tenantId))
 
   const services = await db
-    .select({ id: fiscalServiceCatalog.id, active: fiscalServiceCatalog.active })
+    .select({
+      id: fiscalServiceCatalog.id,
+      companyId: fiscalServiceCatalog.companyId,
+      municipalityCode: fiscalServiceCatalog.municipalityCode,
+      lc116Code: fiscalServiceCatalog.lc116Code,
+      codigoTributacaoNacional: fiscalServiceCatalog.codigoTributacaoNacional,
+      cnae: fiscalServiceCatalog.cnae,
+      description: fiscalServiceCatalog.description,
+      taxRegime: fiscalServiceCatalog.taxRegime,
+      issRateBp: fiscalServiceCatalog.issRateBp,
+      active: fiscalServiceCatalog.active,
+    })
     .from(fiscalServiceCatalog)
     .where(eq(fiscalServiceCatalog.tenantId, tenantId))
 
   const numbering = await db
     .select({
+      companyName: persons.name,
       kind: fiscalNumberingSequences.kind,
       serie: fiscalNumberingSequences.serie,
       nextNumero: fiscalNumberingSequences.nextNumero,
       environment: fiscalNumberingSequences.environment,
     })
     .from(fiscalNumberingSequences)
+    .innerJoin(companies, eq(companies.id, fiscalNumberingSequences.companyId))
+    .innerJoin(persons, eq(persons.id, companies.personId))
     .where(eq(fiscalNumberingSequences.tenantId, tenantId))
+    .orderBy(persons.name, fiscalNumberingSequences.kind)
 
   // Companies com catálogo: só elas emitem NFS-e, e o município do catálogo é
   // que diz qual série o portal espera (perfis em @repo/ai — ADR 0105).
@@ -75,6 +92,19 @@ export default async function FiscalSettingsPage() {
     .where(eq(companies.tenantId, tenantId))
     .orderBy(persons.name)
 
+  const allCompanies = await db
+    .select({ id: companies.id, name: persons.name, type: companies.type })
+    .from(companies)
+    .innerJoin(persons, eq(persons.id, companies.personId))
+    .where(eq(companies.tenantId, tenantId))
+    .orderBy(persons.name)
+  const companyOptions = allCompanies.map((c) => ({ id: c.id, name: `${c.name} (${c.type})` }))
+  const companyNameById = new Map(allCompanies.map((c) => [c.id, c.name]))
+  const catalogRows = services.map((s) => ({
+    ...s,
+    companyName: companyNameById.get(s.companyId) ?? '—',
+  }))
+
   const municipalCompanies: MunicipalCompanyOption[] = []
   for (const row of companyRows) {
     if (municipalCompanies.some((c) => c.id === row.id)) continue // 1 linha por company
@@ -87,6 +117,8 @@ export default async function FiscalSettingsPage() {
       configuredAt: row.configuredAt?.toLocaleDateString('pt-BR') ?? null,
     })
   }
+
+  const suggestedSerie = municipalCompanies[0]?.suggestedSerie ?? null
 
   const credentialsOk = credentials.some((c) => c.active)
   const servicesOk = services.some((s) => s.active)
@@ -152,21 +184,9 @@ export default async function FiscalSettingsPage() {
         title="Catálogo de serviços tributáveis"
         done={servicesOk}
         body={
-          <>
-            {servicesOk ? (
-              <p style={{ marginTop: 0 }}>
-                {services.filter((s) => s.active).length} serviço(s) ativo(s) cadastrado(s).
-              </p>
-            ) : (
-              <p style={{ marginTop: 0 }}>
-                Cadastre os serviços que sua empresa presta (mensalidade academia, consulta fisio,
-                sessão pilates) com código LC 116/2003 + alíquota ISS do município.
-              </p>
-            )}
-            <Link href="/app/settings/fiscal/catalogo" className="ev-btn ev-btn-sm">
-              {servicesOk ? 'Gerenciar catálogo' : 'Cadastrar serviços'}
-            </Link>
-          </>
+          // Embutido, nao link: o operador nao deveria sair da tela fiscal pra
+          // configurar aliquota e o que vende.
+          <CatalogManager companies={companyOptions} services={catalogRows} />
         }
       />
 
@@ -175,21 +195,11 @@ export default async function FiscalSettingsPage() {
         title="Séries e numeração"
         done={numberingOk}
         body={
-          numberingOk ? (
-            <>
-              {numbering.map((n) => (
-                <div key={`${n.kind}-${n.serie}-${n.environment}`}>
-                  <strong>{n.kind}</strong> série {n.serie} · próximo nº: {n.nextNumero} ·{' '}
-                  {n.environment}
-                </div>
-              ))}
-            </>
-          ) : (
-            <>
-              Séries serão criadas automaticamente na primeira emissão por
-              <code> (company × kind × serie × environment)</code>. Numeração começa em 1.
-            </>
-          )
+          <NumberingForm
+            companies={companyOptions}
+            rows={numbering}
+            suggestedSerie={suggestedSerie}
+          />
         }
       />
 
