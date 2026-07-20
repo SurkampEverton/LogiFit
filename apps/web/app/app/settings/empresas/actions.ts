@@ -197,28 +197,10 @@ export async function createFilial(
   })
 }
 
-// ─── updateCompanyRegistration ────────────────────────────────────────────
+// ─── updateCompanyFiscal ──────────────────────────────────────────────────
 
-/** Endereço no shape que `persons.address` documenta e que a Focus espera. */
-const AddressSchema = z.object({
-  cep: z.string().trim().max(9).optional(),
-  logradouro: z.string().trim().max(200).optional(),
-  numero: z.string().trim().max(20).optional(),
-  complemento: z.string().trim().max(100).optional(),
-  bairro: z.string().trim().max(100).optional(),
-  cidade: z.string().trim().max(100).optional(),
-  uf: z.string().trim().length(2).optional(),
-})
-
-const UpdateCompanyRegistrationSchema = z.object({
+const UpdateCompanyFiscalSchema = z.object({
   companyId: z.string().uuid(),
-  // Identificação (mora em persons — regra 22: CNPJ no cadastro central)
-  name: z.string().trim().min(2).max(200).optional(),
-  displayName: z.string().trim().max(200).nullable().optional(),
-  email: z.string().trim().email().nullable().optional(),
-  phone: z.string().trim().max(30).nullable().optional(),
-  address: AddressSchema.nullable().optional(),
-  // Fiscal (mora em companies)
   ie: z.string().trim().max(50).nullable().optional(),
   im: z.string().trim().max(50).nullable().optional(),
   regimeTributario: z.enum(['simples', 'presumido', 'real', 'mei']).nullable().optional(),
@@ -228,70 +210,42 @@ const UpdateCompanyRegistrationSchema = z.object({
 })
 
 /**
- * Cadastro completo da empresa — identificação, contato, endereço, dados
- * fiscais e habilitações.
+ * Dados fiscais da empresa — inscrições, regime e habilitações.
  *
- * Escreve em duas tabelas porque a identidade vive em `persons` (regra 22) e o
- * que é específico de pessoa jurídica operante vive em `companies`. Transação
- * para não deixar metade gravada.
- *
- * Cobre exatamente o que o cadastro de empresa na Focus exige: sem endereço
- * completo e e-mail não há como criar a empresa lá — e até aqui esses campos
- * não tinham tela, só existiam no schema.
+ * Escopo deliberadamente restrito a `companies`. Nome, e-mail, telefone e
+ * endereço são de `persons` e editados por `updatePerson` (ADR 0047 / regra
+ * 22): a tela de empresas compõe `<PersonForm>` em vez de escrever nesses
+ * campos por um segundo caminho.
  */
-export const updateCompanyRegistration = wrapServerAction(
-  { module: 'settings', action: 'company.update_registration', resourceType: 'company' },
-  async (input: z.infer<typeof UpdateCompanyRegistrationSchema>, { session, setAuditResource }) => {
+export const updateCompanyFiscal = wrapServerAction(
+  { module: 'settings', action: 'company.update_fiscal', resourceType: 'company' },
+  async (input: z.infer<typeof UpdateCompanyFiscalSchema>, { session, setAuditResource }) => {
     await requirePermission(session.logifit.userId, 'fiscal.admin')
-    const parsed = UpdateCompanyRegistrationSchema.parse(input)
-    const tenantId = session.logifit.tenantId
+    const parsed = UpdateCompanyFiscalSchema.parse(input)
 
-    const [company] = await db
-      .select({ id: companies.id, personId: companies.personId })
-      .from(companies)
-      .where(and(eq(companies.id, parsed.companyId), eq(companies.tenantId, tenantId)))
-      .limit(1)
-    if (!company)
+    const patch: Record<string, unknown> = { updatedAt: new Date() }
+    if (parsed.ie !== undefined) patch.ie = parsed.ie || null
+    if (parsed.im !== undefined) patch.im = parsed.im || null
+    if (parsed.regimeTributario !== undefined) patch.regimeTributario = parsed.regimeTributario
+    if (parsed.habilitaNfse !== undefined) patch.habilitaNfse = parsed.habilitaNfse
+    if (parsed.habilitaNfe !== undefined) patch.habilitaNfe = parsed.habilitaNfe
+    if (parsed.habilitaNfce !== undefined) patch.habilitaNfce = parsed.habilitaNfce
+
+    const [updated] = await db
+      .update(companies)
+      .set(patch)
+      .where(
+        and(eq(companies.id, parsed.companyId), eq(companies.tenantId, session.logifit.tenantId)),
+      )
+      .returning({ id: companies.id })
+    if (!updated)
       throw new ApiException({
         code: 'NOT_FOUND',
         message: 'Empresa não encontrada neste tenant',
         request_id: '',
       })
 
-    await db.transaction(async (tx) => {
-      const personPatch: Record<string, unknown> = {}
-      if (parsed.name !== undefined) personPatch.name = parsed.name
-      if (parsed.displayName !== undefined) personPatch.displayName = parsed.displayName || null
-      if (parsed.email !== undefined) personPatch.email = parsed.email || null
-      if (parsed.phone !== undefined) personPatch.phone = parsed.phone || null
-      if (parsed.address !== undefined) {
-        // Endereço vazio vira NULL em vez de objeto de campos em branco —
-        // assim "não informado" é distinguível de "informado vazio".
-        const filled = parsed.address
-          ? Object.fromEntries(Object.entries(parsed.address).filter(([, v]) => v))
-          : {}
-        personPatch.address = Object.keys(filled).length > 0 ? filled : null
-      }
-      if (Object.keys(personPatch).length > 0) {
-        personPatch.updatedAt = new Date()
-        await tx.update(persons).set(personPatch).where(eq(persons.id, company.personId))
-      }
-
-      const companyPatch: Record<string, unknown> = {}
-      if (parsed.ie !== undefined) companyPatch.ie = parsed.ie || null
-      if (parsed.im !== undefined) companyPatch.im = parsed.im || null
-      if (parsed.regimeTributario !== undefined)
-        companyPatch.regimeTributario = parsed.regimeTributario
-      if (parsed.habilitaNfse !== undefined) companyPatch.habilitaNfse = parsed.habilitaNfse
-      if (parsed.habilitaNfe !== undefined) companyPatch.habilitaNfe = parsed.habilitaNfe
-      if (parsed.habilitaNfce !== undefined) companyPatch.habilitaNfce = parsed.habilitaNfce
-      if (Object.keys(companyPatch).length > 0) {
-        companyPatch.updatedAt = new Date()
-        await tx.update(companies).set(companyPatch).where(eq(companies.id, company.id))
-      }
-    })
-
-    setAuditResource(company.id, { fields: Object.keys(parsed).filter((k) => k !== 'companyId') })
-    return { id: company.id }
+    setAuditResource(updated.id, { fields: Object.keys(patch).filter((k) => k !== 'updatedAt') })
+    return { id: updated.id }
   },
 )

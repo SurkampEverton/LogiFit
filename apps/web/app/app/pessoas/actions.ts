@@ -244,7 +244,9 @@ export const archivePerson = wrapServerAction(
     const [row] = await db
       .update(persons)
       .set({ archivedAt: new Date(), updatedAt: new Date() })
-      .where(eq(persons.id, input.id))
+      // Escopo de tenant: sem isso, qualquer pessoa de qualquer tenant
+      // seria arquivavel so por conhecer o id.
+      .where(and(eq(persons.id, input.id), eq(persons.tenantId, ctx.session.logifit.tenantId)))
       .returning()
     if (!row) {
       throw new ApiException({
@@ -254,6 +256,79 @@ export const archivePerson = wrapServerAction(
       })
     }
     ctx.setAuditResource(row.id)
+    return row
+  },
+)
+
+// ─── updatePerson ─────────────────────────────────────────────────────────
+
+const updatePersonInputSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().trim().min(2).max(200).optional(),
+  displayName: z.string().trim().max(200).nullable().optional(),
+  email: z.string().email().nullable().optional().or(z.literal('')),
+  phone: z.string().trim().max(50).nullable().optional(),
+  address: z
+    .object({
+      cep: z.string().optional(),
+      logradouro: z.string().optional(),
+      numero: z.string().optional(),
+      complemento: z.string().optional(),
+      bairro: z.string().optional(),
+      cidade: z.string().optional(),
+      uf: z.string().length(2).optional(),
+    })
+    .nullable()
+    .optional(),
+  notes: z.string().max(2000).nullable().optional(),
+})
+
+/**
+ * Edita identidade, contato e endereço de uma pessoa.
+ *
+ * O cadastro central (`persons`, ADR 0047) tinha criar e arquivar, mas não
+ * editar: corrigir um e-mail ou endereço exigia mexer no banco. Como toda
+ * entidade especializada (empresa, member, fornecedor) aponta pra cá, esses
+ * campos são editados **só aqui** — telas especializadas compõem esta, em vez
+ * de replicar os campos e divergir na validação.
+ *
+ * `document` não é editável: mudar CNPJ/CPF de uma pessoa já vinculada
+ * reescreveria a identidade de tudo que aponta pra ela. Corrigir documento
+ * errado é arquivar e recriar.
+ */
+export const updatePerson = wrapServerAction(
+  { module: 'persons', action: 'person.update', resourceType: 'persons' },
+  async (rawInput: z.input<typeof updatePersonInputSchema>, ctx): Promise<PersonRow> => {
+    const input = updatePersonInputSchema.parse(rawInput)
+
+    const patch: Record<string, unknown> = { updatedAt: new Date() }
+    if (input.name !== undefined) patch.name = input.name
+    if (input.displayName !== undefined) patch.displayName = input.displayName || null
+    if (input.email !== undefined) patch.email = input.email || null
+    if (input.phone !== undefined) patch.phone = input.phone || null
+    if (input.notes !== undefined) patch.notes = input.notes || null
+    if (input.address !== undefined) {
+      // Endereço sem nenhum campo preenchido vira NULL: "não informado" precisa
+      // ser distinguível de "informado vazio" pra UI conseguir sinalizar falta.
+      const filled = input.address
+        ? Object.fromEntries(Object.entries(input.address).filter(([, v]) => v))
+        : {}
+      patch.address = Object.keys(filled).length > 0 ? filled : null
+    }
+
+    const [row] = await db
+      .update(persons)
+      .set(patch)
+      .where(and(eq(persons.id, input.id), eq(persons.tenantId, ctx.session.logifit.tenantId)))
+      .returning()
+    if (!row) {
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Pessoa não encontrada',
+        request_id: '',
+      })
+    }
+    ctx.setAuditResource(row.id, { fields: Object.keys(patch).filter((k) => k !== 'updatedAt') })
     return row
   },
 )

@@ -73,6 +73,7 @@ export default async function EmpresasPage() {
               <CompanyRegistrationEdit
                 initial={{
                   companyId: c.id,
+                  personId: c.personId,
                   name: c.personName,
                   displayName: c.displayName,
                   email: c.email,
