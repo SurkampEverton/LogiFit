@@ -4,6 +4,7 @@ import { and, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireFullSession, withSessionContext } from '../../../lib/session'
+import { type PersonAddress, PersonForm } from '../person-form'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,8 +28,6 @@ export default async function PersonDetailPage({
   })
 
   if (!person) notFound()
-
-  const address = (person.address as Record<string, string | null> | null) ?? null
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-8 space-y-6">
@@ -55,46 +54,28 @@ export default async function PersonDetailPage({
         )}
       </header>
 
-      <section className="rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-surface)] p-6 space-y-3">
-        <h2 className="text-xl font-semibold">Dados</h2>
-        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
+      <section className="rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-surface)] p-6 space-y-4">
+        <div className="flex flex-wrap items-baseline gap-2">
+          <h2 className="text-xl font-semibold">Dados cadastrais</h2>
           {person.document && (
-            <div>
-              <dt className="font-medium text-[color:var(--ev-text-muted)]">
-                {person.kind === 'pf' ? 'CPF' : 'CNPJ'}
-              </dt>
-              <dd>{person.document}</dd>
-            </div>
+            <span className="text-sm text-[color:var(--ev-text-muted)]">
+              {person.kind === 'pf' ? 'CPF' : 'CNPJ'}: {person.document}
+            </span>
           )}
-          {person.email && (
-            <div>
-              <dt className="font-medium text-[color:var(--ev-text-muted)]">Email</dt>
-              <dd>{person.email}</dd>
-            </div>
-          )}
-          {person.phone && (
-            <div>
-              <dt className="font-medium text-[color:var(--ev-text-muted)]">Telefone</dt>
-              <dd>{person.phone}</dd>
-            </div>
-          )}
-          {person.birthDate && (
-            <div>
-              <dt className="font-medium text-[color:var(--ev-text-muted)]">Nascimento</dt>
-              <dd>{person.birthDate}</dd>
-            </div>
-          )}
-          {address && (
-            <div className="sm:col-span-2">
-              <dt className="font-medium text-[color:var(--ev-text-muted)]">Endereço</dt>
-              <dd>
-                {[address.logradouro, address.numero, address.bairro, address.cidade, address.uf]
-                  .filter(Boolean)
-                  .join(', ') || '—'}
-              </dd>
-            </div>
-          )}
-        </dl>
+        </div>
+
+        {/* Fonte única de identidade, contato e endereço — telas especializadas
+            (empresa, member) apontam pra cá em vez de recriar os campos. */}
+        <PersonForm
+          initial={{
+            id: person.id,
+            name: person.name,
+            displayName: person.displayName,
+            email: person.email,
+            phone: person.phone,
+            address: (person.address as PersonAddress | null) ?? null,
+          }}
+        />
       </section>
 
       {person.kind === 'pf' && (

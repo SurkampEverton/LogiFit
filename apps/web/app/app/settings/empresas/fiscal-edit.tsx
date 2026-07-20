@@ -1,21 +1,23 @@
 'use client'
 
 /**
- * Cadastro da empresa = dados cadastrais da pessoa + dados fiscais da company.
+ * Dados fiscais da empresa — inscrições, regime e habilitações.
  *
- * Identidade, contato e endereço **não são recriados aqui**: a tela compõe
- * `<PersonForm>`, que é a fonte única desses campos (ADR 0047 / regra 22).
- * Duplicar os inputs faria duas superfícies escreverem o mesmo dado e
- * divergirem em máscara e validação — foi o que aconteceu na primeira versão
- * desta tela e que esta refatoração desfez.
+ * Identidade, contato e endereço **não aparecem aqui**, nem como campo nem por
+ * composição: são de `persons` (ADR 0047 / regra 22) e editados em
+ * `/app/pessoas/[id]`. Esta tela mostra só um resumo com link.
  *
- * O que sobra aqui é o que só existe em `companies`: inscrições, regime e
- * quais documentos fiscais a empresa emite.
+ * Duas iterações levaram até aqui. A primeira recriou os inputs (duplicação de
+ * código). A segunda compôs `<PersonForm>` — resolveu o código, mas o operador
+ * continuava vendo os mesmos campos em duas telas e perguntando qual era a
+ * certa. Campo repetido confunde mesmo quando o código não está duplicado.
  */
+import { isAddressFiscallyComplete } from '@repo/types'
 import { toast } from '@repo/ui'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { type PersonAddress, PersonForm } from '../../pessoas/person-form'
+import type { PersonAddress } from '../../pessoas/person-form'
 import { updateCompanyFiscal } from './actions'
 
 const REGIMES = [
@@ -27,6 +29,16 @@ const REGIMES = [
 ] as const
 
 export type CompanyAddress = PersonAddress
+
+/** Resumo de uma linha; sinaliza quando falta o que a emissão fiscal exige. */
+function enderecoResumo(address: PersonAddress | null): string {
+  if (!address) return 'Endereço não informado — necessário para emitir nota'
+  const linha = [address.logradouro, address.numero, address.bairro, address.cidade, address.uf]
+    .filter(Boolean)
+    .join(', ')
+  if (!isAddressFiscallyComplete(address)) return `${linha || 'Endereço incompleto'} (incompleto)`
+  return linha
+}
 
 export interface CompanyRegistrationInitial {
   companyId: string
@@ -91,17 +103,29 @@ export function CompanyRegistrationEdit({ initial }: { initial: CompanyRegistrat
 
   return (
     <div className="ev-stack" style={{ gap: 'var(--ev-space-lg)' }}>
-      {/* Dados da pessoa — mesmo componente de /app/pessoas */}
-      <PersonForm
-        initial={{
-          id: initial.personId,
-          name: initial.name,
-          displayName: initial.displayName,
-          email: initial.email,
-          phone: initial.phone,
-          address: initial.address,
-        }}
-      />
+      {/* Apontamento, não cópia: identidade, contato e endereço são editados
+          em Pessoas — repetir os campos aqui criaria uma segunda superfície
+          escrevendo o mesmo dado. */}
+      <div
+        className="ev-card"
+        style={{ padding: 'var(--ev-space-md)', display: 'grid', gap: 'var(--ev-space-xs)' }}
+      >
+        <span className="text-sm font-semibold">Dados cadastrais</span>
+        <span className="text-sm">
+          {initial.displayName ? `${initial.name} · ${initial.displayName}` : initial.name}
+        </span>
+        <span className="text-xs" style={{ color: 'var(--ev-text-muted)' }}>
+          {initial.email ?? 'sem e-mail'}
+          {' · '}
+          {initial.phone ?? 'sem telefone'}
+        </span>
+        <span className="text-xs" style={{ color: 'var(--ev-text-muted)' }}>
+          {enderecoResumo(initial.address)}
+        </span>
+        <Link href={`/app/pessoas/${initial.personId}`} className="ev-btn ev-btn-sm">
+          Editar dados cadastrais em Pessoas →
+        </Link>
+      </div>
 
       <form onSubmit={handleSaveFiscal} className="ev-stack" style={{ gap: 'var(--ev-space-md)' }}>
         <fieldset className="ev-stack" style={{ border: 0, padding: 0, gap: 'var(--ev-space-sm)' }}>
