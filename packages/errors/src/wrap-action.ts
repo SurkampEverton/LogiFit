@@ -87,6 +87,15 @@ export function wrapAction<TArgs, TData>(
         code: error.code,
         fingerprint: error.fingerprint,
         message: error.message,
+        // Em dev, a mensagem original + stack do erro cru: sem isso, um
+        // INTERNAL_ERROR vira "estamos investigando" e o dev fica cego.
+        // NUNCA em produção — o erro cru pode conter dado sensível.
+        ...(process.env.NODE_ENV !== 'production' && !(e instanceof ApiException)
+          ? {
+              dev_original_message: e instanceof Error ? e.message : String(e),
+              dev_stack: e instanceof Error ? e.stack?.split('\n').slice(0, 4).join(' | ') : undefined,
+            }
+          : {}),
       })
       if (CAPTURE_CODES.has(error.code)) {
         captureFromBoundary(e, {

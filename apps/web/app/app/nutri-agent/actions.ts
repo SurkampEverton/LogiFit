@@ -20,38 +20,37 @@
  *   - getAgentRunStatus({runId})
  */
 
-import { db, pool } from '@repo/db/client'
+import { createHash } from 'node:crypto'
 import {
-  aiCommittees,
-  contracts,
-  foodLogDailySummary,
-  labResults,
-  labAnalytes,
-  mealPlans,
-  members,
-  nutriAgentRuns,
-  nutriAgentSuggestions,
-  nutriAgentMetricsSnapshot,
-  persons,
-  prescriptions,
-  consultaCids,
-  consultas,
-  cidCatalog,
-} from '@repo/db/schema'
-import {
-  detectRiskPatterns,
-  generatePreConsultSummary,
-  generateSuggestionsFromPatterns,
-  classifyInterpretationFields,
-  type MemberContextSnapshot,
   type NutriAgentDiaryDailySummary as DiaryDailySummary,
   type FisioActiveCid,
   type LabResultRecent,
+  type MemberContextSnapshot,
+  classifyInterpretationFields,
+  detectRiskPatterns,
+  generatePreConsultSummary,
+  generateSuggestionsFromPatterns,
 } from '@repo/ai'
+import { db, pool } from '@repo/db/client'
 import { ageYearsAt } from '@repo/db/nutri'
+import {
+  aiCommittees,
+  cidCatalog,
+  consultaCids,
+  consultas,
+  foodLogDailySummary,
+  labAnalytes,
+  labResults,
+  mealPlans,
+  members,
+  nutriAgentMetricsSnapshot,
+  nutriAgentRuns,
+  nutriAgentSuggestions,
+  persons,
+  prescriptions,
+} from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
 import { and, asc, desc, eq, gte, inArray, sql } from 'drizzle-orm'
-import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import { wrapServerAction } from '../../lib/wrap-action'
 
@@ -331,7 +330,7 @@ export const runNutriAgentForMember = wrapServerAction(
         .values({
           tenantId,
           memberId: parsed.memberId,
-          triggeredByUserId: session.user.id,
+          triggeredByUserId: session.logifit.userId,
           trigger: parsed.trigger,
           status: 'blocked',
           failureReason: 'comite_ia_inativo',
@@ -354,7 +353,7 @@ export const runNutriAgentForMember = wrapServerAction(
       .values({
         tenantId,
         memberId: parsed.memberId,
-        triggeredByUserId: session.user.id,
+        triggeredByUserId: session.logifit.userId,
         trigger: parsed.trigger,
         status: 'collecting',
         startedAt: new Date(),
@@ -512,7 +511,7 @@ export const acceptSuggestion = wrapServerAction(
       .update(nutriAgentSuggestions)
       .set({
         status: 'accepted',
-        reviewedByUserId: session.user.id,
+        reviewedByUserId: session.logifit.userId,
         reviewedAt: new Date(),
       })
       .where(
@@ -557,7 +556,7 @@ export const rejectSuggestion = wrapServerAction(
       .update(nutriAgentSuggestions)
       .set({
         status: 'rejected',
-        reviewedByUserId: session.user.id,
+        reviewedByUserId: session.logifit.userId,
         reviewedAt: new Date(),
         rejectionReason: parsed.reason,
       })

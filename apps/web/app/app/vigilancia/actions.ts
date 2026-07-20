@@ -16,15 +16,6 @@
  * 5.915/retorno 1.916 (ADR 0059) + bucket Storage para certificados.
  */
 
-import {
-  checkCleaningStatus,
-  classifyMaintenances,
-  pickAttentionItems,
-  validateChecklist,
-  validateCnesCode,
-  type ChecklistItem,
-  type MaintenanceWindow,
-} from '@repo/db/vigilancia'
 import { db } from '@repo/db/client'
 import {
   cleaningChecklists,
@@ -33,6 +24,15 @@ import {
   equipmentMaintenance,
   equipmentUsageLog,
 } from '@repo/db/schema'
+import {
+  type ChecklistItem,
+  type MaintenanceWindow,
+  checkCleaningStatus,
+  classifyMaintenances,
+  pickAttentionItems,
+  validateChecklist,
+  validateCnesCode,
+} from '@repo/db/vigilancia'
 import { ApiException } from '@repo/errors'
 import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -66,7 +66,11 @@ const CreateEquipmentInputSchema = z.object({
   serialNumber: z.string().min(1).max(80),
   anvisaRegistration: z.string().max(40).optional().nullable(),
   acquiredAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  warrantyUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  warrantyUntil: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .nullable(),
   maintenanceIntervalDays: z.number().int().positive().optional().nullable(),
   calibrationIntervalDays: z.number().int().positive().optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
@@ -91,7 +95,11 @@ const CompleteMaintenanceInputSchema = z.object({
   performedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   performedByText: z.string().max(200).optional().nullable(),
   certificateStoragePath: z.string().max(500).optional().nullable(),
-  certificateContentHash: z.string().regex(/^[a-f0-9]{64}$/).optional().nullable(),
+  certificateContentHash: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .optional()
+    .nullable(),
   costCents: z.number().int().min(0).optional().nullable(),
   observations: z.string().max(2000).optional().nullable(),
 })
@@ -155,7 +163,7 @@ export const createEquipment = wrapServerAction(
           maintenanceIntervalDays: parsed.maintenanceIntervalDays ?? null,
           calibrationIntervalDays: parsed.calibrationIntervalDays ?? null,
           notes: parsed.notes ?? null,
-          createdByUserId: session.user.id,
+          createdByUserId: session.logifit.userId,
         })
         .returning({ id: equipment.id })
       setAuditResource(row!.id, { manufacturer: parsed.manufacturer, model: parsed.model })
@@ -207,7 +215,10 @@ export const decommissionEquipment = wrapServerAction(
 
 export const listEquipment = wrapServerAction(
   { module: 'vigilancia', action: 'equipment.list' },
-  async (input: { companyId?: string; includeDecommissioned?: boolean } | undefined, { session }) => {
+  async (
+    input: { companyId?: string; includeDecommissioned?: boolean } | undefined,
+    { session },
+  ) => {
     const parsed = z
       .object({
         companyId: z.string().uuid().optional(),
@@ -274,7 +285,7 @@ export const scheduleMaintenance = wrapServerAction(
           externalLocation: parsed.externalLocation,
           externalSupplierId: parsed.externalSupplierId ?? null,
           observations: parsed.observations ?? null,
-          createdByUserId: session.user.id,
+          createdByUserId: session.logifit.userId,
         })
         .returning({ id: equipmentMaintenance.id })
 
@@ -341,7 +352,7 @@ export const completeMaintenance = wrapServerAction(
         certificateContentHash: parsed.certificateContentHash ?? null,
         costCents: parsed.costCents ?? null,
         observations: parsed.observations ?? null,
-        completedByUserId: session.user.id,
+        completedByUserId: session.logifit.userId,
         externalReturnedAt: new Date(),
         updatedAt: new Date(),
       })
@@ -357,10 +368,7 @@ export const completeMaintenance = wrapServerAction(
     } else if (maint.kind === 'calibration') {
       updateFields.lastCalibrationAt = parsed.performedAt
     }
-    await db
-      .update(equipment)
-      .set(updateFields)
-      .where(eq2(equipment.id, maint.equipmentId))
+    await db.update(equipment).set(updateFields).where(eq2(equipment.id, maint.equipmentId))
 
     setAuditResource(maint.id, { kind: maint.kind })
     return { ok: true }
@@ -477,7 +485,7 @@ export const recordUsage = wrapServerAction(
         tenantId,
         equipmentId: parsed.equipmentId,
         appointmentId: parsed.appointmentId ?? null,
-        usedByUserId: session.user.id,
+        usedByUserId: session.logifit.userId,
         durationMinutes: parsed.durationMinutes ?? null,
         parameters: parsed.parameters ?? null,
         notes: parsed.notes ?? null,
@@ -565,7 +573,7 @@ export const recordCleaning = wrapServerAction(
         companyId: cl.companyId,
         unitId: cl.unitId,
         checklistId: parsed.checklistId,
-        performedByUserId: session.user.id,
+        performedByUserId: session.logifit.userId,
         itemsDone: parsed.itemsDone as unknown as Record<string, unknown>,
         completionPct: validation.completionPct,
         isComplete: validation.isComplete,

@@ -6,6 +6,24 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fix — Bug sistêmico: `session.user.id` gravado em colunas que referenciam `users.id` 2026-07-20
+
+Descoberto ao fiar as retenções em contas a pagar. **90 atribuições em 25 arquivos** passavam o id do `auth_user` (BetterAuth) para colunas de FK de `users.id`:
+
+- **`accounts_payable` tinha FK** — a criação de conta a pagar estava **quebrada desde o Sprint 15**; a tela nunca funcionou pela UI (violação de FK virava "erro interno").
+- **`fiscal_emissions`, `fiscal_events`, `sales`, `stock_movements`, `commission_entries` não têm FK** — pior: gravavam um ID inexistente em silêncio, deixando a trilha de auditoria apontando pra lugar nenhum.
+
+Corrigido em massa por script determinístico (preservando `authUserId`/`actorAuthUserId`, que legitimamente recebem o id do BetterAuth), com typecheck verde nos 25 arquivos. Pendências registradas no roadmap: auditar dados já gravados, adicionar as FKs faltantes, e lint custom.
+
+- **`wrapAction` agora loga `dev_original_message` + stack em desenvolvimento** (nunca em produção — erro cru pode conter dado sensível). Foi exatamente essa cegueira que escondeu o bug: o envelope engolia a mensagem do Postgres e devolvia só "Erro interno; estamos investigando".
+
+### Build — Sprint 15b fase 2: retenções fiadas em contas a pagar 2026-07-20
+
+- **`createAP` calcula e persiste retenções**: escolhida a natureza tributária, o motor (ADR 0061) roda, grava `retention_total_cents`/`net_amount_cents` na AP e **1 linha por tributo** em `tax_retentions` (com competência `YYYY-MM` da emissão) — que é o que alimenta o relatório do contador.
+- **Preview em tempo real no formulário** (debounce 300ms): o operador vê PIS/COFINS/CSLL/IRRF discriminados e o líquido a pagar **antes** de salvar. Select de natureza + campo de ISS retido.
+- Novas SAs `previewRetentions` e `listTaxNatures` (naturezas globais curadas + custom do tenant).
+- **Validado E2E em dev**: AP de R$ 1.000,00 com "Serviço prestado por PJ (geral)" → R$ 61,50 retidos (6,15%), líquido R$ 938,50, 4 linhas em `tax_retentions`, e o relatório `/app/fiscal/retencoes` agregando por tributo com a guia de recolhimento.
+
 ### Build — Sprint 15b: motor de retenções tributárias (débito 5 — ADR 0061 Grupos B e G) 2026-07-19
 
 - **Calculadora pura `@repo/ai/fiscal/retencoes`** — 3 tipos de regra cobrindo a legislação: alíquota fixa com piso de dispensa (PIS/COFINS/CSLL/IRRF PJ — Lei 10.833 art. 31), **tabela progressiva** com parcela a deduzir e reporte da **alíquota efetiva** (IRRF PF), e alíquota com **teto compartilhado no mês** (INSS 11% — base já retida por outra fonte consome o limite). ISS entra por fora, com alíquota do catálogo municipal. **24 testes** incluindo invariantes (líquido + retido = bruto, retenção nunca excede o bruto, determinismo).

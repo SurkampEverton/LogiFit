@@ -447,7 +447,7 @@ export const emitNfseFromInvoice = wrapServerAction(
         submittedAt: new Date(),
         completedAt: status === 'completed' ? new Date() : null,
         cancelDeadlineAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h
-        createdByUserId: session.user.id,
+        createdByUserId: session.logifit.userId,
       })
       .returning({ id: fiscalEmissions.id })
 
@@ -549,7 +549,7 @@ export const emitNfseManual = wrapServerAction(
         submittedAt: new Date(),
         completedAt: status === 'completed' ? new Date() : null,
         cancelDeadlineAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        createdByUserId: session.user.id,
+        createdByUserId: session.logifit.userId,
       })
       .returning({ id: fiscalEmissions.id })
     if (!row)
@@ -765,7 +765,7 @@ export const emitNfeProductFromSale = wrapServerAction(
       providerName: provider.name,
       valorTotalCents: sale.totalCents,
       recipient,
-      createdByUserId: session.user.id,
+      createdByUserId: session.logifit.userId,
     })
     setAuditResource(saved.id, { saleId: sale.id, kind: 'nfe', valorTotalCents: sale.totalCents })
     return { id: saved.id, status: saved.status, chave: result.chave }
@@ -836,7 +836,7 @@ export const emitNfceFromSale = wrapServerAction(
       providerName: provider.name,
       valorTotalCents: sale.totalCents,
       recipient,
-      createdByUserId: session.user.id,
+      createdByUserId: session.logifit.userId,
     })
     setAuditResource(saved.id, { saleId: sale.id, kind: 'nfce', valorTotalCents: sale.totalCents })
     return { id: saved.id, status: saved.status, chave: result.chave }
@@ -913,7 +913,7 @@ export const cancelEmission = wrapServerAction(
         payload: result.raw,
         submittedAt: new Date(),
         completedAt: result.status === 'completed' ? new Date() : null,
-        createdByUserId: session.user.id,
+        createdByUserId: session.logifit.userId,
       })
       if (result.status === 'completed') {
         await tx
@@ -1026,7 +1026,7 @@ export const issueCce = wrapServerAction(
         payload: { sequence: nextSequence, result: result.raw },
         submittedAt: new Date(),
         completedAt: result.status === 'completed' ? new Date() : null,
-        createdByUserId: session.user.id,
+        createdByUserId: session.logifit.userId,
       })
       .returning({ id: fiscalEvents.id })
 
@@ -1089,7 +1089,7 @@ export const inutilizeRange = wrapServerAction(
         payload: { year: parsed.year, result: result.raw },
         submittedAt: new Date(),
         completedAt: result.status === 'completed' ? new Date() : null,
-        createdByUserId: session.user.id,
+        createdByUserId: session.logifit.userId,
       })
       .returning({ id: fiscalEvents.id })
 

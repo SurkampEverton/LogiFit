@@ -16,18 +16,17 @@
  * ficam como **stub** retornando NOT_IMPLEMENTED até POC do provider (ADR 0037).
  */
 
-import { db } from '@repo/db/client'
 import {
+  type PaymentCandidate,
   parseOfx,
   suggestMatches as suggestMatchesHeuristic,
-  type PaymentCandidate,
 } from '@repo/db/bancos'
+import { db } from '@repo/db/client'
 import {
   accountsPayable,
   accountsReceivable,
   bankAccounts,
   bankTransactions,
-  chartOfAccounts,
   persons,
   suppliers,
 } from '@repo/db/schema'
@@ -62,8 +61,14 @@ const ImportOfxInputSchema = z.object({
 const ListTransactionsInputSchema = z.object({
   bankAccountId: z.string().uuid().optional(),
   reconciled: z.enum(['yes', 'no', 'all']).default('all'),
-  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   limit: z.number().int().min(1).max(500).default(200),
 })
 
@@ -82,10 +87,7 @@ const SuggestMatchesInputSchema = z.object({
 
 export const createBankAccount = wrapServerAction(
   { module: 'financeiro', action: 'bank.create', resourceType: 'bank_accounts' },
-  async (
-    input: z.infer<typeof CreateBankAccountInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateBankAccountInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateBankAccountInputSchema.parse(input)
     try {
       const [row] = await db
@@ -102,7 +104,7 @@ export const createBankAccount = wrapServerAction(
           openingBalanceCents: parsed.openingBalanceCents,
           currentBalanceCents: parsed.openingBalanceCents,
           nickname: parsed.nickname ?? null,
-          createdByUserId: session.user.id,
+          createdByUserId: session.logifit.userId,
         })
         .returning({ id: bankAccounts.id })
       if (!row)
@@ -131,10 +133,7 @@ export const createBankAccount = wrapServerAction(
 
 export const listBankAccounts = wrapServerAction(
   { module: 'financeiro', action: 'bank.list' },
-  async (
-    input: { includeArchived?: boolean; companyId?: string } | undefined,
-    { session },
-  ) => {
+  async (input: { includeArchived?: boolean; companyId?: string } | undefined, { session }) => {
     const where = [eq(bankAccounts.tenantId, session.logifit.tenantId)]
     if (!input?.includeArchived) where.push(isNull(bankAccounts.archivedAt))
     if (input?.companyId) where.push(eq(bankAccounts.companyId, input.companyId))
@@ -167,10 +166,7 @@ export const listBankAccounts = wrapServerAction(
 
 export const archiveBankAccount = wrapServerAction(
   { module: 'financeiro', action: 'bank.archive', resourceType: 'bank_accounts' },
-  async (
-    input: z.infer<typeof ArchiveBankAccountInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ArchiveBankAccountInputSchema>, { session, setAuditResource }) => {
     const parsed = ArchiveBankAccountInputSchema.parse(input)
     const [row] = await db
       .update(bankAccounts)
@@ -197,10 +193,7 @@ export const archiveBankAccount = wrapServerAction(
 
 export const importOfx = wrapServerAction(
   { module: 'financeiro', action: 'bank.import_ofx', resourceType: 'bank_transactions' },
-  async (
-    input: z.infer<typeof ImportOfxInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ImportOfxInputSchema>, { session, setAuditResource }) => {
     const parsed = ImportOfxInputSchema.parse(input)
     const [bank] = await db
       .select({ id: bankAccounts.id })
@@ -299,17 +292,14 @@ export const importOfx = wrapServerAction(
 
 export const listBankTransactions = wrapServerAction(
   { module: 'financeiro', action: 'bank.list_tx' },
-  async (
-    input: z.infer<typeof ListTransactionsInputSchema> | undefined,
-    { session },
-  ) => {
+  async (input: z.infer<typeof ListTransactionsInputSchema> | undefined, { session }) => {
     const parsed = ListTransactionsInputSchema.parse(input ?? {})
     const where = [eq(bankTransactions.tenantId, session.logifit.tenantId)]
     if (parsed.bankAccountId) where.push(eq(bankTransactions.bankAccountId, parsed.bankAccountId))
-    if (parsed.reconciled === 'yes')
-      where.push(sql`${bankTransactions.reconciledAt} IS NOT NULL`)
+    if (parsed.reconciled === 'yes') where.push(sql`${bankTransactions.reconciledAt} IS NOT NULL`)
     if (parsed.reconciled === 'no') where.push(isNull(bankTransactions.reconciledAt))
-    if (parsed.from) where.push(gte(bankTransactions.postedAt, new Date(parsed.from + 'T00:00:00Z')))
+    if (parsed.from)
+      where.push(gte(bankTransactions.postedAt, new Date(parsed.from + 'T00:00:00Z')))
     if (parsed.to) where.push(lte(bankTransactions.postedAt, new Date(parsed.to + 'T23:59:59Z')))
 
     const rows = await db
@@ -338,14 +328,11 @@ export const listBankTransactions = wrapServerAction(
 
 export const confirmMatch = wrapServerAction(
   { module: 'financeiro', action: 'bank.confirm_match', resourceType: 'bank_transactions' },
-  async (
-    input: z.infer<typeof ConfirmMatchInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ConfirmMatchInputSchema>, { session, setAuditResource }) => {
     const parsed = ConfirmMatchInputSchema.parse(input)
     const update: Record<string, unknown> = {
       reconciledAt: new Date(),
-      reconciledByUserId: session.user.id,
+      reconciledByUserId: session.logifit.userId,
     }
     if (parsed.target === 'ap') {
       // valida AP existe no tenant
@@ -499,7 +486,7 @@ export const suggestMatchesAction = wrapServerAction(
         amountCents: a.amountCents,
         dueDate: a.dueDate,
         description: a.description,
-        supplierName: a.supplierPersonId ? nameByPersonId.get(a.supplierPersonId) ?? null : null,
+        supplierName: a.supplierPersonId ? (nameByPersonId.get(a.supplierPersonId) ?? null) : null,
       })),
       ...ars.map((a) => ({
         id: a.id,
@@ -507,7 +494,7 @@ export const suggestMatchesAction = wrapServerAction(
         amountCents: a.amountCents,
         dueDate: a.dueDate,
         description: a.description,
-        payerName: a.payerPersonId ? nameByPersonId.get(a.payerPersonId) ?? null : null,
+        payerName: a.payerPersonId ? (nameByPersonId.get(a.payerPersonId) ?? null) : null,
       })),
     ]
 
@@ -530,10 +517,7 @@ export const suggestMatchesAction = wrapServerAction(
 
 export const connectBankAccount = wrapServerAction(
   { module: 'financeiro', action: 'bank.openfinance_connect' },
-  async (
-    _input: { provider: 'pluggy' | 'belvo' },
-    { session: _session },
-  ) => {
+  async (_input: { provider: 'pluggy' | 'belvo' }, { session: _session }) => {
     throw new ApiException({
       code: 'INTERNAL_ERROR',
       message:

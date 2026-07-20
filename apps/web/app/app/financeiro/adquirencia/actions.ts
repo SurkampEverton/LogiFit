@@ -20,25 +20,24 @@
  */
 
 import {
+  type AcquirerProvider as AcquirerProviderKey,
+  type BankTxInput,
+  type SaleInput,
   computeSaleCost,
   feeRateFor,
   getAdapter,
   quoteAnticipation,
   suggestSettlementMatches,
-  type AcquirerProvider as AcquirerProviderKey,
-  type SaleInput,
-  type BankTxInput,
 } from '@repo/db/adquirencia'
+import { db } from '@repo/db/client'
 import {
   acquirerConnections,
   acquirerReconciliationRules,
   acquirerSales,
   anticipations,
-  bankAccounts,
   bankTransactions,
   invoices,
 } from '@repo/db/schema'
-import { db } from '@repo/db/client'
 import { ApiException } from '@repo/errors'
 import { and, asc, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -85,8 +84,14 @@ const ListAcquirerSalesInputSchema = z.object({
     .enum(['captured', 'anticipated', 'settled', 'chargeback', 'cancelled', 'all'])
     .default('all'),
   reconciled: z.enum(['yes', 'no', 'all']).default('all'),
-  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   limit: z.number().int().min(1).max(500).default(200),
 })
 
@@ -127,10 +132,7 @@ const GetUnifiedRevenueInputSchema = z.object({
 
 export const connectAcquirer = wrapServerAction(
   { module: 'financeiro', action: 'acquirer.connect', resourceType: 'acquirer_connections' },
-  async (
-    input: z.infer<typeof ConnectAcquirerInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ConnectAcquirerInputSchema>, { session, setAuditResource }) => {
     const parsed = ConnectAcquirerInputSchema.parse(input)
 
     // ⚠️ Sprint 18b implementa envelope encryption real (regra 35 + ADR 0073).
@@ -162,7 +164,7 @@ export const connectAcquirer = wrapServerAction(
           settlementBankAccountId: parsed.settlementBankAccountId ?? null,
           sandbox: parsed.sandbox,
           status: 'pending',
-          createdByUserId: session.user.id,
+          createdByUserId: session.logifit.userId,
         })
         .returning({ id: acquirerConnections.id })
       if (!row)
@@ -282,7 +284,11 @@ export const archiveAcquirerConnection = wrapServerAction(
       )
       .returning({ id: acquirerConnections.id })
     if (!row)
-      throw new ApiException({ code: 'NOT_FOUND', message: 'Conexão não encontrada', request_id: '' })
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Conexão não encontrada',
+        request_id: '',
+      })
     setAuditResource(row.id, {})
     return { id: row.id }
   },
@@ -296,10 +302,7 @@ export const syncAcquirerSales = wrapServerAction(
     action: 'acquirer.sync_sales',
     resourceType: 'acquirer_sales',
   },
-  async (
-    input: z.infer<typeof SyncAcquirerSalesInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof SyncAcquirerSalesInputSchema>, { session, setAuditResource }) => {
     const parsed = SyncAcquirerSalesInputSchema.parse(input)
     const [conn] = await db
       .select()
@@ -312,7 +315,11 @@ export const syncAcquirerSales = wrapServerAction(
       )
       .limit(1)
     if (!conn)
-      throw new ApiException({ code: 'NOT_FOUND', message: 'Conexão não encontrada', request_id: '' })
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Conexão não encontrada',
+        request_id: '',
+      })
 
     const adapter = getAdapter(conn.provider as AcquirerProviderKey)
     const credentials = conn.credentialsEncrypted ? JSON.parse(conn.credentialsEncrypted) : {}
@@ -378,8 +385,7 @@ export const listAcquirerSales = wrapServerAction(
       where.push(eq(acquirerSales.status, parsed.status))
     if (parsed.reconciled === 'yes') where.push(sql`${acquirerSales.reconciledAt} IS NOT NULL`)
     if (parsed.reconciled === 'no') where.push(isNull(acquirerSales.reconciledAt))
-    if (parsed.from)
-      where.push(gte(acquirerSales.capturedAt, new Date(parsed.from + 'T00:00:00Z')))
+    if (parsed.from) where.push(gte(acquirerSales.capturedAt, new Date(parsed.from + 'T00:00:00Z')))
     if (parsed.to) where.push(lte(acquirerSales.capturedAt, new Date(parsed.to + 'T23:59:59Z')))
 
     const rows = await db
@@ -413,10 +419,7 @@ export const listAcquirerSales = wrapServerAction(
 
 export const requestAnticipationAction = wrapServerAction(
   { module: 'financeiro', action: 'acquirer.anticipate', resourceType: 'anticipations' },
-  async (
-    input: z.infer<typeof RequestAnticipationInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof RequestAnticipationInputSchema>, { session, setAuditResource }) => {
     const parsed = RequestAnticipationInputSchema.parse(input)
     const [conn] = await db
       .select()
@@ -429,7 +432,11 @@ export const requestAnticipationAction = wrapServerAction(
       )
       .limit(1)
     if (!conn)
-      throw new ApiException({ code: 'NOT_FOUND', message: 'Conexão não encontrada', request_id: '' })
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Conexão não encontrada',
+        request_id: '',
+      })
 
     // Carrega vendas pra somar valor + validar status
     const sales = await db
@@ -495,8 +502,9 @@ export const requestAnticipationAction = wrapServerAction(
         externalId: result.externalId,
         rejectionReason: result.rejectionReason,
         rawPayload: result.rawPayload,
-        requestedByUserId: session.user.id,
-        approvedAt: result.status === 'approved' || result.status === 'credited' ? new Date() : null,
+        requestedByUserId: session.logifit.userId,
+        approvedAt:
+          result.status === 'approved' || result.status === 'credited' ? new Date() : null,
         creditedAt: result.status === 'credited' ? new Date() : null,
         rejectedAt: result.status === 'rejected' ? new Date() : null,
       })
@@ -561,7 +569,7 @@ export const reconcileSale = wrapServerAction(
       .set({
         reconciledWithBankTxId: parsed.bankTxId,
         reconciledAt: new Date(),
-        reconciledByUserId: session.user.id,
+        reconciledByUserId: session.logifit.userId,
         status: 'settled',
         actualSettlementDate: new Date().toISOString().slice(0, 10),
       })
@@ -613,7 +621,11 @@ export const suggestSettlementMatchesAction = wrapServerAction(
       .where(eq(acquirerConnections.id, sale.connectionId))
       .limit(1)
     if (!conn)
-      throw new ApiException({ code: 'NOT_FOUND', message: 'Conexão não encontrada', request_id: '' })
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Conexão não encontrada',
+        request_id: '',
+      })
 
     // Carrega bank_transactions positivas ± 7 dias do settlement esperado
     const settlementDate = new Date(sale.expectedSettlementDate + 'T00:00:00Z')
@@ -674,10 +686,7 @@ export const createAcquirerReconciliationRule = wrapServerAction(
     action: 'acquirer.rule_create',
     resourceType: 'acquirer_reconciliation_rules',
   },
-  async (
-    input: z.infer<typeof CreateAcquirerRuleInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateAcquirerRuleInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateAcquirerRuleInputSchema.parse(input)
     try {
       const [row] = await db
@@ -689,7 +698,7 @@ export const createAcquirerReconciliationRule = wrapServerAction(
           action: parsed.action,
           targetBankAccountId: parsed.targetBankAccountId ?? null,
           priority: parsed.priority,
-          createdByUserId: session.user.id,
+          createdByUserId: session.logifit.userId,
         })
         .returning({ id: acquirerReconciliationRules.id })
       if (!row)
@@ -737,10 +746,7 @@ export const archiveAcquirerReconciliationRule = wrapServerAction(
     action: 'acquirer.rule_archive',
     resourceType: 'acquirer_reconciliation_rules',
   },
-  async (
-    input: z.infer<typeof ArchiveAcquirerRuleInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ArchiveAcquirerRuleInputSchema>, { session, setAuditResource }) => {
     const parsed = ArchiveAcquirerRuleInputSchema.parse(input)
     const [row] = await db
       .update(acquirerReconciliationRules)
@@ -819,8 +825,7 @@ export const getUnifiedRevenue = wrapServerAction(
         netCents: Number(presential?.netCents ?? 0),
         feeCents: Number(presential?.feeCents ?? 0),
       },
-      totalCents:
-        Number(online?.amountCents ?? 0) + Number(presential?.netCents ?? 0),
+      totalCents: Number(online?.amountCents ?? 0) + Number(presential?.netCents ?? 0),
     }
   },
 )

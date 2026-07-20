@@ -21,14 +21,14 @@
  *   3. existe `professional_registrations` ativo com council_body coerente
  */
 
+import { db } from '@repo/db/client'
 import {
-  aggregateEntries,
-  calculateCommission,
   type CommissionContract,
   type CommissionEvent,
   type CommissionRuleRow,
+  aggregateEntries,
+  calculateCommission,
 } from '@repo/db/rh'
-import { db } from '@repo/db/client'
 import {
   commissionEntries,
   commissionPeriods,
@@ -77,7 +77,11 @@ const CreateContractInputSchema = z.object({
   defaultPercent: z.number().min(0).max(100).optional().nullable(),
   defaultAmountCents: z.number().int().min(0).optional().nullable(),
   effectiveFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  effectiveTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  effectiveTo: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .nullable(),
 })
 
 const CreateRuleInputSchema = z.object({
@@ -161,9 +165,7 @@ export const createProfessionalContract = wrapServerAction(
             eq(professionalRegistrations.personId, parsed.personId),
           ),
         )
-      const ok = regs.some(
-        (r) => r.councilBody === requiredCouncil && r.situation === 'active',
-      )
+      const ok = regs.some((r) => r.councilBody === requiredCouncil && r.situation === 'active')
       if (!ok) {
         throw new ApiException({
           code: 'FORBIDDEN',
@@ -191,7 +193,7 @@ export const createProfessionalContract = wrapServerAction(
           effectiveFrom: parsed.effectiveFrom,
           effectiveTo: parsed.effectiveTo ?? null,
           active: true,
-          createdByUserId: session.user.id,
+          createdByUserId: session.logifit.userId,
         })
         .returning({ id: professionalContracts.id })
       setAuditResource(row!.id, {
@@ -206,7 +208,8 @@ export const createProfessionalContract = wrapServerAction(
       if (code === '23514') {
         throw new ApiException({
           code: 'VALIDATION_ERROR',
-          message: 'Contrato inválido: percent precisa estar definido para kinds percent_*, ou amount_cents para fixo_por_atendimento',
+          message:
+            'Contrato inválido: percent precisa estar definido para kinds percent_*, ou amount_cents para fixo_por_atendimento',
           request_id: '',
         })
       }
@@ -337,7 +340,9 @@ export const calculateCommissionForEvent = wrapServerAction(
     const rules = await db
       .select()
       .from(commissionRules)
-      .where(and(eq(commissionRules.contractId, parsed.contractId), eq(commissionRules.active, true)))
+      .where(
+        and(eq(commissionRules.contractId, parsed.contractId), eq(commissionRules.active, true)),
+      )
 
     const contract: CommissionContract = {
       id: c.id,
@@ -426,17 +431,14 @@ export const listCommissionEntries = wrapServerAction(
     const parsed = z
       .object({
         personId: z.string().uuid().optional(),
-        status: z
-          .enum(['pending', 'included', 'excluded', 'reversed', 'all'])
-          .default('all'),
+        status: z.enum(['pending', 'included', 'excluded', 'reversed', 'all']).default('all'),
         limit: z.number().int().min(1).max(500).default(200),
       })
       .parse(input ?? {})
     const tenantId = session.logifit.tenantId
     const where = [eq(commissionEntries.tenantId, tenantId)]
     if (parsed.personId) where.push(eq(commissionEntries.personId, parsed.personId))
-    if (parsed.status !== 'all')
-      where.push(eq(commissionEntries.status, parsed.status))
+    if (parsed.status !== 'all') where.push(eq(commissionEntries.status, parsed.status))
     const rows = await db
       .select({
         id: commissionEntries.id,
@@ -556,7 +558,7 @@ export const approvePeriod = wrapServerAction(
       .update(commissionPeriods)
       .set({
         status: 'approved',
-        approvedByUserId: session.user.id,
+        approvedByUserId: session.logifit.userId,
         approvedAt: new Date(),
         updatedAt: new Date(),
       })
@@ -620,16 +622,13 @@ export const listCommissionPeriods = wrapServerAction(
   async (input: { status?: string; limit?: number } | undefined, { session }) => {
     const parsed = z
       .object({
-        status: z
-          .enum(['draft', 'approved', 'paid', 'cancelled', 'all'])
-          .default('all'),
+        status: z.enum(['draft', 'approved', 'paid', 'cancelled', 'all']).default('all'),
         limit: z.number().int().min(1).max(200).default(100),
       })
       .parse(input ?? {})
     const tenantId = session.logifit.tenantId
     const where = [eq(commissionPeriods.tenantId, tenantId)]
-    if (parsed.status !== 'all')
-      where.push(eq(commissionPeriods.status, parsed.status))
+    if (parsed.status !== 'all') where.push(eq(commissionPeriods.status, parsed.status))
     const rows = await db
       .select({
         id: commissionPeriods.id,

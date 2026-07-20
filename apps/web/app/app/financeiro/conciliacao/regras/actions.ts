@@ -4,8 +4,8 @@
  * Server Actions reconciliation_rules — Sprint 17 Faixa B.
  */
 
-import { db } from '@repo/db/client'
 import { RuleConditionSchema } from '@repo/db/bancos'
+import { db } from '@repo/db/client'
 import { reconciliationRules } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
 import { and, asc, eq, isNull } from 'drizzle-orm'
@@ -28,10 +28,7 @@ const ArchiveRuleInputSchema = z.object({
 
 export const createReconciliationRule = wrapServerAction(
   { module: 'financeiro', action: 'reconcile.rule.create', resourceType: 'reconciliation_rules' },
-  async (
-    input: z.infer<typeof CreateRuleInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateRuleInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateRuleInputSchema.parse(input)
     const condValidation = RuleConditionSchema.safeParse(parsed.condition)
     if (!condValidation.success) {
@@ -53,7 +50,7 @@ export const createReconciliationRule = wrapServerAction(
           targetChartAccountId: parsed.targetChartAccountId ?? null,
           targetCompanyId: parsed.targetCompanyId ?? null,
           priority: parsed.priority,
-          createdByUserId: session.user.id,
+          createdByUserId: session.logifit.userId,
         })
         .returning({ id: reconciliationRules.id })
       if (!row)
@@ -80,10 +77,7 @@ export const createReconciliationRule = wrapServerAction(
 
 export const listReconciliationRules = wrapServerAction(
   { module: 'financeiro', action: 'reconcile.rule.list' },
-  async (
-    input: { includeArchived?: boolean } | undefined,
-    { session },
-  ) => {
+  async (input: { includeArchived?: boolean } | undefined, { session }) => {
     const where = [eq(reconciliationRules.tenantId, session.logifit.tenantId)]
     if (!input?.includeArchived) where.push(isNull(reconciliationRules.archivedAt))
     const rows = await db
@@ -110,10 +104,7 @@ export const listReconciliationRules = wrapServerAction(
 
 export const archiveReconciliationRule = wrapServerAction(
   { module: 'financeiro', action: 'reconcile.rule.archive', resourceType: 'reconciliation_rules' },
-  async (
-    input: z.infer<typeof ArchiveRuleInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ArchiveRuleInputSchema>, { session, setAuditResource }) => {
     const parsed = ArchiveRuleInputSchema.parse(input)
     const [row] = await db
       .update(reconciliationRules)

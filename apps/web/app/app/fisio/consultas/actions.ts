@@ -19,16 +19,17 @@
  * (placeholder; ADR 0041 esperado pra escolher provider).
  */
 
+import { db } from '@repo/db/client'
 import {
+  type LockMethod,
+  type SignaturePolicyRow,
+  type TenantSignatureOverrideRow,
   hashConsultaContent,
   resolveSignaturePolicy,
   validateCidCode,
   validateCifCode,
   validateCifQualifier,
   validateLockAttempt,
-  type LockMethod,
-  type SignaturePolicyRow,
-  type TenantSignatureOverrideRow,
 } from '@repo/db/fisio'
 import {
   cidCatalog,
@@ -43,7 +44,6 @@ import {
   tenantSignatureOverrides,
   users,
 } from '@repo/db/schema'
-import { db } from '@repo/db/client'
 import { ApiException } from '@repo/errors'
 import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -186,7 +186,7 @@ export const createConsulta = wrapServerAction(
         companyId: member.companyId,
         memberId: parsed.memberId,
         appointmentId: parsed.appointmentId ?? null,
-        professionalUserId: session.user.id,
+        professionalUserId: session.logifit.userId,
         kind: parsed.kind,
         templateTypeId: parsed.templateTypeId ?? null,
         content: parsed.content,
@@ -519,15 +519,14 @@ export const lockConsulta = wrapServerAction(
 
     const now = new Date()
     const lockMethod: LockMethod = validation.lockMethod
-    const isSignedWithIcp =
-      lockMethod === 'icp_brasil_a1' || lockMethod === 'icp_brasil_a3'
+    const isSignedWithIcp = lockMethod === 'icp_brasil_a1' || lockMethod === 'icp_brasil_a3'
     const newStatus = isSignedWithIcp ? 'signed' : 'locked'
     const contentHash = hashConsultaContent({
       content: (c.content as Record<string, unknown>) ?? {},
       cids,
       cifs,
       signedAtIso: now.toISOString(),
-      professionalUserId: session.user.id,
+      professionalUserId: session.logifit.userId,
     })
 
     await db
@@ -536,7 +535,7 @@ export const lockConsulta = wrapServerAction(
         status: newStatus,
         lockMethod,
         lockedAt: now,
-        lockedByUserId: session.user.id,
+        lockedByUserId: session.logifit.userId,
         signedAt: isSignedWithIcp ? now : null,
         signedHash: contentHash, // hash da Lacre/Assinatura (regra 39)
         signatureProvider: parsed.signatureProvider ?? null,
@@ -597,7 +596,7 @@ export const createCorrectionNote = wrapServerAction(
       cids: [],
       cifs: [],
       signedAtIso: new Date().toISOString(),
-      professionalUserId: session.user.id,
+      professionalUserId: session.logifit.userId,
     })
 
     const [row] = await db
@@ -607,7 +606,7 @@ export const createCorrectionNote = wrapServerAction(
         consultaId: parsed.consultaId,
         body: parsed.body,
         reason: parsed.reason,
-        authorUserId: session.user.id,
+        authorUserId: session.logifit.userId,
         contentHash,
       })
       .returning({ id: consultaCorrectionNotes.id })
@@ -659,7 +658,10 @@ export const listCidCatalog = wrapServerAction(
   { module: 'fisio', action: 'cid.list' },
   async (input: { query?: string; limit?: number } | undefined, { session: _session }) => {
     const parsed = z
-      .object({ query: z.string().max(80).optional(), limit: z.number().int().min(1).max(200).default(50) })
+      .object({
+        query: z.string().max(80).optional(),
+        limit: z.number().int().min(1).max(200).default(50),
+      })
       .parse(input ?? {})
     const where = [eq(cidCatalog.active, true)]
     if (parsed.query) {
@@ -681,12 +683,20 @@ export const listCidCatalog = wrapServerAction(
 
 export const listCifCatalog = wrapServerAction(
   { module: 'fisio', action: 'cif.list' },
-  async (input: { query?: string; component?: string; limit?: number } | undefined, { session: _session }) => {
+  async (
+    input: { query?: string; component?: string; limit?: number } | undefined,
+    { session: _session },
+  ) => {
     const parsed = z
       .object({
         query: z.string().max(80).optional(),
         component: z
-          .enum(['body_functions', 'body_structures', 'activities_participation', 'environmental_factors'])
+          .enum([
+            'body_functions',
+            'body_structures',
+            'activities_participation',
+            'environmental_factors',
+          ])
           .optional(),
         limit: z.number().int().min(1).max(200).default(50),
       })

@@ -20,20 +20,16 @@
  * gravar metadata sem subir binário real.
  */
 
+import { db } from '@repo/db/client'
 import {
+  type EvolucaoAttachmentKind,
+  type Soap,
   generateStoragePath,
   hashEvolucaoContent,
   validateAttachmentUpload,
   validateSoapForLock,
-  type EvolucaoAttachmentKind,
-  type Soap,
 } from '@repo/db/evolucoes'
-import { db } from '@repo/db/client'
-import {
-  evolucaoAttachments,
-  evolucoesSessao,
-  members,
-} from '@repo/db/schema'
+import { evolucaoAttachments, evolucoesSessao, members } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
 import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -129,7 +125,7 @@ export const createEvolucao = wrapServerAction(
           companyId: member.companyId,
           memberId: parsed.memberId,
           appointmentId: parsed.appointmentId ?? null,
-          professionalUserId: session.user.id,
+          professionalUserId: session.logifit.userId,
           soap: parsed.soap as unknown as Record<string, unknown>,
           freeText: parsed.freeText ?? null,
           status: 'draft',
@@ -163,12 +159,7 @@ export const updateEvolucao = wrapServerAction(
     const [c] = await db
       .select({ id: evolucoesSessao.id, status: evolucoesSessao.status })
       .from(evolucoesSessao)
-      .where(
-        and(
-          eq(evolucoesSessao.id, parsed.evolucaoId),
-          eq(evolucoesSessao.tenantId, tenantId),
-        ),
-      )
+      .where(and(eq(evolucoesSessao.id, parsed.evolucaoId), eq(evolucoesSessao.tenantId, tenantId)))
       .limit(1)
     if (!c)
       throw new ApiException({
@@ -213,12 +204,7 @@ export const lockEvolucao = wrapServerAction(
         professionalUserId: evolucoesSessao.professionalUserId,
       })
       .from(evolucoesSessao)
-      .where(
-        and(
-          eq(evolucoesSessao.id, parsed.evolucaoId),
-          eq(evolucoesSessao.tenantId, tenantId),
-        ),
-      )
+      .where(and(eq(evolucoesSessao.id, parsed.evolucaoId), eq(evolucoesSessao.tenantId, tenantId)))
       .limit(1)
     if (!e)
       throw new ApiException({
@@ -240,10 +226,7 @@ export const lockEvolucao = wrapServerAction(
       })
 
     // Valida SOAP tem conteúdo
-    const soapValid = validateSoapForLock(
-      (e.soap as unknown as Soap) ?? {},
-      e.freeText,
-    )
+    const soapValid = validateSoapForLock((e.soap as unknown as Soap) ?? {}, e.freeText)
     if (!soapValid.ok)
       throw new ApiException({
         code: 'VALIDATION_ERROR',
@@ -268,7 +251,7 @@ export const lockEvolucao = wrapServerAction(
       soap: (e.soap as unknown as Soap) ?? {},
       freeText: e.freeText,
       attachmentIds: attachments.map((a) => a.id),
-      professionalUserId: session.user.id,
+      professionalUserId: session.logifit.userId,
       signedAtIso: now.toISOString(),
     })
 
@@ -280,7 +263,7 @@ export const lockEvolucao = wrapServerAction(
       .set({
         status: newStatus,
         lockedAt: now,
-        lockedByUserId: session.user.id,
+        lockedByUserId: session.logifit.userId,
         signedAt: isIcp ? now : null,
         signedHash: contentHash,
         signatureProvider: parsed.signatureProvider ?? null,
@@ -322,12 +305,7 @@ export const addAttachmentMetadata = wrapServerAction(
     const [e] = await db
       .select({ id: evolucoesSessao.id, status: evolucoesSessao.status })
       .from(evolucoesSessao)
-      .where(
-        and(
-          eq(evolucoesSessao.id, parsed.evolucaoId),
-          eq(evolucoesSessao.tenantId, tenantId),
-        ),
-      )
+      .where(and(eq(evolucoesSessao.id, parsed.evolucaoId), eq(evolucoesSessao.tenantId, tenantId)))
       .limit(1)
     if (!e)
       throw new ApiException({
@@ -363,7 +341,7 @@ export const addAttachmentMetadata = wrapServerAction(
         contentHash: parsed.contentHash,
         scanStatus: parsed.pendingScan ? 'pending' : 'clean',
         caption: parsed.caption ?? null,
-        uploadedByUserId: session.user.id,
+        uploadedByUserId: session.logifit.userId,
       })
       .returning({ id: evolucaoAttachments.id })
 
@@ -424,7 +402,7 @@ export const softDeleteAttachment = wrapServerAction(
       .set({
         scanStatus: 'soft_deleted',
         softDeletedAt: new Date(),
-        softDeletedByUserId: session.user.id,
+        softDeletedByUserId: session.logifit.userId,
         softDeleteReason: parsed.reason,
       })
       .where(
@@ -519,10 +497,7 @@ export const listEvolucaoAttachments = wrapServerAction(
 
 export const getAttachmentSignedUrl = wrapServerAction(
   { module: 'fisio', action: 'evolucao.attachment_signed_url' },
-  async (
-    _input: { attachmentId: string; ttlSeconds?: number },
-    { session: _session },
-  ) => {
+  async (_input: { attachmentId: string; ttlSeconds?: number }, { session: _session }) => {
     throw new ApiException({
       code: 'INTERNAL_ERROR',
       message:

@@ -22,7 +22,20 @@
  *   - regra 33 (envelope ADR 0071)
  */
 
+import {
+  type RetentionResult,
+  type RetentionRule,
+  type TaxNatureDefinition,
+  calculateRetentions,
+} from '@repo/ai'
 import { db } from '@repo/db/client'
+import {
+  type ApprovalRuleRow,
+  type ApprovalTraceEntry,
+  RequiredApproversSchema,
+  decideNextState,
+  canUserApprove as engineCanApprove,
+} from '@repo/db/erp-financeiro'
 import {
   accountsPayable,
   apArPayments,
@@ -30,16 +43,11 @@ import {
   chartOfAccounts,
   persons,
   suppliers,
+  taxNatures,
+  taxRetentions,
 } from '@repo/db/schema'
-import {
-  type ApprovalRuleRow,
-  type ApprovalTraceEntry,
-  canUserApprove as engineCanApprove,
-  decideNextState,
-  RequiredApproversSchema,
-} from '@repo/db/erp-financeiro'
 import { ApiException } from '@repo/errors'
-import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, isNull, lte, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { wrapServerAction } from '../../../lib/wrap-action'
 
@@ -58,9 +66,19 @@ const CreateAPInputSchema = z.object({
   docKey: z.string().length(44).optional(), // chave NF-e 44 dígitos
   noInvoice: z.boolean().default(false),
   attachmentStoragePath: z.string().max(500).optional(),
+  /** Sprint 15b — natureza tributária dispara cálculo de retenções (ADR 0061) */
+  taxNatureId: z.string().uuid().optional().nullable(),
+  /** ISS retido na fonte: alíquota municipal em basis points (500 = 5%) */
+  issRateBp: z.number().int().min(0).max(500).optional(),
 })
 
 const ApIdInput = z.object({ apId: z.string().uuid() })
+
+const PreviewRetentionsSchema = z.object({
+  taxNatureId: z.string().uuid(),
+  amountCents: z.number().int().positive(),
+  issRateBp: z.number().int().min(0).max(500).optional(),
+})
 
 const ApproveAPInputSchema = z.object({
   apId: z.string().uuid(),
@@ -96,8 +114,14 @@ const ListAPInputSchema = z.object({
       'reconciled',
     ])
     .optional(),
-  dueFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  dueTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dueFrom: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  dueTo: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   limit: z.number().int().min(1).max(500).default(100),
 })
 
@@ -131,14 +155,109 @@ async function loadActiveApRulesForTenant(
     }))
 }
 
+/**
+ * Carrega natureza tributária visível ao tenant (global curada `tenant_id IS
+ * NULL` ou custom do próprio tenant) e devolve no shape do motor de cálculo.
+ */
+async function loadTaxNature(tenantId: string, taxNatureId: string): Promise<TaxNatureDefinition> {
+  const [row] = await db
+    .select({
+      code: taxNatures.code,
+      label: taxNatures.label,
+      appliesTo: taxNatures.appliesTo,
+      rules: taxNatures.rules,
+      regulatoryReference: taxNatures.regulatoryReference,
+      active: taxNatures.active,
+    })
+    .from(taxNatures)
+    .where(
+      and(
+        eq(taxNatures.id, taxNatureId),
+        or(isNull(taxNatures.tenantId), eq(taxNatures.tenantId, tenantId)),
+      ),
+    )
+    .limit(1)
+  if (!row)
+    throw new ApiException({
+      code: 'NOT_FOUND',
+      message: 'Natureza tributária não encontrada',
+      request_id: '',
+    })
+  if (!row.active)
+    throw new ApiException({
+      code: 'VALIDATION_ERROR',
+      message: `Natureza "${row.label}" está desativada`,
+      request_id: '',
+    })
+  return {
+    code: row.code,
+    label: row.label,
+    appliesTo: row.appliesTo as TaxNatureDefinition['appliesTo'],
+    rules: row.rules as RetentionRule[],
+    regulatoryReference: row.regulatoryReference ?? '',
+  }
+}
+
+/** Competência 'YYYY-MM' da retenção — usa a data de emissão do documento. */
+function yearMonthOf(isoDate: string): string {
+  return isoDate.slice(0, 7)
+}
+
+/**
+ * Preview de retenções pro form (não persiste) — ADR 0061.
+ * O operador vê o líquido antes de salvar a AP.
+ */
+export const previewRetentions = wrapServerAction(
+  { module: 'financeiro', action: 'ap.preview_retentions' },
+  async (input: z.infer<typeof PreviewRetentionsSchema>, { session }) => {
+    const parsed = PreviewRetentionsSchema.parse(input)
+    const nature = await loadTaxNature(session.logifit.tenantId, parsed.taxNatureId)
+    const result = calculateRetentions({
+      grossCents: parsed.amountCents,
+      nature,
+      issRateBp: parsed.issRateBp,
+    })
+    return {
+      natureLabel: nature.label,
+      regulatoryReference: nature.regulatoryReference,
+      lines: result.lines,
+      totalRetainedCents: result.totalRetainedCents,
+      netCents: result.netCents,
+    }
+  },
+)
+
+/** Lista naturezas disponíveis (globais + custom do tenant) pro select. */
+export const listTaxNatures = wrapServerAction(
+  { module: 'financeiro', action: 'ap.list_tax_natures' },
+  async (_input: Record<string, never>, { session }) => {
+    const rows = await db
+      .select({
+        id: taxNatures.id,
+        code: taxNatures.code,
+        label: taxNatures.label,
+        appliesTo: taxNatures.appliesTo,
+        regulatoryReference: taxNatures.regulatoryReference,
+        isGlobal: sql<boolean>`tenant_id IS NULL`,
+      })
+      .from(taxNatures)
+      .where(
+        and(
+          eq(taxNatures.active, true),
+          or(isNull(taxNatures.tenantId), eq(taxNatures.tenantId, session.logifit.tenantId)),
+          sql`applies_to IN ('ap','both')`,
+        ),
+      )
+      .orderBy(asc(taxNatures.label))
+    return { rows }
+  },
+)
+
 // ─── createAP ────────────────────────────────────────────────────────────
 
 export const createAP = wrapServerAction(
   { module: 'financeiro', action: 'ap.create', resourceType: 'accounts_payable' },
-  async (
-    input: z.infer<typeof CreateAPInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateAPInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateAPInputSchema.parse(input)
     if (parsed.dueDate < parsed.issueDate) {
       throw new ApiException({
@@ -149,7 +268,11 @@ export const createAP = wrapServerAction(
     }
     // Valida chartAccount existe + é folha + pertence ao tenant
     const [chart] = await db
-      .select({ id: chartOfAccounts.id, isLeaf: chartOfAccounts.isLeaf, active: chartOfAccounts.active })
+      .select({
+        id: chartOfAccounts.id,
+        isLeaf: chartOfAccounts.isLeaf,
+        active: chartOfAccounts.active,
+      })
       .from(chartOfAccounts)
       .where(
         and(
@@ -166,6 +289,19 @@ export const createAP = wrapServerAction(
       })
     }
 
+    // Sprint 15b — retenções (ADR 0061): natureza informada dispara o motor
+    let retention: RetentionResult | null = null
+    if (parsed.taxNatureId) {
+      const nature = await loadTaxNature(session.logifit.tenantId, parsed.taxNatureId)
+      retention = calculateRetentions({
+        grossCents: parsed.amountCents,
+        nature,
+        issRateBp: parsed.issRateBp,
+      })
+    }
+    const retentionTotalCents = retention?.totalRetainedCents ?? 0
+    const netAmountCents = parsed.amountCents - retentionTotalCents
+
     const [row] = await db
       .insert(accountsPayable)
       .values({
@@ -175,8 +311,9 @@ export const createAP = wrapServerAction(
         supplierId: parsed.supplierId ?? null,
         chartAccountId: parsed.chartAccountId,
         amountCents: parsed.amountCents,
-        retentionTotalCents: 0,
-        netAmountCents: parsed.amountCents, // Sprint 15a sem retenção
+        taxNatureId: parsed.taxNatureId ?? null,
+        retentionTotalCents,
+        netAmountCents,
         issueDate: parsed.issueDate,
         dueDate: parsed.dueDate,
         description: parsed.description ?? null,
@@ -186,7 +323,7 @@ export const createAP = wrapServerAction(
         status: 'draft',
         attachmentStoragePath: parsed.attachmentStoragePath ?? null,
         source: 'manual',
-        createdByUserId: session.user.id,
+        createdByUserId: session.logifit.userId,
       })
       .returning({ id: accountsPayable.id })
     if (!row)
@@ -195,11 +332,36 @@ export const createAP = wrapServerAction(
         message: 'Falha ao criar AP',
         request_id: '',
       })
+
+    // Persiste 1 linha por tributo retido (base da DARF — relatório /app/fiscal/retencoes)
+    if (retention && retention.lines.length > 0) {
+      const withheldLines = retention.lines.filter((l) => l.withheld)
+      if (withheldLines.length > 0) {
+        await db.insert(taxRetentions).values(
+          withheldLines.map((line) => ({
+            tenantId: session.logifit.tenantId,
+            sourceType: 'ap',
+            sourceId: row.id,
+            taxNatureId: parsed.taxNatureId ?? null,
+            tax: line.tax,
+            baseCents: line.baseCents,
+            rateAppliedPercent: (line.rateAppliedBp / 100).toFixed(4),
+            amountCents: line.amountCents,
+            shouldWithhold: true,
+            yearMonth: yearMonthOf(parsed.issueDate),
+          })),
+        )
+      }
+    }
+
     setAuditResource(row.id, {
       amountCents: parsed.amountCents,
       chartAccountId: parsed.chartAccountId,
+      taxNatureId: parsed.taxNatureId ?? null,
+      retentionTotalCents,
+      netAmountCents,
     })
-    return { id: row.id }
+    return { id: row.id, retentionTotalCents, netAmountCents }
   },
 )
 
@@ -240,10 +402,12 @@ export const submitForApproval = wrapServerAction(
     }
 
     const rules = await loadActiveApRulesForTenant(session.logifit.tenantId)
-    const traceArr = Array.isArray(ap.approvalTrace) ? (ap.approvalTrace as ApprovalTraceEntry[]) : []
+    const traceArr = Array.isArray(ap.approvalTrace)
+      ? (ap.approvalTrace as ApprovalTraceEntry[])
+      : []
     const submission: ApprovalTraceEntry = {
       at: new Date().toISOString(),
-      byUserId: session.user.id,
+      byUserId: session.logifit.userId,
       action: 'submitted',
     }
     const newTrace = [...traceArr, submission]
@@ -255,7 +419,11 @@ export const submitForApproval = wrapServerAction(
     })
 
     const newStatus =
-      decision.state === 'approved' ? 'approved' : decision.state === 'rejected' ? 'rejected' : 'pending_approval'
+      decision.state === 'approved'
+        ? 'approved'
+        : decision.state === 'rejected'
+          ? 'rejected'
+          : 'pending_approval'
 
     await db
       .update(accountsPayable)
@@ -308,9 +476,11 @@ export const approveAP = wrapServerAction(
 
     const rules = await loadActiveApRulesForTenant(session.logifit.tenantId)
     const userRoles = session.logifit.roles ?? []
-    const traceArr = Array.isArray(ap.approvalTrace) ? (ap.approvalTrace as ApprovalTraceEntry[]) : []
+    const traceArr = Array.isArray(ap.approvalTrace)
+      ? (ap.approvalTrace as ApprovalTraceEntry[])
+      : []
     const can = engineCanApprove({
-      userId: session.user.id,
+      userId: session.logifit.userId,
       userRoles,
       amountCents: ap.amountCents,
       companyId: ap.companyId,
@@ -326,7 +496,7 @@ export const approveAP = wrapServerAction(
     }
     const approval: ApprovalTraceEntry = {
       at: new Date().toISOString(),
-      byUserId: session.user.id,
+      byUserId: session.logifit.userId,
       byRole: userRoles[0],
       action: 'approved',
       comment: parsed.comment,
@@ -339,7 +509,11 @@ export const approveAP = wrapServerAction(
       trace: newTrace,
     })
     const newStatus =
-      decision.state === 'approved' ? 'approved' : decision.state === 'rejected' ? 'rejected' : 'pending_approval'
+      decision.state === 'approved'
+        ? 'approved'
+        : decision.state === 'rejected'
+          ? 'rejected'
+          : 'pending_approval'
 
     await db
       .update(accountsPayable)
@@ -383,10 +557,12 @@ export const rejectAP = wrapServerAction(
         request_id: '',
       })
     }
-    const traceArr = Array.isArray(ap.approvalTrace) ? (ap.approvalTrace as ApprovalTraceEntry[]) : []
+    const traceArr = Array.isArray(ap.approvalTrace)
+      ? (ap.approvalTrace as ApprovalTraceEntry[])
+      : []
     const rejection: ApprovalTraceEntry = {
       at: new Date().toISOString(),
-      byUserId: session.user.id,
+      byUserId: session.logifit.userId,
       byRole: session.logifit.roles?.[0],
       action: 'rejected',
       comment: parsed.reason,
@@ -489,7 +665,7 @@ export const registerManualPayment = wrapServerAction(
       method: parsed.method,
       reference: parsed.reference ?? null,
       notes: parsed.notes ?? null,
-      recordedByUserId: session.user.id,
+      recordedByUserId: session.logifit.userId,
     })
 
     // Soma todos os pagamentos da AP
@@ -498,9 +674,7 @@ export const registerManualPayment = wrapServerAction(
         total: sql<number>`COALESCE(SUM(${apArPayments.amountCents}), 0)::bigint`,
       })
       .from(apArPayments)
-      .where(
-        and(eq(apArPayments.sourceType, 'ap'), eq(apArPayments.sourceId, parsed.apId)),
-      )
+      .where(and(eq(apArPayments.sourceType, 'ap'), eq(apArPayments.sourceId, parsed.apId)))
     const paidTotal = Number(agg?.total ?? 0)
     const fullyPaid = paidTotal >= ap.netAmountCents
 

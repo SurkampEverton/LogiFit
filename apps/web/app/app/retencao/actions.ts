@@ -19,15 +19,15 @@
  * flag rolling pos-piloto) chama `scorePredict` em batch.
  */
 
+import { db } from '@repo/db/client'
 import {
-  computeFeatures,
-  hashFeatures,
   type ChurnFeatures,
   type ChurnPrediction,
+  computeFeatures,
+  hashFeatures,
   heuristicPredict,
   predictChurn,
 } from '@repo/db/retencao'
-import { db } from '@repo/db/client'
 import {
   accessEvents,
   appointments,
@@ -42,7 +42,7 @@ import {
   members,
 } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
-import { and, asc, desc, eq, gte, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { wrapServerAction } from '../../lib/wrap-action'
 
@@ -162,8 +162,7 @@ async function loadMemberRawData(
     .where(and(eq(contracts.tenantId, tenantId), eq(contracts.memberId, memberId)))
     .orderBy(asc(contracts.startedAt))
     .limit(1)
-  const contractStartedAt =
-    contract?.startedAt?.toISOString() ?? new Date().toISOString()
+  const contractStartedAt = contract?.startedAt?.toISOString() ?? new Date().toISOString()
 
   // Achievements últimos 90d
   const [achievCount] = await db
@@ -182,11 +181,7 @@ async function loadMemberRawData(
     .select({ count: sql<number>`COUNT(*)::int` })
     .from(goals)
     .where(
-      and(
-        eq(goals.tenantId, tenantId),
-        eq(goals.memberId, memberId),
-        eq(goals.status, 'active'),
-      ),
+      and(eq(goals.tenantId, tenantId), eq(goals.memberId, memberId), eq(goals.status, 'active')),
     )
 
   return {
@@ -238,10 +233,7 @@ export const scorePredict = wrapServerAction(
           validUntil: churnPredictions.validUntil,
         })
         .from(churnPredictions)
-        .innerJoin(
-          churnFeaturesSnapshot,
-          eq(churnFeaturesSnapshot.id, churnPredictions.snapshotId),
-        )
+        .innerJoin(churnFeaturesSnapshot, eq(churnFeaturesSnapshot.id, churnPredictions.snapshotId))
         .where(
           and(
             eq(churnPredictions.tenantId, tenantId),
@@ -285,9 +277,7 @@ export const scorePredict = wrapServerAction(
     const validUntil = new Date()
     validUntil.setHours(validUntil.getHours() + 24)
     const modelVersion =
-      prediction.source === 'llm'
-        ? 'gemini-2.5-flash@2026-05'
-        : 'heuristic-v1@2026-05'
+      prediction.source === 'llm' ? 'gemini-2.5-flash@2026-05' : 'heuristic-v1@2026-05'
 
     const [pred] = await db
       .insert(churnPredictions)
@@ -381,10 +371,7 @@ export const assignIntervention = wrapServerAction(
       .select({ id: churnPredictions.id, memberId: churnPredictions.memberId })
       .from(churnPredictions)
       .where(
-        and(
-          eq(churnPredictions.id, parsed.predictionId),
-          eq(churnPredictions.tenantId, tenantId),
-        ),
+        and(eq(churnPredictions.id, parsed.predictionId), eq(churnPredictions.tenantId, tenantId)),
       )
       .limit(1)
     if (!pred)
@@ -401,7 +388,7 @@ export const assignIntervention = wrapServerAction(
         memberId: pred.memberId,
         predictionId: pred.id,
         assignedToUserId: parsed.assignedToUserId,
-        assignedByUserId: session.user.id,
+        assignedByUserId: session.logifit.userId,
         action: parsed.action,
         notes: parsed.notes ?? null,
       })
@@ -429,7 +416,7 @@ export const closeIntervention = wrapServerAction(
       .update(churnInterventions)
       .set({
         closedAt: new Date(),
-        closedByUserId: session.user.id,
+        closedByUserId: session.logifit.userId,
         outcome: parsed.outcome,
         outcomeNotes: parsed.outcomeNotes ?? null,
       })
@@ -499,14 +486,16 @@ export const feedbackCancellation = wrapServerAction(
           probAtChurn: probAtChurn != null ? probAtChurn.toFixed(3) : null,
           wasPredicted,
           interventionId: lastIntervention?.id ?? null,
-          recordedByUserId: session.user.id,
+          recordedByUserId: session.logifit.userId,
         })
         .returning({ id: churnEvents.id })
       setAuditResource(row!.id, { memberId: parsed.memberId, wasPredicted })
       return { id: row!.id, wasPredicted }
     } catch (err) {
-      const code = (err as { code?: string; cause?: { code?: string } }).code ??
-        (err as { cause?: { code?: string } }).cause?.code ?? ''
+      const code =
+        (err as { code?: string; cause?: { code?: string } }).code ??
+        (err as { cause?: { code?: string } }).cause?.code ??
+        ''
       if (code === '23505') {
         throw new ApiException({
           code: 'VALIDATION_ERROR',
@@ -575,4 +564,3 @@ export async function loadFeaturesForUI(
   const raw = await loadMemberRawData(memberId, tenantId)
   return computeFeatures(raw)
 }
-

@@ -1,15 +1,13 @@
+import { db } from '@repo/db/client'
+import { chartOfAccounts, companies, persons, suppliers, taxNatures } from '@repo/db/schema'
 /**
  * `/app/financeiro/contas-pagar/new` — formulário criação de AP em rascunho.
+ *
+ * Sprint 15b: carrega naturezas tributárias (globais curadas + custom do
+ * tenant) pro select de retenções (ADR 0061).
  */
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, eq, isNull, or, sql } from 'drizzle-orm'
 import Link from 'next/link'
-import { db } from '@repo/db/client'
-import {
-  chartOfAccounts,
-  companies,
-  persons,
-  suppliers,
-} from '@repo/db/schema'
 import { requireFullSession } from '../../../../lib/session'
 import { NewAPForm } from './new-ap-form'
 
@@ -19,7 +17,7 @@ export default async function NewAPPage() {
   const session = await requireFullSession('/app/financeiro/contas-pagar/new')
   const tenantId = session.logifit.tenantId
 
-  const [companiesList, suppliersList, leaves] = await Promise.all([
+  const [companiesList, suppliersList, leaves, natures] = await Promise.all([
     db
       .select({ id: companies.id, name: persons.name })
       .from(companies)
@@ -53,6 +51,22 @@ export default async function NewAPPage() {
         ),
       )
       .orderBy(asc(chartOfAccounts.code)),
+    db
+      .select({
+        id: taxNatures.id,
+        label: taxNatures.label,
+        regulatoryReference: taxNatures.regulatoryReference,
+        isGlobal: sql<boolean>`tenant_id IS NULL`,
+      })
+      .from(taxNatures)
+      .where(
+        and(
+          eq(taxNatures.active, true),
+          or(isNull(taxNatures.tenantId), eq(taxNatures.tenantId, tenantId)),
+          sql`applies_to IN ('ap','both')`,
+        ),
+      )
+      .orderBy(asc(taxNatures.label)),
   ])
 
   return (
@@ -88,6 +102,7 @@ export default async function NewAPPage() {
             defaultTerm: s.defaultTerm,
           }))}
           leafAccounts={leaves}
+          taxNatures={natures}
         />
       )}
     </div>

@@ -29,7 +29,18 @@
  *   no OCR provider (regra 37).
  */
 
+import {
+  type ExamAnalyteParsed,
+  type ExamesPatientContext as PatientContext,
+  type ExamesReferenceRangeInput as ReferenceRangeInput,
+  classifyInterpretationFields,
+  compareWithRanges,
+  detectPatterns,
+  getFollowUpSuggestions,
+  parseExtractionJson,
+} from '@repo/ai'
 import { db } from '@repo/db/client'
+import { ageYearsAt } from '@repo/db/nutri'
 import {
   examDocuments,
   examExtractions,
@@ -43,19 +54,8 @@ import {
   persons,
   tenantExamAiSettings,
 } from '@repo/db/schema'
-import {
-  classifyInterpretationFields,
-  compareWithRanges,
-  detectPatterns,
-  getFollowUpSuggestions,
-  parseExtractionJson,
-  type ExamAnalyteParsed,
-  type ExamesPatientContext as PatientContext,
-  type ExamesReferenceRangeInput as ReferenceRangeInput,
-} from '@repo/ai'
-import { ageYearsAt } from '@repo/db/nutri'
 import { ApiException } from '@repo/errors'
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { wrapServerAction } from '../../lib/wrap-action'
 
@@ -138,7 +138,8 @@ function stubOcrAndExtraction(): {
   }
 } {
   return {
-    rawText: '[STUB OCR — Sprint 33b conecta provider real]\nHemograma + Lipidograma\nLaboratório Exemplo SA',
+    rawText:
+      '[STUB OCR — Sprint 33b conecta provider real]\nHemograma + Lipidograma\nLaboratório Exemplo SA',
     structuredData: {
       examType: 'perfil_metabolico',
       laboratory: 'Laboratório Exemplo SA',
@@ -227,7 +228,7 @@ export const uploadExamDocument = wrapServerAction(
         tenantId,
         memberId: parsed.memberId,
         source: parsed.source,
-        uploadedByUserId: session.user.id,
+        uploadedByUserId: session.logifit.userId,
         sourceRef: parsed.sourceRef ?? null,
         storagePath: parsed.storagePath,
         originalFilename: parsed.originalFilename,
@@ -369,10 +370,7 @@ export const processExam = wrapServerAction(
     const followUp = getFollowUpSuggestions(patterns)
 
     // 5. Classifier guard
-    const fieldsToCheck = [
-      ...patterns.map((p) => p.description),
-      ...followUp,
-    ]
+    const fieldsToCheck = [...patterns.map((p) => p.description), ...followUp]
     const classification = classifyInterpretationFields(fieldsToCheck)
 
     // 6. Persiste draft
@@ -468,7 +466,7 @@ export const submitExamReview = wrapServerAction(
         acceptedHypotheses: parsed.acceptedHypotheses,
         rejectedHypotheses: parsed.rejectedHypotheses,
         professionalObservations: parsed.observations ?? null,
-        reviewedByUserId: session.user.id,
+        reviewedByUserId: session.logifit.userId,
       })
 
       // 2. Cria audit edits (1 por analito)
@@ -480,7 +478,7 @@ export const submitExamReview = wrapServerAction(
             fieldKey: `analyte.${a.code}`,
             beforeValue: null,
             afterValue: { value: a.value, unit: a.unit, ignored: a.ignored },
-            editedByUserId: session.user.id,
+            editedByUserId: session.logifit.userId,
           })
         }
       }
@@ -498,7 +496,7 @@ export const submitExamReview = wrapServerAction(
             ? (doc.collectedAt.toISOString().slice(0, 10) as never)
             : (new Date().toISOString().slice(0, 10) as never),
           laboratory: doc.laboratory,
-          enteredByUserId: session.user.id,
+          enteredByUserId: session.logifit.userId,
           // outOfRange recalculado pelo Sprint 30 quando registerLabResult — aqui passa false (MVP)
           outOfRange: false,
         })
@@ -510,7 +508,7 @@ export const submitExamReview = wrapServerAction(
         .set({
           status: 'published',
           reviewedAt: new Date(),
-          reviewedByUserId: session.user.id,
+          reviewedByUserId: session.logifit.userId,
           updatedAt: new Date(),
         })
         .where(eq(examDocuments.id, doc.id))
@@ -620,12 +618,7 @@ export const markSensitive = wrapServerAction(
     const [row] = await db
       .update(examDocuments)
       .set({ sensitivity: parsed.sensitivity, updatedAt: new Date() })
-      .where(
-        and(
-          eq(examDocuments.id, parsed.examDocumentId),
-          eq(examDocuments.tenantId, tenantId),
-        ),
-      )
+      .where(and(eq(examDocuments.id, parsed.examDocumentId), eq(examDocuments.tenantId, tenantId)))
       .returning({ id: examDocuments.id })
 
     if (!row) {
@@ -658,7 +651,7 @@ export const rejectExam = wrapServerAction(
         status: 'rejected',
         rejectionReason: parsed.reason,
         reviewedAt: new Date(),
-        reviewedByUserId: session.user.id,
+        reviewedByUserId: session.logifit.userId,
         updatedAt: new Date(),
       })
       .where(

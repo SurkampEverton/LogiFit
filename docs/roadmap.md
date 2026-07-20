@@ -80,6 +80,21 @@ Linha do tempo + controle de evolução. Para visão funcional (módulos por ár
 
 ---
 
+## Bug sistêmico corrigido — `session.user.id` vs `session.logifit.userId` (2026-07-20)
+
+Descoberto ao fiar as retenções em contas a pagar: **90 atribuições em 25 arquivos** passavam `session.user.id` (id do `auth_user` BetterAuth) para colunas que referenciam `users.id` (`created_by_user_id`, `professional_user_id`, `reviewed_by_user_id`, `actor_user_id`…).
+
+Como se manifestava — e por que passou despercebido tanto tempo:
+
+| Tabela | FK em `created_by_user_id`? | Sintoma |
+|---|---|---|
+| `accounts_payable` | ✅ sim | **Criação de AP quebrada desde o Sprint 15** — violação de FK; a tela nunca funcionou |
+| `fiscal_emissions`, `fiscal_events`, `sales`, `stock_movements`, `commission_entries` | ❌ não | **Pior**: gravava ID inexistente em silêncio — trilha de auditoria apontando pra lugar nenhum |
+
+Corrigido em massa (script determinístico + typecheck verde), preservando `authUserId`/`actorAuthUserId`, que legitimamente recebem o id do BetterAuth. **Ações pendentes**: (a) auditar dados já gravados com ID inválido nas 5 tabelas sem FK; (b) adicionar as FKs faltantes pra o banco falhar ruidosamente no futuro; (c) lint custom `no-auth-user-id-in-user-fk`.
+
+O wrapper de Server Action passou a logar `dev_original_message` + stack em desenvolvimento — sem isso um `INTERNAL_ERROR` vira "estamos investigando" e o dev fica cego (foi o que escondeu este bug).
+
 ## Débitos de schema — dependências fantasma (auditoria Sprint 36b, 2026-07-19)
 
 Durante o Sprint 36b, 6 estruturas citadas como "entregues" ou "esperadas" por sprints anteriores se revelaram **inexistentes no schema**. Docs de sprint referenciam essas tabelas como se existissem — qualquer feature que dependa delas está silenciosamente bloqueada. Decisão do fundador: alocar cada uma a um sprint dono (ou cortar do escopo).

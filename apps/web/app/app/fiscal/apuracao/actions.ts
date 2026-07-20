@@ -512,7 +512,7 @@ export const closeAggregation = wrapServerAction(
       .set({
         status: 'closed',
         closedAt: new Date(),
-        closedByUserId: session.user.id,
+        closedByUserId: session.logifit.userId,
       })
       .where(
         and(

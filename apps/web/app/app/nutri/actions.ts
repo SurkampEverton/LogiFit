@@ -21,6 +21,15 @@
 
 import { db } from '@repo/db/client'
 import {
+  type MealInput,
+  type Nutrients,
+  type RawEquivalenceRow,
+  calculateMealPlanNutrition,
+  compareAgainstTargets,
+  parseNutrients,
+  rankEquivalents,
+} from '@repo/db/nutri'
+import {
   foodEquivalences,
   foodMeasures,
   foods,
@@ -30,15 +39,6 @@ import {
   members,
   tenantBranding,
 } from '@repo/db/schema'
-import {
-  calculateMealPlanNutrition,
-  compareAgainstTargets,
-  parseNutrients,
-  rankEquivalents,
-  type MealInput,
-  type Nutrients,
-  type RawEquivalenceRow,
-} from '@repo/db/nutri'
 import { ApiException } from '@repo/errors'
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -228,10 +228,7 @@ export const getFoodDetail = wrapServerAction(
       .select()
       .from(foods)
       .where(
-        and(
-          eq(foods.id, parsed.foodId),
-          or(isNull(foods.tenantId), eq(foods.tenantId, tenantId)),
-        ),
+        and(eq(foods.id, parsed.foodId), or(isNull(foods.tenantId), eq(foods.tenantId, tenantId))),
       )
       .limit(1)
 
@@ -276,10 +273,7 @@ export const createTenantFood = wrapServerAction(
       })
     }
 
-    const nameNormalized = parsed.name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
+    const nameNormalized = parsed.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
     const [row] = await db
       .insert(foods)
@@ -292,7 +286,7 @@ export const createTenantFood = wrapServerAction(
         subcategory: parsed.subcategory ?? null,
         preparation: parsed.preparation ?? null,
         nutrients: parsed.nutrients,
-        createdByUserId: session.user.id,
+        createdByUserId: session.logifit.userId,
       })
       .returning({ id: foods.id })
 
@@ -389,7 +383,7 @@ export const createMealPlan = wrapServerAction(
           notes: parsed.notes ?? null,
           version: 1,
           active: true,
-          createdByUserId: session.user.id,
+          createdByUserId: session.logifit.userId,
         })
         .returning({ id: mealPlans.id })
       const pId = planRow!.id
@@ -572,7 +566,7 @@ export const updateMealPlan = wrapServerAction(
           version: parent.version + 1,
           parentMealPlanId: parent.id,
           active: true,
-          createdByUserId: session.user.id,
+          createdByUserId: session.logifit.userId,
         })
         .returning({ id: mealPlans.id })
       const pId = planRow!.id
@@ -659,10 +653,7 @@ export const listSubstitutions = wrapServerAction(
       .from(foodEquivalences)
       .where(
         and(
-          or(
-            eq(foodEquivalences.foodIdA, item.foodId),
-            eq(foodEquivalences.foodIdB, item.foodId),
-          ),
+          or(eq(foodEquivalences.foodIdA, item.foodId), eq(foodEquivalences.foodIdB, item.foodId)),
           or(isNull(foodEquivalences.tenantId), eq(foodEquivalences.tenantId, tenantId)),
         ),
       )
@@ -673,9 +664,7 @@ export const listSubstitutions = wrapServerAction(
 
     // Carrega foods candidatos (lado oposto do seed)
     const candidateIds = Array.from(
-      new Set(
-        equivRows.map((e) => (e.foodIdA === item.foodId ? e.foodIdB : e.foodIdA)),
-      ),
+      new Set(equivRows.map((e) => (e.foodIdA === item.foodId ? e.foodIdB : e.foodIdA))),
     )
     const candidates = await db
       .select({
@@ -716,7 +705,11 @@ export const listSubstitutions = wrapServerAction(
       { topN: parsed.topN },
     )
 
-    return { ok: true as const, substitutions, seed: { name: item.foodName, grams: Number(item.grams) } }
+    return {
+      ok: true as const,
+      substitutions,
+      seed: { name: item.foodName, grams: Number(item.grams) },
+    }
   },
 )
 

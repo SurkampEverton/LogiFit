@@ -20,6 +20,7 @@
  */
 
 import { db } from '@repo/db/client'
+import { type LabReferenceRange, type Sex, ageYearsAt, classifyLabResult } from '@repo/db/nutri'
 import {
   labAnalytes,
   labReferenceRanges,
@@ -30,12 +31,6 @@ import {
   supplementPrescriptions,
   supplements,
 } from '@repo/db/schema'
-import {
-  ageYearsAt,
-  classifyLabResult,
-  type LabReferenceRange,
-  type Sex,
-} from '@repo/db/nutri'
 import { ApiException } from '@repo/errors'
 import { and, asc, desc, eq, gte, ilike, isNull, lte, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -154,10 +149,7 @@ export const createTenantSupplement = wrapServerAction(
   async (input: z.infer<typeof CreateSupplementSchema>, { session, setAuditResource }) => {
     const parsed = CreateSupplementSchema.parse(input)
     const tenantId = session.logifit.tenantId
-    const nameNormalized = parsed.name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
+    const nameNormalized = parsed.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
     const [row] = await db
       .insert(supplements)
@@ -172,7 +164,7 @@ export const createTenantSupplement = wrapServerAction(
         indication: parsed.indication ?? null,
         contraindications: parsed.contraindications ?? null,
         notes: parsed.notes ?? null,
-        createdByUserId: session.user.id,
+        createdByUserId: session.logifit.userId,
       })
       .returning({ id: supplements.id })
 
@@ -258,7 +250,7 @@ export const prescribeSupplement = wrapServerAction(
         memberId: parsed.memberId,
         supplementId: parsed.supplementId,
         consultaId: parsed.consultaId ?? null,
-        professionalUserId: session.user.id,
+        professionalUserId: session.logifit.userId,
         dose: parsed.dose,
         frequency: parsed.frequency,
         route: parsed.route,
@@ -364,9 +356,7 @@ export const listMemberSupplementPrescriptions = wrapServerAction(
 export const listLabAnalytes = wrapServerAction(
   { module: 'nutri', action: 'lab.analyte.list' },
   async (input: { category?: string | null }, _ctx) => {
-    const parsed = z
-      .object({ category: z.string().max(40).optional().nullable() })
-      .parse(input)
+    const parsed = z.object({ category: z.string().max(40).optional().nullable() }).parse(input)
 
     const conditions = [eq(labAnalytes.active, true)]
     if (parsed.category) conditions.push(eq(labAnalytes.category, parsed.category as never))
@@ -481,7 +471,7 @@ export const registerLabResult = wrapServerAction(
         outOfRangeDirection: classification.direction,
         referenceRangeIdUsed: classification.referenceRangeIdUsed,
         notes: parsed.notes ?? null,
-        enteredByUserId: session.user.id,
+        enteredByUserId: session.logifit.userId,
       })
       .returning({ id: labResults.id })
 
@@ -521,8 +511,16 @@ export const listMemberLabResults = wrapServerAction(
       .object({
         memberId: z.string().uuid(),
         analyteId: z.string().uuid().optional().nullable(),
-        fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
-        toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+        fromDate: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional()
+          .nullable(),
+        toDate: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional()
+          .nullable(),
         onlyAltered: z.boolean().default(false),
       })
       .parse(input)

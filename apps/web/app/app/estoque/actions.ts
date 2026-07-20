@@ -18,13 +18,13 @@
  * MVP usa `stock_items.cost_method` default 'custo_medio'.
  */
 
+import { db } from '@repo/db/client'
 import {
+  type Movement,
   calculateAverageCostCents,
   calculateBalance,
   detectLowStockCrossing,
-  type Movement,
 } from '@repo/db/estoque'
-import { db } from '@repo/db/client'
 import {
   members,
   stockInventories,
@@ -74,12 +74,7 @@ const RegisterEntryInputSchema = z.object({
 
 const RegisterExitInputSchema = z.object({
   itemId: z.string().uuid(),
-  kind: z.enum([
-    'exit_consumption',
-    'exit_loss',
-    'exit_adjustment',
-    'exit_return_to_supplier',
-  ]),
+  kind: z.enum(['exit_consumption', 'exit_loss', 'exit_adjustment', 'exit_return_to_supplier']),
   quantity: z.number().positive(),
   appointmentId: z.string().uuid().optional().nullable(),
   referenceDoc: z.string().max(200).optional().nullable(),
@@ -167,7 +162,7 @@ export const createStockItem = wrapServerAction(
           isResale: parsed.isResale,
           barcode: parsed.barcode ?? null,
           costMethod: parsed.costMethod,
-          createdByUserId: session.user.id,
+          createdByUserId: session.logifit.userId,
         })
         .returning({ id: stockItems.id })
       setAuditResource(row!.id, { sku: parsed.sku })
@@ -332,7 +327,7 @@ export const registerEntry = wrapServerAction(
     }
     const result = await registerMovementInternal({
       tenantId: session.logifit.tenantId,
-      userId: session.user.id,
+      userId: session.logifit.userId,
       itemId: parsed.itemId,
       kind: parsed.kind,
       quantity: parsed.quantity,
@@ -353,7 +348,7 @@ export const registerExit = wrapServerAction(
     const parsed = RegisterExitInputSchema.parse(input)
     const result = await registerMovementInternal({
       tenantId: session.logifit.tenantId,
-      userId: session.user.id,
+      userId: session.logifit.userId,
       itemId: parsed.itemId,
       kind: parsed.kind,
       quantity: parsed.quantity,
@@ -402,12 +397,7 @@ export const sellAtPos = wrapServerAction(
         companyId: stockItems.companyId,
       })
       .from(stockItems)
-      .where(
-        and(
-          eq(stockItems.tenantId, tenantId),
-          sql`${stockItems.id} = ANY(${itemIds})`,
-        ),
-      )
+      .where(and(eq(stockItems.tenantId, tenantId), sql`${stockItems.id} = ANY(${itemIds})`))
     const itemMap = new Map(itemRows.map((i) => [i.id, i]))
 
     let totalCents = 0
@@ -469,7 +459,7 @@ export const sellAtPos = wrapServerAction(
     for (const li of lineItems) {
       const result = await registerMovementInternal({
         tenantId,
-        userId: session.user.id,
+        userId: session.logifit.userId,
         itemId: li.itemId,
         kind: 'exit_sale',
         quantity: li.quantity,
@@ -556,7 +546,7 @@ export const startInventory = wrapServerAction(
       .values({
         tenantId,
         companyId: parsed.companyId,
-        countedByUserId: session.user.id,
+        countedByUserId: session.logifit.userId,
         status: 'draft',
         notes: parsed.notes ?? null,
       })
@@ -576,10 +566,7 @@ export const addInventoryCount = wrapServerAction(
       .select({ id: stockInventories.id, status: stockInventories.status })
       .from(stockInventories)
       .where(
-        and(
-          eq(stockInventories.id, parsed.inventoryId),
-          eq(stockInventories.tenantId, tenantId),
-        ),
+        and(eq(stockInventories.id, parsed.inventoryId), eq(stockInventories.tenantId, tenantId)),
       )
       .limit(1)
     if (!inv)
@@ -626,10 +613,7 @@ export const addInventoryCount = wrapServerAction(
 
 export const finalizeInventory = wrapServerAction(
   { module: 'estoque', action: 'inventory.finalize', resourceType: 'stock_inventories' },
-  async (
-    input: z.infer<typeof FinalizeInventoryInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof FinalizeInventoryInputSchema>, { session, setAuditResource }) => {
     const parsed = FinalizeInventoryInputSchema.parse(input)
     const tenantId = session.logifit.tenantId
 
@@ -641,10 +625,7 @@ export const finalizeInventory = wrapServerAction(
       })
       .from(stockInventories)
       .where(
-        and(
-          eq(stockInventories.id, parsed.inventoryId),
-          eq(stockInventories.tenantId, tenantId),
-        ),
+        and(eq(stockInventories.id, parsed.inventoryId), eq(stockInventories.tenantId, tenantId)),
       )
       .limit(1)
     if (!inv)
@@ -680,7 +661,7 @@ export const finalizeInventory = wrapServerAction(
         unitCostCents: null,
         referenceDoc: `inventory:${parsed.inventoryId}`,
         inventoryId: parsed.inventoryId,
-        userId: session.user.id,
+        userId: session.logifit.userId,
         notes: e.notes,
       })
       adjustments += 1
@@ -691,7 +672,7 @@ export const finalizeInventory = wrapServerAction(
       .set({
         status: 'finalized',
         finalizedAt: new Date(),
-        finalizedByUserId: session.user.id,
+        finalizedByUserId: session.logifit.userId,
       })
       .where(eq(stockInventories.id, parsed.inventoryId))
     setAuditResource(parsed.inventoryId, { adjustments })

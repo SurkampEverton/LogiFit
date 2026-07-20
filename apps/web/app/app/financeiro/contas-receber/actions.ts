@@ -20,12 +20,7 @@
  */
 
 import { db } from '@repo/db/client'
-import {
-  accountsReceivable,
-  apArPayments,
-  chartOfAccounts,
-  persons,
-} from '@repo/db/schema'
+import { accountsReceivable, apArPayments, chartOfAccounts, persons } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
 import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -57,11 +52,15 @@ const RegisterReceivedInputSchema = z.object({
 
 const ListARInputSchema = z.object({
   companyId: z.string().uuid().optional(),
-  status: z
-    .enum(['draft', 'issued', 'received', 'overdue', 'cancelled', 'refunded'])
+  status: z.enum(['draft', 'issued', 'received', 'overdue', 'cancelled', 'refunded']).optional(),
+  dueFrom: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
-  dueFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  dueTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dueTo: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   limit: z.number().int().min(1).max(500).default(100),
 })
 
@@ -69,10 +68,7 @@ const ListARInputSchema = z.object({
 
 export const createAR = wrapServerAction(
   { module: 'financeiro', action: 'ar.create', resourceType: 'accounts_receivable' },
-  async (
-    input: z.infer<typeof CreateARInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateARInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateARInputSchema.parse(input)
     if (parsed.dueDate < parsed.issueDate) {
       throw new ApiException({
@@ -82,7 +78,11 @@ export const createAR = wrapServerAction(
       })
     }
     const [chart] = await db
-      .select({ id: chartOfAccounts.id, isLeaf: chartOfAccounts.isLeaf, active: chartOfAccounts.active })
+      .select({
+        id: chartOfAccounts.id,
+        isLeaf: chartOfAccounts.isLeaf,
+        active: chartOfAccounts.active,
+      })
       .from(chartOfAccounts)
       .where(
         and(
@@ -111,7 +111,7 @@ export const createAR = wrapServerAction(
         description: parsed.description ?? null,
         docNumber: parsed.docNumber ?? null,
         status: 'draft',
-        createdByUserId: session.user.id,
+        createdByUserId: session.logifit.userId,
       })
       .returning({ id: accountsReceivable.id })
     if (!row)
@@ -167,10 +167,7 @@ export const markARIssued = wrapServerAction(
 
 export const registerARReceived = wrapServerAction(
   { module: 'financeiro', action: 'ar.received', resourceType: 'accounts_receivable' },
-  async (
-    input: z.infer<typeof RegisterReceivedInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof RegisterReceivedInputSchema>, { session, setAuditResource }) => {
     const parsed = RegisterReceivedInputSchema.parse(input)
     const [ar] = await db
       .select({
@@ -208,7 +205,7 @@ export const registerARReceived = wrapServerAction(
       method: parsed.method,
       reference: parsed.reference ?? null,
       notes: parsed.notes ?? null,
-      recordedByUserId: session.user.id,
+      recordedByUserId: session.logifit.userId,
     })
     const [agg] = await db
       .select({

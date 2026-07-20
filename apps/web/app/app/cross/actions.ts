@@ -19,32 +19,32 @@
 
 import { db } from '@repo/db/client'
 import {
-  cidExerciseContraindications,
-  consultas,
-  consultaCids,
-  contracts,
-  exercises,
-  cidCatalog,
-  memberInjuryAlerts,
-  memberConsents,
-  members,
-  prescriptions,
-  tenants,
-  workouts,
-  workoutAdaptations,
-  workoutItems,
-} from '@repo/db/schema'
-import {
+  type ContraindicationRule,
+  type ExerciseInfo,
+  type WorkoutItemInput,
   buildAdaptationDiff,
   canCrossModuleAlert,
   detectContraindications,
   isActionableCid,
-  type ContraindicationRule,
-  type ExerciseInfo,
-  type WorkoutItemInput,
 } from '@repo/db/cross'
+import {
+  cidCatalog,
+  cidExerciseContraindications,
+  consultaCids,
+  consultas,
+  contracts,
+  exercises,
+  memberConsents,
+  memberInjuryAlerts,
+  members,
+  prescriptions,
+  tenants,
+  workoutAdaptations,
+  workoutItems,
+  workouts,
+} from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
-import { and, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, or } from 'drizzle-orm'
 import { z } from 'zod'
 import { wrapServerAction } from '../../lib/wrap-action'
 
@@ -119,9 +119,7 @@ async function loadActionableCids(
   const actionable = rows.filter((r) => isActionableCid(r.chapter, r.cidCode))
   const principalRow = actionable.find((r) => r.kind === 'principal')
   const principal = principalRow?.cidCode ?? null
-  const secondary = actionable
-    .filter((r) => r.kind !== 'principal')
-    .map((r) => r.cidCode)
+  const secondary = actionable.filter((r) => r.kind !== 'principal').map((r) => r.cidCode)
   return { principal, secondary }
 }
 
@@ -235,12 +233,9 @@ async function loadContraindicationsForCids(
   // Tenant overrides global pra mesma chave
   const byKey = new Map<string, ContraindicationRule & { isGlobal: boolean }>()
   for (const r of rows) {
-    const k = [
-      r.cidCode,
-      r.exerciseId ?? '',
-      r.muscleGroup ?? '',
-      r.movementPattern ?? '',
-    ].join('|')
+    const k = [r.cidCode, r.exerciseId ?? '', r.muscleGroup ?? '', r.movementPattern ?? ''].join(
+      '|',
+    )
     const isGlobal = r.tenantId === null
     const existing = byKey.get(k)
     if (existing && !existing.isGlobal && isGlobal) continue // mantém o tenant override
@@ -264,10 +259,7 @@ async function loadContraindicationsForCids(
   })
 }
 
-async function hasActiveAcademiaContract(
-  memberId: string,
-  tenantId: string,
-): Promise<boolean> {
+async function hasActiveAcademiaContract(memberId: string, tenantId: string): Promise<boolean> {
   const rows = await db
     .select({ id: contracts.id })
     .from(contracts)
@@ -325,10 +317,7 @@ export const processInjuryAlert = wrapServerAction(
     action: 'injury_alert.process',
     resourceType: 'member_injury_alerts',
   },
-  async (
-    input: z.infer<typeof ProcessInjuryAlertInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ProcessInjuryAlertInputSchema>, { session, setAuditResource }) => {
     const parsed = ProcessInjuryAlertInputSchema.parse(input)
     const tenantId = session.logifit.tenantId
 
@@ -506,10 +495,7 @@ export const suggestWorkoutAdaptation = wrapServerAction(
     action: 'adaptation.suggest',
     resourceType: 'workout_adaptations',
   },
-  async (
-    input: z.infer<typeof SuggestAdaptationInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof SuggestAdaptationInputSchema>, { session, setAuditResource }) => {
     const parsed = SuggestAdaptationInputSchema.parse(input)
     const tenantId = session.logifit.tenantId
 
@@ -571,10 +557,7 @@ export const confirmAdaptation = wrapServerAction(
     action: 'adaptation.confirm',
     resourceType: 'workout_adaptations',
   },
-  async (
-    input: z.infer<typeof ConfirmAdaptationInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ConfirmAdaptationInputSchema>, { session, setAuditResource }) => {
     const parsed = ConfirmAdaptationInputSchema.parse(input)
     const tenantId = session.logifit.tenantId
 
@@ -635,7 +618,7 @@ export const confirmAdaptation = wrapServerAction(
         estimatedDurationMin: origWorkout.estimatedDurationMin,
         version: (origWorkout.version ?? 1) + 1,
         parentWorkoutId: origWorkout.id,
-        createdByUserId: session.user.id,
+        createdByUserId: session.logifit.userId,
       })
       .returning({ id: workouts.id })
 
@@ -652,9 +635,7 @@ export const confirmAdaptation = wrapServerAction(
     } | null
 
     const removedIds = new Set((changes?.removed ?? []).map((r) => r.itemId))
-    const replaceMap = new Map(
-      (changes?.replaced ?? []).map((r) => [r.fromItemId, r.toExerciseId]),
-    )
+    const replaceMap = new Map((changes?.replaced ?? []).map((r) => [r.fromItemId, r.toExerciseId]))
 
     for (const it of origItems) {
       if (removedIds.has(it.id)) continue
@@ -703,7 +684,7 @@ export const confirmAdaptation = wrapServerAction(
         startsAt: new Date(),
         endsAt: activePres.endsAt,
         active: true,
-        prescribedByUserId: session.user.id,
+        prescribedByUserId: session.logifit.userId,
         notes: `Adaptado por lesão (alerta ${adaptation.alertId.slice(0, 8)})`,
       })
     }
@@ -715,7 +696,7 @@ export const confirmAdaptation = wrapServerAction(
         adaptedWorkoutId: newWorkout!.id,
         status: 'confirmed',
         confirmedAt: new Date(),
-        confirmedByUserId: session.user.id,
+        confirmedByUserId: session.logifit.userId,
         updatedAt: new Date(),
       })
       .where(eq(workoutAdaptations.id, adaptation.id))
@@ -724,7 +705,7 @@ export const confirmAdaptation = wrapServerAction(
       .update(memberInjuryAlerts)
       .set({
         status: 'accepted',
-        reviewedByUserId: session.user.id,
+        reviewedByUserId: session.logifit.userId,
         reviewedAt: new Date(),
         updatedAt: new Date(),
       })
@@ -752,10 +733,7 @@ export const rejectAdaptation = wrapServerAction(
     action: 'adaptation.reject',
     resourceType: 'workout_adaptations',
   },
-  async (
-    input: z.infer<typeof RejectAdaptationInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof RejectAdaptationInputSchema>, { session, setAuditResource }) => {
     const parsed = RejectAdaptationInputSchema.parse(input)
     const tenantId = session.logifit.tenantId
 
@@ -801,7 +779,7 @@ export const rejectAdaptation = wrapServerAction(
       .update(memberInjuryAlerts)
       .set({
         status: 'rejected',
-        reviewedByUserId: session.user.id,
+        reviewedByUserId: session.logifit.userId,
         reviewedAt: new Date(),
         rejectionReason: parsed.reason,
         updatedAt: new Date(),
@@ -832,16 +810,10 @@ export const listPendingAdaptations = wrapServerAction(
         expiresAt: memberInjuryAlerts.expiresAt,
       })
       .from(workoutAdaptations)
-      .innerJoin(
-        memberInjuryAlerts,
-        eq(memberInjuryAlerts.id, workoutAdaptations.alertId),
-      )
+      .innerJoin(memberInjuryAlerts, eq(memberInjuryAlerts.id, workoutAdaptations.alertId))
       .innerJoin(workouts, eq(workouts.id, workoutAdaptations.originalWorkoutId))
       .where(
-        and(
-          eq(workoutAdaptations.tenantId, tenantId),
-          eq(workoutAdaptations.status, 'suggested'),
-        ),
+        and(eq(workoutAdaptations.tenantId, tenantId), eq(workoutAdaptations.status, 'suggested')),
       )
       .orderBy(desc(workoutAdaptations.createdAt))
       .limit(100)

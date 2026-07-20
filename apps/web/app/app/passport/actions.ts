@@ -184,7 +184,7 @@ export const sendPatientInvite = wrapServerAction(
           tenantId,
           status: 'pending',
           creationPath: 'reactive',
-          invitedByUserId: session.user.id,
+          invitedByUserId: session.logifit.userId,
           invitedAt: new Date(),
         })
         .returning({ id: patientCompanyLinks.id })
@@ -210,7 +210,7 @@ export const sendPatientInvite = wrapServerAction(
       passportPassportId: parsed.passportPassportId,
       patientPersonId: parsed.personId,
       actorKind: 'professional',
-      actorUserId: session.user.id,
+      actorUserId: session.logifit.userId,
       eventKind: 'invite_sent',
       payload: { creationPath: 'reactive', moduleCount: parsed.modules.length },
     })
@@ -221,7 +221,7 @@ export const sendPatientInvite = wrapServerAction(
         passportPassportId: parsed.passportPassportId,
         patientPersonId: parsed.personId,
         actorKind: 'professional',
-        actorUserId: session.user.id,
+        actorUserId: session.logifit.userId,
         eventKind: 'module_added',
         payload: {
           module: m.module,
@@ -445,7 +445,7 @@ export const acceptPatientInvite = wrapServerAction(
       passportPassportId: link.passportPassportId,
       patientPersonId: link.personId,
       actorKind: 'professional', // MVP: staff em nome do paciente; Sprint 02b8+ roda no portal member
-      actorUserId: session.user.id,
+      actorUserId: session.logifit.userId,
       eventKind: 'link_accepted',
       payload: { acceptedCount: Array.from(acceptedSet).length },
     })
@@ -457,7 +457,7 @@ export const acceptPatientInvite = wrapServerAction(
         passportPassportId: link.passportPassportId,
         patientPersonId: link.personId,
         actorKind: 'professional',
-        actorUserId: session.user.id,
+        actorUserId: session.logifit.userId,
         eventKind: 'module_activated',
         payload: { module: m.module },
       })
@@ -525,7 +525,7 @@ export const cancelPatientInvite = wrapServerAction(
       passportPassportId: row.passportPassportId,
       patientPersonId: row.personId,
       actorKind: 'professional',
-      actorUserId: session.user.id,
+      actorUserId: session.logifit.userId,
       eventKind: 'invite_cancelled',
       payload: { reason: 'cancelled_by_staff' },
     })
@@ -596,7 +596,7 @@ export const revokePatientLink = wrapServerAction(
       passportPassportId: row.passportId,
       patientPersonId: row.personId,
       actorKind: 'professional',
-      actorUserId: session.user.id,
+      actorUserId: session.logifit.userId,
       eventKind: 'link_revoked',
       payload: { reason: parsed.reason, deactivatedModuleCount: deactivatedModules.length },
     })
@@ -607,7 +607,7 @@ export const revokePatientLink = wrapServerAction(
         passportPassportId: row.passportId,
         patientPersonId: row.personId,
         actorKind: 'professional',
-        actorUserId: session.user.id,
+        actorUserId: session.logifit.userId,
         eventKind: 'module_deactivated',
         payload: { module: m.module, reason: 'link_revoked' },
       })
@@ -716,7 +716,7 @@ export const confirmModuleSubstitution = wrapServerAction(
       passportPassportId: newLink.passportPassportId,
       patientPersonId: newLink.personId,
       actorKind: 'professional',
-      actorUserId: session.user.id,
+      actorUserId: session.logifit.userId,
       eventKind: 'module_substituted',
       payload: { module: parsed.module },
     })
@@ -726,7 +726,7 @@ export const confirmModuleSubstitution = wrapServerAction(
       passportPassportId: newLink.passportPassportId,
       patientPersonId: newLink.personId,
       actorKind: 'professional',
-      actorUserId: session.user.id,
+      actorUserId: session.logifit.userId,
       eventKind: 'module_activated',
       payload: { module: parsed.module, viaSubstitution: true },
     })
@@ -794,7 +794,7 @@ export const setSharingLevel = wrapServerAction(
       passportPassportId: row.passportId,
       patientPersonId: row.personId,
       actorKind: 'professional',
-      actorUserId: session.user.id,
+      actorUserId: session.logifit.userId,
       eventKind: 'data_levels_changed',
       payload: {
         module: row.module,

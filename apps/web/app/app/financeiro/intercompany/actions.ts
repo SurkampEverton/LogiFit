@@ -18,13 +18,9 @@
  */
 
 import { db } from '@repo/db/client'
-import {
-  companies,
-  intercompanyEntries,
-  persons,
-} from '@repo/db/schema'
+import { companies, intercompanyEntries, persons } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
-import { and, asc, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm'
+import { and, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { wrapServerAction } from '../../../lib/wrap-action'
 
@@ -54,8 +50,14 @@ const ListICInputSchema = z.object({
   kind: IcKindEnum.optional(),
   settledOnly: z.boolean().optional(),
   pendingOnly: z.boolean().optional(),
-  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   limit: z.number().int().min(1).max(500).default(200),
 })
 
@@ -68,10 +70,7 @@ const ReportInputSchema = z.object({
 
 export const createIntercompanyEntry = wrapServerAction(
   { module: 'financeiro', action: 'ic.create', resourceType: 'intercompany_entries' },
-  async (
-    input: z.infer<typeof CreateICInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateICInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateICInputSchema.parse(input)
     if (parsed.fromCompanyId === parsed.toCompanyId) {
       throw new ApiException({
@@ -92,7 +91,7 @@ export const createIntercompanyEntry = wrapServerAction(
           referenceApId: parsed.referenceApId ?? null,
           referenceArId: parsed.referenceArId ?? null,
           notes: parsed.notes ?? null,
-          createdByUserId: session.user.id,
+          createdByUserId: session.logifit.userId,
         })
         .returning({
           id: intercompanyEntries.id,
@@ -129,10 +128,7 @@ export const createIntercompanyEntry = wrapServerAction(
 
 export const liquidateIntercompany = wrapServerAction(
   { module: 'financeiro', action: 'ic.liquidate', resourceType: 'intercompany_entries' },
-  async (
-    input: z.infer<typeof LiquidateICInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof LiquidateICInputSchema>, { session, setAuditResource }) => {
     const parsed = LiquidateICInputSchema.parse(input)
     const now = new Date()
     const updated = await db
@@ -169,13 +165,16 @@ export const listIntercompanyEntries = wrapServerAction(
   async (input: z.infer<typeof ListICInputSchema> | undefined, { session }) => {
     const parsed = ListICInputSchema.parse(input ?? {})
     const where = [eq(intercompanyEntries.tenantId, session.logifit.tenantId)]
-    if (parsed.fromCompanyId) where.push(eq(intercompanyEntries.fromCompanyId, parsed.fromCompanyId))
+    if (parsed.fromCompanyId)
+      where.push(eq(intercompanyEntries.fromCompanyId, parsed.fromCompanyId))
     if (parsed.toCompanyId) where.push(eq(intercompanyEntries.toCompanyId, parsed.toCompanyId))
     if (parsed.kind) where.push(eq(intercompanyEntries.kind, parsed.kind))
     if (parsed.settledOnly) where.push(sql`${intercompanyEntries.settledAt} IS NOT NULL`)
     if (parsed.pendingOnly) where.push(isNull(intercompanyEntries.settledAt))
-    if (parsed.from) where.push(gte(intercompanyEntries.createdAt, new Date(parsed.from + 'T00:00:00Z')))
-    if (parsed.to) where.push(lte(intercompanyEntries.createdAt, new Date(parsed.to + 'T23:59:59Z')))
+    if (parsed.from)
+      where.push(gte(intercompanyEntries.createdAt, new Date(parsed.from + 'T00:00:00Z')))
+    if (parsed.to)
+      where.push(lte(intercompanyEntries.createdAt, new Date(parsed.to + 'T23:59:59Z')))
 
     const rows = await db
       .select({

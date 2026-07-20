@@ -23,16 +23,16 @@
  * Sprint 22b adiciona `requireRecentMfa()` quando wrapper expõe.
  */
 
+import { db } from '@repo/db/client'
 import {
+  type GuideInput,
+  type GuideItem,
+  type ValidationIssue,
   generateBatchXml,
   generateGuideXml,
   parseReturnXml,
   validateGuide,
-  type GuideInput,
-  type GuideItem,
-  type ValidationIssue,
 } from '@repo/db/convenios'
-import { db } from '@repo/db/client'
 import {
   authorizations,
   billingBatches,
@@ -51,7 +51,7 @@ import {
   users,
 } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
-import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { wrapServerAction } from '../../../lib/wrap-action'
 
@@ -85,7 +85,11 @@ const AddMemberInsuranceInputSchema = z.object({
   planId: z.string().uuid(),
   cardNumber: z.string().min(2).max(60),
   category: z.string().max(60).optional().nullable(),
-  validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  validUntil: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .nullable(),
   holderName: z.string().max(120).optional().nullable(),
 })
 
@@ -168,9 +172,7 @@ export const listInsurancePlans = wrapServerAction(
     const rows = await db
       .select()
       .from(insurancePlans)
-      .where(
-        sql`tenant_id IS NULL OR tenant_id = ${tenantId}`,
-      )
+      .where(sql`tenant_id IS NULL OR tenant_id = ${tenantId}`)
       .orderBy(asc(insurancePlans.name))
       .limit(200)
     return { plans: rows }
@@ -378,10 +380,7 @@ export const listMemberInsurances = wrapServerAction(
 
 export const requestAuthorization = wrapServerAction(
   { module: 'fisio', action: 'convenio.auth_request', resourceType: 'authorizations' },
-  async (
-    input: z.infer<typeof RequestAuthorizationInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof RequestAuthorizationInputSchema>, { session, setAuditResource }) => {
     const parsed = RequestAuthorizationInputSchema.parse(input)
     const tenantId = session.logifit.tenantId
     const [row] = await db
@@ -392,7 +391,7 @@ export const requestAuthorization = wrapServerAction(
         tussCode: parsed.tussCode,
         quantityRequested: parsed.quantityRequested,
         status: 'pending',
-        requestedByUserId: session.user.id,
+        requestedByUserId: session.logifit.userId,
       })
       .returning({ id: authorizations.id })
     setAuditResource(row!.id, { tussCode: parsed.tussCode })
@@ -402,10 +401,7 @@ export const requestAuthorization = wrapServerAction(
 
 export const approveAuthorization = wrapServerAction(
   { module: 'fisio', action: 'convenio.auth_approve', resourceType: 'authorizations' },
-  async (
-    input: z.infer<typeof ApproveAuthorizationInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ApproveAuthorizationInputSchema>, { session, setAuditResource }) => {
     const parsed = ApproveAuthorizationInputSchema.parse(input)
     const tenantId = session.logifit.tenantId
     const [row] = await db
@@ -419,10 +415,7 @@ export const approveAuthorization = wrapServerAction(
         updatedAt: new Date(),
       })
       .where(
-        and(
-          eq(authorizations.id, parsed.authorizationId),
-          eq(authorizations.tenantId, tenantId),
-        ),
+        and(eq(authorizations.id, parsed.authorizationId), eq(authorizations.tenantId, tenantId)),
       )
       .returning({ id: authorizations.id })
     if (!row)
@@ -450,10 +443,7 @@ export const denyAuthorization = wrapServerAction(
         updatedAt: new Date(),
       })
       .where(
-        and(
-          eq(authorizations.id, parsed.authorizationId),
-          eq(authorizations.tenantId, tenantId),
-        ),
+        and(eq(authorizations.id, parsed.authorizationId), eq(authorizations.tenantId, tenantId)),
       )
       .returning({ id: authorizations.id })
     if (!row)
@@ -590,9 +580,7 @@ export const generateGuide = wrapServerAction(
     const [profUser] = await db
       .select({ id: users.id, personId: users.personId, username: users.username })
       .from(users)
-      .where(
-        and(eq(users.id, firstItem.professionalUserId), eq(users.tenantId, tenantId)),
-      )
+      .where(and(eq(users.id, firstItem.professionalUserId), eq(users.tenantId, tenantId)))
       .limit(1)
     if (!profUser)
       throw new ApiException({
@@ -820,7 +808,16 @@ export const listBillingGuides = wrapServerAction(
     const parsed = z
       .object({
         status: z
-          .enum(['draft', 'ready', 'sent', 'paid', 'partially_paid', 'fully_glossed', 'cancelled', 'all'])
+          .enum([
+            'draft',
+            'ready',
+            'sent',
+            'paid',
+            'partially_paid',
+            'fully_glossed',
+            'cancelled',
+            'all',
+          ])
           .default('all'),
         limit: z.number().int().min(1).max(500).default(100),
       })
@@ -869,12 +866,7 @@ export const createBatch = wrapServerAction(
         status: billingGuides.status,
       })
       .from(billingGuides)
-      .where(
-        and(
-          eq(billingGuides.tenantId, tenantId),
-          inArray(billingGuides.id, parsed.guideIds),
-        ),
-      )
+      .where(and(eq(billingGuides.tenantId, tenantId), inArray(billingGuides.id, parsed.guideIds)))
 
     if (guides.length === 0)
       throw new ApiException({
@@ -949,7 +941,7 @@ export const createBatch = wrapServerAction(
           status: 'sent',
           sentAt: new Date(),
           tissVersion: '4.01',
-          sentByUserId: session.user.id,
+          sentByUserId: session.logifit.userId,
         })
         .returning({ id: billingBatches.id })
 
@@ -957,7 +949,12 @@ export const createBatch = wrapServerAction(
       await db
         .update(billingGuides)
         .set({ status: 'sent', sentAt: new Date(), updatedAt: new Date() })
-        .where(inArray(billingGuides.id, guides.map((g) => g.id)))
+        .where(
+          inArray(
+            billingGuides.id,
+            guides.map((g) => g.id),
+          ),
+        )
 
       setAuditResource(batch!.id, { guideCount: guides.length })
       return { id: batch!.id, xml, guideCount: guides.length }
@@ -1015,8 +1012,7 @@ export const processReturnXml = wrapServerAction(
         .set({
           status: item.status === 'unknown' ? 'sent' : item.status,
           paidAmountCents: item.paidAmountCents,
-          paidAt:
-            item.status === 'paid' || item.status === 'partially_paid' ? new Date() : null,
+          paidAt: item.status === 'paid' || item.status === 'partially_paid' ? new Date() : null,
           operatorGuideNumber: item.operatorGuideNumber ?? null,
           updatedAt: new Date(),
         })
@@ -1079,11 +1075,9 @@ export const fileGlosa = wrapServerAction(
         status: 'recurring',
         recursoBody: parsed.recursoBody,
         recursoAt: new Date(),
-        recursoByUserId: session.user.id,
+        recursoByUserId: session.logifit.userId,
       })
-      .where(
-        and(eq(billingGlosas.id, parsed.glosaId), eq(billingGlosas.tenantId, tenantId)),
-      )
+      .where(and(eq(billingGlosas.id, parsed.glosaId), eq(billingGlosas.tenantId, tenantId)))
       .returning({ id: billingGlosas.id })
     if (!row)
       throw new ApiException({

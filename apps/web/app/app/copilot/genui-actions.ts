@@ -18,17 +18,17 @@
  * Lint custom `no-unwrapped-action` exige `wrapServerAction`.
  */
 
-import { db } from '@repo/db/client'
-import { assistantMessages, assistantSessions } from '@repo/db/schema'
+import { randomUUID } from 'node:crypto'
 import {
-  registerDefaultGenUITools,
-  validateToolCall,
   type GenUIMessageBlock,
   type GenUIResponse,
+  registerDefaultGenUITools,
+  validateToolCall,
 } from '@repo/ai'
+import { db } from '@repo/db/client'
+import { assistantMessages, assistantSessions } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
 import { and, eq } from 'drizzle-orm'
-import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { wrapServerAction } from '../../lib/wrap-action'
 
@@ -256,7 +256,7 @@ export const composeGenUIResponse = wrapServerAction(
         .insert(assistantSessions)
         .values({
           tenantId,
-          userId: session.user.id,
+          userId: session.logifit.userId,
           persona: parsed.persona,
           title: parsed.prompt.slice(0, 60),
         })
@@ -267,9 +267,7 @@ export const composeGenUIResponse = wrapServerAction(
       const existing = await db
         .select({ id: assistantSessions.id })
         .from(assistantSessions)
-        .where(
-          and(eq(assistantSessions.id, sessionId), eq(assistantSessions.tenantId, tenantId)),
-        )
+        .where(and(eq(assistantSessions.id, sessionId), eq(assistantSessions.tenantId, tenantId)))
         .limit(1)
       if (existing.length === 0) {
         throw new ApiException({

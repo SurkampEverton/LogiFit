@@ -141,10 +141,7 @@ async function buildContextFor(
 
 export const createAllocationRule = wrapServerAction(
   { module: 'financeiro', action: 'allocation.create', resourceType: 'allocation_rules' },
-  async (
-    input: z.infer<typeof CreateAllocationRuleInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof CreateAllocationRuleInputSchema>, { session, setAuditResource }) => {
     const parsed = CreateAllocationRuleInputSchema.parse(input)
     const validation = validateRuleDistribution(parsed.kind, parsed.distribution)
     if (!validation.ok) {
@@ -163,7 +160,7 @@ export const createAllocationRule = wrapServerAction(
           kind: parsed.kind,
           distribution: parsed.distribution,
           description: parsed.description ?? null,
-          createdByUserId: session.user.id,
+          createdByUserId: session.logifit.userId,
         })
         .returning({ id: allocationRules.id })
       if (!row)
@@ -193,10 +190,7 @@ export const createAllocationRule = wrapServerAction(
 
 export const listAllocationRules = wrapServerAction(
   { module: 'financeiro', action: 'allocation.list' },
-  async (
-    input: { includeArchived?: boolean } | undefined,
-    { session },
-  ) => {
+  async (input: { includeArchived?: boolean } | undefined, { session }) => {
     const where = [eq(allocationRules.tenantId, session.logifit.tenantId)]
     if (!input?.includeArchived) where.push(isNull(allocationRules.archivedAt))
     const rows = await db
@@ -313,10 +307,7 @@ export const simulateAllocation = wrapServerAction(
 
 export const applyAllocation = wrapServerAction(
   { module: 'financeiro', action: 'allocation.apply', resourceType: 'accounts_payable' },
-  async (
-    input: z.infer<typeof ApplyAllocationInputSchema>,
-    { session, setAuditResource },
-  ) => {
+  async (input: z.infer<typeof ApplyAllocationInputSchema>, { session, setAuditResource }) => {
     const parsed = ApplyAllocationInputSchema.parse(input)
     const [ap] = await db
       .select({

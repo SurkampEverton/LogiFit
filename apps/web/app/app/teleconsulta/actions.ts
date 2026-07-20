@@ -17,14 +17,9 @@
  *   - acceptTranscriptionConsent({sessionId}) — análogo
  */
 
-import { db } from '@repo/db/client'
-import {
-  appointments,
-  members,
-  persons,
-  teleconsultationSessions,
-} from '@repo/db/schema'
 import { resolveTeleconsultaProvider } from '@repo/ai'
+import { db } from '@repo/db/client'
+import { appointments, members, persons, teleconsultationSessions } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
 import { and, desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
@@ -75,9 +70,7 @@ export const scheduleTeleconsultation = wrapServerAction(
     const [appt] = await db
       .select({ id: appointments.id, memberId: appointments.memberId })
       .from(appointments)
-      .where(
-        and(eq(appointments.id, parsed.appointmentId), eq(appointments.tenantId, tenantId)),
-      )
+      .where(and(eq(appointments.id, parsed.appointmentId), eq(appointments.tenantId, tenantId)))
       .limit(1)
     if (!appt) {
       throw new ApiException({
@@ -113,7 +106,7 @@ export const scheduleTeleconsultation = wrapServerAction(
         tenantId,
         appointmentId: parsed.appointmentId,
         memberId: parsed.memberId,
-        professionalUserId: session.user.id,
+        professionalUserId: session.logifit.userId,
         provider: provider.name === 'mock' ? 'other' : provider.name,
         roomId: room.roomId,
         roomUrl: room.roomUrl,

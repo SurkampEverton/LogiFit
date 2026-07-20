@@ -21,8 +21,16 @@ import { wrapServerAction } from '../../../lib/wrap-action'
 
 const ListMemberDiarySchema = z.object({
   memberId: z.string().uuid(),
-  fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
-  toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  fromDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .nullable(),
+  toDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .nullable(),
 })
 
 const ValidateSchema = z.object({
@@ -31,9 +39,11 @@ const ValidateSchema = z.object({
   comment: z.string().max(2000).optional().nullable(),
 })
 
-const ListPendingSchema = z.object({
-  limit: z.number().int().min(1).max(100).default(50),
-}).optional()
+const ListPendingSchema = z
+  .object({
+    limit: z.number().int().min(1).max(100).default(50),
+  })
+  .optional()
 
 const GenerateReportSchema = z.object({
   memberId: z.string().uuid(),
@@ -96,9 +106,7 @@ export const validateMealEntry = wrapServerAction(
     const [entry] = await db
       .select({ id: mealLogEntries.id })
       .from(mealLogEntries)
-      .where(
-        and(eq(mealLogEntries.id, parsed.entryId), eq(mealLogEntries.tenantId, tenantId)),
-      )
+      .where(and(eq(mealLogEntries.id, parsed.entryId), eq(mealLogEntries.tenantId, tenantId)))
       .limit(1)
     if (!entry) {
       throw new ApiException({
@@ -115,7 +123,7 @@ export const validateMealEntry = wrapServerAction(
         .values({
           tenantId,
           entryId: parsed.entryId,
-          reviewedByUserId: session.user.id,
+          reviewedByUserId: session.logifit.userId,
           status: parsed.status,
           comment: parsed.comment ?? null,
         })
@@ -161,9 +169,7 @@ export const listPendingReviews = wrapServerAction(
       .from(mealLogEntries)
       .innerJoin(members, eq(members.id, mealLogEntries.memberId))
       .innerJoin(persons, eq(persons.id, members.personId))
-      .where(
-        and(eq(mealLogEntries.tenantId, tenantId), isNull(mealLogEntries.reviewStatus)),
-      )
+      .where(and(eq(mealLogEntries.tenantId, tenantId), isNull(mealLogEntries.reviewStatus)))
       .orderBy(asc(mealLogEntries.createdAt))
       .limit(parsed.limit)
 
