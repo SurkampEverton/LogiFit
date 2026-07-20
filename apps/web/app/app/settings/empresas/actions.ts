@@ -14,6 +14,7 @@ import { type CompanyRow, companies, persons } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
 import { and, eq, isNull, notInArray } from 'drizzle-orm'
 import { z } from 'zod'
+import { syncCompanyUnit } from '../../../lib/company-unit'
 import { requirePermission } from '../../../lib/permissions'
 import { requireFullSession, withSessionContext } from '../../../lib/session'
 import { wrapServerAction } from '../../../lib/wrap-action'
@@ -174,6 +175,8 @@ export async function createFilial(
         })
         .returning()
       if (!row) return { ok: false, error: { code: 'INTERNAL', message: 'insert retornou vazio' } }
+      // Unidade = empresa (ADR 0106): nasce junto, espelhando nome e endereco.
+      await syncCompanyUnit(session.logifit.tenantId, row.id)
       return { ok: true, data: row }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -245,6 +248,7 @@ export const updateCompanyFiscal = wrapServerAction(
         request_id: '',
       })
 
+    await syncCompanyUnit(session.logifit.tenantId, updated.id)
     setAuditResource(updated.id, { fields: Object.keys(patch).filter((k) => k !== 'updatedAt') })
     return { id: updated.id }
   },

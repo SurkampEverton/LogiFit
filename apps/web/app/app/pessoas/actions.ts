@@ -20,6 +20,7 @@ import { addressSchema, normalizeAddress } from '@repo/types'
  */
 import { and, eq, ilike, isNull, or } from 'drizzle-orm'
 import { z } from 'zod'
+import { syncUnitFromPerson } from '../../lib/company-unit'
 import { wrapServerAction } from '../../lib/wrap-action'
 
 // ─── searchPersons ────────────────────────────────────────────────────────
@@ -301,6 +302,10 @@ export const updatePerson = wrapServerAction(
         request_id: '',
       })
     }
+    // Unidade = empresa (ADR 0106): editar o cadastro pela tela de empresas
+    // salva aqui, e a unidade precisa acompanhar sem o operador saber que existe.
+    await syncUnitFromPerson(ctx.session.logifit.tenantId, row.id)
+
     ctx.setAuditResource(row.id, { fields: Object.keys(patch).filter((k) => k !== 'updatedAt') })
     return row
   },
