@@ -6,7 +6,13 @@
  * digitado (person picker fica pro Sprint 36c).
  */
 import { db } from '@repo/db/client'
-import { companies, fiscalServiceCatalog, persons } from '@repo/db/schema'
+import {
+  companies,
+  fiscalProviderCredentials,
+  fiscalServiceCatalog,
+  persons,
+} from '@repo/db/schema'
+import { Banner } from '@repo/ui'
 import { and, asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { requireFullSession } from '../../../../lib/session'
@@ -17,6 +23,21 @@ export const dynamic = 'force-dynamic'
 export default async function EmitirNfsePage() {
   const session = await requireFullSession('/app/fiscal/emitir/nfse')
   const tenantId = session.logifit.tenantId
+
+  // Nada na tela distinguia emitir teste de emitir documento com efeito legal —
+  // e um ambiente de dev apontado pra produção é uma armadilha silenciosa.
+  const [creds] = await db
+    .select({ environment: fiscalProviderCredentials.environment })
+    .from(fiscalProviderCredentials)
+    .where(
+      and(
+        eq(fiscalProviderCredentials.tenantId, tenantId),
+        eq(fiscalProviderCredentials.provider, 'focus_nfe'),
+        eq(fiscalProviderCredentials.active, true),
+      ),
+    )
+    .limit(1)
+  const isProducao = creds?.environment === 'producao'
 
   const companyRows = await db
     .select({ id: companies.id, name: persons.name, type: companies.type })
@@ -47,6 +68,14 @@ export default async function EmitirNfsePage() {
         </Link>
       </header>
 
+      {isProducao && (
+        <Banner variant="danger">
+          <strong>Ambiente de produção.</strong> Toda emissão nesta tela gera um documento fiscal
+          real, com efeito legal e tributário — não é teste. Confira valor, tomador e serviço antes
+          de confirmar.
+        </Banner>
+      )}
+
       {services.length === 0 ? (
         <div
           className="ev-card"
@@ -65,6 +94,7 @@ export default async function EmitirNfsePage() {
         <NfseManualForm
           companies={companyRows.map((c) => ({ id: c.id, name: `${c.name} (${c.type})` }))}
           services={services}
+          isProducao={isProducao}
         />
       )}
     </div>

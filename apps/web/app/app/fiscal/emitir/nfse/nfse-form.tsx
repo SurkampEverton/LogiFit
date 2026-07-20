@@ -6,6 +6,7 @@
  * Valor digitado em R$ e convertido pra centavos na borda. Sucesso redireciona
  * pro detalhe da emissão (`/app/fiscal/[id]`).
  */
+import { confirm } from '@repo/ui'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { emitNfseManual } from '../../actions'
@@ -21,9 +22,12 @@ interface ServiceOption {
 export function NfseManualForm({
   companies,
   services,
+  isProducao = false,
 }: {
   companies: Array<{ id: string; name: string }>
   services: ServiceOption[]
+  /** Credencial fiscal do tenant em produção — emissão tem efeito legal real */
+  isProducao?: boolean
 }) {
   const router = useRouter()
   const firstCompanyWithService =
@@ -46,12 +50,49 @@ export function NfseManualForm({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    setPending(true)
     setError(null)
+
+    const valorTotalCents = Math.round(Number.parseFloat(valor.replace(',', '.')) * 100)
+    if (!Number.isFinite(valorTotalCents) || valorTotalCents <= 0) {
+      setError('Valor inválido')
+      return
+    }
+
+    // Em produção a emissão é irreversível na prática: cancelar depende da
+    // janela do município e, em vários deles, só funciona no portal da
+    // prefeitura. Confirma com os dados à vista antes de transmitir.
+    if (isProducao) {
+      const brl = (valorTotalCents / 100).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      })
+      const ok = await confirm({
+        title: 'Emitir documento fiscal real?',
+        body: (
+          <>
+            <p style={{ margin: '0 0 var(--ev-space-sm)' }}>
+              Esta NFS-e vale para o fisco e gera ISS devido. Ela <strong>não</strong> é um teste.
+            </p>
+            <p style={{ margin: 0 }}>
+              <strong>{recipientName.trim() || 'Tomador não informado'}</strong>
+              {recipientDocument.trim() ? ` · ${recipientDocument.trim()}` : ''}
+              <br />
+              Valor: <strong>{brl}</strong>
+            </p>
+            <p style={{ margin: 'var(--ev-space-sm) 0 0', color: 'var(--ev-text-muted)' }}>
+              O cancelamento depende da janela do município e, em alguns, só pode ser feito no
+              portal da prefeitura.
+            </p>
+          </>
+        ),
+        danger: true,
+        confirmLabel: 'Emitir nota real',
+      })
+      if (!ok) return
+    }
+
+    setPending(true)
     try {
-      const valorTotalCents = Math.round(Number.parseFloat(valor.replace(',', '.')) * 100)
-      if (!Number.isFinite(valorTotalCents) || valorTotalCents <= 0)
-        throw new Error('Valor inválido')
       const r = await emitNfseManual({
         companyId,
         serviceCatalogId: effectiveServiceId,
@@ -200,10 +241,10 @@ export function NfseManualForm({
       <div className="flex items-center gap-3" style={{ gridColumn: '1 / -1' }}>
         <button
           type="submit"
-          className="ev-btn ev-btn-primary"
+          className={isProducao ? 'ev-btn ev-btn-danger' : 'ev-btn ev-btn-primary'}
           disabled={pending || !effectiveServiceId}
         >
-          {pending ? 'Emitindo…' : '📄 Emitir NFS-e'}
+          {pending ? 'Emitindo…' : isProducao ? '📄 Emitir NFS-e real' : '📄 Emitir NFS-e'}
         </button>
         {error && (
           <span className="text-xs" role="alert" style={{ color: 'var(--ev-danger, #dc2626)' }}>

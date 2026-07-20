@@ -6,6 +6,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added — Aviso e confirmação de emissão em produção 2026-07-20
+
+Nada na tela distinguia emitir em homologação de emitir documento com efeito legal — e um ambiente de dev apontado para a API de produção é uma armadilha silenciosa (foi exatamente a situação criada hoje ao configurar o token de produção).
+
+- **`<Banner variant="danger">`** (catálogo da regra 45) no topo de `/app/fiscal/emitir/nfse` quando a credencial ativa do tenant está em `producao`.
+- **`confirm()` obrigatório antes de transmitir** em produção, com tomador, documento e valor formatado à vista, e o aviso de que o cancelamento depende da janela do município — em vários deles só funciona no portal da prefeitura. Foco inicial no botão **Cancelar**.
+- **Botão de submit** vira `ev-btn-danger` com rótulo "Emitir NFS-e real".
+- **Validado no navegador**: banner correto, diálogo com os dados certos, e — o que importa — **cancelar não emite nada e não consome numeração** (série 13 permaneceu em `next_numero=2`).
+
 ### Changed — Pricing fiscal: cota 1,5× members e fim do "repasse de custo" 2026-07-20
 
 Revisão do [ADR 0066](docs/decisions/0066-plano-comercial-pricing-trial.md) (4ª) decorrente do [ADR 0105](docs/decisions/0105-conta-focus-por-tenant-byo.md). **Nenhuma mudança de código** — a cota fiscal nunca teve enforcement; sempre foi só medição mensal em `tenant_usage_snapshots` para faturamento.
