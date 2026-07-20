@@ -19,6 +19,7 @@ export function EmissionActions({
   status,
   kind,
   cancelWindowOpen,
+  cancelBlockedReason,
   canRetry,
   hasProviderRef,
 }: {
@@ -26,6 +27,8 @@ export function EmissionActions({
   status: string
   kind: string
   cancelWindowOpen: boolean
+  /** Prefeitura sem cancelamento por webservice — texto explicando onde cancelar */
+  cancelBlockedReason: string | null
   canRetry: boolean
   hasProviderRef: boolean
 }) {
@@ -84,7 +87,7 @@ export function EmissionActions({
     <section className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
       <h2 style={{ marginTop: 0 }}>Ações</h2>
       <div className="flex flex-wrap items-center gap-2">
-        {cancelWindowOpen && (
+        {cancelWindowOpen && !cancelBlockedReason && (
           <button
             type="button"
             className="ev-btn"
@@ -96,6 +99,19 @@ export function EmissionActions({
           >
             {pending === 'cancel' ? 'Cancelando…' : '🚫 Cancelar emissão'}
           </button>
+        )}
+        {cancelWindowOpen && cancelBlockedReason && (
+          <p
+            role="note"
+            style={{
+              margin: 0,
+              color: 'var(--ev-text-muted)',
+              borderLeft: '3px solid var(--ev-warning, #92400e)',
+              paddingLeft: 'var(--ev-space-sm)',
+            }}
+          >
+            {cancelBlockedReason}
+          </p>
         )}
         {canIssueCce && (
           <button

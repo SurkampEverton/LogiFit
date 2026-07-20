@@ -28,8 +28,11 @@
 import {
   type FiscalEmissionKind,
   type FiscalProvider,
+  findMunicipalityNfseProfile,
   providerOutcome,
   resolveCfop,
+  resolveRpsSerie,
+  supportsEnvironment,
 } from '@repo/ai'
 import { db } from '@repo/db/client'
 import {
@@ -210,6 +213,60 @@ async function resolveServiceCatalog(
 }
 
 /**
+ * Perfil NFS-e do município onde a company presta serviço, via catálogo.
+ *
+ * Retorna null quando a company não tem catálogo ou o município não está
+ * catalogado — o caller trata como "sem restrição conhecida".
+ */
+async function resolveNfseProfileForCompany(
+  tenantId: string,
+  companyId: string,
+): Promise<ReturnType<typeof findMunicipalityNfseProfile>> {
+  const [svc] = await db
+    .select({ municipalityCode: fiscalServiceCatalog.municipalityCode })
+    .from(fiscalServiceCatalog)
+    .where(
+      and(
+        eq(fiscalServiceCatalog.tenantId, tenantId),
+        eq(fiscalServiceCatalog.companyId, companyId),
+        eq(fiscalServiceCatalog.active, true),
+      ),
+    )
+    .limit(1)
+  return findMunicipalityNfseProfile(svc?.municipalityCode)
+}
+
+/**
+ * Decide série e ambiente de uma NFS-e a partir do perfil do município.
+ *
+ * NFS-e é municipal: série de RPS e disponibilidade de sandbox variam por
+ * prefeitura. Emitir com série errada gera rejeição no protocolo; emitir em
+ * homologação num município que não tem sandbox gera um erro genérico do
+ * provider que parece credencial faltando — foi exatamente o que nos custou
+ * uma manhã em 2026-07-20. Barramos aqui, antes da chamada externa, pra que a
+ * mensagem diga o que realmente está acontecendo.
+ */
+function planNfseEmission(
+  municipalityCode: string,
+  env: 'homologacao' | 'producao',
+): { serie: number; profile: ReturnType<typeof findMunicipalityNfseProfile> } {
+  const profile = findMunicipalityNfseProfile(municipalityCode)
+  if (!supportsEnvironment(profile, env)) {
+    throw new ApiException({
+      code: 'VALIDATION_ERROR',
+      message: [
+        `${profile?.name ?? 'Este município'}${profile?.uf ? `/${profile.uf}` : ''}`,
+        'não oferece ambiente de homologação para NFS-e — a prefeitura só existe em produção.',
+        'Emitir aqui sempre falha, independente das credenciais.',
+        'Troque para produção em Configurações → Fiscal quando estiver pronto para emitir nota real.',
+      ].join(' '),
+      request_id: '',
+    })
+  }
+  return { serie: resolveRpsSerie(profile), profile }
+}
+
+/**
  * Atomicamente reserva o próximo número da sequência (FOR UPDATE).
  * Retorna `{serie, numero}` ou cria sequence com `nextNumero=1` se não existir.
  */
@@ -375,8 +432,16 @@ export const emitNfseFromInvoice = wrapServerAction(
       parsed.serviceCatalogId,
     )
 
-    // 3. Reserva próximo número (serie 1 default — numeração custom Sprint 36c)
-    const numero = await reserveNextNumero(session.logifit.tenantId, inv.companyId, 'nfse', 1)
+    // 3. Provider antes da numeração: o ambiente dele decide série e sequence
+    const provider = await getProviderForTenant(session.logifit.tenantId)
+    const { serie } = planNfseEmission(service.municipalityCode, provider.env)
+    const numero = await reserveNextNumero(
+      session.logifit.tenantId,
+      inv.companyId,
+      'nfse',
+      serie,
+      provider.env,
+    )
 
     // 4. Resolve member + person pra recipient (endereço completo Sprint 36c)
     const [recipient] = await db
@@ -399,11 +464,10 @@ export const emitNfseFromInvoice = wrapServerAction(
       })
 
     // 5. Provider call
-    const provider = await getProviderForTenant(session.logifit.tenantId)
     const result = await provider.emitNfse({
       companyCnpj: company.cnpj,
       municipalityCode: service.municipalityCode,
-      serie: 1,
+      serie,
       numero,
       recipient: {
         document: recipient.document,
@@ -433,7 +497,7 @@ export const emitNfseFromInvoice = wrapServerAction(
         provider: provider.name,
         sourceKind: 'invoice',
         sourceId: inv.id,
-        serie: 1,
+        serie,
         numero,
         chave: result.chave,
         providerRef: result.providerRef,
@@ -501,13 +565,14 @@ export const emitNfseManual = wrapServerAction(
 
     const company = await resolveCompanyFiscal(tenantId, parsed.companyId)
     const service = await resolveServiceCatalog(tenantId, parsed.companyId, parsed.serviceCatalogId)
-    const numero = await reserveNextNumero(tenantId, parsed.companyId, 'nfse', 1)
-
     const provider = await getProviderForTenant(tenantId)
+    const { serie } = planNfseEmission(service.municipalityCode, provider.env)
+    const numero = await reserveNextNumero(tenantId, parsed.companyId, 'nfse', serie, provider.env)
+
     const result = await provider.emitNfse({
       companyCnpj: company.cnpj,
       municipalityCode: service.municipalityCode,
-      serie: 1,
+      serie,
       numero,
       recipient: {
         document: recipientDocument,
@@ -538,7 +603,7 @@ export const emitNfseManual = wrapServerAction(
         provider: provider.name,
         sourceKind: 'manual',
         sourceId: null,
-        serie: 1,
+        serie,
         numero,
         chave: result.chave,
         providerRef: result.providerRef,
@@ -746,9 +811,8 @@ export const emitNfeProductFromSale = wrapServerAction(
     const company = await resolveCompanyFiscal(tenantId, sale.companyId)
     // MVP: operação interna (UF real do destinatário via persons.address — Sprint 24b fase 2)
     const cfop = resolveCfop({ kind: 'nfe', ufOrigin: 'SP', ufDestination: 'SP' })
-    const numero = await reserveNextNumero(tenantId, sale.companyId, 'nfe', 1)
-
     const provider = await getProviderForTenant(tenantId)
+    const numero = await reserveNextNumero(tenantId, sale.companyId, 'nfe', 1, provider.env)
     const result = await provider.emitNfeProduct({
       companyCnpj: company.cnpj,
       serie: 1,
@@ -815,9 +879,8 @@ export const emitNfceFromSale = wrapServerAction(
 
     const company = await resolveCompanyFiscal(tenantId, sale.companyId)
     const cfop = resolveCfop({ kind: 'nfce', ufOrigin: 'SP', ufDestination: 'SP' })
-    const numero = await reserveNextNumero(tenantId, sale.companyId, 'nfce', 1)
-
     const provider = await getProviderForTenant(tenantId)
+    const numero = await reserveNextNumero(tenantId, sale.companyId, 'nfce', 1, provider.env)
     const result = await provider.emitNfce({
       companyCnpj: company.cnpj,
       serie: 1,
@@ -919,9 +982,8 @@ export const emitNfeReturn = wrapServerAction(
     const company = await resolveCompanyFiscal(tenantId, ret.companyId)
     // Devolução espelha a operação original: mercadoria volta pro fornecedor
     const cfop = resolveCfop({ kind: 'nfe_return', ufOrigin: 'SP', ufDestination: 'SP' })
-    const numero = await reserveNextNumero(tenantId, ret.companyId, 'nfe_return', 1)
-
     const provider = await getProviderForTenant(tenantId)
+    const numero = await reserveNextNumero(tenantId, ret.companyId, 'nfe_return', 1, provider.env)
     const result = await provider.emitNfeProduct(
       {
         companyCnpj: company.cnpj,
@@ -1023,6 +1085,7 @@ export const cancelEmission = wrapServerAction(
     const [em] = await db
       .select({
         id: fiscalEmissions.id,
+        companyId: fiscalEmissions.companyId,
         kind: fiscalEmissions.kind,
         status: fiscalEmissions.status,
         chave: fiscalEmissions.chave,
@@ -1055,6 +1118,26 @@ export const cancelEmission = wrapServerAction(
         message: 'Emissão sem chave/ref do provider — cancelamento impossível',
         request_id: '',
       })
+    // Nem toda prefeitura expõe cancelamento por webservice. Chamar mesmo assim
+    // gastaria uma tentativa e devolveria erro genérico do provider; pior, o
+    // operador acharia que cancelou. Falhar aqui, dizendo onde cancelar de fato.
+    if (em.kind === 'nfse') {
+      const cancelProfile = await resolveNfseProfileForCompany(
+        session.logifit.tenantId,
+        em.companyId,
+      )
+      if (cancelProfile && !cancelProfile.supportsWebserviceCancel)
+        throw new ApiException({
+          code: 'VALIDATION_ERROR',
+          message: [
+            `A prefeitura de ${cancelProfile.name}/${cancelProfile.uf} não permite cancelar NFS-e`,
+            'por webservice — o cancelamento precisa ser feito no portal do município',
+            `(${cancelProfile.system}), com o mesmo login usado para emitir.`,
+            'Depois de cancelar lá, use "Re-consultar status" para sincronizar aqui.',
+          ].join(' '),
+          request_id: '',
+        })
+    }
     if (em.cancelDeadlineAt && em.cancelDeadlineAt < new Date())
       throw new ApiException({
         code: 'VALIDATION_ERROR',

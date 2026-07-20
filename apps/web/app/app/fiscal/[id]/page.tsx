@@ -4,8 +4,9 @@
  * Read-only + ações inline via `<EmissionActions>` (cancelar/CC-e/retry/
  * re-consultar — MFA e feature flag gateados server-side nas SAs).
  */
+import { findMunicipalityNfseProfile } from '@repo/ai'
 import { db } from '@repo/db/client'
-import { fiscalEmissions, fiscalEvents } from '@repo/db/schema'
+import { fiscalEmissions, fiscalEvents, fiscalServiceCatalog } from '@repo/db/schema'
 import { and, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -92,6 +93,32 @@ export default async function FiscalEmissionDetailPage({
   const cancelWindowOpen =
     em.status === 'completed' && (!em.cancelDeadlineAt || em.cancelDeadlineAt > new Date())
   const canRetry = em.status === 'rejected' && em.retryCount < 3
+
+  // Algumas prefeituras não expõem cancelamento por webservice. Oferecer o botão
+  // nesse caso só produz erro e a impressão falsa de que a nota foi cancelada —
+  // melhor dizer de cara onde o cancelamento realmente acontece.
+  let cancelBlockedReason: string | null = null
+  if (em.kind === 'nfse' && cancelWindowOpen) {
+    const [svc] = await db
+      .select({ municipalityCode: fiscalServiceCatalog.municipalityCode })
+      .from(fiscalServiceCatalog)
+      .where(
+        and(
+          eq(fiscalServiceCatalog.tenantId, tenantId),
+          eq(fiscalServiceCatalog.companyId, em.companyId),
+          eq(fiscalServiceCatalog.active, true),
+        ),
+      )
+      .limit(1)
+    const profile = findMunicipalityNfseProfile(svc?.municipalityCode)
+    if (profile && !profile.supportsWebserviceCancel) {
+      cancelBlockedReason = [
+        `A prefeitura de ${profile.name}/${profile.uf} não permite cancelar NFS-e por webservice`,
+        `— cancele no portal do município (${profile.system}) com o mesmo login usado para emitir`,
+        'e depois use "Re-consultar status" para sincronizar aqui.',
+      ].join(' ')
+    }
+  }
 
   return (
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
@@ -190,6 +217,7 @@ export default async function FiscalEmissionDetailPage({
         status={em.status}
         kind={em.kind}
         cancelWindowOpen={cancelWindowOpen}
+        cancelBlockedReason={cancelBlockedReason}
         canRetry={canRetry}
         hasProviderRef={em.providerRef !== null}
       />

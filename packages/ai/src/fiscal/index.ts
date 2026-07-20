@@ -16,6 +16,7 @@
  */
 export * from './provider'
 export * from './outcome'
+export * from './municipios-nfse'
 export * from './mock'
 export * from './cfop-resolver'
 export * from './focus-nfe'

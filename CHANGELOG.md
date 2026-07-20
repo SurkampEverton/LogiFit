@@ -6,6 +6,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Perfis de integração NFS-e por município 2026-07-20
+
+NFS-e não tem padrão nacional efetivo: cada prefeitura escolhe sistema, autenticação, série de RPS e quais operações expõe por webservice. Tratávamos tudo como genérico, e isso custou uma manhã emitindo contra o ambiente de homologação de um município que **não tem** homologação — o erro genérico do provider parecia credencial faltando.
+
+- **`@repo/ai/fiscal/municipios-nfse.ts`** — catálogo tipado por código IBGE com `hasHomologacao`, `defaultRpsSerie`, `supportsWebserviceCancel`, `auth` e `requiresWebserviceCredenciamento`. Só entra município **verificado na documentação do provider**, com `sourceUrl` obrigatório (teste garante): perfil chutado é pior que perfil ausente, porque município não catalogado degrada pro comportamento genérico enquanto um valor errado bloqueia emissão legítima.
+- **Gate de ambiente** — emitir NFS-e em homologação num município sem sandbox agora falha *antes* da chamada externa, dizendo o que de fato acontece ("a prefeitura só existe em produção") em vez de deixar o provider devolver erro enganoso. Não cria emissão órfã nem consome numeração.
+- **Série de RPS deixa de ser `1` hardcoded** — resolve por município (Cascavel/PR exige série **13**), com precedência override da empresa > exigência do município > 1.
+- **Cancelamento por município** — onde a prefeitura não expõe cancelamento por webservice (caso de Cascavel), a SA recusa com instrução de onde cancelar e a UI troca o botão por essa explicação. Antes, o operador clicaria, receberia erro genérico e poderia acreditar que a nota foi cancelada.
+- **Bug lateral corrigido**: `reserveNextNumero` recebia o ambiente por default `'homologacao'` em **todos** os call sites — numeração de produção sairia da sequência de homologação. Agora passa `provider.env`.
+- **Cascavel/PR (IBGE 4104808)** documentado: AtendeNet, sem homologação, série 13, sem cancelamento por webservice, login/senha do portal (certificado **não** substitui) e credenciamento de webservice pedido à parte no autoatendimento da prefeitura — o que explica emitir nota manualmente e ainda assim a Focus não conseguir.
+
 ### Fix — Emissão rejeitada era gravada como "Na fila" (achatamento de status) 2026-07-20
 
 Encontrado pela **primeira emissão real contra a Focus NFe**. A nota voltou rejeitada com `empresa_nao_habilitada`, mas a UI mostrou "Na fila" — o operador ficaria esperando indefinidamente um documento fiscal que nunca viria, sem nenhum sinal de erro. Dois bugs independentes na mesma trajetória:
