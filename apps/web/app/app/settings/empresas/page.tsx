@@ -1,3 +1,4 @@
+import { isAddressFiscallyComplete } from '@repo/types'
 import Link from 'next/link'
 import { requireFullSession } from '../../../lib/session'
 import { listCompanies } from './actions'
@@ -64,7 +65,7 @@ export default async function EmpresasPage() {
                 {' · '}
                 {c.regimeTributario ? `Regime: ${c.regimeTributario}` : 'Regime: —'}
                 {' · '}
-                {(c.address as CompanyAddress | null)?.logradouro
+                {isAddressFiscallyComplete(c.address as CompanyAddress | null)
                   ? 'Endereço: ok'
                   : 'Endereço: incompleto'}
                 {c.municipalCredentialsConfiguredAt &&

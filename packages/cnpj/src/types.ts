@@ -7,6 +7,7 @@
  * Cache key é o CNPJ normalizado (14 dígitos só números — `normalizeDocument`
  * de `@repo/db/persons`).
  */
+import { type Address, addressSchema } from '@repo/types'
 import { z } from 'zod'
 
 /**
@@ -25,18 +26,13 @@ export const cnpjSituacaoSchema = z.enum([
 export type CnpjSituacao = z.infer<typeof cnpjSituacaoSchema>
 
 /**
- * Endereço normalizado — bate com `persons.address` (`@repo/db/schema/persons`).
+ * Endereço do provider — reusa o schema canônico do monorepo (`@repo/types`),
+ * o mesmo que valida `persons.address` e `units.address`.
+ *
+ * Aliases mantidos porque o package já os expunha; a definição, não.
  */
-export const cnpjAddressSchema = z.object({
-  cep: z.string().nullish(),
-  logradouro: z.string().nullish(),
-  numero: z.string().nullish(),
-  complemento: z.string().nullish(),
-  bairro: z.string().nullish(),
-  cidade: z.string().nullish(),
-  uf: z.string().length(2).nullish(),
-})
-export type CnpjAddress = z.infer<typeof cnpjAddressSchema>
+export const cnpjAddressSchema = addressSchema
+export type CnpjAddress = Address
 
 /**
  * Dados de CNPJ normalizados — formato canônico LogiFit.

@@ -11,20 +11,14 @@
  * `document` fica de fora: mudar CPF/CNPJ de pessoa já vinculada reescreveria a
  * identidade de tudo que aponta pra ela.
  */
+import type { Address } from '@repo/types'
 import { toast } from '@repo/ui'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { updatePerson } from './actions'
 
-export interface PersonAddress {
-  cep?: string
-  logradouro?: string
-  numero?: string
-  complemento?: string
-  bairro?: string
-  cidade?: string
-  uf?: string
-}
+/** Alias do tipo canônico (`@repo/types`) — mesmo shape de `persons.address`. */
+export type PersonAddress = Address
 
 export interface PersonFormInitial {
   id: string

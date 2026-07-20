@@ -7,6 +7,7 @@ import { parseDocument } from '@repo/db/persons'
 import { persons } from '@repo/db/schema'
 import type { PersonInsert, PersonRow } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
+import { addressSchema, normalizeAddress } from '@repo/types'
 /**
  * Server Actions de persons — Sprint 01a Faixa F: migradas pra `wrapServerAction()`.
  *
@@ -118,17 +119,7 @@ const createPersonInputSchema = z.object({
   sex: z.string().trim().max(50).optional(),
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().trim().max(50).optional(),
-  address: z
-    .object({
-      cep: z.string().optional(),
-      logradouro: z.string().optional(),
-      numero: z.string().optional(),
-      complemento: z.string().optional(),
-      bairro: z.string().optional(),
-      cidade: z.string().optional(),
-      uf: z.string().length(2).optional(),
-    })
-    .optional(),
+  address: addressSchema.optional(),
   notes: z.string().max(2000).optional(),
   autoFillCnpj: z.boolean().default(true),
 })
@@ -268,18 +259,7 @@ const updatePersonInputSchema = z.object({
   displayName: z.string().trim().max(200).nullable().optional(),
   email: z.string().email().nullable().optional().or(z.literal('')),
   phone: z.string().trim().max(50).nullable().optional(),
-  address: z
-    .object({
-      cep: z.string().optional(),
-      logradouro: z.string().optional(),
-      numero: z.string().optional(),
-      complemento: z.string().optional(),
-      bairro: z.string().optional(),
-      cidade: z.string().optional(),
-      uf: z.string().length(2).optional(),
-    })
-    .nullable()
-    .optional(),
+  address: addressSchema.nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
 })
 
@@ -307,14 +287,7 @@ export const updatePerson = wrapServerAction(
     if (input.email !== undefined) patch.email = input.email || null
     if (input.phone !== undefined) patch.phone = input.phone || null
     if (input.notes !== undefined) patch.notes = input.notes || null
-    if (input.address !== undefined) {
-      // Endereço sem nenhum campo preenchido vira NULL: "não informado" precisa
-      // ser distinguível de "informado vazio" pra UI conseguir sinalizar falta.
-      const filled = input.address
-        ? Object.fromEntries(Object.entries(input.address).filter(([, v]) => v))
-        : {}
-      patch.address = Object.keys(filled).length > 0 ? filled : null
-    }
+    if (input.address !== undefined) patch.address = normalizeAddress(input.address)
 
     const [row] = await db
       .update(persons)
