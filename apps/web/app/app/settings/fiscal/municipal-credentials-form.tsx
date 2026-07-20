@@ -73,8 +73,8 @@ export function MunicipalCredentialsForm({
     <form onSubmit={handleSubmit} className="ev-stack" style={{ gap: 'var(--ev-space-sm)' }}>
       <p style={{ margin: 0, color: 'var(--ev-text-muted)' }}>
         Vários municípios exigem o login do portal da prefeitura para transmitir a nota — o
-        certificado digital não substitui. Estes dados vão direto para a sua conta Focus NFe;{' '}
-        <strong>o LogiFit não armazena a senha</strong>.
+        certificado digital não substitui. Estes dados são gravados no cadastro da empresa na Focus
+        NFe; <strong>o LogiFit não armazena a senha</strong>.
       </p>
 
       <label htmlFor="mc-company">Empresa</label>

@@ -22,6 +22,10 @@ export function FiscalCredentialsForm({ configured }: { configured: boolean }) {
   const [apiToken, setApiToken] = useState('')
   const [environment, setEnvironment] = useState<'homologacao' | 'producao'>('homologacao')
   const [webhookSecret, setWebhookSecret] = useState<string | null>(null)
+  // Cadastro próprio: tenant tem conta na Focus e informa o token de CONTA.
+  // Desligado, usa a conta da plataforma (ADR 0105).
+  const [ownAccount, setOwnAccount] = useState(false)
+  const [accountToken, setAccountToken] = useState('')
   const [pending, setPending] = useState<'save' | 'validate' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [validation, setValidation] = useState<string | null>(null)
@@ -37,10 +41,13 @@ export function FiscalCredentialsForm({ configured }: { configured: boolean }) {
         apiToken,
         environment,
         webhookSecret: secret,
+        ownAccount,
+        accountToken: ownAccount ? accountToken.trim() : undefined,
       })
       if (!r.ok) throw new Error('error' in r ? String(r.error.message ?? 'Erro') : 'Erro')
       setWebhookSecret(secret)
       setApiToken('')
+      setAccountToken('')
       router.refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao salvar credenciais')
@@ -100,6 +107,42 @@ export function FiscalCredentialsForm({ configured }: { configured: boolean }) {
           <option value="producao">Produção (emite notas reais)</option>
         </select>
       </div>
+
+      <div className="space-y-1">
+        <label className="flex items-center gap-2 text-sm font-medium" htmlFor="fiscal-own-account">
+          <input
+            id="fiscal-own-account"
+            type="checkbox"
+            checked={ownAccount}
+            onChange={(e) => setOwnAccount(e.target.checked)}
+          />
+          Cadastro próprio na Focus NFe
+        </label>
+        <p className="text-xs" style={{ color: 'var(--ev-text-muted)', margin: 0 }}>
+          Marque se esta empresa tem <strong>conta própria</strong> na Focus. Desmarcado, o cadastro
+          de empresas e as credenciais de portal municipal usam a conta da LogiFit.
+        </p>
+      </div>
+
+      {ownAccount && (
+        <div className="space-y-1">
+          <label htmlFor="fiscal-account-token" className="text-sm font-medium">
+            Token da conta Focus
+          </label>
+          <input
+            id="fiscal-account-token"
+            className="ev-input w-full"
+            type="password"
+            value={accountToken}
+            onChange={(e) => setAccountToken(e.target.value)}
+            autoComplete="off"
+          />
+          <p className="text-xs" style={{ color: 'var(--ev-text-muted)', margin: 0 }}>
+            É o token que <strong>gerencia empresas</strong> no painel da Focus — diferente do token
+            de emissão acima.
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <button

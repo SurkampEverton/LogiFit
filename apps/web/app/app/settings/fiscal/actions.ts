@@ -13,19 +13,28 @@ import { FOCUS_NFE_HOSTS } from '@repo/ai'
 import { db } from '@repo/db/client'
 import { companies, fiscalProviderCredentials, persons } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
-import { decryptSecretParts, encryptSecretParts, safeFetch } from '@repo/security'
+import { encryptSecretParts, safeFetch } from '@repo/security'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { resolveFiscalProvider } from '../../../lib/fiscal-provider'
+import { resolveFocusAccountToken } from '../../../lib/focus-account'
 import { requirePermission } from '../../../lib/permissions'
 import { wrapServerAction } from '../../../lib/wrap-action'
 
 const SaveCredentialsSchema = z.object({
+  /** Token de **emissão** da empresa (não o de conta — ver `ownAccount`) */
   apiToken: z.string().min(8).max(512),
   environment: z.enum(['homologacao', 'producao']),
   /** Secret usado na URL do webhook registrado no Focus (gerado pela UI). */
   webhookSecret: z.string().min(16).max(128).optional(),
   baseUrl: z.string().url().optional(),
+  /**
+   * `true` = tenant tem conta própria na Focus e informa o próprio token de
+   * CONTA; `false` = usa a conta da plataforma (ADR 0105).
+   */
+  ownAccount: z.boolean().optional(),
+  /** Token de CONTA do tenant — obrigatório quando `ownAccount` é true */
+  accountToken: z.string().min(8).max(512).optional(),
 })
 
 export const saveFiscalCredentials = wrapServerAction(
@@ -39,8 +48,18 @@ export const saveFiscalCredentials = wrapServerAction(
     const parsed = SaveCredentialsSchema.parse(input)
     const tenantId = session.logifit.tenantId
 
+    // O CHECK do banco também barra, mas aqui a mensagem é útil ao operador.
+    if (parsed.ownAccount && !parsed.accountToken)
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message:
+          'Cadastro próprio ligado exige o token de CONTA da Focus (o que gerencia empresas) — sem ele não há como cadastrar dados de empresa.',
+        request_id: '',
+      })
+
     const token = encryptSecretParts(parsed.apiToken)
     const webhook = parsed.webhookSecret ? encryptSecretParts(parsed.webhookSecret) : null
+    const accountTok = parsed.accountToken ? encryptSecretParts(parsed.accountToken) : null
 
     const values = {
       apiTokenEncrypted: token.encrypted,
@@ -53,6 +72,22 @@ export const saveFiscalCredentials = wrapServerAction(
             webhookSecretEncrypted: webhook.encrypted,
             webhookSecretNonce: webhook.nonce,
             webhookSecretTag: webhook.tag,
+          }
+        : {}),
+      ownAccount: parsed.ownAccount ?? false,
+      ...(accountTok
+        ? {
+            accountTokenEncrypted: accountTok.encrypted,
+            accountTokenNonce: accountTok.nonce,
+            accountTokenTag: accountTok.tag,
+          }
+        : {}),
+      // Desligar o flag limpa o token de conta: segredo sem uso não fica guardado
+      ...(parsed.ownAccount === false
+        ? {
+            accountTokenEncrypted: null,
+            accountTokenNonce: null,
+            accountTokenTag: null,
           }
         : {}),
       active: true,
@@ -105,15 +140,22 @@ const SaveMunicipalCredentialsSchema = z.object({
   serieRps: z.number().int().min(1).max(999).optional(),
 })
 
-/** Erro acionável quando o token do tenant não tem escopo de conta. */
-function focusScopeError(): never {
+/** Erro acionável quando o token de conta em uso não tem o escopo esperado. */
+function focusScopeError(source: 'tenant' | 'platform'): never {
   throw new ApiException({
     code: 'FORBIDDEN',
-    message: [
-      'O token Focus configurado não tem permissão para editar empresas.',
-      'Use o token da CONTA (o mesmo que lista /v2/empresas no painel da Focus),',
-      'não o token de uma empresa específica.',
-    ].join(' '),
+    message:
+      source === 'platform'
+        ? [
+            'A Focus recusou o token de conta da plataforma para gerenciar empresas.',
+            'Confira o token cadastrado em Super Admin → Fiscal: precisa ser o token da',
+            'CONTA (o que lista as empresas no painel), não o de emissão de uma empresa.',
+          ].join(' ')
+        : [
+            'A Focus recusou o token de conta deste tenant.',
+            'Em Configurações → Fiscal, confira o token informado no "cadastro próprio":',
+            'precisa ser o da CONTA, não o de emissão de uma empresa.',
+          ].join(' '),
     request_id: '',
   })
 }
@@ -141,28 +183,10 @@ export const saveMunicipalCredentials = wrapServerAction(
     const parsed = SaveMunicipalCredentialsSchema.parse(input)
     const tenantId = session.logifit.tenantId
 
-    const [creds] = await db
-      .select({
-        encrypted: fiscalProviderCredentials.apiTokenEncrypted,
-        nonce: fiscalProviderCredentials.apiTokenNonce,
-        tag: fiscalProviderCredentials.apiTokenTag,
-        environment: fiscalProviderCredentials.environment,
-      })
-      .from(fiscalProviderCredentials)
-      .where(
-        and(
-          eq(fiscalProviderCredentials.tenantId, tenantId),
-          eq(fiscalProviderCredentials.provider, 'focus_nfe'),
-          eq(fiscalProviderCredentials.active, true),
-        ),
-      )
-      .limit(1)
-    if (!creds)
-      throw new ApiException({
-        code: 'VALIDATION_ERROR',
-        message: 'Configure primeiro o token Focus NFe do tenant nesta mesma tela.',
-        request_id: '',
-      })
+    // Token de CONTA (gerencia /v2/empresas) — vem do tenant quando ele tem
+    // cadastro próprio, senão da conta da plataforma. Nunca é o token de
+    // emissão salvo em `api_token_*`: esse é de empresa e a Focus devolve 403.
+    const account = await resolveFocusAccountToken(tenantId)
 
     const [company] = await db
       .select({
@@ -182,13 +206,8 @@ export const saveMunicipalCredentials = wrapServerAction(
         request_id: '',
       })
 
-    const apiToken = decryptSecretParts({
-      encrypted: creds.encrypted,
-      nonce: creds.nonce,
-      tag: creds.tag,
-    })
-    const host = FOCUS_NFE_HOSTS[creds.environment]
-    const authHeader = `Basic ${Buffer.from(`${apiToken}:`).toString('base64')}`
+    const host = FOCUS_NFE_HOSTS[account.environment]
+    const authHeader = `Basic ${Buffer.from(`${account.token}:`).toString('base64')}`
     const focusFetch = (path: string, init: { method: string; body?: string }) =>
       safeFetch(`https://${host}${path}`, {
         ...init,
@@ -201,7 +220,7 @@ export const saveMunicipalCredentials = wrapServerAction(
     let empresaId = company.focusEmpresaId
     if (!empresaId) {
       const listRes = await focusFetch(`/v2/empresas?cnpj=${cnpj}`, { method: 'GET' })
-      if (listRes.status === 401 || listRes.status === 403) focusScopeError()
+      if (listRes.status === 401 || listRes.status === 403) focusScopeError(account.source)
       const list = (await listRes.json().catch(() => null)) as Array<{ id?: number }> | null
       const found = Array.isArray(list) ? list[0]?.id : undefined
       if (!found)
@@ -224,7 +243,7 @@ export const saveMunicipalCredentials = wrapServerAction(
     if (parsed.inscricaoMunicipal) body.inscricao_municipal = parsed.inscricaoMunicipal
     if (parsed.serieRps) {
       const serieField =
-        creds.environment === 'producao' ? 'serie_nfse_producao' : 'serie_nfse_homologacao'
+        account.environment === 'producao' ? 'serie_nfse_producao' : 'serie_nfse_homologacao'
       body[serieField] = String(parsed.serieRps)
     }
     const payload = JSON.stringify(body)
@@ -234,7 +253,7 @@ export const saveMunicipalCredentials = wrapServerAction(
       method: 'PUT',
       body: payload,
     })
-    if (dry.status === 401 || dry.status === 403) focusScopeError()
+    if (dry.status === 401 || dry.status === 403) focusScopeError(account.source)
     if (!dry.ok) {
       const detail = await dry.text().catch(() => '')
       throw new ApiException({
@@ -268,7 +287,8 @@ export const saveMunicipalCredentials = wrapServerAction(
 
     setAuditResource(company.id, {
       focusEmpresaId: empresaId,
-      environment: creds.environment,
+      environment: account.environment,
+      accountSource: account.source,
       // login não é segredo; senha jamais entra aqui
       loginPrefeitura: parsed.loginPrefeitura,
     })

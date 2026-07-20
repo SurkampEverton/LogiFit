@@ -387,6 +387,20 @@ export const fiscalProviderCredentials = pgTable(
     /** Tag de autenticação GCM */
     apiTokenTag: text('api_token_tag').notNull(),
     environment: fiscalProviderEnvEnum('environment').notNull(),
+    /**
+     * `true` = tenant tem conta própria na Focus e informa o próprio token de
+     * CONTA; `false` (default) = usa a conta da plataforma
+     * (`fiscalPlatformCredentials`). Ver ADR 0105.
+     */
+    ownAccount: boolean('own_account').notNull().default(false),
+    /**
+     * Token de **conta** do tenant — gerencia `/v2/empresas` (cadastro,
+     * credenciais do portal municipal, série). Não confundir com
+     * `apiToken*`, que é o token de **emissão** da empresa.
+     */
+    accountTokenEncrypted: text('account_token_encrypted'),
+    accountTokenNonce: text('account_token_nonce'),
+    accountTokenTag: text('account_token_tag'),
     /** URL base do provider (override pra sandbox alternativo) */
     baseUrl: text('base_url'),
     /** Webhook callback secret pra HMAC verification */
@@ -405,6 +419,45 @@ export const fiscalProviderCredentials = pgTable(
       'fiscal_provider_credentials_provider_valid',
       sql`provider IN ('focus_nfe', 'mock', 'nfse_nacional', 'enotas')`,
     ),
+    /** Flag ligado sem token deixaria o tenant sem caminho de cadastro */
+    check(
+      'fiscal_provider_credentials_own_account_token',
+      sql`own_account = false OR account_token_encrypted IS NOT NULL`,
+    ),
+  ],
+)
+
+/**
+ * Token de **conta** Focus NFe da LogiFit — gerencia `/v2/empresas`.
+ *
+ * Global por design: é credencial da plataforma, não de um tenant. Exceção
+ * consciente à regra 1, com o mesmo precedente de `ai_providers`/`ai_models`.
+ * A RLS (migration 0063) só libera `app.role='system'` — nenhum contexto de
+ * tenant enxerga a linha. Usado quando o tenant tem `own_account = false`.
+ */
+export const fiscalPlatformCredentials = pgTable(
+  'fiscal_platform_credentials',
+  {
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    provider: text('provider').notNull().default('focus_nfe'),
+    environment: text('environment').notNull().default('producao'),
+    accountTokenEncrypted: text('account_token_encrypted').notNull(),
+    accountTokenNonce: text('account_token_nonce').notNull(),
+    accountTokenTag: text('account_token_tag').notNull(),
+    lastValidatedAt: timestamp('last_validated_at', { withTimezone: true }),
+    lastValidationStatus: text('last_validation_status'),
+    updatedByUserId: uuid('updated_by_user_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    /** Uma conta LogiFit por provider, não N */
+    uniqueIndex('fiscal_platform_credentials_provider_uq').on(t.provider),
+    check(
+      'fiscal_platform_credentials_provider_valid',
+      sql`provider IN ('focus_nfe', 'nfse_nacional', 'enotas')`,
+    ),
+    check('fiscal_platform_credentials_env_valid', sql`environment IN ('homologacao', 'producao')`),
   ],
 )
 
