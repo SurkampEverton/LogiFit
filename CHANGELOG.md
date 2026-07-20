@@ -6,6 +6,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Docs — ADR 0105: conta Focus NFe é do tenant (BYO), não revenda 2026-07-20
+
+O primeiro onboarding fiscal real expôs uma contradição entre modelo comercial e código: o [ADR 0066](docs/decisions/0066-plano-comercial-pricing-trial.md) descreve o overage de NFS-e como *"repasse calibrado sobre custo Focus NFe"* — o que pressupõe a LogiFit como cliente da Focus revendendo —, mas `fiscal_provider_credentials` é por tenant e o wizard só coleta o token do tenant, isto é, **cada tenant traz a própria conta**. Nesse arranjo não existe custo Focus na LogiFit para repassar.
+
+- **[ADR 0105](docs/decisions/0105-conta-focus-por-tenant-byo.md)** decide manter o modelo BYO: zero mudança de schema, e mantém a LogiFit fora da cadeia de custódia de certificados A1 e senhas de portais municipais de clientes (menos superfície de risco e de LGPD).
+- **Dívida aberta explicitamente**: o overage de NFS-e do ADR 0066 deixa de ser repasse de custo e precisa ser reenquadrado (tarifa de plataforma pelo ciclo fiscal) ou removido. Até lá, o texto do ADR 0066 e de `docs/comercial.md` está impreciso quanto à natureza da cobrança.
+- **Consequência prática do modelo**, registrada no ADR: configuração de empresa na Focus (credenciais do portal municipal, IM, série) é passo do tenant no painel da Focus — e o painel nem sempre expõe esses campos. Fica pendente uma tela que empurre isso via `PUT /v2/empresas/{id}`, com **repasse sem persistência** (enviar à Focus e guardar só `configurado_em`).
+
 ### Build — Perfis de integração NFS-e por município 2026-07-20
 
 NFS-e não tem padrão nacional efetivo: cada prefeitura escolhe sistema, autenticação, série de RPS e quais operações expõe por webservice. Tratávamos tudo como genérico, e isso custou uma manhã emitindo contra o ambiente de homologação de um município que **não tem** homologação — o erro genérico do provider parecia credencial faltando.
