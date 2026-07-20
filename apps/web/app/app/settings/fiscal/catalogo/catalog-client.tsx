@@ -17,6 +17,7 @@ interface ServiceRow {
   companyName: string
   municipalityCode: string
   lc116Code: string | null
+  codigoTributacaoNacional: string | null
   cnae: string | null
   description: string
   taxRegime: 'simples_nacional' | 'lucro_presumido' | 'lucro_real' | 'mei'
@@ -36,6 +37,7 @@ const EMPTY_FORM = {
   companyId: '',
   municipalityCode: '',
   lc116Code: '',
+  codigoTributacaoNacional: '',
   cnae: '',
   description: '',
   taxRegime: 'simples_nacional' as ServiceRow['taxRegime'],
@@ -60,6 +62,7 @@ export function CatalogManager({
       companyId: row.companyId,
       municipalityCode: row.municipalityCode,
       lc116Code: row.lc116Code ?? '',
+      codigoTributacaoNacional: row.codigoTributacaoNacional ?? '',
       cnae: row.cnae ?? '',
       description: row.description,
       taxRegime: row.taxRegime,
@@ -80,6 +83,7 @@ export function CatalogManager({
         companyId: form.companyId,
         municipalityCode: form.municipalityCode.replace(/\D/g, ''),
         lc116Code: form.lc116Code.trim() || null,
+        codigoTributacaoNacional: form.codigoTributacaoNacional.trim() || null,
         cnae: form.cnae.trim() || null,
         description: form.description.trim(),
         taxRegime: form.taxRegime,
@@ -181,6 +185,23 @@ export function CatalogManager({
           </div>
 
           <div className="space-y-1">
+            <label htmlFor="svc-codigo-nacional" className="text-sm font-medium">
+              Código de Tributação Nacional
+            </label>
+            <input
+              id="svc-codigo-nacional"
+              className="ev-input w-full"
+              placeholder="010601 (item + subitem + desdobramento)"
+              inputMode="numeric"
+              value={form.codigoTributacaoNacional}
+              onChange={(e) => setForm({ ...form, codigoTributacaoNacional: e.target.value })}
+            />
+            <p className="text-xs" style={{ color: 'var(--ev-text-muted)', margin: 0 }}>
+              6 dígitos do padrão nacional. Municípios já migrados recusam o formato da LC 116.
+            </p>
+          </div>
+
+          <div className="space-y-1">
             <label htmlFor="svc-cnae" className="text-sm font-medium">
               CNAE (opcional)
             </label>
@@ -275,6 +296,7 @@ export function CatalogManager({
                   <th>Empresa</th>
                   <th>Município</th>
                   <th>LC 116</th>
+                  <th>Cód. nacional</th>
                   <th>Regime</th>
                   <th>ISS</th>
                   <th>Status</th>
@@ -290,6 +312,7 @@ export function CatalogManager({
                       <code style={{ fontSize: '0.8rem' }}>{row.municipalityCode}</code>
                     </td>
                     <td>{row.lc116Code ?? '—'}</td>
+                    <td>{row.codigoTributacaoNacional ?? '—'}</td>
                     <td>{REGIME_LABEL[row.taxRegime]}</td>
                     <td>{(row.issRateBp / 100).toFixed(2)}%</td>
                     <td>{row.active ? 'Ativo' : 'Inativo'}</td>

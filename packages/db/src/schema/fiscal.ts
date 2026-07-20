@@ -336,6 +336,12 @@ export const fiscalServiceCatalog = pgTable(
     municipalityCode: text('municipality_code').notNull(),
     /** Item LC 116/2003 — formato "X.YY" (ex: "8.01" = ensino) */
     lc116Code: text('lc116_code'),
+    /**
+     * Código de Tributação Nacional (CGNFS-e): item(2)+subitem(2)+desdobramento(2).
+     * Ex.: `010601` = LC 1.06. Distinto de `lc116Code` — o desdobramento é
+     * criação do padrão nacional. NULL = município ainda no padrão antigo.
+     */
+    codigoTributacaoNacional: text('codigo_tributacao_nacional'),
     /** Código NBS (importação/exportação de serviço; opcional) */
     nbsCode: text('nbs_code'),
     /** CNAE da empresa que presta (cópia denormalizada de `companies`) */

@@ -393,6 +393,13 @@
       "when": 1779565672955,
       "tag": "0063_focus_account_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1779565673955,
+      "tag": "0064_codigo_tributacao_nacional",
+      "breakpoints": true
     }
   ]
 }

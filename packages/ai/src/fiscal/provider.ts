@@ -63,6 +63,15 @@ export interface NfseEmissionInput {
   service: {
     /** Item LC 116/2003 — formato "X.YY" */
     lc116Code: string | null
+    /**
+     * Código de Tributação Nacional (CGNFS-e) — 6 dígitos
+     * item(2)+subitem(2)+desdobramento(2), ex. `010601`.
+     *
+     * Municípios já migrados ao padrão nacional exigem este; o formato da LC
+     * 116 é recusado ("não possui desdobramento nacional"). Quando presente,
+     * tem precedência sobre `lc116Code` no payload.
+     */
+    codigoTributacaoNacional?: string | null
     /** CNAE da empresa que presta */
     cnae?: string | null
     description: string

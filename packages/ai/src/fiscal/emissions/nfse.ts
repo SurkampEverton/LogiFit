@@ -61,7 +61,10 @@ export function buildNfsePayload(
     iss_retido: options.issRetido ?? false,
     codigo_municipio: input.municipalityCode,
   }
-  if (service.lc116Code) servico.item_lista_servico = service.lc116Code
+  // Município no padrão nacional exige o código de 6 dígitos (com
+  // desdobramento); o formato da LC 116 é recusado. Precedência explícita.
+  const itemLista = service.codigoTributacaoNacional || service.lc116Code
+  if (itemLista) servico.item_lista_servico = itemLista
   if (service.cnae) servico.codigo_cnae = service.cnae.replace(/\D/g, '')
 
   const payload: Record<string, unknown> = {

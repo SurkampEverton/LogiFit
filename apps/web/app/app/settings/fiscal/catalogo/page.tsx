@@ -31,6 +31,7 @@ export default async function FiscalCatalogPage() {
       companyId: fiscalServiceCatalog.companyId,
       municipalityCode: fiscalServiceCatalog.municipalityCode,
       lc116Code: fiscalServiceCatalog.lc116Code,
+      codigoTributacaoNacional: fiscalServiceCatalog.codigoTributacaoNacional,
       cnae: fiscalServiceCatalog.cnae,
       description: fiscalServiceCatalog.description,
       taxRegime: fiscalServiceCatalog.taxRegime,

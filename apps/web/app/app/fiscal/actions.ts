@@ -180,6 +180,7 @@ async function resolveServiceCatalog(
   id: string
   municipalityCode: string
   lc116Code: string | null
+  codigoTributacaoNacional: string | null
   cnae: string | null
   description: string
   issRateBp: number
@@ -195,6 +196,7 @@ async function resolveServiceCatalog(
       id: fiscalServiceCatalog.id,
       municipalityCode: fiscalServiceCatalog.municipalityCode,
       lc116Code: fiscalServiceCatalog.lc116Code,
+      codigoTributacaoNacional: fiscalServiceCatalog.codigoTributacaoNacional,
       cnae: fiscalServiceCatalog.cnae,
       description: fiscalServiceCatalog.description,
       issRateBp: fiscalServiceCatalog.issRateBp,
@@ -475,6 +477,7 @@ export const emitNfseFromInvoice = wrapServerAction(
       },
       service: {
         lc116Code: service.lc116Code,
+        codigoTributacaoNacional: service.codigoTributacaoNacional,
         cnae: service.cnae,
         description: `${service.description} — invoice ${inv.id.slice(0, 8)}`,
         valorTotalCents: inv.amountCents,
@@ -581,6 +584,7 @@ export const emitNfseManual = wrapServerAction(
       },
       service: {
         lc116Code: service.lc116Code,
+        codigoTributacaoNacional: service.codigoTributacaoNacional,
         cnae: service.cnae,
         description: service.description,
         valorTotalCents: parsed.valorTotalCents,

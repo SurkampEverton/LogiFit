@@ -31,6 +31,16 @@ const SaveServiceSchema = z.object({
     .regex(/^\d{1,2}\.\d{2}$/, 'Formato LC 116: X.YY (ex: 8.02)')
     .nullable()
     .optional(),
+  /**
+   * Código de Tributação Nacional (CGNFS-e) — item(2)+subitem(2)+desdobramento(2).
+   * Exigido por municípios já no padrão nacional; sem ele a prefeitura recusa
+   * com "Lista de Serviço informada não possui desdobramento nacional".
+   */
+  codigoTributacaoNacional: z
+    .string()
+    .regex(/^\d{6}$/, 'Código de Tributação Nacional: 6 dígitos (ex: 010601)')
+    .nullable()
+    .optional(),
   cnae: z.string().max(12).nullable().optional(),
   description: z.string().min(3).max(200),
   taxRegime: z.enum(['simples_nacional', 'lucro_presumido', 'lucro_real', 'mei']),
@@ -55,6 +65,7 @@ export const listServiceCatalog = wrapServerAction(
         companyName: persons.name,
         municipalityCode: fiscalServiceCatalog.municipalityCode,
         lc116Code: fiscalServiceCatalog.lc116Code,
+        codigoTributacaoNacional: fiscalServiceCatalog.codigoTributacaoNacional,
         cnae: fiscalServiceCatalog.cnae,
         description: fiscalServiceCatalog.description,
         taxRegime: fiscalServiceCatalog.taxRegime,
@@ -98,6 +109,7 @@ export const saveServiceCatalogItem = wrapServerAction(
       companyId: parsed.companyId,
       municipalityCode: parsed.municipalityCode,
       lc116Code: parsed.lc116Code ?? null,
+      codigoTributacaoNacional: parsed.codigoTributacaoNacional ?? null,
       cnae: parsed.cnae?.replace(/\D/g, '') || null,
       description: parsed.description,
       taxRegime: parsed.taxRegime,
