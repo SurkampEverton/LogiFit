@@ -49,6 +49,9 @@ export async function listCompanies(): Promise<
       })
       .from(companies)
       .innerJoin(persons, eq(persons.id, companies.personId))
+      // Filtro explicito: a RLS via withSessionContext nao alcanca o pool do
+      // Drizzle (ver session.ts), entao depender so dela vaza entre tenants.
+      .where(eq(companies.tenantId, session.logifit.tenantId))
       .orderBy(companies.type, persons.name)
 
     return { ok: true, data: rows }
@@ -65,12 +68,19 @@ export async function listAvailablePjPersons(): Promise<
 
   return withSessionContext(session.logifit, async () => {
     // Subquery: person_ids já vinculados a alguma company
-    const linkedIds = await db.select({ personId: companies.personId }).from(companies)
+    const linkedIds = await db
+      .select({ personId: companies.personId })
+      .from(companies)
+      .where(eq(companies.tenantId, session.logifit.tenantId))
 
     const linkedSet = new Set(linkedIds.map((r) => r.personId))
     const linkedArr = Array.from(linkedSet)
 
-    const conditions = [eq(persons.kind, 'pj'), isNull(persons.archivedAt)]
+    const conditions = [
+      eq(persons.tenantId, session.logifit.tenantId),
+      eq(persons.kind, 'pj'),
+      isNull(persons.archivedAt),
+    ]
     if (linkedArr.length > 0) {
       conditions.push(notInArray(persons.id, linkedArr))
     }

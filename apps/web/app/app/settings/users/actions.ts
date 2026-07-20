@@ -86,7 +86,10 @@ export async function listAvailablePfPersons(): Promise<
   const session = await requireFullSession('/app/settings/users/new')
 
   return withSessionContext(session.logifit, async () => {
-    const linked = await db.select({ personId: users.personId }).from(users)
+    const linked = await db
+      .select({ personId: users.personId })
+      .from(users)
+      .where(eq(users.tenantId, session.logifit.tenantId))
     const linkedSet = new Set(linked.map((r) => r.personId))
 
     const allPf = await db
@@ -97,7 +100,13 @@ export async function listAvailablePfPersons(): Promise<
         document: persons.document,
       })
       .from(persons)
-      .where(and(eq(persons.kind, 'pf'), isNull(persons.archivedAt)))
+      .where(
+        and(
+          eq(persons.tenantId, session.logifit.tenantId),
+          eq(persons.kind, 'pf'),
+          isNull(persons.archivedAt),
+        ),
+      )
       .orderBy(persons.name)
 
     const available = allPf.filter((p) => !linkedSet.has(p.id))

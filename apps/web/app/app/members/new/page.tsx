@@ -15,11 +15,21 @@ export default async function NewMemberPage() {
   const { availablePersons, availableCompanies } = await withSessionContext(
     session.logifit,
     async () => {
-      const linkedMemberPersonIds = await db.select({ personId: members.personId }).from(members)
+      // Filtros explicitos de tenant: a RLS via withSessionContext nao alcanca
+      // o pool do Drizzle (ver session.ts) — sem isso o dropdown lista pessoas
+      // e empresas de outros tenants.
+      const linkedMemberPersonIds = await db
+        .select({ personId: members.personId })
+        .from(members)
+        .where(eq(members.tenantId, session.logifit.tenantId))
       const linkedSet = new Set(linkedMemberPersonIds.map((r) => r.personId))
       const linkedArr = Array.from(linkedSet)
 
-      const conditions = [eq(persons.kind, 'pf'), isNull(persons.archivedAt)]
+      const conditions = [
+        eq(persons.tenantId, session.logifit.tenantId),
+        eq(persons.kind, 'pf'),
+        isNull(persons.archivedAt),
+      ]
       if (linkedArr.length > 0) {
         conditions.push(notInArray(persons.id, linkedArr))
       }
@@ -38,6 +48,7 @@ export default async function NewMemberPage() {
         .select({ id: companies.id, name: persons.name, type: companies.type })
         .from(companies)
         .innerJoin(persons, eq(persons.id, companies.personId))
+        .where(eq(companies.tenantId, session.logifit.tenantId))
         .orderBy(companies.type, persons.name)
 
       return { availablePersons: personsRows, availableCompanies: companiesRows }

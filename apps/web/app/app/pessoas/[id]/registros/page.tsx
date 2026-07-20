@@ -1,6 +1,6 @@
 import { db } from '@repo/db/client'
 import { persons } from '@repo/db/schema'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireFullSession, withSessionContext } from '../../../../lib/session'
@@ -18,7 +18,13 @@ export default async function RegistrosPage({
   const { id } = await params
 
   const person = await withSessionContext(session.logifit, async () => {
-    const rows = await db.select().from(persons).where(eq(persons.id, id)).limit(1)
+    // Escopo explicito de tenant: buscar so por id deixaria qualquer pessoa
+    // de qualquer tenant acessivel pela URL (a RLS nao alcanca o pool do Drizzle).
+    const rows = await db
+      .select()
+      .from(persons)
+      .where(and(eq(persons.id, id), eq(persons.tenantId, session.logifit.tenantId)))
+      .limit(1)
     return rows[0] ?? null
   })
   if (!person) notFound()
