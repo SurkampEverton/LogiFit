@@ -25,7 +25,7 @@
  * e instancia `FocusNfeProvider`. Mock é check-bloqueado em produção.
  */
 
-import type { FiscalEmissionKind, FiscalProvider } from '@repo/ai'
+import { type FiscalEmissionKind, type FiscalProvider, resolveCfop } from '@repo/ai'
 import { db } from '@repo/db/client'
 import {
   companies,
@@ -34,7 +34,11 @@ import {
   fiscalNumberingSequences,
   fiscalServiceCatalog,
   invoices,
+  members,
   persons,
+  saleItems,
+  salePayments,
+  sales,
 } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
 import { and, desc, eq, sql } from 'drizzle-orm'
@@ -562,6 +566,280 @@ export const emitNfseManual = wrapServerAction(
       valorTotalCents: parsed.valorTotalCents,
     })
     return { id: row.id, status, chave: result.chave, providerRef: result.providerRef }
+  },
+)
+
+// ─── emissão a partir de venda POS (Sprint 24b — ADR 0101) ──────────────
+
+const EmitFromSaleSchema = z.object({ saleId: z.string().uuid() })
+
+/** Método semântico → código SEFAZ (tabela 4.3.x layout NF-e). */
+const SEFAZ_PAYMENT_CODE: Record<string, '01' | '03' | '04' | '17' | '99'> = {
+  dinheiro: '01',
+  credito: '03',
+  debito: '04',
+  pix: '17',
+  outro: '99',
+}
+
+/**
+ * Carrega venda + itens + pagamentos e valida pré-condições de emissão:
+ * completed, sem emissão fiscal ativa (rejected/cancelled liberam re-emissão).
+ */
+async function loadSaleForEmission(tenantId: string, saleId: string) {
+  const [sale] = await db
+    .select()
+    .from(sales)
+    .where(and(eq(sales.id, saleId), eq(sales.tenantId, tenantId)))
+    .limit(1)
+  if (!sale)
+    throw new ApiException({ code: 'NOT_FOUND', message: 'Venda não encontrada', request_id: '' })
+  if (sale.status !== 'completed')
+    throw new ApiException({
+      code: 'VALIDATION_ERROR',
+      message: 'Só vendas concluídas podem gerar nota fiscal',
+      request_id: '',
+    })
+
+  const [existing] = await db
+    .select({ id: fiscalEmissions.id, status: fiscalEmissions.status })
+    .from(fiscalEmissions)
+    .where(
+      and(
+        eq(fiscalEmissions.tenantId, tenantId),
+        eq(fiscalEmissions.sourceKind, 'sale'),
+        eq(fiscalEmissions.sourceId, saleId),
+        sql`${fiscalEmissions.status} NOT IN ('rejected', 'cancelled')`,
+      ),
+    )
+    .limit(1)
+  if (existing)
+    throw new ApiException({
+      code: 'VALIDATION_ERROR',
+      message: `Venda já tem emissão fiscal ativa (${existing.id.slice(0, 8)}, ${existing.status})`,
+      request_id: '',
+    })
+
+  const items = await db.select().from(saleItems).where(eq(saleItems.saleId, saleId))
+  if (items.length === 0)
+    throw new ApiException({
+      code: 'VALIDATION_ERROR',
+      message: 'Venda sem itens',
+      request_id: '',
+    })
+  const payments = await db.select().from(salePayments).where(eq(salePayments.saleId, saleId))
+  return { sale, items, payments }
+}
+
+/** Resolve destinatário da venda: member → person, ou person direto. Null se anônima. */
+async function resolveSaleRecipient(
+  tenantId: string,
+  sale: { memberId: string | null; personId: string | null },
+): Promise<{ id: string; document: string | null; name: string } | null> {
+  if (sale.memberId) {
+    const [row] = await db
+      .select({ id: persons.id, document: persons.document, name: persons.displayName })
+      .from(persons)
+      .innerJoin(members, eq(members.personId, persons.id))
+      .where(and(eq(members.id, sale.memberId), eq(members.tenantId, tenantId)))
+      .limit(1)
+    return row ? { ...row, name: row.name ?? 'Cliente' } : null
+  }
+  if (sale.personId) {
+    const [row] = await db
+      .select({ id: persons.id, document: persons.document, name: persons.displayName })
+      .from(persons)
+      .where(and(eq(persons.id, sale.personId), eq(persons.tenantId, tenantId)))
+      .limit(1)
+    return row ? { ...row, name: row.name ?? 'Cliente' } : null
+  }
+  return null
+}
+
+/** Persiste a emissão de venda (comum a NF-e e NFC-e). */
+async function persistSaleEmission(params: {
+  tenantId: string
+  companyId: string
+  saleId: string
+  kind: 'nfe' | 'nfce'
+  numero: number
+  result: Awaited<ReturnType<FiscalProvider['emitNfeProduct']>>
+  providerName: string
+  valorTotalCents: number
+  recipient: { id: string; document: string | null; name: string } | null
+  createdByUserId: string
+}) {
+  const status = params.result.status === 'completed' ? 'completed' : 'queued'
+  const [row] = await db
+    .insert(fiscalEmissions)
+    .values({
+      tenantId: params.tenantId,
+      companyId: params.companyId,
+      kind: params.kind,
+      status,
+      provider: params.providerName as 'mock',
+      sourceKind: 'sale',
+      sourceId: params.saleId,
+      serie: 1,
+      numero: params.numero,
+      chave: params.result.chave,
+      providerRef: params.result.providerRef,
+      xmlStoragePath: params.result.xmlUrl ?? null,
+      pdfStoragePath: params.result.pdfUrl ?? null,
+      valorTotalCents: params.valorTotalCents,
+      recipientPersonId: params.recipient?.id ?? null,
+      recipientName: params.recipient?.name ?? null,
+      recipientDocument: params.recipient?.document ?? null,
+      payload: { input: { saleId: params.saleId }, result: params.result.raw },
+      submittedAt: new Date(),
+      completedAt: status === 'completed' ? new Date() : null,
+      cancelDeadlineAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      createdByUserId: params.createdByUserId,
+    })
+    .returning({ id: fiscalEmissions.id })
+  if (!row)
+    throw new ApiException({
+      code: 'INTERNAL_ERROR',
+      message: 'Falha ao gravar emissão',
+      request_id: '',
+    })
+  return { id: row.id, status }
+}
+
+export const emitNfeProductFromSale = wrapServerAction(
+  { module: 'fiscal', action: 'emission.emit_nfe_sale', resourceType: 'fiscal_emission' },
+  async (input: z.infer<typeof EmitFromSaleSchema>, { session, setAuditResource }) => {
+    await requireFocusFlag()
+    await requirePermission(session.logifit.userId, 'fiscal.emit')
+    const parsed = EmitFromSaleSchema.parse(input)
+    const tenantId = session.logifit.tenantId
+
+    const { sale, items } = await loadSaleForEmission(tenantId, parsed.saleId)
+    const recipient = await resolveSaleRecipient(tenantId, sale)
+    if (!recipient?.document)
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message:
+          'NF-e produto exige destinatário identificado com CPF/CNPJ — venda anônima usa NFC-e',
+        request_id: '',
+      })
+    const missingNcm = items.filter((it) => !it.ncm)
+    if (missingNcm.length > 0)
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: `Item(ns) sem NCM: ${missingNcm.map((i) => i.sku).join(', ')} — preencha no estoque e refaça a venda`,
+        request_id: '',
+      })
+
+    const company = await resolveCompanyFiscal(tenantId, sale.companyId)
+    // MVP: operação interna (UF real do destinatário via persons.address — Sprint 24b fase 2)
+    const cfop = resolveCfop({ kind: 'nfe', ufOrigin: 'SP', ufDestination: 'SP' })
+    const numero = await reserveNextNumero(tenantId, sale.companyId, 'nfe', 1)
+
+    const provider = await getProviderForTenant(tenantId)
+    const result = await provider.emitNfeProduct({
+      companyCnpj: company.cnpj,
+      serie: 1,
+      numero,
+      recipient: { document: recipient.document, name: recipient.name },
+      items: items.map((it) => ({
+        sku: it.sku,
+        description: it.description,
+        quantity: Number(it.quantity),
+        unitCents: it.unitCents,
+        cfop: cfop.cfop,
+        ncm: it.ncm ?? '',
+        cestCode: it.cestCode,
+      })),
+      finNFe: 1,
+      idDest: 1,
+    })
+
+    const saved = await persistSaleEmission({
+      tenantId,
+      companyId: sale.companyId,
+      saleId: sale.id,
+      kind: 'nfe',
+      numero,
+      result,
+      providerName: provider.name,
+      valorTotalCents: sale.totalCents,
+      recipient,
+      createdByUserId: session.user.id,
+    })
+    setAuditResource(saved.id, { saleId: sale.id, kind: 'nfe', valorTotalCents: sale.totalCents })
+    return { id: saved.id, status: saved.status, chave: result.chave }
+  },
+)
+
+export const emitNfceFromSale = wrapServerAction(
+  { module: 'fiscal', action: 'emission.emit_nfce_sale', resourceType: 'fiscal_emission' },
+  async (input: z.infer<typeof EmitFromSaleSchema>, { session, setAuditResource }) => {
+    await requireFocusFlag()
+    await requirePermission(session.logifit.userId, 'fiscal.emit')
+    const parsed = EmitFromSaleSchema.parse(input)
+    const tenantId = session.logifit.tenantId
+
+    const { sale, items, payments } = await loadSaleForEmission(tenantId, parsed.saleId)
+    if (payments.length === 0)
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: 'NFC-e exige formas de pagamento registradas na venda',
+        request_id: '',
+      })
+    const missingNcm = items.filter((it) => !it.ncm)
+    if (missingNcm.length > 0)
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: `Item(ns) sem NCM: ${missingNcm.map((i) => i.sku).join(', ')} — preencha no estoque e refaça a venda`,
+        request_id: '',
+      })
+
+    const recipient = await resolveSaleRecipient(tenantId, sale)
+    const recipientCpf =
+      recipient?.document && recipient.document.replace(/\D/g, '').length === 11
+        ? recipient.document
+        : null
+
+    const company = await resolveCompanyFiscal(tenantId, sale.companyId)
+    const cfop = resolveCfop({ kind: 'nfce', ufOrigin: 'SP', ufDestination: 'SP' })
+    const numero = await reserveNextNumero(tenantId, sale.companyId, 'nfce', 1)
+
+    const provider = await getProviderForTenant(tenantId)
+    const result = await provider.emitNfce({
+      companyCnpj: company.cnpj,
+      serie: 1,
+      numero,
+      recipientCpf,
+      items: items.map((it) => ({
+        sku: it.sku,
+        description: it.description,
+        quantity: Number(it.quantity),
+        unitCents: it.unitCents,
+        cfop: cfop.cfop,
+        ncm: it.ncm ?? '',
+        cestCode: it.cestCode,
+      })),
+      payments: payments.map((p) => ({
+        method: SEFAZ_PAYMENT_CODE[p.method] ?? '99',
+        amountCents: p.amountCents,
+      })),
+    })
+
+    const saved = await persistSaleEmission({
+      tenantId,
+      companyId: sale.companyId,
+      saleId: sale.id,
+      kind: 'nfce',
+      numero,
+      result,
+      providerName: provider.name,
+      valorTotalCents: sale.totalCents,
+      recipient,
+      createdByUserId: session.user.id,
+    })
+    setAuditResource(saved.id, { saleId: sale.id, kind: 'nfce', valorTotalCents: sale.totalCents })
+    return { id: saved.id, status: saved.status, chave: result.chave }
   },
 )
 

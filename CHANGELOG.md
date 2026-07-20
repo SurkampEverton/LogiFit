@@ -6,6 +6,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Build — Sprints 24b + 04b: schemas de vendas/POS e billing de uso (débitos 1 e 3 quitados) 2026-07-19
+
+Dois dos seis débitos de schema da auditoria do 36b resolvidos no mesmo dia:
+
+**Sprint 24b — Vendas POS ([ADR 0101](docs/decisions/0101-pos-vendas-schema.md))**:
+- Tabelas `sales` (comprador member/person/anônimo com CHECK exclusivo + soft-cancel) + `sale_items` (**snapshot fiscal** sku/NCM/CEST congelado no momento da venda) + `sale_payments` (método semântico; código SEFAZ só na borda). Migration 0055 + RLS (contador lê; escrita exige `vendas.write`/`estoque.write`; items/payments imutáveis pós-venda).
+- `stock_items` ganhou `ncm` + `cest_code` (obrigatórios pra emissão de item de revenda).
+- **SAs `emitNfeProductFromSale` + `emitNfceFromSale`** — os 2 tipos de emissão destravados: validação de NCM com erro acionável, destinatário obrigatório na NF-e (anônima → NFC-e), pagamentos → `formas_pagamento`, CFOP via resolver, guard de emissão duplicada por venda (rejected/cancelled liberam re-emissão). UI POS fica pra fase 2.
+
+**Sprint 04b — `tenant_usage_snapshots` ([ADR 0102](docs/decisions/0102-tenant-usage-snapshots.md))**:
+- Tabela de snapshot mensal (1 row por tenant×mês) com as 4 cotas do ADR 0066; escrita só via job (role system), leitura tenant próprio + super_admin. Migration 0056 + RLS.
+- **Job `POST /api/jobs/aggregate-usage-snapshots`** (cron diário, Bearer CRON_SECRET): UPSERT idempotente de members ativos + notas cobradas (kinds da lista fechada do ADR 0066 — eventos e entrada própria não contam); `?month=YYYY-MM` recomputa retroativo. **Validado E2E em dev**: 7 tenants, snapshot da academia-equilibrio com 3 notas/12 members do mês.
+- `CRON_SECRET` gerado pro dev (nunca tinha sido definido — os crons do 37b também precisavam).
+
 ### Docs — Sprint 36b.7: Runbook webhook Focus + auditoria de dependências fantasma 2026-07-19
 
 - **Runbook `docs/runbooks/focus-nfe-webhook.md`** — registro do webhook no Focus NFe (UI + API), rotação de secret, IP allowlist via Cloudflare WAF (pendente de faixa de IPs confirmada pelo suporte Focus — não ativar antes), teste ponta-a-ponta em homologação, troubleshooting de emissões presas em `processing` e rollback.

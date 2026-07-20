@@ -73,9 +73,7 @@ export const stockCostMethodEnum = pgEnum('stock_cost_method', [
 export const stockItems = pgTable(
   'stock_items',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -95,6 +93,10 @@ export const stockItems = pgTable(
     isResale: boolean('is_resale').notNull().default(false),
     /** Código de barras opcional (Sprint 24b leitor) */
     barcode: text('barcode'),
+    /** NCM 8 dígitos — obrigatório pra emissão NF-e/NFC-e de item de revenda (ADR 0101) */
+    ncm: text('ncm'),
+    /** CEST — substituição tributária, quando aplicável ao NCM */
+    cestCode: text('cest_code'),
     /** Método de custo aplicável (default = tenant setting; Sprint 24b lê de tenant_settings) */
     costMethod: stockCostMethodEnum('cost_method').notNull().default('custo_medio'),
     active: boolean('active').notNull().default(true),
@@ -107,7 +109,9 @@ export const stockItems = pgTable(
     uniqueIndex('si_tenant_company_sku_uq').on(t.tenantId, t.companyId, t.sku),
     index('si_tenant_company_active_idx').on(t.tenantId, t.companyId).where(sql`active = true`),
     index('si_tenant_category_idx').on(t.tenantId, t.category),
-    index('si_resale_idx').on(t.tenantId, t.isResale).where(sql`active = true AND is_resale = true`),
+    index('si_resale_idx')
+      .on(t.tenantId, t.isResale)
+      .where(sql`active = true AND is_resale = true`),
     check('si_min_stock_positive', sql`min_stock >= 0`),
     check('si_cost_non_negative', sql`cost_cents >= 0`),
   ],
@@ -118,9 +122,7 @@ export const stockItems = pgTable(
 export const stockMovements = pgTable(
   'stock_movements',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()
@@ -170,9 +172,7 @@ export const stockMovements = pgTable(
 export const stockInventories = pgTable(
   'stock_inventories',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id').notNull(),
     companyId: uuid('company_id')
       .notNull()

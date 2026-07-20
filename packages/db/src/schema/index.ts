@@ -169,3 +169,9 @@ export * from './fiscal'
 
 // Sprint 37 Faixa A — Fiscal Apuração Mensal backbone Grupo C (ADR 0100 Proposed): fiscal_revenue_aggregations (1:1 por tenant+company+year_month + snapshot tax_regime + memorial jsonb + status draft→closed) + fiscal_revenue_breakdown (1:N por emission_kind) + fiscal_simples_brackets (GLOBAL Anexos III+V vigentes + valid_from/to). @volume 12k+/ano (regra 34 não aplica). Sprint 37b/c entrega cron mensal + permissions RBAC + memorial PDF + Lucro Real completo + feature flag + E2E.
 export * from './fiscal-apuracao'
+
+// Sprint 24b — Vendas POS (ADR 0101; débito do Sprint 24): sales (comprador opcional + soft-cancel) + sale_items (snapshot fiscal sku/NCM/CEST no momento da venda) + sale_payments (método semântico → código SEFAZ na borda). Fonte de fiscal_emissions source_kind='sale' (NF-e produto + NFC-e — ADR 0059). @volume 200k/ano (regra 34 não aplica).
+export * from './pos'
+
+// Sprint 04b — Billing de uso mensal (ADR 0102 + ADR 0066; débito do Sprint 04): tenant_usage_snapshots (1 row por tenant+year_month; 4 cotas do plano — members/notas/IA/storage). Escrita só via job aggregate-usage-snapshots (UPSERT idempotente); leitura tenant próprio + super_admin.
+export * from './billing'

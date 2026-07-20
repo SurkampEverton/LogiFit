@@ -330,6 +330,20 @@
       "when": 1779558670955,
       "tag": "0054_fiscal_focus_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1779559670955,
+      "tag": "0055_pos_vendas",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1779560670955,
+      "tag": "0056_usage_snapshots",
+      "breakpoints": true
     }
   ]
 }
