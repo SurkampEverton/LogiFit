@@ -6,6 +6,38 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fix — NFS-e não declarava optante do Simples; payload transmitido vira auditável 2026-07-21
+
+O código de serviço que Cascavel habilita para a ESP apareceu (`172401`), e a verificação
+do mapeamento encontrou um defeito bem mais caro do que o que estava sendo perseguido.
+
+- **`optante_simples_nacional` nunca foi enviado** — zero ocorrências no repo inteiro, apesar de
+  ser obrigatório na raiz do `POST /v2/nfse`. Sem o campo, o município trata a nota como regime
+  normal e lança ISS próprio sobre faturamento que já recolhe ISS dentro do DAS (LC 123/2006
+  art. 13, VIII): **imposto em duplicidade**, revertível só por repetição de indébito. Isso não é
+  rejeição — é nota aceita e errada. `taxRegime` já existia em `fiscal_service_catalog` mas era
+  dado morto no caminho de emissão; agora atravessa até o payload. MEI conta como optante (SIMEI
+  é sub-regime do Simples).
+- **`natureza_operacao` ausente** no caminho NFS-e (existia em NF-e e NFC-e). Default `1`
+  (tributado no município do prestador), explícito e sobrescrivível — as exceções do art. 3º da
+  LC 116 recolhem no município do tomador, e default errado escondido manda imposto pro lugar errado.
+- **`codigo_cnae` enviado incondicionalmente** — passa a respeitar `sendsCnae` do perfil municipal.
+  O guia da Focus para Cascavel marca CNAE como "não utilizado"; em município que valida, CNAE não
+  vinculado à inscrição municipal derruba a nota (rejeição A0001). Município não catalogado mantém
+  o comportamento antigo.
+- **Payload transmitido passa a ser gravado** em `fiscal_emissions.payload.sent` via
+  `EmissionResult.sentPayload`, e aparece em `/app/fiscal/[id]`. Antes só guardávamos a resposta do
+  provider — depurar as seis rejeições de 20/07 foi adivinhação porque não havia como saber qual
+  código tinha saído. Documento fiscal é retido 5 anos (regra 34); o que saiu faz parte do dossiê.
+
+**Não alterado de propósito:** a alíquota de ISS e o código de serviço da ESP. Os 300 bp atuais
+foram escolhidos para o item 1.06 e não há fonte primária para o item efetivamente usado; e o
+enquadramento vem do fato gerador, não do que a prefeitura por acaso habilitou — gravar `172401`
+numa empresa de TI faria a nota **passar** declarando serviço não prestado, em município que não
+cancela por webservice. Rejeição tem efeito zero; nota aceita com vício material é irreversível.
+
+Validado: typecheck limpo, `lint:custom` limpo, `audit-tenant-scope` limpo, 1.536 testes verdes.
+
 ### Fix — herança via FK deixa de ser suposição: 23 filtros explícitos + auditoria zerada 2026-07-21
 
 Os 25 candidatos restantes de `scripts/audit-tenant-scope.mjs` — o resíduo que a varredura de 101 agentes classificou como "provavelmente seguro" — foram triados um a um. Todos eram do mesmo padrão: **herança de escopo via FK**, onde a query pai filtra o tenant e a filha só liga pelo id do pai.

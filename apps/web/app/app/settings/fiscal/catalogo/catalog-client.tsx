@@ -197,7 +197,10 @@ export function CatalogManager({
               onChange={(e) => setForm({ ...form, codigoTributacaoNacional: e.target.value })}
             />
             <p className="text-xs" style={{ color: 'var(--ev-text-muted)', margin: 0 }}>
-              6 dígitos do padrão nacional. Municípios já migrados recusam o formato da LC 116.
+              6 dígitos do padrão nacional (item + subitem + desdobramento). Municípios já migrados
+              recusam o formato da LC 116. Use o código que aparece em <strong>Lista de Serviço</strong>{' '}
+              no cadastro da empresa no portal da prefeitura: emitir um serviço fora dos habilitados
+              na inscrição municipal é recusado.
             </p>
           </div>
 

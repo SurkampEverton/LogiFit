@@ -79,6 +79,18 @@ export interface NfseEmissionInput {
     valorTotalCents: number
     /** Alíquota ISS em basis points (200 = 2.00%) */
     issRateBp: number
+    /**
+     * Regime tributário do prestador.
+     *
+     * Determina `optante_simples_nacional` na raiz do payload — campo
+     * obrigatório da Focus que o LogiFit nunca enviou. Omitir faz o município
+     * tratar a nota como regime normal e lançar ISS próprio sobre faturamento
+     * que já recolhe ISS dentro do DAS (LC 123/2006 art. 13, VIII): imposto em
+     * duplicidade, revertível só por repetição de indébito.
+     *
+     * MEI conta como optante — SIMEI é sub-regime do Simples.
+     */
+    taxRegime: 'simples_nacional' | 'lucro_presumido' | 'lucro_real' | 'mei'
   }
   /** Notas adicionais do operador (opcional) */
   notes?: string | null
@@ -204,6 +216,18 @@ export interface EmissionResult {
   rejectionReason?: string | null
   /** Raw response pra dump em `fiscal_emissions.payload` (audit) */
   raw: Record<string, unknown>
+  /**
+   * Corpo JSON efetivamente transmitido ao provider.
+   *
+   * Sem isto, depurar rejeicao fiscal e adivinhacao: o motivo devolvido pelo
+   * municipio ("codigo do item da lista de servico preenchido incorretamente")
+   * so faz sentido ao lado do valor que foi enviado. Documento fiscal e
+   * retido 5 anos (regra 34) — o que saiu daqui faz parte do dossie.
+   *
+   * Nao carrega credencial: a autenticacao da Focus vai no header Basic,
+   * fora do corpo.
+   */
+  sentPayload?: Record<string, unknown>
 }
 
 export interface CancellationInput {

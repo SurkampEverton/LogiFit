@@ -8,6 +8,7 @@
  * sem rede.
  */
 
+import { findMunicipalityNfseProfile } from '../municipios-nfse'
 import type { NfseEmissionInput } from '../provider'
 import { bpToPercent, centsToDecimal, documentField, isoDate } from './shared'
 
@@ -18,6 +19,16 @@ export interface NfsePayloadOptions {
   issRetido?: boolean
   /** Inscrição municipal do prestador quando o município exige. */
   inscricaoMunicipal?: string | null
+  /**
+   * Natureza da operação (enum Focus 1..6). Default `1` = tributação no
+   * município do prestador, que é o caso da esmagadora maioria dos serviços.
+   *
+   * As exceções do art. 3º da LC 116/2003 (construção civil, limpeza urbana,
+   * vigilância, etc — ISS devido no município do tomador) exigem valor
+   * diferente. Fica explícito e sobrescrevível de propósito: default errado
+   * escondido faz o imposto ir pro município errado.
+   */
+  naturezaOperacao?: '1' | '2' | '3' | '4' | '5' | '6'
 }
 
 /**
@@ -65,10 +76,20 @@ export function buildNfsePayload(
   // desdobramento); o formato da LC 116 é recusado. Precedência explícita.
   const itemLista = service.codigoTributacaoNacional || service.lc116Code
   if (itemLista) servico.item_lista_servico = itemLista
-  if (service.cnae) servico.codigo_cnae = service.cnae.replace(/\D/g, '')
+  // CNAE só onde a prefeitura de fato consome: em município que valida, CNAE
+  // não vinculado à inscrição municipal derruba a nota (rejeição A0001).
+  // Município ainda não catalogado mantém o comportamento antigo (envia).
+  const profile = findMunicipalityNfseProfile(input.municipalityCode)
+  if (service.cnae && (profile?.sendsCnae ?? true)) {
+    servico.codigo_cnae = service.cnae.replace(/\D/g, '')
+  }
 
   const payload: Record<string, unknown> = {
     data_emissao: isoDate(options.emissionDate),
+    natureza_operacao: options.naturezaOperacao ?? '1',
+    // Obrigatório na raiz. MEI é SIMEI, sub-regime do Simples — conta como optante.
+    optante_simples_nacional:
+      service.taxRegime === 'simples_nacional' || service.taxRegime === 'mei',
     prestador,
     tomador,
     servico,

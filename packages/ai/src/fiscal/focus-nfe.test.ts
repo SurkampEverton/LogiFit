@@ -16,6 +16,7 @@ const NFSE_INPUT: NfseEmissionInput = {
   recipient: { document: '52998224725', name: 'Carlos Aluno' },
   service: {
     lc116Code: '8.02',
+    taxRegime: 'simples_nacional' as const,
     description: 'Mensalidade academia',
     valorTotalCents: 19900,
     issRateBp: 250,
@@ -61,6 +62,23 @@ describe('FocusNfeProvider', () => {
     expect(init.allowedHosts).toEqual(['api.focusnfe.com.br', 'homologacao.focusnfe.com.br'])
     expect(result.status).toBe('processing')
     expect(result.providerRef).toBe('lf-nfse-11222333000144-1-42')
+  })
+
+  it('sentPayload devolve o corpo transmitido — inclusive quando rejeitado', async () => {
+    // Rejeicao fiscal so e depuravel com o payload ao lado do motivo: em 20/07
+    // Cascavel devolveu "codigo do item da lista de servico preenchido
+    // incorretamente" e nao havia como saber qual codigo tinha saido.
+    const fetchFn = vi.fn<FiscalFetchFn>(async () =>
+      jsonResponse(422, { codigo: 'erro_validacao', mensagem: 'Codigo do item invalido' }),
+    )
+    const result = await providerWith(fetchFn).emitNfse(NFSE_INPUT)
+
+    expect(result.status).toBe('rejected')
+    const [, init] = fetchFn.mock.calls[0] as Parameters<FiscalFetchFn>
+    expect(result.sentPayload).toEqual(JSON.parse(init.body as string))
+    expect((result.sentPayload?.servico as Record<string, unknown>).item_lista_servico).toBe(
+      NFSE_INPUT.service.codigoTributacaoNacional ?? NFSE_INPUT.service.lc116Code,
+    )
   })
 
   it('env producao usa api.focusnfe.com.br', async () => {

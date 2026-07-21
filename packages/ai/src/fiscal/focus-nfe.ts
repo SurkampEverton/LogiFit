@@ -225,6 +225,7 @@ export class FocusNfeProvider implements FiscalProvider {
     providerRef: string,
     httpStatus: number,
     body: FocusResponseBody,
+    sentPayload?: Record<string, unknown>,
   ): EmissionResult {
     // 4xx de negócio (payload/SEFAZ/cadastro) = rejeição, não exceção.
     // Inclui body de erro `{codigo, mensagem}` que chega em outros status.
@@ -238,6 +239,7 @@ export class FocusNfeProvider implements FiscalProvider {
       pdfUrl: body.caminho_danfe ?? body.url_danfe ?? body.url ?? null,
       rejectionReason: status === 'rejected' ? extractRejection(body) : null,
       raw: body,
+      sentPayload,
     }
   }
 
@@ -296,7 +298,7 @@ export class FocusNfeProvider implements FiscalProvider {
       inscricaoMunicipal: options?.inscricaoMunicipal ?? input.inscricaoMunicipal,
     })
     const { httpStatus, body } = await this.request('POST', `/v2/nfse?ref=${ref}`, payload)
-    return this.toEmissionResult(ref, httpStatus, body)
+    return this.toEmissionResult(ref, httpStatus, body, payload)
   }
 
   async emitNfeProduct(
@@ -314,14 +316,14 @@ export class FocusNfeProvider implements FiscalProvider {
       presencaComprador: options?.presencaComprador,
     })
     const { httpStatus, body } = await this.request('POST', `/v2/nfe?ref=${ref}`, payload)
-    return this.toEmissionResult(ref, httpStatus, body)
+    return this.toEmissionResult(ref, httpStatus, body, payload)
   }
 
   async emitNfce(input: NfceEmissionInput): Promise<EmissionResult> {
     const ref = FocusNfeProvider.emissionRef('nfce', input.companyCnpj, input.serie, input.numero)
     const payload = buildNfcePayload(input, { emissionDate: new Date() })
     const { httpStatus, body } = await this.request('POST', `/v2/nfce?ref=${ref}`, payload)
-    return this.toEmissionResult(ref, httpStatus, body)
+    return this.toEmissionResult(ref, httpStatus, body, payload)
   }
 
   async cancel(input: CancellationInput): Promise<EventResult> {

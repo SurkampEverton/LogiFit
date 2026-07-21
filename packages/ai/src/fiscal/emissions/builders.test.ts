@@ -29,6 +29,7 @@ const NFSE_INPUT: NfseEmissionInput = {
   service: {
     lc116Code: '8.02',
     cnae: '8591-1/00',
+    taxRegime: 'simples_nacional' as const,
     description: 'Mensalidade academia — julho/2026',
     valorTotalCents: 19900,
     issRateBp: 250,
@@ -111,6 +112,51 @@ describe('shared helpers', () => {
 })
 
 describe('buildNfsePayload', () => {
+  it('marca optante_simples_nacional na raiz — inclusive MEI', () => {
+    // Campo obrigatorio que o LogiFit nunca enviou. Sem ele o municipio trata
+    // a nota como regime normal e lanca ISS proprio sobre faturamento que ja
+    // recolhe ISS dentro do DAS: imposto em duplicidade, revertivel so por
+    // repeticao de indebito.
+    const opts = { emissionDate: FIXED_DATE }
+    const simples = buildNfsePayload(NFSE_INPUT, opts)
+    expect(simples.optante_simples_nacional).toBe(true)
+
+    const mei = buildNfsePayload(
+      { ...NFSE_INPUT, service: { ...NFSE_INPUT.service, taxRegime: 'mei' } },
+      opts,
+    )
+    expect(mei.optante_simples_nacional).toBe(true)
+
+    const presumido = buildNfsePayload(
+      { ...NFSE_INPUT, service: { ...NFSE_INPUT.service, taxRegime: 'lucro_presumido' } },
+      opts,
+    )
+    expect(presumido.optante_simples_nacional).toBe(false)
+  })
+
+  it('natureza_operacao default 1 (tributado no municipio) e sobrescrivel', () => {
+    expect(buildNfsePayload(NFSE_INPUT, { emissionDate: FIXED_DATE }).natureza_operacao).toBe('1')
+    // Excecoes do art. 3o da LC 116 recolhem no municipio do tomador.
+    expect(
+      buildNfsePayload(NFSE_INPUT, { emissionDate: FIXED_DATE, naturezaOperacao: '2' })
+        .natureza_operacao,
+    ).toBe('2')
+  })
+
+  it('omite codigo_cnae em municipio que nao consome (Cascavel/AtendeNet)', () => {
+    // CNAE nao vinculado a inscricao municipal derruba a nota (A0001) onde e
+    // validado; onde e ignorado, mandar e ruido com risco e zero ganho.
+    const cascavel = buildNfsePayload(
+      { ...NFSE_INPUT, municipalityCode: '4104808' },
+      { emissionDate: FIXED_DATE },
+    )
+    expect((cascavel.servico as Record<string, unknown>).codigo_cnae).toBeUndefined()
+
+    // Municipio nao catalogado mantem o comportamento antigo.
+    const generico = buildNfsePayload(NFSE_INPUT, { emissionDate: FIXED_DATE })
+    expect((generico.servico as Record<string, unknown>).codigo_cnae).toBe('8591100')
+  })
+
   it('monta payload completo com prestador/tomador/servico', () => {
     const payload = buildNfsePayload(NFSE_INPUT, {
       emissionDate: FIXED_DATE,

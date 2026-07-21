@@ -184,6 +184,7 @@ async function resolveServiceCatalog(
   cnae: string | null
   description: string
   issRateBp: number
+  taxRegime: 'simples_nacional' | 'lucro_presumido' | 'lucro_real' | 'mei'
 }> {
   const conds = [
     eq(fiscalServiceCatalog.tenantId, tenantId),
@@ -200,6 +201,7 @@ async function resolveServiceCatalog(
       cnae: fiscalServiceCatalog.cnae,
       description: fiscalServiceCatalog.description,
       issRateBp: fiscalServiceCatalog.issRateBp,
+      taxRegime: fiscalServiceCatalog.taxRegime,
     })
     .from(fiscalServiceCatalog)
     .where(and(...conds))
@@ -487,6 +489,7 @@ export const emitNfseFromInvoice = wrapServerAction(
         description: `${service.description} — invoice ${inv.id.slice(0, 8)}`,
         valorTotalCents: inv.amountCents,
         issRateBp: service.issRateBp,
+        taxRegime: service.taxRegime,
       },
       inscricaoMunicipal: company.im,
     })
@@ -522,6 +525,7 @@ export const emitNfseFromInvoice = wrapServerAction(
             invoiceId: inv.id,
             serviceCatalogId: service.id,
           },
+          sent: result.sentPayload ?? null,
           result: result.raw,
         },
         submittedAt: new Date(),
@@ -594,6 +598,7 @@ export const emitNfseManual = wrapServerAction(
         description: service.description,
         valorTotalCents: parsed.valorTotalCents,
         issRateBp: service.issRateBp,
+        taxRegime: service.taxRegime,
       },
       notes: parsed.notes ?? null,
       inscricaoMunicipal: company.im,
@@ -628,6 +633,7 @@ export const emitNfseManual = wrapServerAction(
             serviceCatalogId: service.id,
             notes: parsed.notes ?? null,
           },
+          sent: result.sentPayload ?? null,
           result: result.raw,
         },
         submittedAt: new Date(),
@@ -1046,6 +1052,7 @@ export const emitNfeReturn = wrapServerAction(
         recipientDocument: ret.originalSupplierDocument,
         payload: {
           input: { nfeReturnId: ret.id, originalChave: ret.originalChave },
+          sent: result.sentPayload ?? null,
           result: result.raw,
         },
         submittedAt: new Date(),

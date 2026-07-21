@@ -49,6 +49,15 @@ export interface MunicipalityNfseProfile {
    * login no portal. Emitir manualmente no portal NÃO implica este passo.
    */
   requiresWebserviceCredenciamento: boolean
+  /**
+   * A prefeitura consome `codigo_cnae` no RPS?
+   *
+   * Enviar CNAE não vinculado à inscrição municipal dispara rejeição A0001
+   * ("item da lista de serviço, código CNAE ou código da tributação informado
+   * não está cadastrado para o prestador") em municípios que o validam. Onde
+   * o campo é ignorado, mandar é ruído com risco e zero ganho.
+   */
+  sendsCnae: boolean
   /** Onde conferir/atualizar este perfil */
   sourceUrl: string
   notes?: string
@@ -69,6 +78,8 @@ export const MUNICIPALITY_NFSE_PROFILES: Record<string, MunicipalityNfseProfile>
     defaultRpsSerie: 13,
     supportsWebserviceCancel: false,
     requiresWebserviceCredenciamento: true,
+    // Guia da Focus pra Cascavel marca "Código CNAE — Não utilizado".
+    sendsCnae: false,
     sourceUrl: 'https://focusnfe.com.br/guides/nfse/municipios-integrados/cascavel-pr/',
     notes:
       'Portal https://nfse-cascavel.atende.net/. O credenciamento de webservice é pedido no ' +

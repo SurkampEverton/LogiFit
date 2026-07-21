@@ -76,6 +76,13 @@ export default async function FiscalEmissionDetailPage({
     .limit(1)
   if (!em) notFound()
 
+  // `sent` so existe em emissoes gravadas depois que o provider passou a
+  // devolver o corpo transmitido; emissoes antigas seguem sem ele.
+  const sentPayload =
+    em.payload && typeof em.payload === 'object'
+      ? ((em.payload as Record<string, unknown>).sent ?? null)
+      : null
+
   const events = await db
     .select({
       id: fiscalEvents.id,
@@ -159,6 +166,28 @@ export default async function FiscalEmissionDetailPage({
             <span style={{ color: 'var(--ev-text-muted)' }}> · tentativa {em.retryCount}/3</span>
           )}
         </div>
+      )}
+
+      {sentPayload && (
+        <details className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
+          {/* O motivo devolvido pelo municipio so e interpretavel ao lado do
+              que foi transmitido — "codigo do item da lista de servico
+              preenchido incorretamente" nao diz QUAL codigo saiu. */}
+          <summary style={{ cursor: 'pointer', fontWeight: 600 }}>
+            Payload enviado ao provider
+          </summary>
+          <pre
+            style={{
+              marginTop: 'var(--ev-space-sm)',
+              marginBottom: 0,
+              overflowX: 'auto',
+              fontSize: '0.8125rem',
+              color: 'var(--ev-text-muted)',
+            }}
+          >
+            {JSON.stringify(sentPayload, null, 2)}
+          </pre>
+        </details>
       )}
 
       <section className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
