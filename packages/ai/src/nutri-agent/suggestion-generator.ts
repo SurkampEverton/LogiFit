@@ -7,11 +7,7 @@
  * Reusa classifier anti-diagnóstico do Sprint 33 antes de retornar.
  */
 
-import type {
-  AgentSuggestion,
-  DetectedRiskPattern,
-  MemberContextSnapshot,
-} from './types'
+import type { AgentSuggestion, DetectedRiskPattern, MemberContextSnapshot } from './types'
 
 /**
  * Mapeia code de pattern → kind canônico de suggestion.
@@ -110,7 +106,9 @@ export function generatePreConsultSummary(
   }
 
   if (snapshot.diaryLast14d.length > 0) {
-    const adherent = snapshot.diaryLast14d.filter((d) => d.adherencePct != null && d.adherencePct >= 80)
+    const adherent = snapshot.diaryLast14d.filter(
+      (d) => d.adherencePct != null && d.adherencePct >= 80,
+    )
     lines.push(
       `Diário 14d: ${snapshot.diaryLast14d.length} dias registrados, ${adherent.length} com adherence ≥ 80%.`,
     )
@@ -130,7 +128,9 @@ export function generatePreConsultSummary(
   }
 
   if (patterns.length > 0) {
-    lines.push(`Padrões detectados (${patterns.length}): ${patterns.map((p) => p.label).join('; ')}`)
+    lines.push(
+      `Padrões detectados (${patterns.length}): ${patterns.map((p) => p.label).join('; ')}`,
+    )
   }
 
   return {

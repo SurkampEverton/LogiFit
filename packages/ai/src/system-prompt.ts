@@ -81,7 +81,15 @@ export function buildSystemPrompt(input: AssistantSystemPromptInput): string {
 - verticais ativas: ${(tenantCtx.verticals ?? []).join(', ') || '(nenhuma)'}
 - locale: ${tenantCtx.locale}`
 
-  return [header, personaBlock, rules, '## TOOLS DISPONÍVEIS\n' + toolsBlock, ragBlock, routeBlock, tenantBlock]
+  return [
+    header,
+    personaBlock,
+    rules,
+    '## TOOLS DISPONÍVEIS\n' + toolsBlock,
+    ragBlock,
+    routeBlock,
+    tenantBlock,
+  ]
     .filter(Boolean)
     .join('\n\n')
 }

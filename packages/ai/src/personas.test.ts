@@ -6,9 +6,7 @@ import { getPersonaPrompt, inferPersona } from './personas'
 
 describe('inferPersona', () => {
   it('member quando isMember=true (preferência absoluta)', () => {
-    expect(
-      inferPersona({ roles: ['medico', 'tenant_owner'], isMember: true }),
-    ).toBe('member')
+    expect(inferPersona({ roles: ['medico', 'tenant_owner'], isMember: true })).toBe('member')
   })
 
   it('super_admin quando role super_admin_rede', () => {
@@ -49,9 +47,9 @@ describe('inferPersona', () => {
   })
 
   it('super_admin precede outras roles', () => {
-    expect(
-      inferPersona({ roles: ['super_admin_rede', 'tenant_owner', 'medico'] }),
-    ).toBe('super_admin')
+    expect(inferPersona({ roles: ['super_admin_rede', 'tenant_owner', 'medico'] })).toBe(
+      'super_admin',
+    )
   })
 })
 
@@ -63,7 +61,7 @@ describe('getPersonaPrompt', () => {
 
   it('retorna en-US quando solicitado', () => {
     const p = getPersonaPrompt('member', 'en-US')
-    expect(p).toContain("student/patient")
+    expect(p).toContain('student/patient')
   })
 
   it('retorna es-419 quando solicitado', () => {

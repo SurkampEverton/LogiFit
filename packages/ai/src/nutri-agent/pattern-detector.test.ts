@@ -375,7 +375,9 @@ describe('generatePreConsultSummary', () => {
         mealsCount: 4,
         adherencePct: 85,
       })),
-      fisioActiveCids: [{ cidCode: 'MG30.0', description: 'Lombalgia', consultaSignedAt: '2026-05-01' }],
+      fisioActiveCids: [
+        { cidCode: 'MG30.0', description: 'Lombalgia', consultaSignedAt: '2026-05-01' },
+      ],
     })
     const patterns = detectRiskPatterns(snap)
     const summary = generatePreConsultSummary(patterns, snap)

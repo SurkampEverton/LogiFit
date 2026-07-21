@@ -151,8 +151,7 @@ export function detectOutliers(
       .map((r) => ({ reading: r, reason: 'physiologically_impossible' as const }))
   }
   const mean = baseline.reduce((s, v) => s + v, 0) / baseline.length
-  const variance =
-    baseline.reduce((s, v) => s + (v - mean) ** 2, 0) / baseline.length
+  const variance = baseline.reduce((s, v) => s + (v - mean) ** 2, 0) / baseline.length
   const std = Math.sqrt(variance)
   if (std === 0) return []
 

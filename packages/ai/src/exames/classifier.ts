@@ -21,12 +21,22 @@ export type ClassifierStrictness = 'strict' | 'moderate'
 const STRICT_BLOCKED_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
   { pattern: /\bdiagnóstico\s+de\s+\w+/i, reason: 'IA não diagnostica' },
   { pattern: /\bdiagnostico\s+de\s+\w+/i, reason: 'IA não diagnostica' },
-  { pattern: /\bpaciente\s+(tem|possui|apresenta)\s+(diabetes|hipertensão|hipertensao|câncer|cancer|hipotireoidismo|hipertireoidismo|anemia)\b/i, reason: 'Afirmação diagnóstica direta' },
-  { pattern: /\bvocê\s+(tem|possui|sofre\s+de)\b/i, reason: 'Endereçamento direto ao paciente é proibido' },
+  {
+    pattern:
+      /\bpaciente\s+(tem|possui|apresenta)\s+(diabetes|hipertensão|hipertensao|câncer|cancer|hipotireoidismo|hipertireoidismo|anemia)\b/i,
+    reason: 'Afirmação diagnóstica direta',
+  },
+  {
+    pattern: /\bvocê\s+(tem|possui|sofre\s+de)\b/i,
+    reason: 'Endereçamento direto ao paciente é proibido',
+  },
   { pattern: /\bvc\s+(tem|possui)\b/i, reason: 'Endereçamento direto ao paciente' },
   { pattern: /\bprescrev[oe]r?\b/i, reason: 'IA não prescreve medicamento' },
   { pattern: /\btome\s+\d+\s*(mg|ml|g|ui)\b/i, reason: 'Prescrição posológica' },
-  { pattern: /\biniciar?\s+(tratamento|medicação|medicacao)\b/i, reason: 'Decisão terapêutica é ato profissional' },
+  {
+    pattern: /\biniciar?\s+(tratamento|medicação|medicacao)\b/i,
+    reason: 'Decisão terapêutica é ato profissional',
+  },
   { pattern: /\b(comece|comecar|começar)\s+(a\s+)?(tomar|usar)\b/i, reason: 'Decisão terapêutica' },
   { pattern: /\bsubstituir?\s+(medicamento|remédio|remedio)\b/i, reason: 'Decisão terapêutica' },
   { pattern: /\bcontraindicad[oa]\s+para\s+\w+/i, reason: 'Decisão clínica direta' },

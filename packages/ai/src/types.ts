@@ -25,12 +25,7 @@ export type AssistantPersona =
   | 'contador_externo'
   | 'dpo'
 
-export type ProposalState =
-  | 'pending'
-  | 'confirmed'
-  | 'cancelled'
-  | 'expired'
-  | 'failed'
+export type ProposalState = 'pending' | 'confirmed' | 'cancelled' | 'expired' | 'failed'
 
 export interface TenantContext {
   tenantId: string

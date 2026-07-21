@@ -231,7 +231,8 @@ export const PATTERN_CATALOG: PatternDefinition[] = [
   {
     code: 'deficiencia_b12',
     label: 'Deficiência de vitamina B12',
-    description: 'B12 abaixo de 200 pg/mL. Comum em veganos, idosos, pacientes com gastrite atrófica ou usuários de metformina/IBP.',
+    description:
+      'B12 abaixo de 200 pg/mL. Comum em veganos, idosos, pacientes com gastrite atrófica ou usuários de metformina/IBP.',
     required: [{ code: 'vitamina_b12', direction: 'below' }],
   },
 ]
@@ -267,10 +268,7 @@ export function detectPatterns(outOfRange: OutOfRangeItem[]): DetectedPattern[] 
       return item != null && item.direction === opt.direction
     })
 
-    const evidence = [
-      ...p.required.map((r) => r.code),
-      ...optionalMatches.map((o) => o.code),
-    ]
+    const evidence = [...p.required.map((r) => r.code), ...optionalMatches.map((o) => o.code)]
     const confidence = Math.min(1, 0.85 + 0.1 * optionalMatches.length)
 
     detected.push({

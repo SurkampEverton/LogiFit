@@ -13,7 +13,7 @@
  *
  * **Convenção de nomes**: `genui.<dominio>.<componente>` (ex: `genui.fisio.patient_card`).
  */
-import { z } from 'zod'
+import type { z } from 'zod'
 
 /** Identificador canônico de uma tool de UI. */
 export type GenUIToolName = string
@@ -35,9 +35,7 @@ export interface GenUIToolDefinition<TArgs = unknown> {
   /** Categoria pra agrupar no catálogo (`clinico`/`academia`/`financeiro`/etc) */
   category: 'clinico' | 'academia' | 'nutri' | 'financeiro' | 'geral'
   /** Personas que podem disparar (Sprint 06 personas) */
-  allowedPersonas?: Array<
-    'member' | 'professional_clinical' | 'professional_coach' | 'admin'
-  >
+  allowedPersonas?: Array<'member' | 'professional_clinical' | 'professional_coach' | 'admin'>
   /** True se a tool é read-only (não dispara mutação) — MVP todas são */
   readOnly: boolean
   /** Exemplo few-shot pro prompt (opcional) */
@@ -74,11 +72,7 @@ export type GenUIValidationResult<TArgs = unknown> =
   | {
       ok: false
       /** Erro de validação (texto curto pro fallback visual) */
-      reason:
-        | 'unknown_tool'
-        | 'schema_violation'
-        | 'persona_not_allowed'
-        | 'mutation_attempted'
+      reason: 'unknown_tool' | 'schema_violation' | 'persona_not_allowed' | 'mutation_attempted'
       details?: string
     }
 

@@ -119,7 +119,13 @@ export async function resolveWebhookSecret(tenantId: string): Promise<string | n
  * têm arquivo baixável) ou quando o path não é relativo ao host Focus.
  */
 export async function downloadFiscalFile(tenantId: string, path: string): Promise<Response | null> {
-  if (!path.startsWith('/')) return null // mock usa URL absoluta fake — sem arquivo real
+  // Caminho relativo = arquivo hospedado na Focus, que sabemos autenticar e
+  // proxyar. URL absoluta NAO e sinal de mock: Cascavel devolve o link do
+  // portal do municipio como "pdf" de uma nota real, e tratar isso como mock
+  // fazia a tela dizer que uma nota autorizada era de teste. Quem decide o que
+  // fazer com URL externa e o caller — aqui so recusamos o que nao sabemos
+  // buscar com seguranca (regra 37: nunca fetch em host fora da allowlist).
+  if (!path.startsWith('/')) return null
 
   const [creds] = await db
     .select({

@@ -7,7 +7,7 @@
  * Chave canônica: `ai:chat:<tenant_id>:<user_id>` (60s window, max 20).
  * Outras chaves: `ai:embed:<tenant_id>` (60s, max 100); `ai:tool:<tool_key>:<tenant_id>:<user_id>` (60s, max 30).
  */
-import { checkRateLimit, type RateLimitDecision } from '@repo/security'
+import { type RateLimitDecision, checkRateLimit } from '@repo/security'
 
 export type AIRateLimitKind = 'chat' | 'embed' | 'tool'
 

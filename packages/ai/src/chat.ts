@@ -21,12 +21,7 @@ import { generateText } from 'ai'
 import { classifyInput, classifyOutput, getBlockedOutputMessage } from './classifier'
 import { redactBeforeLLM, redactRagChunks } from './redact'
 import { buildSystemPrompt } from './system-prompt'
-import type {
-  AIToolDefinition,
-  AssistantPersona,
-  ResolvedModel,
-  TenantContext,
-} from './types'
+import type { AIToolDefinition, AssistantPersona, ResolvedModel, TenantContext } from './types'
 
 export interface ChatCompleteInput {
   tenantCtx: TenantContext

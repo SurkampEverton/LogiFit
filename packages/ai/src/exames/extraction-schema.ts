@@ -57,9 +57,9 @@ export function parseExtractionJson(raw: unknown): ExamExtractionParsed {
 /**
  * Validação não-throw. Retorna result discriminado.
  */
-export function safeParseExtractionJson(raw: unknown):
-  | { ok: true; data: ExamExtractionParsed }
-  | { ok: false; issues: string[] } {
+export function safeParseExtractionJson(
+  raw: unknown,
+): { ok: true; data: ExamExtractionParsed } | { ok: false; issues: string[] } {
   const r = ExamExtractionSchema.safeParse(raw)
   if (r.success) return { ok: true, data: r.data }
   return {

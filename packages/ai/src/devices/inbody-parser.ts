@@ -66,7 +66,7 @@ export function parseInBodyCsv(content: string): ParseResult {
       errors.push({ line: i + 1, reason: 'Data ausente' })
       continue
     }
-    const timeRaw = timeIdx >= 0 ? cols[timeIdx] ?? '12:00:00' : '12:00:00'
+    const timeRaw = timeIdx >= 0 ? (cols[timeIdx] ?? '12:00:00') : '12:00:00'
     const measuredAt = parseDateTime(dateRaw, timeRaw)
     if (!measuredAt) {
       errors.push({ line: i + 1, reason: `Data inválida: ${dateRaw}` })
@@ -80,7 +80,7 @@ export function parseInBodyCsv(content: string): ParseResult {
       if (!map) continue
       const raw = cols[j]
       if (!raw) continue
-      const value = parseFloat(raw.replace(',', '.'))
+      const value = Number.parseFloat(raw.replace(',', '.'))
       if (Number.isFinite(value)) {
         readings.push({
           observationCode: map.code,
@@ -110,7 +110,9 @@ export function parseInBodyCsv(content: string): ParseResult {
  * Retorna ISO timestamp ou null.
  */
 function parseDateTime(dateRaw: string, timeRaw: string): string | null {
-  const time = /^\d{2}:\d{2}/.test(timeRaw) ? `${timeRaw}${timeRaw.length === 5 ? ':00' : ''}` : '12:00:00'
+  const time = /^\d{2}:\d{2}/.test(timeRaw)
+    ? `${timeRaw}${timeRaw.length === 5 ? ':00' : ''}`
+    : '12:00:00'
   // ISO direto
   if (/^\d{4}-\d{2}-\d{2}/.test(dateRaw)) {
     const iso = `${dateRaw.slice(0, 10)}T${time}Z`

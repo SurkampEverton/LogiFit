@@ -3,11 +3,11 @@
  */
 import type { AssistantPersona, TenantContext } from '../types'
 import { adminPersona } from './admin'
-import { clinicalPersona } from './professional-clinical'
-import { coachPersona } from './professional-coach'
 import { contadorExternoPersona } from './contador-externo'
 import { dpoPersona } from './dpo'
 import { memberPersona } from './member'
+import { clinicalPersona } from './professional-clinical'
+import { coachPersona } from './professional-coach'
 import { recepcaoPersona } from './recepcao'
 import { superAdminPersona } from './super-admin'
 
@@ -20,7 +20,10 @@ export const PERSONAS = {
   super_admin: superAdminPersona,
   contador_externo: contadorExternoPersona,
   dpo: dpoPersona,
-} as const satisfies Record<AssistantPersona, { key: AssistantPersona; prompts: Record<string, string> }>
+} as const satisfies Record<
+  AssistantPersona,
+  { key: AssistantPersona; prompts: Record<string, string> }
+>
 
 export function getPersonaPrompt(
   persona: AssistantPersona,
@@ -77,4 +80,13 @@ export function inferPersona(input: InferPersonaInput): AssistantPersona {
   return 'recepcao'
 }
 
-export { memberPersona, clinicalPersona, coachPersona, adminPersona, recepcaoPersona, superAdminPersona, contadorExternoPersona, dpoPersona }
+export {
+  memberPersona,
+  clinicalPersona,
+  coachPersona,
+  adminPersona,
+  recepcaoPersona,
+  superAdminPersona,
+  contadorExternoPersona,
+  dpoPersona,
+}

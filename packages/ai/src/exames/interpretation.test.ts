@@ -2,16 +2,18 @@
  * Interpretation comparator + pattern detector — unit tests Sprint 33 Faixa B.1.
  */
 import { describe, expect, it } from 'vitest'
+import type { ExamAnalyteParsed } from './extraction-schema'
 import {
+  type PatientContext,
+  type ReferenceRangeInput,
   compareWithRanges,
   detectPatterns,
   getFollowUpSuggestions,
-  type PatientContext,
-  type ReferenceRangeInput,
 } from './interpretation'
-import type { ExamAnalyteParsed } from './extraction-schema'
 
-function analyte(over: Partial<ExamAnalyteParsed> & { code: string; value: number }): ExamAnalyteParsed {
+function analyte(
+  over: Partial<ExamAnalyteParsed> & { code: string; value: number },
+): ExamAnalyteParsed {
   return {
     code: over.code,
     label: over.code,

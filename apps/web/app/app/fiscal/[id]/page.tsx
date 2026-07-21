@@ -4,7 +4,7 @@
  * Read-only + ações inline via `<EmissionActions>` (cancelar/CC-e/retry/
  * re-consultar — MFA e feature flag gateados server-side nas SAs).
  */
-import { findMunicipalityNfseProfile } from '@repo/ai'
+import { findMunicipalityNfseProfile, isExternalPortalLink } from '@repo/ai'
 import { db } from '@repo/db/client'
 import { fiscalEmissions, fiscalEvents, fiscalServiceCatalog } from '@repo/db/schema'
 import { and, desc, eq } from 'drizzle-orm'
@@ -149,11 +149,24 @@ export default async function FiscalEmissionDetailPage({
           {status?.label ?? em.status}
         </span>
         <span style={{ flex: 1 }} />
-        {em.pdfStoragePath && (
-          <a href={`/api/fiscal/emissions/${em.id}/pdf`} className="ev-btn ev-btn-sm" download>
-            ⬇ PDF
-          </a>
-        )}
+        {em.pdfStoragePath &&
+          (isExternalPortalLink(em.pdfStoragePath) ? (
+            // Cascavel e afins nao entregam arquivo: a nota vive no portal do
+            // municipio e a pagina exige a sessao do contribuinte. Um botao de
+            // download aqui so produz 404.
+            <a
+              href={em.pdfStoragePath}
+              className="ev-btn ev-btn-sm"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              ↗ Ver nota no portal
+            </a>
+          ) : (
+            <a href={`/api/fiscal/emissions/${em.id}/pdf`} className="ev-btn ev-btn-sm" download>
+              ⬇ PDF
+            </a>
+          ))}
         {em.xmlStoragePath && (
           <a href={`/api/fiscal/emissions/${em.id}/xml`} className="ev-btn ev-btn-sm" download>
             ⬇ XML

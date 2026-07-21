@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   MUNICIPALITY_NFSE_PROFILES,
   findMunicipalityNfseProfile,
+  isExternalPortalLink,
   resolveRpsSerie,
   supportsEnvironment,
 } from './municipios-nfse'
@@ -70,5 +71,29 @@ describe('integridade do catálogo', () => {
     for (const profile of Object.values(MUNICIPALITY_NFSE_PROFILES)) {
       expect(profile.sourceUrl).toMatch(/^https:\/\//)
     }
+  })
+})
+
+describe('isExternalPortalLink', () => {
+  it('reconhece link do portal do municipio como externo', () => {
+    // Cascavel devolve isto como "pdf" de uma nota REAL e autorizada.
+    expect(
+      isExternalPortalLink(
+        'https://cascavel.atende.net/autoatendimento/servicos/consulta-de-autenticidade-de-nota-fiscal-eletronica-nfse/detalhar/1/identificador/7493210726161203740589886862026077398183',
+      ),
+    ).toBe(true)
+    expect(isExternalPortalLink('http://exemplo.gov.br/nota/1')).toBe(true)
+  })
+
+  it('caminho relativo da Focus nao e link externo — e arquivo proxyavel', () => {
+    expect(
+      isExternalPortalLink('/arquivos/58988686000150_233663/202607/XMLsNFSe/nota-nfse.xml'),
+    ).toBe(false)
+  })
+
+  it('ausencia de caminho nao e link externo', () => {
+    expect(isExternalPortalLink(null)).toBe(false)
+    expect(isExternalPortalLink(undefined)).toBe(false)
+    expect(isExternalPortalLink('')).toBe(false)
   })
 })

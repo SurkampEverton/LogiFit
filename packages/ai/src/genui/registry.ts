@@ -51,9 +51,7 @@ export function getRegisteredTools(): GenUIToolDefinition[] {
  */
 export function getToolsForPersona(persona: string): GenUIToolDefinition[] {
   return getRegisteredTools().filter(
-    (t) =>
-      t.allowedPersonas === undefined ||
-      (t.allowedPersonas as string[]).includes(persona),
+    (t) => t.allowedPersonas === undefined || (t.allowedPersonas as string[]).includes(persona),
   )
 }
 
@@ -108,9 +106,7 @@ export function validateToolCall(
     return {
       ok: false,
       reason: 'schema_violation',
-      details: parsed.error.issues
-        .map((i) => `${i.path.join('.')}: ${i.message}`)
-        .join('; '),
+      details: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '),
     }
   }
 

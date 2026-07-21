@@ -11,11 +11,7 @@
  * onde `whenAvailable({user})` é true + persona ∈ `showInPersonas` + RBAC
  * cobre `requiredPermissions`. Reduz tokens (10-15 tools enviadas em vez de 200).
  */
-import type {
-  AIToolDefinition,
-  AssistantPersona,
-  TenantContext,
-} from './types'
+import type { AIToolDefinition, AssistantPersona, TenantContext } from './types'
 
 const MANIFEST = new Map<string, AIToolDefinition>()
 
@@ -25,9 +21,7 @@ const MANIFEST = new Map<string, AIToolDefinition>()
  * @throws se key já existe E `blocked` está sendo redefinida (proteção dupla
  * pra `// ai-blocked` no handler).
  */
-export function registerAITool<TArgs, TResult>(
-  definition: AIToolDefinition<TArgs, TResult>,
-): void {
+export function registerAITool<TArgs, TResult>(definition: AIToolDefinition<TArgs, TResult>): void {
   const existing = MANIFEST.get(definition.key)
   if (existing?.blocked && !definition.blocked) {
     throw new Error(

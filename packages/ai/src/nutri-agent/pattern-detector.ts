@@ -58,8 +58,7 @@ function checkLowAdherence(s: MemberContextSnapshot): DetectedRiskPattern | null
   const recent = s.diaryLast14d.slice(0, 7).filter((d) => d.adherencePct != null)
   if (recent.length < 4) return null
 
-  const avgAdh =
-    recent.reduce((sum, d) => sum + (d.adherencePct ?? 0), 0) / recent.length
+  const avgAdh = recent.reduce((sum, d) => sum + (d.adherencePct ?? 0), 0) / recent.length
   if (avgAdh >= 50) return null
 
   return {
@@ -108,8 +107,12 @@ function checkOvertrainingSuggestion(s: MemberContextSnapshot): DetectedRiskPatt
  * Risco cardiovascular: lab recente com perfil aterogênico + diet alta gordura saturada.
  */
 function checkCardiovascularRisk(s: MemberContextSnapshot): DetectedRiskPattern | null {
-  const ldlOor = s.labResultsRecent.find((l) => l.analyteCode === 'ldl' && l.outOfRange && l.direction === 'above')
-  const hdlOor = s.labResultsRecent.find((l) => l.analyteCode === 'hdl' && l.outOfRange && l.direction === 'below')
+  const ldlOor = s.labResultsRecent.find(
+    (l) => l.analyteCode === 'ldl' && l.outOfRange && l.direction === 'above',
+  )
+  const hdlOor = s.labResultsRecent.find(
+    (l) => l.analyteCode === 'hdl' && l.outOfRange && l.direction === 'below',
+  )
 
   if (!ldlOor || !hdlOor) return null
 
@@ -133,7 +136,10 @@ function checkCardiovascularRisk(s: MemberContextSnapshot): DetectedRiskPattern 
  */
 function checkGlycemicRisk(s: MemberContextSnapshot): DetectedRiskPattern | null {
   const glicemiaOor = s.labResultsRecent.find(
-    (l) => (l.analyteCode === 'glicose_jejum' || l.analyteCode === 'hba1c') && l.outOfRange && l.direction === 'above',
+    (l) =>
+      (l.analyteCode === 'glicose_jejum' || l.analyteCode === 'hba1c') &&
+      l.outOfRange &&
+      l.direction === 'above',
   )
   if (!glicemiaOor) return null
 
@@ -191,7 +197,12 @@ function checkFisioWorkoutTension(s: MemberContextSnapshot): DetectedRiskPattern
     confidence: 0.75,
     evidence: [
       { source: 'fisio', metric: 'active_cids_count', value: s.fisioActiveCids.length },
-      { source: 'workout', metric: 'sessions_count', value: s.workoutLoad.sessionsCount, threshold: 5 },
+      {
+        source: 'workout',
+        metric: 'sessions_count',
+        value: s.workoutLoad.sessionsCount,
+        threshold: 5,
+      },
     ],
   }
 }

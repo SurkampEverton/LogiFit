@@ -47,7 +47,11 @@ describe('registry — register + lookup', () => {
   it('getRegisteredTools retorna lista completa', () => {
     registerUIComponent(makeTool({ name: 'genui.a' }))
     registerUIComponent(makeTool({ name: 'genui.b' }))
-    expect(getRegisteredTools().map((t) => t.name).sort()).toEqual(['genui.a', 'genui.b'])
+    expect(
+      getRegisteredTools()
+        .map((t) => t.name)
+        .sort(),
+    ).toEqual(['genui.a', 'genui.b'])
   })
 
   it('clearRegistry limpa tudo', () => {
@@ -60,15 +64,14 @@ describe('registry — register + lookup', () => {
     registerUIComponent(
       makeTool({ name: 'genui.medico', allowedPersonas: ['professional_clinical'] }),
     )
-    registerUIComponent(
-      makeTool({ name: 'genui.coach', allowedPersonas: ['professional_coach'] }),
-    )
+    registerUIComponent(makeTool({ name: 'genui.coach', allowedPersonas: ['professional_coach'] }))
     registerUIComponent(makeTool({ name: 'genui.publico' })) // sem allowedPersonas = todos
 
-    expect(getToolsForPersona('professional_clinical').map((t) => t.name).sort()).toEqual([
-      'genui.medico',
-      'genui.publico',
-    ])
+    expect(
+      getToolsForPersona('professional_clinical')
+        .map((t) => t.name)
+        .sort(),
+    ).toEqual(['genui.medico', 'genui.publico'])
     expect(getToolsForPersona('admin').map((t) => t.name)).toEqual(['genui.publico'])
   })
 })
@@ -141,7 +144,9 @@ describe('validateToolCall — guardrails', () => {
 describe('default tools (Sprint 28 catálogo inicial)', () => {
   it('registerDefaultGenUITools registra os 6 canônicos', () => {
     registerDefaultGenUITools()
-    const names = getRegisteredTools().map((t) => t.name).sort()
+    const names = getRegisteredTools()
+      .map((t) => t.name)
+      .sort()
     expect(names).toEqual([
       'genui.fisio.cid_suggestion',
       'genui.fisio.evolution_chart',
@@ -216,7 +221,12 @@ describe('default tools (Sprint 28 catálogo inicial)', () => {
         name: 'genui.fisio.cid_suggestion',
         args: {
           cids: [
-            { code: 'MG30.0', description: 'Dor lombar', confidence: 0.8, rationale: 'queixa típica' },
+            {
+              code: 'MG30.0',
+              description: 'Dor lombar',
+              confidence: 0.8,
+              rationale: 'queixa típica',
+            },
           ],
         },
       },

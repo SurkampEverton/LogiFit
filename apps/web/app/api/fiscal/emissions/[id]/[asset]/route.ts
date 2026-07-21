@@ -1,3 +1,4 @@
+import { isExternalPortalLink } from '@repo/ai'
 /**
  * GET /api/fiscal/emissions/{id}/{pdf|xml} — download de DANFE/XML (Sprint 36b.5).
  *
@@ -80,6 +81,23 @@ export async function GET(
     )
   }
 
+  // Link do portal do municipio: nao ha arquivo pra proxyar, e a pagina exige
+  // a sessao do contribuinte. Devolver a URL e mais util que um 404 generico.
+  if (isExternalPortalLink(path)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: {
+          code: 'EXTERNAL_ONLY',
+          message:
+            'Este município não entrega arquivo — a nota é consultada no portal da prefeitura',
+          details: { url: path },
+        },
+      },
+      { status: 409 },
+    )
+  }
+
   let upstream: Response | null
   try {
     upstream = await downloadFiscalFile(session.logifit.tenantId, path)
@@ -95,7 +113,7 @@ export async function GET(
         ok: false,
         error: {
           code: 'NOT_FOUND',
-          message: 'Arquivo indisponível (emissão de teste/mock não gera arquivo real)',
+          message: 'Arquivo indisponível para esta emissão no provider',
         },
       },
       { status: 404 },

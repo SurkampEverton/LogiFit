@@ -17,11 +17,7 @@
  * `resolveAll()` e tenta priority crescente até sucesso).
  */
 import { decryptSecret } from '@repo/security'
-import type {
-  ModelCapabilities,
-  ResolveModelInput,
-  ResolvedModel,
-} from './types'
+import type { ModelCapabilities, ResolveModelInput, ResolvedModel } from './types'
 
 export interface ResolverDeps {
   /** Lê `ai_task_routing` JOIN `ai_models` JOIN `ai_providers` ordenado por priority. */

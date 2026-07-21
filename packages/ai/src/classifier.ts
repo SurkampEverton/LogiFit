@@ -61,8 +61,14 @@ const PROHIBITED_TERMS = [
 
 const INJECTION_PATTERNS: Array<{ name: string; re: RegExp }> = [
   // Tentativa de redefinir comportamento
-  { name: 'ignore_previous', re: /\bignore\s+(all\s+)?(previous|prior|above)\s+(instructions|rules)\b/i },
-  { name: 'ignore_pt', re: /\bignore\s+(tudo\s+que\s+|todas?\s+as\s+)(instru[çc][õo]es|regras)\s+(acima|anteriores)\b/i },
+  {
+    name: 'ignore_previous',
+    re: /\bignore\s+(all\s+)?(previous|prior|above)\s+(instructions|rules)\b/i,
+  },
+  {
+    name: 'ignore_pt',
+    re: /\bignore\s+(tudo\s+que\s+|todas?\s+as\s+)(instru[çc][õo]es|regras)\s+(acima|anteriores)\b/i,
+  },
   // System role injection
   { name: 'system_role_fake', re: /<\s*system\s*>|<\|im_start\|>system/i },
   // Tool exec direto (CL3 bypass attempt)

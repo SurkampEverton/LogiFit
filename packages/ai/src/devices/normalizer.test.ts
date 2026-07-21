@@ -107,13 +107,17 @@ describe('aggregateDailySummaries', () => {
     const agg = aggregateDailySummaries(readings)
     expect(agg).toHaveLength(3)
 
-    const hrDay1 = agg.find((a) => a.observationCode === 'HR_RESTING' && a.observedDate === '2026-05-18')!
+    const hrDay1 = agg.find(
+      (a) => a.observationCode === 'HR_RESTING' && a.observedDate === '2026-05-18',
+    )!
     expect(hrDay1.minValue).toBe(60)
     expect(hrDay1.maxValue).toBe(70)
     expect(hrDay1.avgValue).toBe(65)
     expect(hrDay1.samplesCount).toBe(3)
 
-    const hrDay2 = agg.find((a) => a.observationCode === 'HR_RESTING' && a.observedDate === '2026-05-19')!
+    const hrDay2 = agg.find(
+      (a) => a.observationCode === 'HR_RESTING' && a.observedDate === '2026-05-19',
+    )!
     expect(hrDay2.samplesCount).toBe(1)
     expect(hrDay2.avgValue).toBe(58)
 

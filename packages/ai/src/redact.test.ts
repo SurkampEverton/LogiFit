@@ -44,9 +44,7 @@ describe('redactBeforeLLM', () => {
   })
 
   it('mascara PIX UUID aleatória', () => {
-    const { redacted, hits } = redactBeforeLLM(
-      'chave PIX a1b2c3d4-1234-4abc-89de-1234567890ab',
-    )
+    const { redacted, hits } = redactBeforeLLM('chave PIX a1b2c3d4-1234-4abc-89de-1234567890ab')
     expect(redacted).toBe('chave PIX [PIX_KEY]')
     expect(hits.pix_random).toBe(1)
   })

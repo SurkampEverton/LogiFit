@@ -6,6 +6,27 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fix — botão PDF mentia: nota real classificada como mock 2026-07-21
+
+Ver a nota emitida pelo sistema não funcionava, e o modo de falha era o pior possível: o botão
+"⬇ PDF" devolvia 404 com a mensagem *"emissão de teste/mock não gera arquivo real"* — sobre uma
+NFS-e **real, autorizada e autenticada no portal do município**.
+
+Causa em `apps/web/app/lib/fiscal-provider.ts`: `if (!path.startsWith('/')) return null // mock usa
+URL absoluta fake`. A heurística assumia que caminho relativo é arquivo real da Focus e URL
+absoluta é mock. Mas Cascavel não entrega PDF — devolve a **URL de consulta de autenticidade do
+portal**, absoluta e real. A nota verdadeira caía no ramo do mock.
+
+- `isExternalPortalLink()` em `@repo/ai` distingue link de portal de caminho proxyável, com o
+  histórico escrito no docstring para a heurística não voltar.
+- A tela troca o botão de download por **"↗ Ver nota no portal"** apontando direto para a consulta
+  de autenticidade, quando o município não entrega arquivo.
+- A rota `/api/fiscal/emissions/{id}/{asset}` devolve `EXTERNAL_ONLY` (409) com a URL, em vez de um
+  404 genérico; e o 404 restante deixou de afirmar "mock" sobre emissão que pode ser real.
+
+O XML continua funcionando por proxy autenticado — o caminho da Focus é relativo. É por ele que se
+confere o conteúdo pelo sistema; o PDF/DANFSE, nesse município, só existe no portal.
+
 ### Feat — primeira NFS-e autorizada em produção + numeração do documento separada do RPS 2026-07-21
 
 Emissão real em Cascavel/PR: NFS-e **nº 12**, chave `7493210726161203740589886862026077398183`, R$ 0,50, ESP TECNOLOGIA → tomador PF, autorizada em 21/07 16:13:37. Autenticidade
