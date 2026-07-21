@@ -151,6 +151,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, data: { processed: false, reason: 'replay idempotente' } })
   }
 
+  // tenant-scope-exempt: webhook do provedor; a emissao e resolvida por
+  // provider_ref dentro do tenant cujo webhook secret validou (ver header).
   await db
     .update(fiscalEmissions)
     .set({

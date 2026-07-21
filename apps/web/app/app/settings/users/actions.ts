@@ -126,6 +126,8 @@ export async function listAssignableRoles(): Promise<
   const session = await requireFullSession('/app/settings/users/new')
 
   return withSessionContext(session.logifit, async () => {
+    // tenant-scope-exempt: `roles` e catalogo global — as 12 linhas tem
+    // tenant_id NULL. Filtrar por tenant devolveria vazio.
     const rows = await db
       .select({
         id: roles.id,

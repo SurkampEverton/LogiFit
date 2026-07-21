@@ -34,6 +34,8 @@ export default async function AIUsageDashboard() {
     .orderBy(desc(aiTenantUsage.callsCount))
     .limit(20)
 
+  // tenant-scope-exempt: painel da plataforma, gate super_admin acima
+  // (notFound se nao tiver o papel). Ler todos os tenants e o proposito.
   const totalGuardrail = await db
     .select({ count: count() })
     .from(aiAuditLog)

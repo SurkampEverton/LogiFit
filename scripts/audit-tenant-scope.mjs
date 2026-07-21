@@ -13,12 +13,19 @@
  *
  * Heurística: para cada `.from|insert|update|delete(<T>)` onde T é tabela
  * tenant-scoped (schema tem coluna tenantId), checa se o STATEMENT drizzle
- * (balanço de parênteses a partir de `await db`/`tx`) menciona tenant_id.
- * Silencia com `// tenant-scope-exempt: <motivo>` no statement.
+ * (balanço de parênteses a partir de `await db`/`tx`) menciona tenant_id —
+ * seguindo também arrays de where montados antes (`const where = [...]`).
+ *
+ * Silencia com `// tenant-scope-exempt: <motivo>` no statement ou logo acima.
+ * O motivo é obrigatório: isenção sem justificativa não é auditável depois.
+ *
+ * O que ele NÃO resolve (e por isso a triagem é humana): herança de escopo via
+ * FK — quando o id já veio de uma query tenant-scoped anterior na mesma função.
+ * Esse é o grosso dos candidatos remanescentes.
  *
  * Uso: node scripts/audit-tenant-scope.mjs
  */
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { extname, join, relative } from 'node:path'
 
 const ROOT = process.cwd()
@@ -47,7 +54,14 @@ for (const f of walk(join(ROOT, 'packages/db/src/schema'))) {
   const src = readFileSync(f, 'utf8')
   let m
   while ((m = RE_PGTABLE.exec(src))) {
-    const body = src.slice(m.index + m[0].length, m.index + m[0].length + 2500)
+    // Corta no próximo `export const`. A janela fixa anterior (2500 chars)
+    // vazava pra tabela seguinte e marcava GLOBAIS como tenant-scoped quando
+    // vinham logo antes de uma tenant-scoped — permissions, role_permissions,
+    // cid_catalog, cif_catalog e tuss_catalog entravam assim. Falso positivo
+    // estrutural: o script errava a pergunta, não a resposta.
+    const from = m.index + m[0].length
+    const nextDecl = src.indexOf('\nexport const', from)
+    const body = src.slice(from, nextDecl === -1 ? src.length : nextDecl)
     if (/\btenantId\s*:/.test(body)) tenantScoped.add(m[1])
   }
 }
@@ -76,6 +90,30 @@ function statementAround(src, idx) {
   return src.slice(start, end + 1)
 }
 
+/**
+ * Resolve o padrão "where-array": o filtro de tenant é montado num array antes
+ * do statement (`const where = [eq(t.tenantId, tenantId)]` + `.push(...)`) e
+ * consumido via spread. Olhar só o statement marcava todas essas telas de
+ * listagem com filtro como suspeitas — era a maior fonte de ruído.
+ *
+ * Devolve o texto das declarações dos arrays citados no statement, para que a
+ * checagem de `tenantId` os enxergue.
+ */
+function resolveWhereArrays(src, stmt, stmtStart) {
+  const ids = new Set()
+  for (const mm of stmt.matchAll(/\.\.\.(\w+)/g)) ids.add(mm[1])
+  for (const mm of stmt.matchAll(/\(\s*(\w+)\s+as\s+never\s*\)/g)) ids.add(mm[1])
+  for (const mm of stmt.matchAll(/\b(\w+)\[0\]/g)) ids.add(mm[1])
+  let extra = ''
+  for (const id of ids) {
+    // Declaração + os pushes subsequentes, tudo antes do statement
+    const declIdx = src.lastIndexOf(`const ${id} = [`, stmtStart)
+    if (declIdx === -1) continue
+    extra += src.slice(declIdx, stmtStart)
+  }
+  return extra
+}
+
 const RE_QUERY = /\.(from|insert|update|delete)\(\s*(\w+)\s*[),]/g
 const candidates = []
 for (const f of walk(join(ROOT, 'apps'))) {
@@ -85,7 +123,14 @@ for (const f of walk(join(ROOT, 'apps'))) {
   while ((m = RE_QUERY.exec(src))) {
     if (!tenantScoped.has(m[2])) continue
     const stmt = statementAround(src, m.index)
-    if (/tenant[_ ]?[iI]d|tenant-scope-exempt/.test(stmt)) continue
+    // Preâmbulo: a isenção é escrita como comentário ACIMA do statement, que é
+    // onde ela se lê melhor — sem isso o script só a enxergaria se estivesse
+    // no meio da query.
+    const stmtStart = src.lastIndexOf(stmt, m.index)
+    const preamble = src.slice(Math.max(0, stmtStart - 400), stmtStart)
+    const scope = stmt + resolveWhereArrays(src, stmt, m.index)
+    if (/tenant[_ ]?[iI]d|tenant-scope-exempt/.test(scope)) continue
+    if (/tenant-scope-exempt/.test(preamble)) continue
     const line = src.slice(0, m.index).split(/\r?\n/).length
     candidates.push({ file: relative(ROOT, f).split('\\').join('/'), line, op: m[1], table: m[2] })
   }

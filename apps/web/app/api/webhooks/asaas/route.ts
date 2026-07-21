@@ -150,6 +150,9 @@ export async function POST(request: Request) {
       event === 'PAYMENT_CONFIRMED' ||
       event === 'PAYMENT_RECEIVED_IN_CASH'
     ) {
+      // tenant-scope-exempt: webhook de sistema autenticado por assinatura;
+      // a invoice e resolvida por asaas_id (identificador global do provedor,
+      // nao input de usuario) e o tenant vem da linha encontrada.
       // Marca invoice como paid + cria payment row
       const [invoice] = await db
         .select({
