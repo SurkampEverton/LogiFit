@@ -107,9 +107,11 @@ export const logMeal = wrapMemberAction(
     }
     if (items.length > 0) {
       const foodIds = items.map((i) => i.foodId)
+      // foods pode ser global (tenant_id IS NULL) ou do próprio tenant — nunca de outro tenant
       const foods = await pool.query<{ id: string; nutrients: Record<string, number> }>(
-        `SELECT id, nutrients FROM foods WHERE id = ANY($1::uuid[])`,
-        [foodIds],
+        `SELECT id, nutrients FROM foods
+         WHERE id = ANY($1::uuid[]) AND (tenant_id IS NULL OR tenant_id = $2)`,
+        [foodIds, session.tenantId],
       )
       const foodById = new Map(foods.rows.map((f) => [f.id, f.nutrients ?? {}]))
       for (const it of items) {

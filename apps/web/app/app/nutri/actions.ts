@@ -367,6 +367,27 @@ export const createMealPlan = wrapServerAction(
       })
     }
 
+    // Valida escopo dos foods referenciados: global (tenant_id IS NULL) OU do tenant.
+    // FK foods não carrega constraint de tenant, então checamos explicitamente.
+    const foodIds = Array.from(
+      new Set(parsed.meals.flatMap((meal) => meal.items.map((it) => it.foodId))),
+    )
+    if (foodIds.length > 0) {
+      const allowedFoods = await db
+        .select({ id: foods.id })
+        .from(foods)
+        .where(
+          and(inArray(foods.id, foodIds), or(isNull(foods.tenantId), eq(foods.tenantId, tenantId))),
+        )
+      if (allowedFoods.length !== foodIds.length) {
+        throw new ApiException({
+          code: 'NOT_FOUND',
+          message: 'Alimento não encontrado',
+          request_id: '',
+        })
+      }
+    }
+
     // Insert plan + meals + items em transação
     const planId = await db.transaction(async (tx) => {
       const [planRow] = await tx
@@ -460,22 +481,33 @@ export const getMealPlanFull = wrapServerAction(
       .where(eq(mealPlanMeals.mealPlanId, plan.id))
       .orderBy(asc(mealPlanMeals.order))
 
-    const allItems = await db
-      .select({
-        id: mealItems.id,
-        mealId: mealItems.mealId,
-        foodId: mealItems.foodId,
-        foodName: foods.name,
-        nutrients: foods.nutrients,
-        grams: mealItems.grams,
-        measure: mealItems.measure,
-        notes: mealItems.notes,
-        order: mealItems.order,
-      })
-      .from(mealItems)
-      .innerJoin(foods, eq(foods.id, mealItems.foodId))
-      .where(eq(mealItems.tenantId, tenantId))
-      .orderBy(asc(mealItems.order))
+    // Só os items das meals deste plano (filtro funcional) + foods no escopo do tenant/global.
+    const mealIds = meals.map((mm) => mm.id)
+    const allItems =
+      mealIds.length === 0
+        ? []
+        : await db
+            .select({
+              id: mealItems.id,
+              mealId: mealItems.mealId,
+              foodId: mealItems.foodId,
+              foodName: foods.name,
+              nutrients: foods.nutrients,
+              grams: mealItems.grams,
+              measure: mealItems.measure,
+              notes: mealItems.notes,
+              order: mealItems.order,
+            })
+            .from(mealItems)
+            .innerJoin(foods, eq(foods.id, mealItems.foodId))
+            .where(
+              and(
+                eq(mealItems.tenantId, tenantId),
+                inArray(mealItems.mealId, mealIds),
+                or(isNull(foods.tenantId), eq(foods.tenantId, tenantId)),
+              ),
+            )
+            .orderBy(asc(mealItems.order))
 
     // Agrupa items por meal
     const itemsByMeal = new Map<string, typeof allItems>()
@@ -542,6 +574,27 @@ export const updateMealPlan = wrapServerAction(
         message: 'Plano original não encontrado',
         request_id: '',
       })
+    }
+
+    // Valida escopo dos foods referenciados: global (tenant_id IS NULL) OU do tenant.
+    // FK foods não carrega constraint de tenant, então checamos explicitamente.
+    const foodIds = Array.from(
+      new Set(parsed.meals.flatMap((meal) => meal.items.map((it) => it.foodId))),
+    )
+    if (foodIds.length > 0) {
+      const allowedFoods = await db
+        .select({ id: foods.id })
+        .from(foods)
+        .where(
+          and(inArray(foods.id, foodIds), or(isNull(foods.tenantId), eq(foods.tenantId, tenantId))),
+        )
+      if (allowedFoods.length !== foodIds.length) {
+        throw new ApiException({
+          code: 'NOT_FOUND',
+          message: 'Alimento não encontrado',
+          request_id: '',
+        })
+      }
     }
 
     const newPlanId = await db.transaction(async (tx) => {
@@ -673,7 +726,12 @@ export const listSubstitutions = wrapServerAction(
         nutrients: foods.nutrients,
       })
       .from(foods)
-      .where(inArray(foods.id, candidateIds))
+      .where(
+        and(
+          inArray(foods.id, candidateIds),
+          or(isNull(foods.tenantId), eq(foods.tenantId, tenantId)),
+        ),
+      )
 
     const candidateMap = new Map(candidates.map((c) => [c.id, c]))
 

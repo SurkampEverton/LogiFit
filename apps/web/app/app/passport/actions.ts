@@ -954,8 +954,9 @@ export const sendPatientInviteSimple = wrapServerAction(
     action: 'invite.send_simple',
     resourceType: 'patient_company_links',
   },
-  async (input: z.infer<typeof SendInviteSimpleSchema>, _ctx) => {
+  async (input: z.infer<typeof SendInviteSimpleSchema>, { session }) => {
     const parsed = SendInviteSimpleSchema.parse(input)
+    const tenantId = session.logifit.tenantId
 
     // Resolve passportPassportId — passport_global_identity_id existente OU hash(cpf)
     const r = await pool.query<{
@@ -963,8 +964,8 @@ export const sendPatientInviteSimple = wrapServerAction(
       document: string | null
     }>(
       `SELECT passport_global_identity_id, document
-         FROM persons WHERE id = $1 LIMIT 1`,
-      [parsed.personId],
+         FROM persons WHERE id = $1 AND tenant_id = $2 LIMIT 1`,
+      [parsed.personId, tenantId],
     )
     const row = r.rows[0]
     if (!row) {

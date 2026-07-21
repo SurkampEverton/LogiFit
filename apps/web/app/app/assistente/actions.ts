@@ -387,6 +387,24 @@ export const proposeAction = wrapServerAction(
   },
   async (input: z.infer<typeof ProposeActionInput>, { session, setAuditResource }) => {
     const parsed = ProposeActionInput.parse(input)
+    const tenantId = session.logifit.tenantId
+
+    // Valida que a sessão pertence ao tenant antes de anexar a proposta
+    // (espelha sendMessage — impede prender proposta em sessão de outro tenant)
+    const sessionRow = await db
+      .select({ id: assistantSessions.id })
+      .from(assistantSessions)
+      .where(
+        and(eq(assistantSessions.id, parsed.sessionId), eq(assistantSessions.tenantId, tenantId)),
+      )
+      .limit(1)
+    if (sessionRow.length === 0) {
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Sessão não encontrada',
+        request_id: crypto.randomUUID(),
+      })
+    }
 
     // TTL 5min (Sprint 06+ Faixa C ajusta via medição)
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000)
@@ -394,7 +412,7 @@ export const proposeAction = wrapServerAction(
     const [row] = await db
       .insert(assistantActionProposals)
       .values({
-        tenantId: session.logifit.tenantId,
+        tenantId,
         sessionId: parsed.sessionId,
         userId: session.logifit.userId,
         toolKey: parsed.toolKey,

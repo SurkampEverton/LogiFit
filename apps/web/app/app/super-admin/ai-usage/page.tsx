@@ -8,16 +8,17 @@ import { db } from '@repo/db/client'
 import { aiAuditLog, aiTenantUsage, toolsRegistry } from '@repo/db/schema'
 import { count, desc, eq } from 'drizzle-orm'
 import { getTranslations } from 'next-intl/server'
+import { notFound } from 'next/navigation'
 import { requireFullSession } from '../../../lib/session'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AIUsageDashboard() {
   const session = await requireFullSession('/app/super-admin/ai-usage')
-  const t = await getTranslations('ai_usage')
+  // 404 em vez de 403: não confirma a existência da tela pra quem não deve vê-la.
+  if (!session.logifit?.roles.includes('super_admin')) notFound()
 
-  // Sprint 06+: filtro real role=super_admin. MVP: deixa todos verem.
-  void session
+  const t = await getTranslations('ai_usage')
 
   const monthBucket = new Date().toISOString().slice(0, 7)
   const tenantUsage = await db

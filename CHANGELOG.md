@@ -6,6 +6,22 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fix — 46 vazamentos entre tenants: filtro explícito de tenant_id (segurança) 2026-07-21
+
+Varredura adversarial exaustiva de `apps/web` (workflow de 101 agentes: 7 finders por diretório + verificação cética por achado) encontrou **43 vazamentos confirmados** em 22 arquivos — muito além dos 8 corrigidos manualmente em 20/07. Todos são queries a tabelas tenant-scoped sem filtro explícito de `tenant_id`, que a RLS quebrada (corrigida no ADR 0107) deixou de conter por anos.
+
+Corrigidos em paralelo (um agente por arquivo) + revisão e fechamento manual dos residuais:
+
+- **Críticos (leitura cross-tenant por usuário comum sem UUID)**: `listMembers` retornava PII (nome/CPF/email) de TODOS os tenants; `searchPersons` idem; `/app/super-admin/ai-usage` sem gate de super_admin expunha uso agregado de todos os tenants. Fechados com filtro de tenant + gate de role real.
+- **Altos (alcançáveis conhecendo o UUID)**: get/update/archive/transfer de member, notas clínicas Nível 5 (regra 42) sem tenant nem `visibility`, registros profissionais (CRM/CRN), NFS-e resolvendo tomador cross-tenant, autorizações TISS, planos alimentares referenciando `foods` de outro tenant.
+- **Médios (defesa em profundidade / TOCTOU)**: dezenas de UPDATE/count/histórico financeiro (AP/AR/adquirência/bancos/plano de contas) que validavam o id num SELECT mas não repetiam o tenant no write.
+- **Rotas públicas** (`/api/i/[token]`, export de privacidade): sem sessão, aplicado predicado de coerência de tenant ligando as tabelas do join.
+- **`quoteAnticipationPreview`**: recebia `tenantId` por input num arquivo `'use server'` (Server Action forjável) — agora vem da sessão.
+
+**Filtro explícito é a linha principal por decisão de arquitetura** (ADR 0107): a RLS é defesa em profundidade e fail-open. Validado: typecheck limpo, `lint:custom` limpo, 932 testes @repo/db (RLS ativa) verdes, e prova no navegador de que `searchPersons` lista só o tenant da sessão (51 pessoas da Rede, não as ~265 globais).
+
+**Pendente estrutural**: um lint `require-tenant-filter` que barre no CI query nova sem filtro explícito — a única forma de impedir que a categoria reapareça.
+
 ### Fix — RLS em runtime: roteamento de conexão por request (ADR 0107) 2026-07-21
 
 A camada 2 de autorização (RLS) **nunca aplicou em runtime**: `withSessionContext` setava `app.tenant_id` numa conexão e o Drizzle rodava as queries em outra — o próprio arquivo tinha um comentário confessando. Todo o isolamento dependia de filtro explícito por query, e a promessa falsa do wrapper foi a causa dos 8 vazamentos corrigidos em 20/07.

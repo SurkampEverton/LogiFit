@@ -55,7 +55,15 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     })
     .from(patientCompanyLinks)
     .innerJoin(tenants, eq(tenants.id, patientCompanyLinks.tenantId))
-    .innerJoin(persons, eq(persons.id, patientCompanyLinks.personId))
+    // Coerência de tenant: person tem que pertencer ao mesmo tenant do link
+    // (endpoint público sem sessão — sem esse predicado o join cruzaria tenants)
+    .innerJoin(
+      persons,
+      and(
+        eq(persons.id, patientCompanyLinks.personId),
+        eq(persons.tenantId, patientCompanyLinks.tenantId),
+      ),
+    )
     .where(eq(patientCompanyLinks.id, token))
     .limit(1)
 
@@ -72,8 +80,10 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     const [pro] = await db
       .select({ name: persons.name })
       .from(users)
-      .innerJoin(persons, eq(persons.id, users.personId))
-      .where(eq(users.id, link.invitedByUserId))
+      .innerJoin(persons, and(eq(persons.id, users.personId), eq(persons.tenantId, users.tenantId)))
+      // Coerência de tenant: o user que convidou tem que ser do mesmo tenant do link
+      // (id vem de linha pública não tenant-filtrada — sem esse filtro leria user cross-tenant)
+      .where(and(eq(users.id, link.invitedByUserId), eq(users.tenantId, link.tenantId)))
       .limit(1)
     invitedByName = pro?.name ?? null
   }

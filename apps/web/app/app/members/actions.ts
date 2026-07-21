@@ -72,10 +72,10 @@ interface MemberWithPerson extends MemberRow {
 
 export const listMembers = wrapServerAction(
   { module: 'members', action: 'member.list', resourceType: 'members' },
-  async (rawInput: z.input<typeof listInputSchema>): Promise<MemberWithPerson[]> => {
+  async (rawInput: z.input<typeof listInputSchema>, ctx): Promise<MemberWithPerson[]> => {
     const input = listInputSchema.parse(rawInput)
 
-    const conditions = []
+    const conditions = [eq(members.tenantId, ctx.session.logifit.tenantId)]
     if (!input.includeArchived) conditions.push(isNull(members.archivedAt))
     if (input.companyId) conditions.push(eq(members.companyId, input.companyId))
     if (input.unitId) conditions.push(eq(members.homeUnitId, input.unitId))
@@ -141,6 +141,7 @@ export const getMember = wrapServerAction(
   { module: 'members', action: 'member.read', resourceType: 'members' },
   async (
     rawInput: z.input<typeof getInputSchema>,
+    ctx,
   ): Promise<{
     member: MemberRow
     person: typeof persons.$inferSelect
@@ -148,12 +149,13 @@ export const getMember = wrapServerAction(
     tags: string[]
   } | null> => {
     const input = getInputSchema.parse(rawInput)
+    const tenantId = ctx.session.logifit.tenantId
     const rows = await db
       .select({ m: members, p: persons, c: companies })
       .from(members)
       .innerJoin(persons, eq(persons.id, members.personId))
       .innerJoin(companies, eq(companies.id, members.companyId))
-      .where(eq(members.id, input.id))
+      .where(and(eq(members.id, input.id), eq(members.tenantId, tenantId)))
       .limit(1)
     const row = rows[0]
     if (!row) return null
@@ -161,7 +163,7 @@ export const getMember = wrapServerAction(
     const tagsResult = await db
       .select({ tag: memberTags.tag })
       .from(memberTags)
-      .where(eq(memberTags.memberId, input.id))
+      .where(and(eq(memberTags.memberId, input.id), eq(memberTags.tenantId, tenantId)))
     return {
       member: row.m,
       person: row.p,
@@ -192,11 +194,13 @@ export const createMember = wrapServerAction(
   async (rawInput: z.input<typeof createInputSchema>, ctx): Promise<MemberRow> => {
     const input = createInputSchema.parse(rawInput)
 
-    // Valida que person é PF (regra 24 — member é pessoa física)
+    // Valida que person é PF (regra 24 — member é pessoa física) e pertence ao tenant
     const personRows = await db
       .select({ kind: persons.kind })
       .from(persons)
-      .where(eq(persons.id, input.personId))
+      .where(
+        and(eq(persons.id, input.personId), eq(persons.tenantId, ctx.session.logifit.tenantId)),
+      )
       .limit(1)
     const personKind = personRows[0]?.kind
     if (!personKind) {
@@ -286,7 +290,7 @@ export const updateMember = wrapServerAction(
     const [row] = await db
       .update(members)
       .set({ ...input.patch, updatedAt: new Date() })
-      .where(eq(members.id, input.id))
+      .where(and(eq(members.id, input.id), eq(members.tenantId, ctx.session.logifit.tenantId)))
       .returning()
     if (!row) {
       throw new ApiException({
@@ -320,7 +324,7 @@ export const archiveMember = wrapServerAction(
         archiveReason: input.reason ?? null,
         updatedAt: new Date(),
       })
-      .where(eq(members.id, input.id))
+      .where(and(eq(members.id, input.id), eq(members.tenantId, ctx.session.logifit.tenantId)))
       .returning()
     if (!row) {
       throw new ApiException({
@@ -348,13 +352,29 @@ export const transferMember = wrapServerAction(
   async (rawInput: z.input<typeof transferInputSchema>, ctx): Promise<MemberRow> => {
     const input = transferInputSchema.parse(rawInput)
 
+    const tenantId = ctx.session.logifit.tenantId
+
+    // Valida que a company destino pertence ao tenant (FK não garante tenant)
+    const companyRows = await db
+      .select({ id: companies.id })
+      .from(companies)
+      .where(and(eq(companies.id, input.toCompanyId), eq(companies.tenantId, tenantId)))
+      .limit(1)
+    if (!companyRows[0]) {
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Company destino não encontrada',
+        request_id: '',
+      })
+    }
+
     // Sprint 02 MVP: transfer livre (mesmo tenant). Sprint 11+ adiciona
     // gate: se tenant.topology='franchise' E cross_company_access=false,
     // exige consent.cross_company_data_share (regra 25).
     const [row] = await db
       .update(members)
       .set({ companyId: input.toCompanyId, updatedAt: new Date() })
-      .where(eq(members.id, input.id))
+      .where(and(eq(members.id, input.id), eq(members.tenantId, tenantId)))
       .returning()
     if (!row) {
       throw new ApiException({
@@ -428,24 +448,29 @@ export const addTag = wrapServerAction(
   { module: 'members', action: 'member.tag_added', resourceType: 'member_tags' },
   async (rawInput: z.input<typeof tagInputSchema>, ctx): Promise<{ tag: string }> => {
     const input = tagInputSchema.parse(rawInput)
+    const tenantId = ctx.session.logifit.tenantId
+    // Valida posse do member no tenant antes de inserir a tag (FK não garante tenant)
+    const memberRows = await db
+      .select({ id: members.id })
+      .from(members)
+      .where(and(eq(members.id, input.memberId), eq(members.tenantId, tenantId)))
+      .limit(1)
+    if (!memberRows[0]) {
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Member não encontrado',
+        request_id: '',
+      })
+    }
     try {
       await db.insert(memberTags).values({
-        tenantId: ctx.session.logifit.tenantId,
+        tenantId,
         memberId: input.memberId,
         tag: input.tag,
       })
-      const tenantId = (
-        await db
-          .select({ tenantId: members.tenantId })
-          .from(members)
-          .where(eq(members.id, input.memberId))
-          .limit(1)
-      )[0]?.tenantId
-      if (tenantId) {
-        await emitEvent(tenantId, input.memberId, ctx.session.logifit.userId, 'member.tag_added', {
-          tag: input.tag,
-        })
-      }
+      await emitEvent(tenantId, input.memberId, ctx.session.logifit.userId, 'member.tag_added', {
+        tag: input.tag,
+      })
       return { tag: input.tag }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -461,21 +486,19 @@ export const removeTag = wrapServerAction(
   { module: 'members', action: 'member.tag_removed', resourceType: 'member_tags' },
   async (rawInput: z.input<typeof tagInputSchema>, ctx): Promise<{ tag: string }> => {
     const input = tagInputSchema.parse(rawInput)
+    const tenantId = ctx.session.logifit.tenantId
     await db
       .delete(memberTags)
-      .where(and(eq(memberTags.memberId, input.memberId), eq(memberTags.tag, input.tag)))
-    const tenantId = (
-      await db
-        .select({ tenantId: members.tenantId })
-        .from(members)
-        .where(eq(members.id, input.memberId))
-        .limit(1)
-    )[0]?.tenantId
-    if (tenantId) {
-      await emitEvent(tenantId, input.memberId, ctx.session.logifit.userId, 'member.tag_removed', {
-        tag: input.tag,
-      })
-    }
+      .where(
+        and(
+          eq(memberTags.tenantId, tenantId),
+          eq(memberTags.memberId, input.memberId),
+          eq(memberTags.tag, input.tag),
+        ),
+      )
+    await emitEvent(tenantId, input.memberId, ctx.session.logifit.userId, 'member.tag_removed', {
+      tag: input.tag,
+    })
     return { tag: input.tag }
   },
 )
@@ -490,12 +513,18 @@ export const listTimeline = wrapServerAction(
   { module: 'members', action: 'member.timeline_read', resourceType: 'member_events' },
   async (
     rawInput: z.input<typeof listTimelineInputSchema>,
+    ctx,
   ): Promise<(typeof memberEvents.$inferSelect)[]> => {
     const input = listTimelineInputSchema.parse(rawInput)
     return db
       .select()
       .from(memberEvents)
-      .where(eq(memberEvents.memberId, input.memberId))
+      .where(
+        and(
+          eq(memberEvents.tenantId, ctx.session.logifit.tenantId),
+          eq(memberEvents.memberId, input.memberId),
+        ),
+      )
       .orderBy(memberEvents.at)
       .limit(input.limit)
   },
@@ -510,12 +539,21 @@ export const listNotes = wrapServerAction(
   { module: 'members', action: 'member.notes_read', resourceType: 'member_notes' },
   async (
     rawInput: z.input<typeof listNotesInputSchema>,
+    ctx,
   ): Promise<(typeof memberNotes.$inferSelect)[]> => {
     const input = listNotesInputSchema.parse(rawInput)
+    const { tenantId, userId } = ctx.session.logifit
     return db
       .select()
       .from(memberNotes)
-      .where(eq(memberNotes.memberId, input.memberId))
+      .where(
+        and(
+          eq(memberNotes.tenantId, tenantId),
+          eq(memberNotes.memberId, input.memberId),
+          // Nível 5 (regra 42): nota author_only só volta pro próprio autor
+          sql`(${memberNotes.visibility} <> 'author_only' OR ${memberNotes.authorUserId} = ${userId})`,
+        ),
+      )
       .orderBy(memberNotes.createdAt)
   },
 )

@@ -198,11 +198,21 @@ export const archiveChartAccount = wrapServerAction(
     const [apCount] = await db
       .select({ c: sql<number>`count(*)::int` })
       .from(accountsPayable)
-      .where(eq(accountsPayable.chartAccountId, parsed.accountId))
+      .where(
+        and(
+          eq(accountsPayable.chartAccountId, parsed.accountId),
+          eq(accountsPayable.tenantId, session.logifit.tenantId),
+        ),
+      )
     const [arCount] = await db
       .select({ c: sql<number>`count(*)::int` })
       .from(accountsReceivable)
-      .where(eq(accountsReceivable.chartAccountId, parsed.accountId))
+      .where(
+        and(
+          eq(accountsReceivable.chartAccountId, parsed.accountId),
+          eq(accountsReceivable.tenantId, session.logifit.tenantId),
+        ),
+      )
     if ((apCount?.c ?? 0) + (arCount?.c ?? 0) > 0) {
       throw new ApiException({
         code: 'VALIDATION_ERROR',
@@ -271,7 +281,12 @@ export const moveChartAccount = wrapServerAction(
       const [self] = await db
         .select({ kind: chartOfAccounts.kind })
         .from(chartOfAccounts)
-        .where(eq(chartOfAccounts.id, parsed.accountId))
+        .where(
+          and(
+            eq(chartOfAccounts.id, parsed.accountId),
+            eq(chartOfAccounts.tenantId, session.logifit.tenantId),
+          ),
+        )
         .limit(1)
       if (!self) {
         throw new ApiException({

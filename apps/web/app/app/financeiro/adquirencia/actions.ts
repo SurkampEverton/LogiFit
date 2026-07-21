@@ -41,6 +41,7 @@ import {
 import { ApiException } from '@repo/errors'
 import { and, asc, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import { requireFullSession } from '../../../lib/session'
 import { wrapServerAction } from '../../../lib/wrap-action'
 
 // ─── Zod ─────────────────────────────────────────────────────────────────
@@ -832,10 +833,11 @@ export const getUnifiedRevenue = wrapServerAction(
 
 // ─── Helpers públicos pra UI ─────────────────────────────────────────────
 
-// wrap-exempt: helper de leitura pra Server Component (read-only, recebe tenantId via parâmetro — não Server Action de browser)
+// Apesar do nome de "helper", num arquivo 'use server' toda função exportada é
+// Server Action invocável pelo browser — então o tenantId TEM que vir da sessão,
+// nunca do input (que o caller controla e poderia forjar pra ler vendas alheias).
 export async function quoteAnticipationPreview(input: {
   saleIds: string[]
-  tenantId: string
 }): Promise<{
   originalCents: number
   feeCents: number
@@ -843,6 +845,9 @@ export async function quoteAnticipationPreview(input: {
   effectiveRatePct: string
   daysSaved: number
 }> {
+  const session = await requireFullSession('/app/financeiro/adquirencia')
+  const tenantId = session.logifit.tenantId
+  const parsed = z.object({ saleIds: z.array(z.string().uuid()).min(1).max(500) }).parse(input)
   const sales = await db
     .select({
       netAmountCents: acquirerSales.netAmountCents,
@@ -850,10 +855,7 @@ export async function quoteAnticipationPreview(input: {
     })
     .from(acquirerSales)
     .where(
-      and(
-        eq(acquirerSales.tenantId, input.tenantId),
-        sql`${acquirerSales.id} = ANY(${input.saleIds})`,
-      ),
+      and(eq(acquirerSales.tenantId, tenantId), sql`${acquirerSales.id} = ANY(${parsed.saleIds})`),
     )
   const original = sales.reduce((s, x) => s + x.netAmountCents, 0)
   const today = new Date().toISOString().slice(0, 10)

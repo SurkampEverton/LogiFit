@@ -59,6 +59,7 @@ export async function GET(_req: NextRequest, ctx: RouteCtx) {
       `SELECT dsr.id, dsr.subject_person_id, dsr.request_payload, dsr.created_at, dsr.state
        FROM data_subject_requests dsr
        JOIN members m ON m.person_id = dsr.subject_person_id
+        AND m.tenant_id = dsr.tenant_id
        WHERE dsr.id = $1 AND m.id = $2
        LIMIT 1`,
       [exportId, session.memberId],

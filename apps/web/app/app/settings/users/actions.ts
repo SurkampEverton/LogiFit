@@ -49,6 +49,7 @@ export async function listUsers(): Promise<
       })
       .from(users)
       .innerJoin(persons, eq(persons.id, users.personId))
+      .where(eq(users.tenantId, session.logifit.tenantId))
       .orderBy(persons.name)
 
     // Faz fetch das roles separado (Faixa F otimiza com lateral join)
@@ -59,6 +60,7 @@ export async function listUsers(): Promise<
         .select({ userId: userRoles.userId, key: roles.key })
         .from(userRoles)
         .innerJoin(roles, eq(roles.id, userRoles.roleId))
+        .where(eq(userRoles.tenantId, session.logifit.tenantId))
       for (const r of allRoles) {
         if (!userIds.includes(r.userId)) continue
         const list = rolesByUser.get(r.userId) ?? []

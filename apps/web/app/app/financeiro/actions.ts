@@ -335,7 +335,11 @@ export const applyDiscount = wrapServerAction(
         breakdown: { ...existingBreakdown, discounts },
         updatedAt: new Date(),
       })
-      .where(eq(invoices.id, parsed.invoiceId))
+      // tenant no where do UPDATE além do SELECT já validado acima: defesa
+      // contra fail-open da RLS entre a leitura e a escrita.
+      .where(
+        and(eq(invoices.id, parsed.invoiceId), eq(invoices.tenantId, session.logifit.tenantId)),
+      )
 
     return { id: parsed.invoiceId, newAmountCents: current.amountCents - parsed.amountCents }
   },

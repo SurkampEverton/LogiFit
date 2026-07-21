@@ -674,7 +674,13 @@ export const registerManualPayment = wrapServerAction(
         total: sql<number>`COALESCE(SUM(${apArPayments.amountCents}), 0)::bigint`,
       })
       .from(apArPayments)
-      .where(and(eq(apArPayments.sourceType, 'ap'), eq(apArPayments.sourceId, parsed.apId)))
+      .where(
+        and(
+          eq(apArPayments.tenantId, session.logifit.tenantId),
+          eq(apArPayments.sourceType, 'ap'),
+          eq(apArPayments.sourceId, parsed.apId),
+        ),
+      )
     const paidTotal = Number(agg?.total ?? 0)
     const fullyPaid = paidTotal >= ap.netAmountCents
 
@@ -687,7 +693,12 @@ export const registerManualPayment = wrapServerAction(
         paymentMethod: parsed.method,
         updatedAt: new Date(),
       })
-      .where(eq(accountsPayable.id, parsed.apId))
+      .where(
+        and(
+          eq(accountsPayable.id, parsed.apId),
+          eq(accountsPayable.tenantId, session.logifit.tenantId),
+        ),
+      )
     setAuditResource(parsed.apId, {
       paidAmountCents: parsed.amountCents,
       fullyPaid,
@@ -800,7 +811,13 @@ export const getAP = wrapServerAction(
         notes: apArPayments.notes,
       })
       .from(apArPayments)
-      .where(and(eq(apArPayments.sourceType, 'ap'), eq(apArPayments.sourceId, parsed.apId)))
+      .where(
+        and(
+          eq(apArPayments.tenantId, session.logifit.tenantId),
+          eq(apArPayments.sourceType, 'ap'),
+          eq(apArPayments.sourceId, parsed.apId),
+        ),
+      )
       .orderBy(desc(apArPayments.paidAt))
     setAuditResource(parsed.apId, {})
     return { ap: row, payments }

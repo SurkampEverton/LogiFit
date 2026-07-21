@@ -33,10 +33,10 @@ const searchPersonsInputSchema = z.object({
 
 export const searchPersons = wrapServerAction(
   { module: 'persons', action: 'person.search', resourceType: 'persons' },
-  async (rawInput: z.input<typeof searchPersonsInputSchema>): Promise<PersonRow[]> => {
+  async (rawInput: z.input<typeof searchPersonsInputSchema>, ctx): Promise<PersonRow[]> => {
     const input = searchPersonsInputSchema.parse(rawInput)
 
-    const conditions = []
+    const conditions = [eq(persons.tenantId, ctx.session.logifit.tenantId)]
     if (input.kind) conditions.push(eq(persons.kind, input.kind))
     if (!input.includeArchived) conditions.push(isNull(persons.archivedAt))
 

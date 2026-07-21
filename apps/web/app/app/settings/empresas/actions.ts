@@ -149,7 +149,7 @@ export async function createFilial(
       const matriz = await db
         .select({ id: companies.id })
         .from(companies)
-        .where(eq(companies.type, 'matriz'))
+        .where(and(eq(companies.type, 'matriz'), eq(companies.tenantId, session.logifit.tenantId)))
         .limit(1)
       if (!matriz[0]) {
         return {

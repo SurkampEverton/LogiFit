@@ -12,7 +12,7 @@
 import { db } from '@repo/db/client'
 import { type ProfessionalRegistrationRow, professionalRegistrations } from '@repo/db/schema'
 import { ApiException } from '@repo/errors'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { wrapServerAction } from '../../../../lib/wrap-action'
 
@@ -27,12 +27,20 @@ export const listRegistrations = wrapServerAction(
     action: 'registration.list',
     resourceType: 'professional_registrations',
   },
-  async (rawInput: z.input<typeof listInputSchema>): Promise<ProfessionalRegistrationRow[]> => {
+  async (
+    rawInput: z.input<typeof listInputSchema>,
+    ctx,
+  ): Promise<ProfessionalRegistrationRow[]> => {
     const input = listInputSchema.parse(rawInput)
     const rows = await db
       .select()
       .from(professionalRegistrations)
-      .where(eq(professionalRegistrations.personId, input.personId))
+      .where(
+        and(
+          eq(professionalRegistrations.tenantId, ctx.session.logifit.tenantId),
+          eq(professionalRegistrations.personId, input.personId),
+        ),
+      )
       .orderBy(professionalRegistrations.councilBody)
     return rows
   },
@@ -148,7 +156,12 @@ export const attestRegistration = wrapServerAction(
         verificationSource: 'operator_attested',
         updatedAt: new Date(),
       })
-      .where(eq(professionalRegistrations.id, input.registrationId))
+      .where(
+        and(
+          eq(professionalRegistrations.tenantId, ctx.session.logifit.tenantId),
+          eq(professionalRegistrations.id, input.registrationId),
+        ),
+      )
       .returning()
     if (!row) {
       throw new ApiException({
@@ -193,7 +206,12 @@ export const updateRegistrationSituation = wrapServerAction(
         situation: input.newSituation,
         updatedAt: new Date(),
       })
-      .where(eq(professionalRegistrations.id, input.registrationId))
+      .where(
+        and(
+          eq(professionalRegistrations.tenantId, ctx.session.logifit.tenantId),
+          eq(professionalRegistrations.id, input.registrationId),
+        ),
+      )
       .returning()
     if (!row) {
       throw new ApiException({

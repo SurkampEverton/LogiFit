@@ -294,7 +294,7 @@ export const scheduleMaintenance = wrapServerAction(
         await db
           .update(equipment)
           .set({ status: 'maintenance', updatedAt: new Date() })
-          .where(eq2(equipment.id, parsed.equipmentId))
+          .where(and(eq2(equipment.id, parsed.equipmentId), eq2(equipment.tenantId, tenantId)))
       }
       setAuditResource(row!.id, { kind: parsed.kind, plannedFor: parsed.plannedFor })
       return { id: row!.id }
@@ -368,7 +368,10 @@ export const completeMaintenance = wrapServerAction(
     } else if (maint.kind === 'calibration') {
       updateFields.lastCalibrationAt = parsed.performedAt
     }
-    await db.update(equipment).set(updateFields).where(eq2(equipment.id, maint.equipmentId))
+    await db
+      .update(equipment)
+      .set(updateFields)
+      .where(and(eq2(equipment.id, maint.equipmentId), eq2(equipment.tenantId, tenantId)))
 
     setAuditResource(maint.id, { kind: maint.kind })
     return { ok: true }

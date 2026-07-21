@@ -383,6 +383,25 @@ export const requestAuthorization = wrapServerAction(
   async (input: z.infer<typeof RequestAuthorizationInputSchema>, { session, setAuditResource }) => {
     const parsed = RequestAuthorizationInputSchema.parse(input)
     const tenantId = session.logifit.tenantId
+
+    // Valida que a carteirinha referenciada pertence ao tenant (FK sem constraint de tenant)
+    const [mi] = await db
+      .select({ id: memberInsurances.id })
+      .from(memberInsurances)
+      .where(
+        and(
+          eq(memberInsurances.id, parsed.memberInsuranceId),
+          eq(memberInsurances.tenantId, tenantId),
+        ),
+      )
+      .limit(1)
+    if (!mi)
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Carteirinha não encontrada',
+        request_id: '',
+      })
+
     const [row] = await db
       .insert(authorizations)
       .values({
@@ -717,7 +736,7 @@ export const generateGuide = wrapServerAction(
       .select({ id: companies.id, name: persons.name, cnpj: persons.document })
       .from(companies)
       .leftJoin(persons, eq(persons.id, companies.personId))
-      .where(eq(companies.id, mi.companyId))
+      .where(and(eq(companies.id, mi.companyId), eq(companies.tenantId, tenantId)))
       .limit(1)
 
     const guideInput: GuideInput = {
@@ -909,14 +928,14 @@ export const createBatch = wrapServerAction(
     const [firstGuideRow] = await db
       .select({ companyId: billingGuides.companyId })
       .from(billingGuides)
-      .where(eq(billingGuides.id, guides[0]!.id))
+      .where(and(eq(billingGuides.id, guides[0]!.id), eq(billingGuides.tenantId, tenantId)))
       .limit(1)
     const [company] = firstGuideRow
       ? await db
           .select({ name: persons.name, cnpj: persons.document })
           .from(companies)
           .leftJoin(persons, eq(persons.id, companies.personId))
-          .where(eq(companies.id, firstGuideRow.companyId))
+          .where(and(eq(companies.id, firstGuideRow.companyId), eq(companies.tenantId, tenantId)))
           .limit(1)
       : [undefined]
 

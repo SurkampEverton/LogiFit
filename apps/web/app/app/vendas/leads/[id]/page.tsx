@@ -102,7 +102,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
         createdAt: proposals.createdAt,
       })
       .from(proposals)
-      .where(eq(proposals.leadId, id))
+      .where(and(eq(proposals.leadId, id), eq(proposals.tenantId, tenantId)))
       .orderBy(desc(proposals.version)),
   ])
 

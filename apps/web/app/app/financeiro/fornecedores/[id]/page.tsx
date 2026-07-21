@@ -94,7 +94,7 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
       paidAt: accountsPayable.paidAt,
     })
     .from(accountsPayable)
-    .where(eq(accountsPayable.supplierId, id))
+    .where(and(eq(accountsPayable.supplierId, id), eq(accountsPayable.tenantId, tenantId)))
     .orderBy(desc(accountsPayable.dueDate))
     .limit(30)
 

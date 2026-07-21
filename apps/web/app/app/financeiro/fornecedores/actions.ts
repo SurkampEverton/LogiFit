@@ -242,7 +242,12 @@ export const getSupplier = wrapServerAction(
         paidAt: accountsPayable.paidAt,
       })
       .from(accountsPayable)
-      .where(eq(accountsPayable.supplierId, parsed.supplierId))
+      .where(
+        and(
+          eq(accountsPayable.supplierId, parsed.supplierId),
+          eq(accountsPayable.tenantId, session.logifit.tenantId),
+        ),
+      )
       .orderBy(desc(accountsPayable.dueDate))
       .limit(20)
 
@@ -264,6 +269,7 @@ export const archiveSupplier = wrapServerAction(
       .where(
         and(
           eq(accountsPayable.supplierId, parsed.supplierId),
+          eq(accountsPayable.tenantId, session.logifit.tenantId),
           sql`${accountsPayable.status} IN ('draft','pending_approval','approved','scheduled')`,
         ),
       )

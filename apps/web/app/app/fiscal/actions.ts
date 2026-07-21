@@ -445,7 +445,8 @@ export const emitNfseFromInvoice = wrapServerAction(
       provider.env,
     )
 
-    // 4. Resolve member + person pra recipient (endereço completo Sprint 36c)
+    // 4. Resolve member + person pra recipient (endereço completo Sprint 36c).
+    // Filtro de tenant em members E persons — espelha resolveSaleRecipient.
     const [recipient] = await db
       .select({
         id: persons.id,
@@ -453,9 +454,13 @@ export const emitNfseFromInvoice = wrapServerAction(
         document: persons.document,
       })
       .from(persons)
-      .innerJoin(
-        sql`members`,
-        sql`members.person_id = ${persons.id} AND members.id = ${inv.memberId}`,
+      .innerJoin(members, eq(members.personId, persons.id))
+      .where(
+        and(
+          eq(members.id, inv.memberId),
+          eq(members.tenantId, session.logifit.tenantId),
+          eq(persons.tenantId, session.logifit.tenantId),
+        ),
       )
       .limit(1)
     if (!recipient?.document)
