@@ -6,6 +6,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fix — RLS em runtime: roteamento de conexão por request (ADR 0107) 2026-07-21
+
+A camada 2 de autorização (RLS) **nunca aplicou em runtime**: `withSessionContext` setava `app.tenant_id` numa conexão e o Drizzle rodava as queries em outra — o próprio arquivo tinha um comentário confessando. Todo o isolamento dependia de filtro explícito por query, e a promessa falsa do wrapper foi a causa dos 8 vazamentos corrigidos em 20/07.
+
+- **[ADR 0107](docs/decisions/0107-rls-runtime-roteamento-conexao.md)** — `RoutedPool` + `AsyncLocalStorage` roteiam o `db` global pra conexão contextualizada; handlers ganham RLS sem mudar de assinatura. `SET ROLE logifit_app` na entrada (superusuário atravessa qualquer policy — sem o papel, o resto é teatro), limpeza completa antes de devolver ao pool.
+- **Sutileza que o teste pegou**: query builder do Drizzle é thenable preguiçoso — devolvido sem `await`, executaria após o fim do contexto e cairia no pool sem escopo, sem erro. O `await` agora acontece dentro do escopo do ALS.
+- **Prova executável** em `client-routing.test.ts` (5 testes): SELECT sem filtro só vê o tenant; transação na mesma conexão; contextos paralelos não se contaminam; nada vaza pra fora do escopo.
+- `withMemberContext` e `withPassportContext` corrigidos com o mesmo mecanismo.
+- **Filtros explícitos continuam obrigatórios** — RLS vira defesa em profundidade, como sempre deveria ter sido.
+- Validado: 932 testes @repo/db + monorepo verde + fumaça manual (pessoas, empresas, fiscal, writes com audit) sob `logifit_app`.
+
 ### Added — Aviso e confirmação de emissão em produção 2026-07-20
 
 Nada na tela distinguia emitir em homologação de emitir documento com efeito legal — e um ambiente de dev apontado para a API de produção é uma armadilha silenciosa (foi exatamente a situação criada hoje ao configurar o token de produção).

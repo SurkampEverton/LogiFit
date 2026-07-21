@@ -1,5 +1,5 @@
 import { auth } from '@repo/auth/server'
-import { pool } from '@repo/db/client'
+import { pool, runWithDbClient } from '@repo/db/client'
 /**
  * Session helpers pra Server Actions e Server Components.
  *
@@ -79,28 +79,57 @@ export async function requireFullSession(
 }
 
 /**
- * Executa `fn` com `app.tenant_id` + `app.user_id` setados como
- * `current_setting` na conexão — RLS policies aplicam.
+ * Executa `fn` com RLS de verdade: prepara UMA conexão (papel de app +
+ * `app.tenant_id`/`app.user_id`/`app.permissions`) e roteia todas as chamadas
+ * do `db` global pra ela via `runWithDbClient` (ADR 0107).
  *
- * **CRÍTICO** — toda Server Action deve usar isto antes de queries.
- * Sprint 01a Faixa F (wrapAction) automatiza; por enquanto chama manual.
+ * Histórico: a versão anterior setava as configs numa conexão e deixava o
+ * Drizzle pegar OUTRA do pool — a RLS nunca via o contexto e ficou inerte no
+ * app inteiro. Só os filtros explícitos de tenant seguravam o isolamento
+ * (vazamentos descobertos em 2026-07-20).
+ *
+ * `SET ROLE logifit_app` é o que liga a RLS em dev/self-host: o pool conecta
+ * como superusuário, e superusuário atravessa qualquer policy — FORCE ROW
+ * LEVEL SECURITY inclusive. Sem o papel de app, o resto é teatro.
  */
 export async function withSessionContext<T>(
   claims: LogifitSessionClaims,
   fn: () => Promise<T>,
 ): Promise<T> {
   const client = await pool.connect()
+  let roleApplied = false
   try {
+    try {
+      await client.query('SET ROLE logifit_app')
+      roleApplied = true
+    } catch (err) {
+      // Sem o papel, a RLS não aplica nesta request — os filtros explícitos
+      // seguram, mas isso precisa aparecer em log, nunca falhar em silêncio.
+      console.error(
+        '[withSessionContext] SET ROLE logifit_app falhou — RLS inativa nesta request:',
+        err instanceof Error ? err.message : err,
+      )
+    }
     await client.query("SELECT set_config('app.user_id', $1, false)", [claims.userId])
     await client.query("SELECT set_config('app.tenant_id', $1, false)", [claims.tenantId])
-    // fn deve usar o mesmo client; mas Drizzle global pool sempre pega novo.
-    // Sprint 02+ refatora pra Drizzle-com-SET via wrapAction.
-    return await fn()
+    // Policies consultam app.permissions (LIKE '%fiscal.admin%') e app.role
+    // ('contador_externo') — sem elas, logifit_app seria negado em tabelas gateadas.
+    await client.query("SELECT set_config('app.permissions', $1, false)", [
+      claims.permissions.join(','),
+    ])
+    if (claims.roles.length === 1) {
+      await client.query("SELECT set_config('app.role', $1, false)", [claims.roles[0]])
+    }
+    return await runWithDbClient(client, fn)
   } finally {
-    // Limpa settings antes de devolver ao pool (evita leak entre requests)
+    // Limpeza ANTES de devolver ao pool: conexão devolvida com papel/configs
+    // ativos seria reusada por outra request com o tenant errado.
     try {
+      if (roleApplied) await client.query('RESET ROLE')
       await client.query("SELECT set_config('app.user_id', '', false)")
       await client.query("SELECT set_config('app.tenant_id', '', false)")
+      await client.query("SELECT set_config('app.permissions', '', false)")
+      await client.query("SELECT set_config('app.role', '', false)")
     } catch {
       /* swallow */
     }

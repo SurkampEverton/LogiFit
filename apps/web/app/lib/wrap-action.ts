@@ -119,9 +119,9 @@ interface AuditWritePayload {
 }
 
 async function writeAuditLog(p: AuditWritePayload): Promise<void> {
-  // Use withSessionContext-like pattern: seta app.tenant_id antes do INSERT
-  // pra que RLS de audit_log permita. Como writeAuditLog é chamado DENTRO
-  // de withSessionContext, app.tenant_id já está setado na connection do pool.
+  // Roda FORA do withSessionContext (fire-and-forget depois do handler), então
+  // vai ao pool sem papel de app — escrita de sistema, sem RLS. É intencional:
+  // o audit não pode depender do contexto da request que está encerrando.
   await db.insert(auditLog).values({
     tenantId: p.tenantId,
     actorAuthUserId: p.actorAuthUserId,

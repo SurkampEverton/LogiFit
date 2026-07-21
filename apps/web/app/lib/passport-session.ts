@@ -17,7 +17,7 @@ import { createHash, randomBytes } from 'node:crypto'
  *
  * Sprint 02b4: refresh token rotation single-use (atualmente long-lived 30d).
  */
-import { pool } from '@repo/db/client'
+import { pool, runWithDbClient } from '@repo/db/client'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
@@ -206,13 +206,27 @@ export async function withPassportContext<T>(
   fn: () => Promise<T>,
 ): Promise<T> {
   const client = await pool.connect()
+  let roleApplied = false
   try {
+    // ADR 0107: SET ROLE liga a RLS (superusuário atravessa policies) e
+    // runWithDbClient roteia o db global pra ESTA conexão — sem isso o
+    // contexto era setado numa conexão e as queries rodavam em outra.
+    try {
+      await client.query('SET ROLE logifit_app')
+      roleApplied = true
+    } catch (err) {
+      console.error(
+        '[withPassportContext] SET ROLE logifit_app falhou — RLS inativa nesta request:',
+        err instanceof Error ? err.message : err,
+      )
+    }
     await client.query("SELECT set_config('app.passport_global_id', $1, false)", [
       claims.passportGlobalId,
     ])
-    return await fn()
+    return await runWithDbClient(client, fn)
   } finally {
     try {
+      if (roleApplied) await client.query('RESET ROLE')
       await client.query("SELECT set_config('app.passport_global_id', '', false)")
     } catch {
       /* swallow */

@@ -13,7 +13,7 @@ import { createHash } from 'node:crypto'
  * Sprint 26: cookie carrega refresh token plano direto. Sprint 26b: rotaciona
  * a cada uso (single-use refresh + access JWT 15min separado).
  */
-import { pool } from '@repo/db/client'
+import { pool, runWithDbClient } from '@repo/db/client'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
@@ -133,7 +133,20 @@ export async function withMemberContext<T>(
   fn: () => Promise<T>,
 ): Promise<T> {
   const client = await pool.connect()
+  let roleApplied = false
   try {
+    // Mesmo mecanismo do withSessionContext (ADR 0107): sem SET ROLE a RLS não
+    // aplica (pool conecta como superusuário), e sem runWithDbClient o Drizzle
+    // roda as queries em OUTRA conexão onde o contexto não existe.
+    try {
+      await client.query('SET ROLE logifit_app')
+      roleApplied = true
+    } catch (err) {
+      console.error(
+        '[withMemberContext] SET ROLE logifit_app falhou — RLS inativa nesta request:',
+        err instanceof Error ? err.message : err,
+      )
+    }
     await client.query("SELECT set_config('app.tenant_id', $1, false)", [claims.tenantId])
     await client.query("SELECT set_config('app.member_id', $1, false)", [claims.memberId])
     if (claims.passportGlobalId) {
@@ -141,9 +154,10 @@ export async function withMemberContext<T>(
         claims.passportGlobalId,
       ])
     }
-    return await fn()
+    return await runWithDbClient(client, fn)
   } finally {
     try {
+      if (roleApplied) await client.query('RESET ROLE')
       await client.query("SELECT set_config('app.tenant_id', '', false)")
       await client.query("SELECT set_config('app.member_id', '', false)")
       await client.query("SELECT set_config('app.passport_global_id', '', false)")
