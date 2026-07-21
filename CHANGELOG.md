@@ -36,7 +36,29 @@ prestado) ou palestras. Confirmado que fatura palestras/seminários: catálogo p
 `172401` com discriminação coerente. O CNAE 6204000 (TI) segue descasado do serviço faturado —
 questão para o contador, com impacto potencial no anexo do Simples (III vs V com fator-r).
 
-**Alíquota permanece não confirmada, e a entrada do catálogo ficou inativa.** Os 300 bp foram
+**Alíquota municipal confirmada em fonte primária: 3% para o 17.24.** Art. 158 da LC Municipal
+1/2001 de Cascavel, tabela "Lista de Serviços e Alíquotas", coluna "Variável (%)", redação vigente
+dada pela LC Municipal 95/2017 (que republicou a lista sem alterar o 17.24). Lidos três documentos
+independentes, conferido o cabeçalho da tabela para descartar confusão entre % e UFM, e varrida a
+cadeia de alterações até a LC 139/2026 e duas ADIs — nada alcança o item 17. Os 300 bp já
+configurados estavam certos como alíquota estatutária, por coincidência.
+
+**Mas 3% não é o número que vai numa nota de optante do Simples.** O ISS é recolhido no DAS
+(LC 123/2006 art. 21 §4º I + CGSN 140/2018 art. 27 I); uma NFS-e real de Cascavel de prestador
+optante sai com a string `SIMPLES NACIONAL` nos campos de alíquota e valor de ISS, número
+suprimido. O art. 199-A da LC 1/2001 restringe retenção na fonte de ME/EPP do Simples às exceções
+do art. 3º da LC 116 — palestras não está entre elas, então **não há retenção nesta nota**, o que
+elimina o modo de falha mais caro (omitir alíquota em nota com retenção faz a lei aplicar 5%).
+Segue em aberto o que o payload deve carregar para produzir esse resultado — 0, campo omitido ou a
+efetiva do PGDAS-D. Não testado, e não vou inferir.
+
+Também descoberto: Cascavel **migrou ao Ambiente de Dados Nacional em 01/01/2026** — o que explica
+retroativamente a rejeição "não possui desdobramento nacional". Um item por nota, NBS possivelmente
+exigido, e "novas regras de redução de base e alíquota para optantes do Simples" ainda não
+auditadas. O emissor oficial é a IPM em `pr.nfs-e.net`, não o módulo NFS-e do atende.net. Tudo
+registrado no perfil do município em `packages/ai/src/fiscal/municipios-nfse.ts`.
+
+**A entrada do catálogo ficou inativa.** Os 300 bp foram
 escolhidos para o item 1.06 e não há fonte primária para o 17.24. Enquanto o código estava errado,
 qualquer emissão era **rejeitada** — rede de proteção acidental que a correção removeu: agora a
 nota sairia **válida** com imposto possivelmente errado, em município que não cancela por

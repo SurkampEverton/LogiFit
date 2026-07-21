@@ -84,7 +84,17 @@ export const MUNICIPALITY_NFSE_PROFILES: Record<string, MunicipalityNfseProfile>
     notes:
       'Portal https://nfse-cascavel.atende.net/. O credenciamento de webservice é pedido no ' +
       'autoatendimento da prefeitura ("Emissão de NFS-e via webservices") e é separado de ter ' +
-      'login no portal. Certificado digital não substitui login/senha aqui.',
+      'login no portal. Certificado digital não substitui login/senha aqui. ' +
+      // Verificado 2026-07-21, com base legal — ver CHANGELOG da data.
+      'Migrou ao Ambiente de Dados Nacional em 01/01/2026: por isso exige a lista LC 116 com ' +
+      'desdobramento nacional (6 dígitos) e recusa o formato "X.YY". Um item por nota. ' +
+      'Alíquotas de ISS por subitem vivem no art. 158 da LC Municipal 1/2001 (redação da LC ' +
+      'Municipal 95/2017), coluna "Variável (%)" — 17.24 (palestras) = 3%. Esse é o percentual ' +
+      'de REGIME NORMAL: para optante do Simples a nota sai com "SIMPLES NACIONAL" no lugar do ' +
+      'número, e o art. 199-A da LC 1/2001 restringe retenção na fonte de ME/EPP do Simples às ' +
+      'exceções do art. 3º da LC 116/2003. Emissor oficial é a IPM em pr.nfs-e.net — confirmar o ' +
+      'mapeamento antes de tratar o módulo do atende.net como endpoint. NBS pode passar a ser ' +
+      'exigido pelo ADN; hoje o cadastro da empresa no portal traz o campo vazio.',
   },
 }
 
