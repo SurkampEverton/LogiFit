@@ -94,7 +94,11 @@ export const MUNICIPALITY_NFSE_PROFILES: Record<string, MunicipalityNfseProfile>
       'número, e o art. 199-A da LC 1/2001 restringe retenção na fonte de ME/EPP do Simples às ' +
       'exceções do art. 3º da LC 116/2003. Emissor oficial é a IPM em pr.nfs-e.net — confirmar o ' +
       'mapeamento antes de tratar o módulo do atende.net como endpoint. NBS pode passar a ser ' +
-      'exigido pelo ADN; hoje o cadastro da empresa no portal traz o campo vazio.',
+      'exigido pelo ADN; hoje o cadastro da empresa no portal traz o campo vazio. ' +
+      // Conferido campo a campo contra a doc da Focus em 2026-07-21.
+      'A doc da Focus para o município confirma: CNAE e código tributário municipal não são ' +
+      'utilizados, NBS é opcional, série de RPS 13, sem homologação e cancelamento por ' +
+      'webservice não funcional.',
   },
 }
 

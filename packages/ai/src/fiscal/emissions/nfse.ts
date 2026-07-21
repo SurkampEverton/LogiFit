@@ -10,7 +10,7 @@
 
 import { findMunicipalityNfseProfile } from '../municipios-nfse'
 import type { NfseEmissionInput } from '../provider'
-import { bpToPercent, centsToDecimal, documentField, isoDate } from './shared'
+import { bpToPercent, centsToDecimal, documentField, isoDateTime } from './shared'
 
 export interface NfsePayloadOptions {
   /** Data de emissão — caller injeta (SA usa new Date(); testes fixam). */
@@ -29,6 +29,19 @@ export interface NfsePayloadOptions {
    * escondido faz o imposto ir pro município errado.
    */
   naturezaOperacao?: '1' | '2' | '3' | '4' | '5' | '6'
+  /**
+   * Regime especial de tributação (enum Focus 1..6), opcional.
+   *
+   * Default derivado do regime do prestador: `6` (ME/EPP Simples Nacional) e
+   * `5` (MEI). É o campo que diz ao município QUAL sub-regime do Simples se
+   * aplica — `optante_simples_nacional` sozinho só diz que é optante.
+   *
+   * Sobrescrevível porque `taxRegime` não expressa os outros valores do enum:
+   * `1` microempresa municipal, `2` estimativa, `3` sociedade de profissionais,
+   * `4` cooperativa. Uma sociedade de profissionais optante do Simples cabe em
+   * mais de um, e quem sabe qual é o contador — não o schema.
+   */
+  regimeEspecialTributacao?: '1' | '2' | '3' | '4' | '5' | '6' | null
 }
 
 /**
@@ -85,7 +98,7 @@ export function buildNfsePayload(
   }
 
   const payload: Record<string, unknown> = {
-    data_emissao: isoDate(options.emissionDate),
+    data_emissao: isoDateTime(options.emissionDate),
     natureza_operacao: options.naturezaOperacao ?? '1',
     // Obrigatório na raiz. MEI é SIMEI, sub-regime do Simples — conta como optante.
     optante_simples_nacional:
@@ -94,6 +107,15 @@ export function buildNfsePayload(
     tomador,
     servico,
   }
+  const regime =
+    options.regimeEspecialTributacao !== undefined
+      ? options.regimeEspecialTributacao
+      : service.taxRegime === 'mei'
+        ? '5'
+        : service.taxRegime === 'simples_nacional'
+          ? '6'
+          : null
+  if (regime) payload.regime_especial_tributacao = regime
   if (input.notes) payload.observacoes = input.notes
 
   return payload

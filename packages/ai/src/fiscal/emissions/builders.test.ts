@@ -134,6 +134,42 @@ describe('buildNfsePayload', () => {
     expect(presumido.optante_simples_nacional).toBe(false)
   })
 
+  it('regime_especial_tributacao deriva do regime: 6 ME/EPP, 5 MEI', () => {
+    // optante_simples_nacional diz que E optante; este campo diz QUAL
+    // sub-regime. Enum documentado pela Focus: 5 = MEI, 6 = ME/EPP Simples.
+    const opts = { emissionDate: FIXED_DATE }
+    expect(buildNfsePayload(NFSE_INPUT, opts).regime_especial_tributacao).toBe('6')
+
+    const mei = buildNfsePayload(
+      { ...NFSE_INPUT, service: { ...NFSE_INPUT.service, taxRegime: 'mei' } },
+      opts,
+    )
+    expect(mei.regime_especial_tributacao).toBe('5')
+
+    // Fora do Simples o campo nao vai — o enum nao tem valor pra lucro real.
+    const real = buildNfsePayload(
+      { ...NFSE_INPUT, service: { ...NFSE_INPUT.service, taxRegime: 'lucro_real' } },
+      opts,
+    )
+    expect(real.regime_especial_tributacao).toBeUndefined()
+
+    // Sociedade de profissionais optante do Simples: quem sabe e o contador.
+    const sociedade = buildNfsePayload(NFSE_INPUT, { ...opts, regimeEspecialTributacao: '3' })
+    expect(sociedade.regime_especial_tributacao).toBe('3')
+
+    // null suprime explicitamente, sem cair no default.
+    const suprimido = buildNfsePayload(NFSE_INPUT, { ...opts, regimeEspecialTributacao: null })
+    expect(suprimido.regime_especial_tributacao).toBeUndefined()
+  })
+
+  it('data_emissao vai como date-time ISO 8601, nao so data', () => {
+    // A Focus documenta o campo como date-time: municipio que nao usa hora
+    // descarta, municipio que usa recebe. Mandar so a data perde informacao
+    // onde ela importa.
+    const payload = buildNfsePayload(NFSE_INPUT, { emissionDate: FIXED_DATE })
+    expect(payload.data_emissao).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/)
+  })
+
   it('natureza_operacao default 1 (tributado no municipio) e sobrescrivel', () => {
     expect(buildNfsePayload(NFSE_INPUT, { emissionDate: FIXED_DATE }).natureza_operacao).toBe('1')
     // Excecoes do art. 3o da LC 116 recolhem no municipio do tomador.
@@ -163,7 +199,8 @@ describe('buildNfsePayload', () => {
       inscricaoMunicipal: '12345',
     })
     expect(payload).toMatchObject({
-      data_emissao: '2026-07-15',
+      // date-time: o campo e documentado assim, e municipio que nao usa hora descarta
+      data_emissao: '2026-07-15T12:00:00',
       prestador: {
         cnpj: '11222333000144',
         codigo_municipio: '3550308',

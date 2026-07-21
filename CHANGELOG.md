@@ -6,6 +6,27 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fix — payload NFS-e conferido campo a campo contra a doc da Focus 2026-07-21
+
+Verificação da implementação contra a referência oficial (`doc.focusnfe.com.br/reference/emitir_nfse`
+e o guia do município). O perfil de Cascavel bateu em todos os campos que declara — CNAE e código
+tributário municipal "não utilizados", NBS opcional, série de RPS 13, sem homologação, cancelamento
+por webservice não funcional. Duas divergências reais apareceram:
+
+- **`regime_especial_tributacao` nunca era enviado.** É enum documentado onde **`6` = ME/EPP Simples
+  Nacional** e **`5` = MEI` — o campo que diz ao município QUAL sub-regime do Simples se aplica.
+  `optante_simples_nacional` sozinho só diz que é optante. Agora deriva de `taxRegime` e é
+  sobrescrevível, porque o enum tem valores que o nosso schema não expressa (`3` sociedade de
+  profissionais, `4` cooperativa) e quem sabe qual se aplica é o contador.
+- **`data_emissao` ia só com a data.** O campo é documentado como **date-time** ISO 8601: "alguns
+  municípios não utilizam hora e ela será descartada caso seja fornecida". Mandar só a data funciona
+  onde a hora é descartada (Cascavel) e perde informação onde não é. NF-e e NFC-e seguem com data.
+
+Confirmado também que `natureza_operacao` é **string** enum na referência — o exemplo do guia de
+Cascavel mostra número, e nós já mandávamos string, que é o tipo documentado. E `servico.aliquota` é
+**não obrigatória**, o que abre caminho para omiti-la em optante do Simples se o contador confirmar
+que é isso que Cascavel espera.
+
 ### Fix — botão PDF mentia: nota real classificada como mock 2026-07-21
 
 Ver a nota emitida pelo sistema não funcionava, e o modo de falha era o pior possível: o botão

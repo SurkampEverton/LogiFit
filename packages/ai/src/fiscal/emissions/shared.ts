@@ -25,6 +25,22 @@ export function isoDate(date: Date): string {
 }
 
 /**
+ * Data/hora ISO 8601 completa, sem milissegundos.
+ *
+ * `data_emissao` da NFS-e e documentada pela Focus como **date-time**, nao
+ * date: "alguns municipios nao utilizam hora e ela sera descartada caso seja
+ * fornecida". Mandar so a data funciona onde a hora e descartada — Cascavel,
+ * por exemplo — e perde informacao onde nao e. Enviar o tipo documentado
+ * degrada de forma segura nos dois casos.
+ */
+export function isoDateTime(date: Date): string {
+  const iso = date.toISOString()
+  const trimmed = iso.split('.')[0]
+  if (!trimmed) throw new Error('isoDateTime: data inválida')
+  return trimmed
+}
+
+/**
  * Discrimina CPF (11 dígitos) vs CNPJ (14 dígitos) pra montar o campo correto
  * do payload. Focus rejeita quando ambos presentes.
  */
