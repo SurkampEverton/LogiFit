@@ -86,7 +86,13 @@ export default async function ARDetailPage({ params }: { params: Promise<{ id: s
       notes: apArPayments.notes,
     })
     .from(apArPayments)
-    .where(and(eq(apArPayments.sourceType, 'ar'), eq(apArPayments.sourceId, id)))
+    .where(
+      and(
+        eq(apArPayments.sourceType, 'ar'),
+        eq(apArPayments.sourceId, id),
+        eq(apArPayments.tenantId, tenantId),
+      ),
+    )
     .orderBy(desc(apArPayments.paidAt))
 
   const badge = STATUS_BADGE[ar.status]!

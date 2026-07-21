@@ -117,7 +117,12 @@ export default async function AssessmentDetailPage({
       source: assessmentMeasurements.source,
     })
     .from(assessmentMeasurements)
-    .where(eq(assessmentMeasurements.assessmentId, assessmentId))
+    .where(
+      and(
+        eq(assessmentMeasurements.assessmentId, assessmentId),
+        eq(assessmentMeasurements.tenantId, tenantId),
+      ),
+    )
     .orderBy(asc(assessmentMeasurements.fieldKey))
 
   const calculations = await db
@@ -127,7 +132,12 @@ export default async function AssessmentDetailPage({
       classification: assessmentCalculations.classification,
     })
     .from(assessmentCalculations)
-    .where(eq(assessmentCalculations.assessmentId, assessmentId))
+    .where(
+      and(
+        eq(assessmentCalculations.assessmentId, assessmentId),
+        eq(assessmentCalculations.tenantId, tenantId),
+      ),
+    )
 
   const fieldDefs = (a.typeFields as FieldDef[]) ?? []
   const fieldByKey = new Map(fieldDefs.map((f) => [f.key, f]))

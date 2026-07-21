@@ -969,9 +969,12 @@ export const createBatch = wrapServerAction(
         .update(billingGuides)
         .set({ status: 'sent', sentAt: new Date(), updatedAt: new Date() })
         .where(
-          inArray(
-            billingGuides.id,
-            guides.map((g) => g.id),
+          and(
+            inArray(
+              billingGuides.id,
+              guides.map((g) => g.id),
+            ),
+            eq(billingGuides.tenantId, session.logifit.tenantId),
           ),
         )
 

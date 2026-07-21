@@ -88,7 +88,12 @@ export default async function ConsultaDetailPage({ params }: { params: Promise<{
       contentHash: consultaCorrectionNotes.contentHash,
     })
     .from(consultaCorrectionNotes)
-    .where(eq(consultaCorrectionNotes.consultaId, id))
+    .where(
+      and(
+        eq(consultaCorrectionNotes.consultaId, id),
+        eq(consultaCorrectionNotes.tenantId, tenantId),
+      ),
+    )
     .orderBy(desc(consultaCorrectionNotes.createdAt))
 
   const content = (c.content as Record<string, unknown>) ?? {}

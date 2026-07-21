@@ -58,7 +58,7 @@ export default async function SessionExecutionPage({
     })
     .from(prescriptions)
     .leftJoin(workouts, eq(workouts.id, prescriptions.refId))
-    .where(eq(prescriptions.id, s.prescriptionId))
+    .where(and(eq(prescriptions.id, s.prescriptionId), eq(prescriptions.tenantId, tenantId)))
     .limit(1)
 
   // Busca workout items se prescription é workout
@@ -78,7 +78,7 @@ export default async function SessionExecutionPage({
           })
           .from(workoutItems)
           .leftJoin(exercises, eq(exercises.id, workoutItems.exerciseId))
-          .where(eq(workoutItems.workoutId, p.refId))
+          .where(and(eq(workoutItems.workoutId, p.refId), eq(workoutItems.tenantId, tenantId)))
           .orderBy(asc(workoutItems.order))
       : []
 
@@ -94,7 +94,9 @@ export default async function SessionExecutionPage({
       doneAt: workoutSessionItems.doneAt,
     })
     .from(workoutSessionItems)
-    .where(eq(workoutSessionItems.sessionId, sessionId))
+    .where(
+      and(eq(workoutSessionItems.sessionId, sessionId), eq(workoutSessionItems.tenantId, tenantId)),
+    )
     .orderBy(asc(workoutSessionItems.doneAt))
 
   return (

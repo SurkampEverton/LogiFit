@@ -11,7 +11,7 @@ import { aiCommitteeDecisions, aiCommitteeMembers, aiCommittees, persons } from 
  * MVP Sprint 01b: lista comitê + members + decisões. Sprint 06+ adiciona
  * upload de ata em PDF (MinIO) + assinatura digital + workflow de aprovação.
  */
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { requireFullSession } from '../../../../lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -64,12 +64,22 @@ export default async function ComiteIaPage() {
           })
           .from(aiCommitteeMembers)
           .innerJoin(persons, eq(persons.id, aiCommitteeMembers.personId))
-          .where(eq(aiCommitteeMembers.committeeId, activeCommittee.id))
+          .where(
+            and(
+              eq(aiCommitteeMembers.committeeId, activeCommittee.id),
+              eq(aiCommitteeMembers.tenantId, tenantId),
+            ),
+          )
           .orderBy(aiCommitteeMembers.role),
         db
           .select()
           .from(aiCommitteeDecisions)
-          .where(eq(aiCommitteeDecisions.committeeId, activeCommittee.id))
+          .where(
+            and(
+              eq(aiCommitteeDecisions.committeeId, activeCommittee.id),
+              eq(aiCommitteeDecisions.tenantId, tenantId),
+            ),
+          )
           .orderBy(desc(aiCommitteeDecisions.decidedAt))
           .limit(20),
       ])

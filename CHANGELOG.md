@@ -6,6 +6,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fix — herança via FK deixa de ser suposição: 23 filtros explícitos + auditoria zerada 2026-07-21
+
+Os 25 candidatos restantes de `scripts/audit-tenant-scope.mjs` — o resíduo que a varredura de 101 agentes classificou como "provavelmente seguro" — foram triados um a um. Todos eram do mesmo padrão: **herança de escopo via FK**, onde a query pai filtra o tenant e a filha só liga pelo id do pai.
+
+Nenhum é vazamento hoje. Foram corrigidos mesmo assim, porque a herança só vale enquanto o pai continuar filtrando — e o `emitNfseFromInvoice` já provou, na mesma semana, que a suposição quebra em silêncio quando alguém edita o pai. Por [ADR 0107](docs/decisions/0107-rls-runtime-roteamento-conexao.md), o filtro explícito é a linha principal; a RLS é a segunda.
+
+- **23 filtros adicionados** em 15 arquivos: itens/sessões de treino, medições e cálculos de avaliação, pagamentos AP/AR, guias TISS em lote, entradas de comissão, membros de comitê de IA, notas de correção de consulta, prescrições, propostas do assistente, retry de emissão fiscal.
+- **3 isenções documentadas** no webhook do Asaas (`tenant-scope-exempt`): a invoice é resolvida pelo `asaas_id`, identificador do provider único globalmente e gerado por nós — não há input de usuário, e um tenant não tem como forjar o id de outro. Sem sessão disponível, isentar é a resposta honesta; silenciar não seria.
+
+`node scripts/audit-tenant-scope.mjs` sai limpo pela primeira vez. Validado: typecheck limpo, `lint:custom` limpo (889 arquivos, 9 regras), 1.532 testes verdes (932 de `@repo/db` com RLS ativa).
+
 ### Fix — 46 vazamentos entre tenants: filtro explícito de tenant_id (segurança) 2026-07-21
 
 Varredura adversarial exaustiva de `apps/web` (workflow de 101 agentes: 7 finders por diretório + verificação cética por achado) encontrou **43 vazamentos confirmados** em 22 arquivos — muito além dos 8 corrigidos manualmente em 20/07. Todos são queries a tabelas tenant-scoped sem filtro explícito de `tenant_id`, que a RLS quebrada (corrigida no ADR 0107) deixou de conter por anos.

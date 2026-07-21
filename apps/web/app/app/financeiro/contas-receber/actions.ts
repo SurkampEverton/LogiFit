@@ -212,7 +212,13 @@ export const registerARReceived = wrapServerAction(
         total: sql<number>`COALESCE(SUM(${apArPayments.amountCents}), 0)::bigint`,
       })
       .from(apArPayments)
-      .where(and(eq(apArPayments.sourceType, 'ar'), eq(apArPayments.sourceId, parsed.arId)))
+      .where(
+        and(
+          eq(apArPayments.sourceType, 'ar'),
+          eq(apArPayments.sourceId, parsed.arId),
+          eq(apArPayments.tenantId, session.logifit.tenantId),
+        ),
+      )
     const receivedTotal = Number(agg?.total ?? 0)
     const fullyReceived = receivedTotal >= ar.amountCents
 
@@ -363,7 +369,13 @@ export const getAR = wrapServerAction(
         notes: apArPayments.notes,
       })
       .from(apArPayments)
-      .where(and(eq(apArPayments.sourceType, 'ar'), eq(apArPayments.sourceId, parsed.arId)))
+      .where(
+        and(
+          eq(apArPayments.sourceType, 'ar'),
+          eq(apArPayments.sourceId, parsed.arId),
+          eq(apArPayments.tenantId, session.logifit.tenantId),
+        ),
+      )
       .orderBy(desc(apArPayments.paidAt))
     setAuditResource(parsed.arId, {})
     return { ar: row, receipts }

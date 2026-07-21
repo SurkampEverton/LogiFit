@@ -626,7 +626,7 @@ export const confirmAdaptation = wrapServerAction(
     const origItems = await db
       .select()
       .from(workoutItems)
-      .where(eq(workoutItems.workoutId, origWorkout.id))
+      .where(and(eq(workoutItems.workoutId, origWorkout.id), eq(workoutItems.tenantId, tenantId)))
       .orderBy(workoutItems.order)
 
     const changes = adaptation.changes as {

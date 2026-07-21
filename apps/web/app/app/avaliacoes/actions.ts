@@ -607,7 +607,12 @@ export const getLatestAssessmentSummary = wrapServerAction(
         classification: assessmentCalculations.classification,
       })
       .from(assessmentCalculations)
-      .where(eq(assessmentCalculations.assessmentId, latest.id))
+      .where(
+        and(
+          eq(assessmentCalculations.assessmentId, latest.id),
+          eq(assessmentCalculations.tenantId, session.logifit.tenantId),
+        ),
+      )
 
     return { latest, calculations: calcs }
   },

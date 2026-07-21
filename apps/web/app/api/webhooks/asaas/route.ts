@@ -186,16 +186,22 @@ export async function POST(request: Request) {
           })
         })
       }
+      // tenant-scope-exempt: webhook do Asaas, sem sessao — a invoice e resolvida
+      // pelo asaas_id, identificador do provider unico globalmente, gerado por nos
+      // na criacao da cobranca. Nao ha input de usuario aqui: um tenant nao tem
+      // como forjar o asaas_id de outro.
     } else if (event === 'PAYMENT_OVERDUE') {
       await db
         .update(invoices)
         .set({ status: 'overdue', updatedAt: new Date() })
         .where(eq(invoices.asaasId, asaasPay.id))
+      // tenant-scope-exempt: resolvido pelo asaas_id (id do provider, unico global)
     } else if (event === 'PAYMENT_REFUNDED') {
       await db
         .update(invoices)
         .set({ status: 'refunded', updatedAt: new Date() })
         .where(eq(invoices.asaasId, asaasPay.id))
+      // tenant-scope-exempt: resolvido pelo asaas_id (id do provider, unico global)
     } else if (event === 'PAYMENT_DELETED') {
       await db
         .update(invoices)

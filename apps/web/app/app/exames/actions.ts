@@ -315,7 +315,7 @@ export const processExam = wrapServerAction(
       })
       .from(members)
       .innerJoin(persons, eq(persons.id, members.personId))
-      .where(eq(members.id, doc.memberId))
+      .where(and(eq(members.id, doc.memberId), eq(members.tenantId, tenantId)))
       .limit(1)
     const m = memberInfo[0]
     const birthIso = m?.birthDate ? String(m.birthDate) : null

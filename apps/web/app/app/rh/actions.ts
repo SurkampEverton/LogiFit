@@ -525,7 +525,12 @@ export const closePeriod = wrapServerAction(
       await db
         .update(commissionEntries)
         .set({ status: 'included', periodId: period!.id })
-        .where(sql`${commissionEntries.id} = ANY(${entries.map((e) => e.id)})`)
+        .where(
+          and(
+            sql`${commissionEntries.id} = ANY(${entries.map((e) => e.id)})`,
+            eq(commissionEntries.tenantId, session.logifit.tenantId),
+          ),
+        )
 
       setAuditResource(period!.id, {
         totalEntries: summary.totalEntries,

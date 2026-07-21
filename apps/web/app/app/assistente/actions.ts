@@ -477,7 +477,12 @@ export const confirmProposal = wrapServerAction(
       await db
         .update(assistantActionProposals)
         .set({ state: 'expired' })
-        .where(eq(assistantActionProposals.id, p.id))
+        .where(
+          and(
+            eq(assistantActionProposals.id, p.id),
+            eq(assistantActionProposals.tenantId, session.logifit.tenantId),
+          ),
+        )
       throw new ApiException({
         code: 'CONFLICT',
         message: 'Proposta expirou. Tente novamente.',

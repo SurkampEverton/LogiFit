@@ -639,7 +639,12 @@ export const finishSession = wrapServerAction(
       const [p] = await tx
         .select({ refId: prescriptions.refId, kind: prescriptions.kind })
         .from(prescriptions)
-        .where(eq(prescriptions.id, s.prescriptionId))
+        .where(
+          and(
+            eq(prescriptions.id, s.prescriptionId),
+            eq(prescriptions.tenantId, session.logifit.tenantId),
+          ),
+        )
         .limit(1)
 
       let calculatedKcal: number | null = null
@@ -651,7 +656,12 @@ export const finishSession = wrapServerAction(
           })
           .from(workoutItems)
           .leftJoin(exercises, eq(exercises.id, workoutItems.exerciseId))
-          .where(eq(workoutItems.workoutId, p.refId))
+          .where(
+            and(
+              eq(workoutItems.workoutId, p.refId),
+              eq(workoutItems.tenantId, session.logifit.tenantId),
+            ),
+          )
 
         const finishedAt = new Date()
         const durationMin = Math.max(0, (finishedAt.getTime() - s.startedAt.getTime()) / 60000)
@@ -677,7 +687,12 @@ export const finishSession = wrapServerAction(
           notes: parsed.notes ?? null,
           calculatedKcal: calculatedKcal !== null ? calculatedKcal.toString() : null,
         })
-        .where(eq(workoutSessions.id, parsed.sessionId))
+        .where(
+          and(
+            eq(workoutSessions.id, parsed.sessionId),
+            eq(workoutSessions.tenantId, session.logifit.tenantId),
+          ),
+        )
 
       setAuditResource(parsed.sessionId, {
         overall_rpe: parsed.overallRpe,

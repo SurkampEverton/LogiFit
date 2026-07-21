@@ -105,7 +105,13 @@ export default async function APDetailPage({ params }: { params: Promise<{ id: s
       notes: apArPayments.notes,
     })
     .from(apArPayments)
-    .where(and(eq(apArPayments.sourceType, 'ap'), eq(apArPayments.sourceId, id)))
+    .where(
+      and(
+        eq(apArPayments.sourceType, 'ap'),
+        eq(apArPayments.sourceId, id),
+        eq(apArPayments.tenantId, tenantId),
+      ),
+    )
     .orderBy(desc(apArPayments.paidAt))
 
   const trace = Array.isArray(ap.approvalTrace) ? (ap.approvalTrace as TraceEntry[]) : []

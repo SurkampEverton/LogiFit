@@ -1186,7 +1186,12 @@ export const cancelEmission = wrapServerAction(
             cancelledAt: new Date(),
             updatedAt: new Date(),
           })
-          .where(eq(fiscalEmissions.id, em.id))
+          .where(
+            and(
+              eq(fiscalEmissions.id, em.id),
+              eq(fiscalEmissions.tenantId, session.logifit.tenantId),
+            ),
+          )
       }
     })
 
@@ -1436,7 +1441,12 @@ export const queryEmissionStatus = wrapServerAction(
           rejectionReason: result.rejectionReason ?? sql`rejection_reason`,
           updatedAt: new Date(),
         })
-        .where(eq(fiscalEmissions.id, em.id))
+        .where(
+          and(
+            eq(fiscalEmissions.id, em.id),
+            eq(fiscalEmissions.tenantId, session.logifit.tenantId),
+          ),
+        )
     }
 
     setAuditResource(em.id, {
@@ -1495,7 +1505,9 @@ export const retryEmission = wrapServerAction(
         submittedAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(eq(fiscalEmissions.id, em.id))
+      .where(
+        and(eq(fiscalEmissions.id, em.id), eq(fiscalEmissions.tenantId, session.logifit.tenantId)),
+      )
 
     setAuditResource(em.id, { retryCount: em.retryCount + 1 })
     return { ok: true as const, retryCount: em.retryCount + 1 }

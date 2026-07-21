@@ -45,7 +45,7 @@ export default async function WorkoutDetailPage({
     })
     .from(workoutItems)
     .leftJoin(exercises, eq(exercises.id, workoutItems.exerciseId))
-    .where(eq(workoutItems.workoutId, id))
+    .where(and(eq(workoutItems.workoutId, id), eq(workoutItems.tenantId, tenantId)))
     .orderBy(asc(workoutItems.order))
 
   return (
