@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 /**
  * Seed Sprint 27 Faixa D — Cross-alert contraindicações curadas.
  *
@@ -14,7 +15,6 @@
  */
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import { sql } from 'drizzle-orm'
 import { cidExerciseContraindications } from '../src/schema/index.js'
 
 const DATABASE_URL =
@@ -53,7 +53,8 @@ const CONTRAS: ContraSeed[] = [
     cidCode: 'MG30.0',
     muscleGroup: 'core',
     severity: 'modify',
-    rationale: 'Fortalecimento de core em posições neutras é benéfico — evitar crunchs com flexão repetida',
+    rationale:
+      'Fortalecimento de core em posições neutras é benéfico — evitar crunchs com flexão repetida',
     source: 'ACSM 2023',
   },
   {

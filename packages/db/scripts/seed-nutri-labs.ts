@@ -51,7 +51,8 @@ const SUPPLEMENTS: SupplementSeed[] = [
     name: 'Vitamina B12 (cianocobalamina)',
     kind: 'vitamin',
     concentration: '500 mcg a 5000 mcg por cápsula',
-    indication: 'Deficiência de B12 (B12 sérica < 200 pg/mL). Comum em veganos, idosos, pacientes com gastrite atrófica.',
+    indication:
+      'Deficiência de B12 (B12 sérica < 200 pg/mL). Comum em veganos, idosos, pacientes com gastrite atrófica.',
     contraindications: 'Hipersensibilidade conhecida ao cobalto.',
   },
   {
@@ -59,7 +60,8 @@ const SUPPLEMENTS: SupplementSeed[] = [
     kind: 'omega',
     concentration: '500-1000 mg EPA+DHA por cápsula',
     indication: 'Suporte cardiovascular + redução de triglicérides + inflamação crônica.',
-    contraindications: 'Distúrbios de coagulação; uso concomitante com anticoagulantes pede ajuste.',
+    contraindications:
+      'Distúrbios de coagulação; uso concomitante com anticoagulantes pede ajuste.',
   },
   {
     name: 'Magnésio bisglicinato',
@@ -122,47 +124,227 @@ interface InteractionSeed {
 
 const INTERACTIONS: InteractionSeed[] = [
   // Vitamina D3
-  { supplementName: 'Vitamina D3 (colecalciferol)', interactsWith: 'Tiazídicos', severity: 'caution', description: 'Aumenta absorção de cálcio; monitorar hipercalcemia.', source: 'Mayo Clinic' },
-  { supplementName: 'Vitamina D3 (colecalciferol)', interactsWith: 'Corticoides', severity: 'caution', description: 'Corticoides reduzem absorção de cálcio; pode antagonizar efeito.', source: 'Mayo Clinic' },
+  {
+    supplementName: 'Vitamina D3 (colecalciferol)',
+    interactsWith: 'Tiazídicos',
+    severity: 'caution',
+    description: 'Aumenta absorção de cálcio; monitorar hipercalcemia.',
+    source: 'Mayo Clinic',
+  },
+  {
+    supplementName: 'Vitamina D3 (colecalciferol)',
+    interactsWith: 'Corticoides',
+    severity: 'caution',
+    description: 'Corticoides reduzem absorção de cálcio; pode antagonizar efeito.',
+    source: 'Mayo Clinic',
+  },
   // Vitamina B12
-  { supplementName: 'Vitamina B12 (cianocobalamina)', interactsWith: 'Metformina', severity: 'caution', description: 'Metformina reduz absorção de B12; monitorar B12 sérica.', source: 'SBEM' },
-  { supplementName: 'Vitamina B12 (cianocobalamina)', interactsWith: 'Omeprazol', severity: 'caution', description: 'IBPs prolongados reduzem absorção de B12.', source: 'SBEM' },
+  {
+    supplementName: 'Vitamina B12 (cianocobalamina)',
+    interactsWith: 'Metformina',
+    severity: 'caution',
+    description: 'Metformina reduz absorção de B12; monitorar B12 sérica.',
+    source: 'SBEM',
+  },
+  {
+    supplementName: 'Vitamina B12 (cianocobalamina)',
+    interactsWith: 'Omeprazol',
+    severity: 'caution',
+    description: 'IBPs prolongados reduzem absorção de B12.',
+    source: 'SBEM',
+  },
   // Ômega 3
-  { supplementName: 'Ômega 3 EPA+DHA', interactsWith: 'Varfarina', severity: 'avoid', description: 'Doses altas (>3g/dia) aumentam INR; risco de sangramento.', source: 'Mayo Clinic' },
-  { supplementName: 'Ômega 3 EPA+DHA', interactsWith: 'Aspirina', severity: 'caution', description: 'Efeito antiplaquetário aditivo; monitorar sangramento.', source: 'Mayo Clinic' },
-  { supplementName: 'Ômega 3 EPA+DHA', interactsWith: 'Clopidogrel', severity: 'caution', description: 'Antiplaquetário aditivo; cautela em cirurgias.', source: 'Mayo Clinic' },
+  {
+    supplementName: 'Ômega 3 EPA+DHA',
+    interactsWith: 'Varfarina',
+    severity: 'avoid',
+    description: 'Doses altas (>3g/dia) aumentam INR; risco de sangramento.',
+    source: 'Mayo Clinic',
+  },
+  {
+    supplementName: 'Ômega 3 EPA+DHA',
+    interactsWith: 'Aspirina',
+    severity: 'caution',
+    description: 'Efeito antiplaquetário aditivo; monitorar sangramento.',
+    source: 'Mayo Clinic',
+  },
+  {
+    supplementName: 'Ômega 3 EPA+DHA',
+    interactsWith: 'Clopidogrel',
+    severity: 'caution',
+    description: 'Antiplaquetário aditivo; cautela em cirurgias.',
+    source: 'Mayo Clinic',
+  },
   // Magnésio
-  { supplementName: 'Magnésio bisglicinato', interactsWith: 'Bisfosfonatos', severity: 'caution', description: 'Reduz absorção; separar 2h entre tomadas.', source: 'BNF' },
-  { supplementName: 'Magnésio bisglicinato', interactsWith: 'Tetraciclinas', severity: 'caution', description: 'Quelação reduz absorção do antibiótico; separar 2h.', source: 'BNF' },
-  { supplementName: 'Magnésio bisglicinato', interactsWith: 'Levotiroxina', severity: 'caution', description: 'Reduz absorção; separar 4h da medicação.', source: 'BNF' },
+  {
+    supplementName: 'Magnésio bisglicinato',
+    interactsWith: 'Bisfosfonatos',
+    severity: 'caution',
+    description: 'Reduz absorção; separar 2h entre tomadas.',
+    source: 'BNF',
+  },
+  {
+    supplementName: 'Magnésio bisglicinato',
+    interactsWith: 'Tetraciclinas',
+    severity: 'caution',
+    description: 'Quelação reduz absorção do antibiótico; separar 2h.',
+    source: 'BNF',
+  },
+  {
+    supplementName: 'Magnésio bisglicinato',
+    interactsWith: 'Levotiroxina',
+    severity: 'caution',
+    description: 'Reduz absorção; separar 4h da medicação.',
+    source: 'BNF',
+  },
   // Ferro
-  { supplementName: 'Ferro quelato (bisglicinato)', interactsWith: 'Cálcio', severity: 'caution', description: 'Cálcio reduz absorção de ferro; separar 2h.', source: 'SBEM' },
-  { supplementName: 'Ferro quelato (bisglicinato)', interactsWith: 'Café/chá', severity: 'caution', description: 'Taninos reduzem absorção; evitar 1h antes/depois.', source: 'SBEM' },
-  { supplementName: 'Ferro quelato (bisglicinato)', interactsWith: 'Vitamina C', severity: 'info', description: 'Aumenta absorção de ferro não-heme; benéfico co-administrar.', source: 'SBEM' },
-  { supplementName: 'Ferro quelato (bisglicinato)', interactsWith: 'Levotiroxina', severity: 'caution', description: 'Reduz absorção; separar 4h.', source: 'BNF' },
-  { supplementName: 'Ferro quelato (bisglicinato)', interactsWith: 'Tetraciclinas', severity: 'caution', description: 'Quelação reduz absorção; separar 2h.', source: 'BNF' },
+  {
+    supplementName: 'Ferro quelato (bisglicinato)',
+    interactsWith: 'Cálcio',
+    severity: 'caution',
+    description: 'Cálcio reduz absorção de ferro; separar 2h.',
+    source: 'SBEM',
+  },
+  {
+    supplementName: 'Ferro quelato (bisglicinato)',
+    interactsWith: 'Café/chá',
+    severity: 'caution',
+    description: 'Taninos reduzem absorção; evitar 1h antes/depois.',
+    source: 'SBEM',
+  },
+  {
+    supplementName: 'Ferro quelato (bisglicinato)',
+    interactsWith: 'Vitamina C',
+    severity: 'info',
+    description: 'Aumenta absorção de ferro não-heme; benéfico co-administrar.',
+    source: 'SBEM',
+  },
+  {
+    supplementName: 'Ferro quelato (bisglicinato)',
+    interactsWith: 'Levotiroxina',
+    severity: 'caution',
+    description: 'Reduz absorção; separar 4h.',
+    source: 'BNF',
+  },
+  {
+    supplementName: 'Ferro quelato (bisglicinato)',
+    interactsWith: 'Tetraciclinas',
+    severity: 'caution',
+    description: 'Quelação reduz absorção; separar 2h.',
+    source: 'BNF',
+  },
   // Creatina
-  { supplementName: 'Creatina monoidratada', interactsWith: 'Cafeína (alta dose)', severity: 'info', description: 'Estudos antigos sugeriram antagonismo, dados atuais inconclusivos.', source: 'ISSN' },
-  { supplementName: 'Creatina monoidratada', interactsWith: 'AINEs', severity: 'caution', description: 'Risco renal aditivo; cautela em uso crônico.', source: 'ISSN' },
+  {
+    supplementName: 'Creatina monoidratada',
+    interactsWith: 'Cafeína (alta dose)',
+    severity: 'info',
+    description: 'Estudos antigos sugeriram antagonismo, dados atuais inconclusivos.',
+    source: 'ISSN',
+  },
+  {
+    supplementName: 'Creatina monoidratada',
+    interactsWith: 'AINEs',
+    severity: 'caution',
+    description: 'Risco renal aditivo; cautela em uso crônico.',
+    source: 'ISSN',
+  },
   // Whey
-  { supplementName: 'Whey protein isolado', interactsWith: 'Levodopa', severity: 'caution', description: 'Proteína em alta dose reduz absorção; separar 30min.', source: 'BNF' },
+  {
+    supplementName: 'Whey protein isolado',
+    interactsWith: 'Levodopa',
+    severity: 'caution',
+    description: 'Proteína em alta dose reduz absorção; separar 30min.',
+    source: 'BNF',
+  },
   // Probiótico
-  { supplementName: 'Probiótico multi-cepa', interactsWith: 'Antibióticos sistêmicos', severity: 'caution', description: 'Tomar 2-3h após o antibiótico pra preservar viabilidade.', source: 'WHO' },
-  { supplementName: 'Probiótico multi-cepa', interactsWith: 'Imunossupressores', severity: 'caution', description: 'Risco de bacteremia em pacientes imunocomprometidos.', source: 'WHO' },
+  {
+    supplementName: 'Probiótico multi-cepa',
+    interactsWith: 'Antibióticos sistêmicos',
+    severity: 'caution',
+    description: 'Tomar 2-3h após o antibiótico pra preservar viabilidade.',
+    source: 'WHO',
+  },
+  {
+    supplementName: 'Probiótico multi-cepa',
+    interactsWith: 'Imunossupressores',
+    severity: 'caution',
+    description: 'Risco de bacteremia em pacientes imunocomprometidos.',
+    source: 'WHO',
+  },
   // Cálcio
-  { supplementName: 'Cálcio citrato', interactsWith: 'Ferro', severity: 'caution', description: 'Reduz absorção mútua; separar 2h.', source: 'SBEM' },
-  { supplementName: 'Cálcio citrato', interactsWith: 'Levotiroxina', severity: 'caution', description: 'Reduz absorção; separar 4h.', source: 'BNF' },
-  { supplementName: 'Cálcio citrato', interactsWith: 'Bisfosfonatos', severity: 'avoid', description: 'Reduz absorção do bisfosfonato drasticamente; separar 2h.', source: 'BNF' },
-  { supplementName: 'Cálcio citrato', interactsWith: 'Tetraciclinas', severity: 'caution', description: 'Quelação reduz absorção do antibiótico.', source: 'BNF' },
+  {
+    supplementName: 'Cálcio citrato',
+    interactsWith: 'Ferro',
+    severity: 'caution',
+    description: 'Reduz absorção mútua; separar 2h.',
+    source: 'SBEM',
+  },
+  {
+    supplementName: 'Cálcio citrato',
+    interactsWith: 'Levotiroxina',
+    severity: 'caution',
+    description: 'Reduz absorção; separar 4h.',
+    source: 'BNF',
+  },
+  {
+    supplementName: 'Cálcio citrato',
+    interactsWith: 'Bisfosfonatos',
+    severity: 'avoid',
+    description: 'Reduz absorção do bisfosfonato drasticamente; separar 2h.',
+    source: 'BNF',
+  },
+  {
+    supplementName: 'Cálcio citrato',
+    interactsWith: 'Tetraciclinas',
+    severity: 'caution',
+    description: 'Quelação reduz absorção do antibiótico.',
+    source: 'BNF',
+  },
   // Multivitamínico
-  { supplementName: 'Multivitamínico adulto', interactsWith: 'Varfarina', severity: 'caution', description: 'Vitamina K interna antagoniza varfarina; mantenha dose estável.', source: 'Mayo Clinic' },
-  { supplementName: 'Multivitamínico adulto', interactsWith: 'Levotiroxina', severity: 'caution', description: 'Ferro + Cálcio + Mg podem reduzir absorção; separar 4h.', source: 'BNF' },
-  { supplementName: 'Multivitamínico adulto', interactsWith: 'Metotrexato', severity: 'avoid', description: 'Folato em altas doses antagoniza metotrexato.', source: 'Mayo Clinic' },
+  {
+    supplementName: 'Multivitamínico adulto',
+    interactsWith: 'Varfarina',
+    severity: 'caution',
+    description: 'Vitamina K interna antagoniza varfarina; mantenha dose estável.',
+    source: 'Mayo Clinic',
+  },
+  {
+    supplementName: 'Multivitamínico adulto',
+    interactsWith: 'Levotiroxina',
+    severity: 'caution',
+    description: 'Ferro + Cálcio + Mg podem reduzir absorção; separar 4h.',
+    source: 'BNF',
+  },
+  {
+    supplementName: 'Multivitamínico adulto',
+    interactsWith: 'Metotrexato',
+    severity: 'avoid',
+    description: 'Folato em altas doses antagoniza metotrexato.',
+    source: 'Mayo Clinic',
+  },
   // Vitamina K (subentendida em multivitamínico)
-  { supplementName: 'Multivitamínico adulto', interactsWith: 'Anticonvulsivantes', severity: 'info', description: 'Anticonvulsivantes podem reduzir níveis de vitamina D do multi.', source: 'BNF' },
+  {
+    supplementName: 'Multivitamínico adulto',
+    interactsWith: 'Anticonvulsivantes',
+    severity: 'info',
+    description: 'Anticonvulsivantes podem reduzir níveis de vitamina D do multi.',
+    source: 'BNF',
+  },
   // Geral interações fitoterápicas via multi
-  { supplementName: 'Multivitamínico adulto', interactsWith: 'Isotretinoína', severity: 'avoid', description: 'Aditividade de vitamina A; risco de hipervitaminose.', source: 'BNF' },
-  { supplementName: 'Multivitamínico adulto', interactsWith: 'Antibióticos quinolonas', severity: 'caution', description: 'Cálcio/Mg/Fe quelam; separar 2h.', source: 'BNF' },
+  {
+    supplementName: 'Multivitamínico adulto',
+    interactsWith: 'Isotretinoína',
+    severity: 'avoid',
+    description: 'Aditividade de vitamina A; risco de hipervitaminose.',
+    source: 'BNF',
+  },
+  {
+    supplementName: 'Multivitamínico adulto',
+    interactsWith: 'Antibióticos quinolonas',
+    severity: 'caution',
+    description: 'Cálcio/Mg/Fe quelam; separar 2h.',
+    source: 'BNF',
+  },
 ]
 
 interface AnalyteSeed {
@@ -205,7 +387,14 @@ const ANALYTES: AnalyteSeed[] = [
     description: 'Glicemia após 8h de jejum. Diagnóstico de diabetes.',
     ranges: [
       { sex: 'any', min: 70, max: 99, notes: 'Normal', source: 'SBD 2024' },
-      { sex: 'any', condition: 'gestante', min: 70, max: 92, notes: 'Gestante: normal ≤ 92', source: 'SBD 2024' },
+      {
+        sex: 'any',
+        condition: 'gestante',
+        min: 70,
+        max: 92,
+        notes: 'Gestante: normal ≤ 92',
+        source: 'SBD 2024',
+      },
     ],
   },
   {
@@ -313,7 +502,9 @@ const ANALYTES: AnalyteSeed[] = [
     name: 'LDL colesterol',
     category: 'lipidograma',
     unit: 'mg/dL',
-    ranges: [{ sex: 'any', max: 130, notes: 'Desejável < 130 (varia por risco CV)', source: 'SBC 2024' }],
+    ranges: [
+      { sex: 'any', max: 130, notes: 'Desejável < 130 (varia por risco CV)', source: 'SBC 2024' },
+    ],
   },
   {
     code: 'triglicerides',
@@ -331,7 +522,14 @@ const ANALYTES: AnalyteSeed[] = [
     description: 'Função tireoidiana.',
     ranges: [
       { sex: 'any', min: 0.4, max: 4.5, source: 'SBEM' },
-      { sex: 'female', condition: 'gestante', min: 0.1, max: 2.5, notes: '1º trimestre', source: 'SBEM' },
+      {
+        sex: 'female',
+        condition: 'gestante',
+        min: 0.1,
+        max: 2.5,
+        notes: '1º trimestre',
+        source: 'SBEM',
+      },
     ],
   },
   {
@@ -350,7 +548,14 @@ const ANALYTES: AnalyteSeed[] = [
     description: 'Status de vitamina D.',
     ranges: [
       { sex: 'any', min: 30, max: 60, notes: 'Suficiente (SBPC: ≥30)', source: 'SBPC' },
-      { sex: 'any', condition: 'osteoporose', min: 40, max: 60, notes: 'Recomendado pra osteoporose ≥40', source: 'SBPC' },
+      {
+        sex: 'any',
+        condition: 'osteoporose',
+        min: 40,
+        max: 60,
+        notes: 'Recomendado pra osteoporose ≥40',
+        source: 'SBPC',
+      },
     ],
   },
   {
@@ -378,7 +583,14 @@ const ANALYTES: AnalyteSeed[] = [
     category: 'inflamatorio',
     unit: 'mg/L',
     description: 'Marcador inflamatório / risco CV.',
-    ranges: [{ sex: 'any', max: 3.0, notes: 'Baixo risco CV < 1; intermediário 1-3; alto > 3', source: 'AHA' }],
+    ranges: [
+      {
+        sex: 'any',
+        max: 3.0,
+        notes: 'Baixo risco CV < 1; intermediário 1-3; alto > 3',
+        source: 'AHA',
+      },
+    ],
   },
 ]
 
@@ -388,10 +600,7 @@ async function main(): Promise<void> {
     console.log(`[seed-nutri-labs] Inserindo ${SUPPLEMENTS.length} suplementos globais...`)
     const suppNameToId = new Map<string, string>()
     for (const s of SUPPLEMENTS) {
-      const nameNormalized = s.name
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
+      const nameNormalized = s.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
       const r = await pool.query<{ id: string }>(
         `INSERT INTO supplements (tenant_id, name, name_normalized, kind, concentration, anvisa_registration, indication, contraindications)
          VALUES (NULL, $1, $2, $3, $4, $5, $6, $7)
@@ -420,7 +629,9 @@ async function main(): Promise<void> {
     for (const it of INTERACTIONS) {
       const sId = suppNameToId.get(it.supplementName)
       if (!sId) {
-        console.warn(`[seed-nutri-labs] interação pulada (sup não encontrado): ${it.supplementName}`)
+        console.warn(
+          `[seed-nutri-labs] interação pulada (sup não encontrado): ${it.supplementName}`,
+        )
         continue
       }
       const interactsNormalized = it.interactsWith
@@ -431,7 +642,14 @@ async function main(): Promise<void> {
         `INSERT INTO supplement_interactions (tenant_id, supplement_id, interacts_with, interacts_with_normalized, severity, description, source)
          VALUES (NULL, $1, $2, $3, $4, $5, $6)
          ON CONFLICT DO NOTHING`,
-        [sId, it.interactsWith, interactsNormalized, it.severity, it.description, it.source ?? null],
+        [
+          sId,
+          it.interactsWith,
+          interactsNormalized,
+          it.severity,
+          it.description,
+          it.source ?? null,
+        ],
       )
       interactionsInserted++
     }
@@ -469,7 +687,9 @@ async function main(): Promise<void> {
         rangesInserted++
       }
     }
-    console.log(`[seed-nutri-labs] ✅ ${ANALYTES.length} analitos · ${rangesInserted} faixas de referência`)
+    console.log(
+      `[seed-nutri-labs] ✅ ${ANALYTES.length} analitos · ${rangesInserted} faixas de referência`,
+    )
   } finally {
     await pool.end()
   }

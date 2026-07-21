@@ -12,13 +12,7 @@
 import { and, asc, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import {
-  companies,
-  stockItems,
-  stockMovements,
-  tenants,
-  users,
-} from '../src/schema/index.js'
+import { companies, stockItems, stockMovements, tenants, users } from '../src/schema/index.js'
 
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/logifit'
@@ -37,17 +31,117 @@ interface ItemSeed {
 
 const ITEMS: ItemSeed[] = [
   // Consumo interno
-  { sku: 'GAZE-7575-100', name: 'Gaze 7.5×7.5cm pacote 100un', category: 'descartavel', unit: 'pct', costCents: 800, salePriceCents: null, minStock: 5, isResale: false, costMethod: 'custo_medio' },
-  { sku: 'AGULHA-25X8', name: 'Agulha 25×8 caixa 100un', category: 'descartavel', unit: 'cx', costCents: 1500, salePriceCents: null, minStock: 3, isResale: false, costMethod: 'custo_medio' },
-  { sku: 'ATAD-15', name: 'Atadura crepe 15cm', category: 'descartavel', unit: 'un', costCents: 350, salePriceCents: null, minStock: 20, isResale: false, costMethod: 'custo_medio' },
-  { sku: 'ALCOOL-70', name: 'Álcool 70% 1L', category: 'limpeza', unit: 'un', costCents: 1200, salePriceCents: null, minStock: 5, isResale: false, costMethod: 'custo_medio' },
-  { sku: 'LUVA-M-100', name: 'Luva procedimento M caixa 100un', category: 'descartavel', unit: 'cx', costCents: 4500, salePriceCents: null, minStock: 2, isResale: false, costMethod: 'custo_medio' },
+  {
+    sku: 'GAZE-7575-100',
+    name: 'Gaze 7.5×7.5cm pacote 100un',
+    category: 'descartavel',
+    unit: 'pct',
+    costCents: 800,
+    salePriceCents: null,
+    minStock: 5,
+    isResale: false,
+    costMethod: 'custo_medio',
+  },
+  {
+    sku: 'AGULHA-25X8',
+    name: 'Agulha 25×8 caixa 100un',
+    category: 'descartavel',
+    unit: 'cx',
+    costCents: 1500,
+    salePriceCents: null,
+    minStock: 3,
+    isResale: false,
+    costMethod: 'custo_medio',
+  },
+  {
+    sku: 'ATAD-15',
+    name: 'Atadura crepe 15cm',
+    category: 'descartavel',
+    unit: 'un',
+    costCents: 350,
+    salePriceCents: null,
+    minStock: 20,
+    isResale: false,
+    costMethod: 'custo_medio',
+  },
+  {
+    sku: 'ALCOOL-70',
+    name: 'Álcool 70% 1L',
+    category: 'limpeza',
+    unit: 'un',
+    costCents: 1200,
+    salePriceCents: null,
+    minStock: 5,
+    isResale: false,
+    costMethod: 'custo_medio',
+  },
+  {
+    sku: 'LUVA-M-100',
+    name: 'Luva procedimento M caixa 100un',
+    category: 'descartavel',
+    unit: 'cx',
+    costCents: 4500,
+    salePriceCents: null,
+    minStock: 2,
+    isResale: false,
+    costMethod: 'custo_medio',
+  },
   // Revenda
-  { sku: 'CREME-RELAX-150', name: 'Creme relaxante muscular 150g', category: 'revenda', unit: 'un', costCents: 2500, salePriceCents: 5500, minStock: 5, isResale: true, costMethod: 'custo_medio' },
-  { sku: 'GEL-ICE-200', name: 'Gel ice analgésico 200g', category: 'revenda', unit: 'un', costCents: 1800, salePriceCents: 4200, minStock: 5, isResale: true, costMethod: 'custo_medio' },
-  { sku: 'FAIXA-ELAS-1.5M', name: 'Faixa elástica resistência média 1,5m', category: 'revenda', unit: 'un', costCents: 3500, salePriceCents: 7900, minStock: 3, isResale: true, costMethod: 'peps' },
-  { sku: 'GARRAFA-1L', name: 'Garrafa térmica 1L', category: 'revenda', unit: 'un', costCents: 1800, salePriceCents: 3990, minStock: 4, isResale: true, costMethod: 'custo_medio' },
-  { sku: 'WHEY-2KG', name: 'Whey protein 2kg', category: 'suplemento', unit: 'un', costCents: 13000, salePriceCents: 21900, minStock: 2, isResale: true, costMethod: 'peps' },
+  {
+    sku: 'CREME-RELAX-150',
+    name: 'Creme relaxante muscular 150g',
+    category: 'revenda',
+    unit: 'un',
+    costCents: 2500,
+    salePriceCents: 5500,
+    minStock: 5,
+    isResale: true,
+    costMethod: 'custo_medio',
+  },
+  {
+    sku: 'GEL-ICE-200',
+    name: 'Gel ice analgésico 200g',
+    category: 'revenda',
+    unit: 'un',
+    costCents: 1800,
+    salePriceCents: 4200,
+    minStock: 5,
+    isResale: true,
+    costMethod: 'custo_medio',
+  },
+  {
+    sku: 'FAIXA-ELAS-1.5M',
+    name: 'Faixa elástica resistência média 1,5m',
+    category: 'revenda',
+    unit: 'un',
+    costCents: 3500,
+    salePriceCents: 7900,
+    minStock: 3,
+    isResale: true,
+    costMethod: 'peps',
+  },
+  {
+    sku: 'GARRAFA-1L',
+    name: 'Garrafa térmica 1L',
+    category: 'revenda',
+    unit: 'un',
+    costCents: 1800,
+    salePriceCents: 3990,
+    minStock: 4,
+    isResale: true,
+    costMethod: 'custo_medio',
+  },
+  {
+    sku: 'WHEY-2KG',
+    name: 'Whey protein 2kg',
+    category: 'suplemento',
+    unit: 'un',
+    costCents: 13000,
+    salePriceCents: 21900,
+    minStock: 2,
+    isResale: true,
+    costMethod: 'peps',
+  },
 ]
 
 async function main() {

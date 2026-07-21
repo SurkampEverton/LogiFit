@@ -3,12 +3,12 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  aggregateEntries,
-  calculateCommission,
-  resolveRule,
   type CommissionContract,
   type CommissionEvent,
   type CommissionRuleRow,
+  aggregateEntries,
+  calculateCommission,
+  resolveRule,
 } from './commission'
 
 const baseContract: CommissionContract = {
@@ -356,7 +356,14 @@ describe('aggregateEntries', () => {
 
   it('com deductions reduz net', () => {
     const r = aggregateEntries(
-      [{ commissionCents: 10000, retentionTotalCents: 1000, netAmountCents: 9000, status: 'included' }],
+      [
+        {
+          commissionCents: 10000,
+          retentionTotalCents: 1000,
+          netAmountCents: 9000,
+          status: 'included',
+        },
+      ],
       500,
     )
     expect(r.netTotalCents).toBe(8500) // 10000 - 1000 - 500

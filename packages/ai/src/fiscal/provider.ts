@@ -214,6 +214,17 @@ export interface EmissionResult {
   pdfUrl?: string | null
   /** Quando rejected, mensagem do SEFAZ */
   rejectionReason?: string | null
+  /**
+   * Numero e serie do DOCUMENTO, atribuidos pela autoridade — distintos da
+   * serie/numero do RPS que nos geramos.
+   *
+   * Nao sao a mesma coisa e confundi-los quebra a conciliacao: a primeira
+   * NFS-e real saiu como serie 1 numero 12 em Cascavel enquanto o RPS era
+   * serie 13 numero 6, e a tela exibia o RPS como se fosse a nota. Quem
+   * procurasse a nota 6 no portal do municipio nao acharia nada.
+   */
+  documentNumber?: string | null
+  documentSerie?: string | null
   /** Raw response pra dump em `fiscal_emissions.payload` (audit) */
   raw: Record<string, unknown>
   /**

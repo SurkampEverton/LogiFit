@@ -36,10 +36,7 @@ export interface ParsedReturnXml {
 }
 
 function extractAll(xml: string, tag: string): string[] {
-  const re = new RegExp(
-    `<(?:[a-zA-Z]+:)?${tag}[^>]*>([\\s\\S]*?)<\\/(?:[a-zA-Z]+:)?${tag}>`,
-    'g',
-  )
+  const re = new RegExp(`<(?:[a-zA-Z]+:)?${tag}[^>]*>([\\s\\S]*?)<\\/(?:[a-zA-Z]+:)?${tag}>`, 'g')
   const out: string[] = []
   let m: RegExpExecArray | null
   while ((m = re.exec(xml)) !== null) out.push(m[1] ?? '')
@@ -47,11 +44,9 @@ function extractAll(xml: string, tag: string): string[] {
 }
 
 function extractOne(xml: string, tag: string): string | null {
-  const re = new RegExp(
-    `<(?:[a-zA-Z]+:)?${tag}[^>]*>([\\s\\S]*?)<\\/(?:[a-zA-Z]+:)?${tag}>`,
-  )
+  const re = new RegExp(`<(?:[a-zA-Z]+:)?${tag}[^>]*>([\\s\\S]*?)<\\/(?:[a-zA-Z]+:)?${tag}>`)
   const m = xml.match(re)
-  return m ? m[1] ?? null : null
+  return m ? (m[1] ?? null) : null
 }
 
 function brlToCents(brl: string | null): number {
@@ -107,8 +102,7 @@ export function parseReturnXml(xml: string): ParsedReturnXml {
     if (glosas.length === 0 && paidAmountCents > 0) status = 'paid'
     else if (glosas.length > 0 && paidAmountCents === 0) status = 'fully_glossed'
     else if (glosas.length > 0 && paidAmountCents > 0) status = 'partially_paid'
-    else if (totalCents > 0 && paidAmountCents === 0 && glosas.length === 0)
-      status = 'cancelled'
+    else if (totalCents > 0 && paidAmountCents === 0 && glosas.length === 0) status = 'cancelled'
 
     if (guideNumber) {
       items.push({

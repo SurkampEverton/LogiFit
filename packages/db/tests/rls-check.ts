@@ -75,7 +75,8 @@ async function main(): Promise<void> {
       issues.push({
         rule: 'rls-needs-force',
         table: row.table_name,
-        detail: 'RLS habilitada mas sem FORCE — table owner bypassa (defesa em profundidade quebrada)',
+        detail:
+          'RLS habilitada mas sem FORCE — table owner bypassa (defesa em profundidade quebrada)',
       })
     }
 

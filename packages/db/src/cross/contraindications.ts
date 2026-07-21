@@ -171,16 +171,10 @@ function matchRule(
   if (rule.exerciseId && rule.exerciseId === item.exerciseId) {
     return 'exercise_id'
   }
-  if (
-    rule.movementPattern &&
-    item.exerciseInfo.movementPatterns?.includes(rule.movementPattern)
-  ) {
+  if (rule.movementPattern && item.exerciseInfo.movementPatterns?.includes(rule.movementPattern)) {
     return 'movement_pattern'
   }
-  if (
-    rule.muscleGroup &&
-    item.exerciseInfo.muscleGroups.includes(rule.muscleGroup)
-  ) {
+  if (rule.muscleGroup && item.exerciseInfo.muscleGroups.includes(rule.muscleGroup)) {
     return 'muscle_group'
   }
   return null
@@ -213,12 +207,7 @@ export function mergeRules(
 }
 
 function ruleKey(r: ContraindicationRuleSourced): string {
-  return [
-    r.cidCode,
-    r.exerciseId ?? '',
-    r.muscleGroup ?? '',
-    r.movementPattern ?? '',
-  ].join('|')
+  return [r.cidCode, r.exerciseId ?? '', r.muscleGroup ?? '', r.movementPattern ?? ''].join('|')
 }
 
 // ─── Diff: builder de `workout_adaptations.changes` ───────────────────────
@@ -264,7 +253,12 @@ export function buildAdaptationDiff(input: AdaptationDiffInput): AdaptationDiff 
 
   for (const m of input.matches) {
     const cidList = m.rules.map((r) => r.cidCode).join(', ')
-    const reason = `${cidList} ${m.severity} (${m.rules.map((r) => r.rationale).filter(Boolean).join('; ') || 'curadoria LogiFit'})`
+    const reason = `${cidList} ${m.severity} (${
+      m.rules
+        .map((r) => r.rationale)
+        .filter(Boolean)
+        .join('; ') || 'curadoria LogiFit'
+    })`
 
     if (m.severity === 'avoid' || m.severity === 'modify') {
       if (m.alternativeExerciseIds.length > 0) {
@@ -287,7 +281,9 @@ export function buildAdaptationDiff(input: AdaptationDiffInput): AdaptationDiff 
           exerciseName: m.exerciseName,
           reason,
         })
-        summaryParts.push(`Removido ${m.exerciseName} (${cidList} avoid, sem alternativa cadastrada)`)
+        summaryParts.push(
+          `Removido ${m.exerciseName} (${cidList} avoid, sem alternativa cadastrada)`,
+        )
       }
     }
     // caution: instrutor avalia em loco; não entra no diff

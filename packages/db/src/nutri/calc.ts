@@ -9,11 +9,7 @@
  *
  * Reusa `scaleNutrientsByGrams` + `addNutrients` de `nutrients-schema.ts`.
  */
-import {
-  addNutrients,
-  scaleNutrientsByGrams,
-  type Nutrients,
-} from './nutrients-schema'
+import { type Nutrients, addNutrients, scaleNutrientsByGrams } from './nutrients-schema'
 
 export interface MealItemInput {
   foodId: string

@@ -21,10 +21,9 @@ async function getMatriz(tenantId: string): Promise<string> {
 }
 
 async function getUser(tenantId: string): Promise<string> {
-  const r = await pool.query<{ id: string }>(
-    `SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`,
-    [tenantId],
-  )
+  const r = await pool.query<{ id: string }>(`SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`, [
+    tenantId,
+  ])
   if (r.rows[0]) return r.rows[0].id
   const p = await pool.query<{ id: string }>(
     `INSERT INTO persons (tenant_id, kind, name, email)
@@ -48,7 +47,15 @@ afterAll(async () => {
   // stock_items via sale_items: a sentença falhava por FK em OUTRO item
   // (WHEY-900), o .catch engolia, e o resíduo GAZE-100 virava 23505 na rodada
   // seguinte. Deletar por tenant também apagaria dados de seed legítimos.
-  const TEST_SKUS = ['GAZE-100', 'DUP-001', 'ISO-001', 'NEG-001', 'NF-001', 'INV-CHK-001', 'INV-OK-001']
+  const TEST_SKUS = [
+    'GAZE-100',
+    'DUP-001',
+    'ISO-001',
+    'NEG-001',
+    'NF-001',
+    'INV-CHK-001',
+    'INV-OK-001',
+  ]
   await pool.query(
     `DELETE FROM stock_inventory_entries WHERE item_id IN (
        SELECT id FROM stock_items WHERE tenant_id IN ($1, $2) AND (sku = ANY($3) OR sku LIKE 'ITEM-MV-%')
@@ -67,11 +74,10 @@ afterAll(async () => {
      )`,
     [TENANT_REDE, TENANT_FRANQUIA, TEST_SKUS],
   )
-  await pool.query(`DELETE FROM stock_items WHERE tenant_id IN ($1, $2) AND (sku = ANY($3) OR sku LIKE 'ITEM-MV-%')`, [
-    TENANT_REDE,
-    TENANT_FRANQUIA,
-    TEST_SKUS,
-  ])
+  await pool.query(
+    `DELETE FROM stock_items WHERE tenant_id IN ($1, $2) AND (sku = ANY($3) OR sku LIKE 'ITEM-MV-%')`,
+    [TENANT_REDE, TENANT_FRANQUIA, TEST_SKUS],
+  )
   await pool
     .query(`DELETE FROM users WHERE tenant_id IN ($1, $2) AND username LIKE 'stock-%'`, [
       TENANT_REDE,
@@ -93,7 +99,15 @@ beforeEach(async () => {
   // stock_items via sale_items: a sentença falhava por FK em OUTRO item
   // (WHEY-900), o .catch engolia, e o resíduo GAZE-100 virava 23505 na rodada
   // seguinte. Deletar por tenant também apagaria dados de seed legítimos.
-  const TEST_SKUS = ['GAZE-100', 'DUP-001', 'ISO-001', 'NEG-001', 'NF-001', 'INV-CHK-001', 'INV-OK-001']
+  const TEST_SKUS = [
+    'GAZE-100',
+    'DUP-001',
+    'ISO-001',
+    'NEG-001',
+    'NF-001',
+    'INV-CHK-001',
+    'INV-OK-001',
+  ]
   await pool.query(
     `DELETE FROM stock_inventory_entries WHERE item_id IN (
        SELECT id FROM stock_items WHERE tenant_id IN ($1, $2) AND (sku = ANY($3) OR sku LIKE 'ITEM-MV-%')
@@ -112,11 +126,10 @@ beforeEach(async () => {
      )`,
     [TENANT_REDE, TENANT_FRANQUIA, TEST_SKUS],
   )
-  await pool.query(`DELETE FROM stock_items WHERE tenant_id IN ($1, $2) AND (sku = ANY($3) OR sku LIKE 'ITEM-MV-%')`, [
-    TENANT_REDE,
-    TENANT_FRANQUIA,
-    TEST_SKUS,
-  ])
+  await pool.query(
+    `DELETE FROM stock_items WHERE tenant_id IN ($1, $2) AND (sku = ANY($3) OR sku LIKE 'ITEM-MV-%')`,
+    [TENANT_REDE, TENANT_FRANQUIA, TEST_SKUS],
+  )
 })
 
 async function withTenantContext<T>(
@@ -316,7 +329,9 @@ describe('stock_movements — append-only + checks', () => {
     let updateCount = 0
     try {
       const updateResult = await withTenantContext(TENANT_REDE, async (c) => {
-        return c.query(`UPDATE stock_movements SET notes = 'editado' WHERE id = $1`, [r.rows[0]!.id])
+        return c.query(`UPDATE stock_movements SET notes = 'editado' WHERE id = $1`, [
+          r.rows[0]!.id,
+        ])
       })
       updateCount = updateResult.rowCount ?? 0
     } catch (err) {

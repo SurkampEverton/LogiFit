@@ -165,9 +165,7 @@ async function main() {
             contractId,
             tussCode: role.ruleOverride.tussCode,
             percent:
-              role.ruleOverride.percent != null
-                ? role.ruleOverride.percent.toFixed(2)
-                : null,
+              role.ruleOverride.percent != null ? role.ruleOverride.percent.toFixed(2) : null,
             amountCents: role.ruleOverride.amountCents ?? null,
             priority: 10,
             active: true,

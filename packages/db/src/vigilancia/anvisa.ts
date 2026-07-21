@@ -11,7 +11,14 @@ export interface MaintenanceWindow {
   equipmentId: string
   plannedFor: string // YYYY-MM-DD
   kind: 'preventive' | 'calibration' | 'corrective'
-  status: 'scheduled' | 'in_transit_to_external' | 'at_external' | 'returning' | 'completed' | 'overdue' | 'cancelled'
+  status:
+    | 'scheduled'
+    | 'in_transit_to_external'
+    | 'at_external'
+    | 'returning'
+    | 'completed'
+    | 'overdue'
+    | 'cancelled'
 }
 
 export type MaintenanceUrgency = 'overdue' | 'd7' | 'd30' | 'ok'

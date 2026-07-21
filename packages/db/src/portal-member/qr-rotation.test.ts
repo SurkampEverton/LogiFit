@@ -3,10 +3,10 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  QR_ROTATION_WINDOW_MS,
   decodeQrString,
   encodeQrString,
   generateQrPayload,
-  QR_ROTATION_WINDOW_MS,
   verifyQrPayload,
 } from './qr-rotation'
 

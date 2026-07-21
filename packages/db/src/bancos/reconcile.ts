@@ -24,8 +24,14 @@ export const RuleConditionSchema = z.object({
   /** "negative" = saída, "positive" = entrada */
   amountSign: z.enum(['negative', 'positive', 'any']).optional(),
   /** YYYY-MM-DD ranges (inclusivos) */
-  postedFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  postedTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  postedFrom: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  postedTo: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 })
 
 export type RuleCondition = z.infer<typeof RuleConditionSchema>
@@ -204,12 +210,8 @@ function daysBetween(d1: string, d2: string): number {
 
 function computeTokenOverlap(a: string, b: string): number {
   const STOP = new Set(['de', 'da', 'do', 'das', 'dos', 'a', 'o', 'e', 'em', 'para'])
-  const tokensA = a
-    .split(/[\s\-_\/\.\,]+/)
-    .filter((t) => t.length >= 3 && !STOP.has(t))
-  const tokensB = b
-    .split(/[\s\-_\/\.\,]+/)
-    .filter((t) => t.length >= 3 && !STOP.has(t))
+  const tokensA = a.split(/[\s\-_\/\.\,]+/).filter((t) => t.length >= 3 && !STOP.has(t))
+  const tokensB = b.split(/[\s\-_\/\.\,]+/).filter((t) => t.length >= 3 && !STOP.has(t))
   if (tokensA.length === 0 || tokensB.length === 0) return 0
   const setB = new Set(tokensB)
   const common = tokensA.filter((t) => setB.has(t)).length

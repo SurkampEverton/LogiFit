@@ -26,10 +26,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await pool
-    .query('DELETE FROM messages_sent WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM messages_sent WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
     .query('DELETE FROM regua_executions WHERE tenant_id IN ($1, $2)', [
@@ -57,10 +54,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await pool
-    .query('DELETE FROM messages_sent WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM messages_sent WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
     .query('DELETE FROM regua_executions WHERE tenant_id IN ($1, $2)', [
@@ -116,17 +110,15 @@ describe('message_providers — isolamento per-tenant', () => {
 
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query<{ id: string }>(
-          'SELECT id FROM message_providers WHERE id = $1',
-          [pId],
-        )
+        const x = await c.query<{ id: string }>('SELECT id FROM message_providers WHERE id = $1', [
+          pId,
+        ])
         return x.rows
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query<{ id: string }>(
-          'SELECT id FROM message_providers WHERE id = $1',
-          [pId],
-        )
+        const x = await c.query<{ id: string }>('SELECT id FROM message_providers WHERE id = $1', [
+          pId,
+        ])
         return x.rows
       }),
     ])
@@ -190,7 +182,13 @@ describe('reguas — jsonb trigger/actions/stop_on/guards persistem', () => {
       `INSERT INTO reguas (tenant_id, name, trigger, actions, stop_on, guards, active)
        VALUES ($1, 'Cobrança D+1/+3/+7', $2::jsonb, $3::jsonb, $4::jsonb, $5::jsonb, true)
        RETURNING id`,
-      [TENANT_REDE, JSON.stringify(trigger), JSON.stringify(actions), JSON.stringify(stopOn), JSON.stringify(guards)],
+      [
+        TENANT_REDE,
+        JSON.stringify(trigger),
+        JSON.stringify(actions),
+        JSON.stringify(stopOn),
+        JSON.stringify(guards),
+      ],
     )
     const reguaId = r.rows[0]!.id
 
@@ -258,11 +256,11 @@ describe('messages_sent — check cost + isolamento', () => {
     )
     const [redeRows, franqRows] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query("SELECT id FROM messages_sent WHERE tenant_id = $1", [TENANT_REDE])
+        const x = await c.query('SELECT id FROM messages_sent WHERE tenant_id = $1', [TENANT_REDE])
         return x.rows
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query("SELECT id FROM messages_sent WHERE tenant_id = $1", [TENANT_REDE])
+        const x = await c.query('SELECT id FROM messages_sent WHERE tenant_id = $1', [TENANT_REDE])
         return x.rows
       }),
     ])
@@ -284,9 +282,7 @@ describe('reguas — index parcial active', () => {
       [TENANT_REDE],
     )
     const active = await withTenantContext(TENANT_REDE, async (c) => {
-      const x = await c.query(
-        'SELECT name FROM reguas WHERE active = true AND archived_at IS NULL',
-      )
+      const x = await c.query('SELECT name FROM reguas WHERE active = true AND archived_at IS NULL')
       return x.rows
     })
     expect(active.length).toBe(1)

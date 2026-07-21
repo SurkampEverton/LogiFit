@@ -2,11 +2,7 @@
  * consent.ts tests — Sprint 26 Faixa B.1.
  */
 import { describe, expect, it } from 'vitest'
-import {
-  CONSENT_CATALOG,
-  checkRenewalStatus,
-  pickConsentsNeedingRenewal,
-} from './consent'
+import { CONSENT_CATALOG, checkRenewalStatus, pickConsentsNeedingRenewal } from './consent'
 
 describe('CONSENT_CATALOG', () => {
   it('5 finalidades canônicas', () => {

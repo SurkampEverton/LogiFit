@@ -51,9 +51,7 @@ export function scoreEva(input: EvaScoreInput): EvaScoreResult | null {
   ) {
     return null
   }
-  const band = EVA_BANDS.find(
-    (b) => input.value >= b.range[0] && input.value <= b.range[1],
-  )!
+  const band = EVA_BANDS.find((b) => input.value >= b.range[0] && input.value <= b.range[1])!
   return {
     total: input.value,
     interpretation: { label: band.label, severity: band.severity },

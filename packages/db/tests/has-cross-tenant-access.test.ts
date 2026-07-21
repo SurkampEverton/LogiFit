@@ -74,7 +74,12 @@ async function createLinkModule(
   module: 'academia' | 'fisioterapia' | 'nutricao' | 'pilates' | 'personal_training',
   opts: {
     status: 'active' | 'pending' | 'inactive'
-    dataLevels: { identidade?: boolean; antropometria?: boolean; treino?: boolean; clinico?: boolean }
+    dataLevels: {
+      identidade?: boolean
+      antropometria?: boolean
+      treino?: boolean
+      clinico?: boolean
+    }
     deactivatedAt?: Date | null
   },
 ): Promise<string> {
@@ -124,9 +129,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   // Fresh passport per test pra evitar constraint global (1 módulo ativo)
-  passportId = (
-    await pool.query<{ id: string }>(`SELECT gen_random_uuid() AS id`)
-  ).rows[0]!.id
+  passportId = (await pool.query<{ id: string }>(`SELECT gen_random_uuid() AS id`)).rows[0]!.id
 })
 
 describe('has_cross_tenant_access — 6 cenários canônicos', () => {

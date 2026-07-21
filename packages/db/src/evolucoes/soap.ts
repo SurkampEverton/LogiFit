@@ -39,10 +39,7 @@ export interface ValidationResult {
  * Pelo menos 1 campo SOAP ou free_text deve ter conteúdo significativo
  * (>10 chars trimmed) para considerar a evolução elegível pra lock/sign.
  */
-export function validateSoapForLock(
-  soap: Soap,
-  freeText?: string | null,
-): ValidationResult {
+export function validateSoapForLock(soap: Soap, freeText?: string | null): ValidationResult {
   const fields = [soap.subjetivo, soap.objetivo, soap.avaliacao, soap.plano, freeText]
   const hasContent = fields.some((f) => f != null && f.trim().length >= 10)
   if (!hasContent) {
@@ -125,7 +122,8 @@ export function validateAttachmentUpload(input: AttachmentUploadInput): Validati
   if (!/^[\w.\- ()]{1,255}$/.test(input.filename)) {
     return {
       ok: false,
-      reason: 'Filename inválido (use apenas letras, números, espaço, ponto, parênteses, hífen, underline)',
+      reason:
+        'Filename inválido (use apenas letras, números, espaço, ponto, parênteses, hífen, underline)',
     }
   }
 

@@ -50,15 +50,12 @@ describe('detectKind', () => {
 
 describe('isValidCpf', () => {
   // CPFs válidos canônicos (gerados por algoritmo, não dados reais)
-  it.each([
-    '11144477735',
-    '52998224725',
-    '12345678909',
-    '00000000191',
-    '93541134780',
-  ])('aceita CPF válido %s', (cpf) => {
-    expect(isValidCpf(cpf)).toBe(true)
-  })
+  it.each(['11144477735', '52998224725', '12345678909', '00000000191', '93541134780'])(
+    'aceita CPF válido %s',
+    (cpf) => {
+      expect(isValidCpf(cpf)).toBe(true)
+    },
+  )
 
   it('rejeita CPF com dígito verificador inválido', () => {
     expect(isValidCpf('11144477734')).toBe(false) // último dígito errado

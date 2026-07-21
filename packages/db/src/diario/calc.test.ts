@@ -4,12 +4,12 @@
 import { describe, expect, it } from 'vitest'
 import type { Nutrients } from '../nutri/nutrients-schema'
 import {
+  type LoggedFoodItem,
+  type LoggedMealEntry,
   calculateAdherence,
   calculateDailyDiarySummary,
   detectAllMealDeviations,
   detectMealDeviation,
-  type LoggedFoodItem,
-  type LoggedMealEntry,
 } from './calc'
 
 const ARROZ: Nutrients = {
@@ -241,9 +241,27 @@ describe('detectAllMealDeviations', () => {
         { mealName: 'jantar', totalKcal: 450, totalProteinG: 0, totalCarbG: 0, totalFatG: 0 },
       ],
       [
-        { mealName: 'cafe', expectedKcal: 300, expectedProteinG: 0, expectedCarbG: 0, expectedFatG: 0 },
-        { mealName: 'almoco', expectedKcal: 500, expectedProteinG: 0, expectedCarbG: 0, expectedFatG: 0 },
-        { mealName: 'jantar', expectedKcal: 400, expectedProteinG: 0, expectedCarbG: 0, expectedFatG: 0 },
+        {
+          mealName: 'cafe',
+          expectedKcal: 300,
+          expectedProteinG: 0,
+          expectedCarbG: 0,
+          expectedFatG: 0,
+        },
+        {
+          mealName: 'almoco',
+          expectedKcal: 500,
+          expectedProteinG: 0,
+          expectedCarbG: 0,
+          expectedFatG: 0,
+        },
+        {
+          mealName: 'jantar',
+          expectedKcal: 400,
+          expectedProteinG: 0,
+          expectedCarbG: 0,
+          expectedFatG: 0,
+        },
       ],
     )
     expect(r[0]!.mealName).toBe('almoco') // delta 300
@@ -254,7 +272,13 @@ describe('detectAllMealDeviations', () => {
   it('refeição registrada sem target → extra (over com expected=0)', () => {
     const r = detectAllMealDeviations(
       [
-        { mealName: 'lanche_madrugada', totalKcal: 200, totalProteinG: 0, totalCarbG: 0, totalFatG: 0 },
+        {
+          mealName: 'lanche_madrugada',
+          totalKcal: 200,
+          totalProteinG: 0,
+          totalCarbG: 0,
+          totalFatG: 0,
+        },
       ],
       [],
     )

@@ -47,10 +47,9 @@ async function getOrCreateMember(tenantId: string): Promise<string> {
 }
 
 async function getUser(tenantId: string): Promise<string> {
-  const r = await pool.query<{ id: string }>(
-    `SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`,
-    [tenantId],
-  )
+  const r = await pool.query<{ id: string }>(`SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`, [
+    tenantId,
+  ])
   if (r.rows[0]) return r.rows[0].id
   const p = await pool.query<{ id: string }>(
     `INSERT INTO persons (tenant_id, kind, name, email)
@@ -95,11 +94,11 @@ afterAll(async () => {
     .query(`DELETE FROM supplements WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM lab_reference_ranges WHERE analyte_id IN (SELECT id FROM lab_analytes WHERE code LIKE 'TEST_%')`)
+    .query(
+      `DELETE FROM lab_reference_ranges WHERE analyte_id IN (SELECT id FROM lab_analytes WHERE code LIKE 'TEST_%')`,
+    )
     .catch(() => {})
-  await pool
-    .query(`DELETE FROM lab_analytes WHERE code LIKE 'TEST_%'`)
-    .catch(() => {})
+  await pool.query(`DELETE FROM lab_analytes WHERE code LIKE 'TEST_%'`).catch(() => {})
   await pool.end()
 })
 
@@ -290,11 +289,15 @@ describe('lab_analytes — global read-all', () => {
   it('analytes visíveis em ambos tenants', async () => {
     const [redeCount, franqCount] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const r = await c.query(`SELECT count(*)::int AS n FROM lab_analytes WHERE code LIKE 'TEST_%'`)
+        const r = await c.query(
+          `SELECT count(*)::int AS n FROM lab_analytes WHERE code LIKE 'TEST_%'`,
+        )
         return Number(r.rows[0]!.n)
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const r = await c.query(`SELECT count(*)::int AS n FROM lab_analytes WHERE code LIKE 'TEST_%'`)
+        const r = await c.query(
+          `SELECT count(*)::int AS n FROM lab_analytes WHERE code LIKE 'TEST_%'`,
+        )
         return Number(r.rows[0]!.n)
       }),
     ])

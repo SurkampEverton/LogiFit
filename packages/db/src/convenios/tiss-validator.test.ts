@@ -2,7 +2,7 @@
  * tiss-validator.ts tests — Sprint 22 Faixa B.1.
  */
 import { describe, expect, it } from 'vitest'
-import { validateGuide, type ValidateGuideInput } from './tiss-validator'
+import { type ValidateGuideInput, validateGuide } from './tiss-validator'
 
 const VALID: ValidateGuideInput = {
   today: '2026-05-17',

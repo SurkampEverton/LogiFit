@@ -46,10 +46,9 @@ async function getOrCreateMember(tenantId: string): Promise<string> {
 }
 
 async function getUser(tenantId: string): Promise<string> {
-  const r = await pool.query<{ id: string }>(
-    `SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`,
-    [tenantId],
-  )
+  const r = await pool.query<{ id: string }>(`SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`, [
+    tenantId,
+  ])
   if (r.rows[0]) return r.rows[0].id
   const p = await pool.query<{ id: string }>(
     `INSERT INTO persons (tenant_id, kind, name, email)
@@ -75,7 +74,10 @@ afterAll(async () => {
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM meal_log_reviews WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM meal_log_reviews WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool
     .query(`DELETE FROM food_log_daily_summary WHERE tenant_id IN ($1, $2)`, [
@@ -84,7 +86,10 @@ afterAll(async () => {
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM meal_log_entries WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM meal_log_entries WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool.end()
 })
@@ -97,7 +102,10 @@ beforeEach(async () => {
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM meal_log_reviews WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM meal_log_reviews WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool
     .query(`DELETE FROM food_log_daily_summary WHERE tenant_id IN ($1, $2)`, [
@@ -106,7 +114,10 @@ beforeEach(async () => {
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM meal_log_entries WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM meal_log_entries WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
 })
 

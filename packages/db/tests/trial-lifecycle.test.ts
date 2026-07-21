@@ -1,3 +1,4 @@
+import { Pool } from 'pg'
 /**
  * Trial lifecycle (ADR 0066) — Sprint 01a Faixa G.
  *
@@ -14,7 +15,6 @@
  * Conexão como `postgres` superuser bypass RLS pra inspeção fácil.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { Pool } from 'pg'
 
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/logifit'
@@ -111,9 +111,7 @@ describe('process_trial_lifecycle — transições de estado', () => {
       document: string | null
       email: string | null
       phone: string | null
-    }>(`SELECT name, document, email, phone FROM persons WHERE tenant_id = $1`, [
-      TRIAL_TENANT_OLD,
-    ])
+    }>(`SELECT name, document, email, phone FROM persons WHERE tenant_id = $1`, [TRIAL_TENANT_OLD])
     expect(people.rows).toHaveLength(2)
     for (const p of people.rows) {
       expect(p.name).toBe('Anonimizado')
@@ -200,9 +198,7 @@ describe('anonymize_trial_data — chamada direta', () => {
   it('raise exception se tenant não existe', async () => {
     let errorCode: string | null = null
     try {
-      await pool.query(
-        `SELECT anonymize_trial_data('99999999-aaaa-0000-0000-fffffffffffe')`,
-      )
+      await pool.query(`SELECT anonymize_trial_data('99999999-aaaa-0000-0000-fffffffffffe')`)
     } catch (err) {
       errorCode = (err as { code?: string }).code ?? null
     }

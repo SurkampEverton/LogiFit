@@ -1,3 +1,6 @@
+import { readFile, readdir, stat } from 'node:fs/promises'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 /**
  * Migration runner — aplica scripts em TRÊS fases:
  *   1. init/*.sql           — SQL idempotente (extensões PostgreSQL, tipos custom)
@@ -16,9 +19,6 @@
  */
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
-import { readdir, readFile, stat } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { Pool } from 'pg'
 
 const DATABASE_URL =
@@ -80,7 +80,9 @@ async function applyPolicies(pool: Pool): Promise<void> {
   for (const file of files) {
     const fullSql = await readFile(resolve(POLICIES_DIR, file), 'utf8')
     const policyDrops = extractPolicyDrops(fullSql)
-    console.log(`• policy: ${file} (${policyDrops.length} policy drops + triggers/functions inline)`)
+    console.log(
+      `• policy: ${file} (${policyDrops.length} policy drops + triggers/functions inline)`,
+    )
 
     const client = await pool.connect()
     try {

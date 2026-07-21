@@ -2,11 +2,7 @@
  * tiss-generator.ts tests — Sprint 22 Faixa B.1.
  */
 import { describe, expect, it } from 'vitest'
-import {
-  generateBatchXml,
-  generateGuideXml,
-  type GuideInput,
-} from './tiss-generator'
+import { type GuideInput, generateBatchXml, generateGuideXml } from './tiss-generator'
 
 const SAMPLE_GUIDE: GuideInput = {
   tissVersion: '4.01',

@@ -392,12 +392,8 @@
           "name": "companies_person_id_persons_id_fk",
           "tableFrom": "companies",
           "tableTo": "persons",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -593,12 +589,8 @@
           "name": "tenants_group_id_groups_id_fk",
           "tableFrom": "tenants",
           "tableTo": "groups",
-          "columnsFrom": [
-            "group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["group_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -708,12 +700,8 @@
           "name": "units_company_id_companies_id_fk",
           "tableFrom": "units",
           "tableTo": "companies",
-          "columnsFrom": [
-            "company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["company_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -820,12 +808,8 @@
           "name": "user_tenants_user_id_users_id_fk",
           "tableFrom": "user_tenants",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -833,12 +817,8 @@
           "name": "user_tenants_tenant_id_tenants_id_fk",
           "tableFrom": "user_tenants",
           "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tenant_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -976,12 +956,8 @@
           "name": "users_person_id_persons_id_fk",
           "tableFrom": "users",
           "tableTo": "persons",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1120,12 +1096,8 @@
           "name": "auth_account_user_id_auth_user_id_fk",
           "tableFrom": "auth_account",
           "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1241,12 +1213,8 @@
           "name": "auth_passkey_user_id_auth_user_id_fk",
           "tableFrom": "auth_passkey",
           "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1364,12 +1332,8 @@
           "name": "auth_session_user_id_auth_user_id_fk",
           "tableFrom": "auth_session",
           "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1438,12 +1402,8 @@
           "name": "auth_two_factor_user_id_auth_user_id_fk",
           "tableFrom": "auth_two_factor",
           "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1942,12 +1902,8 @@
           "name": "role_permissions_role_id_roles_id_fk",
           "tableFrom": "role_permissions",
           "tableTo": "roles",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1955,12 +1911,8 @@
           "name": "role_permissions_permission_key_permissions_key_fk",
           "tableFrom": "role_permissions",
           "tableTo": "permissions",
-          "columnsFrom": [
-            "permission_key"
-          ],
-          "columnsTo": [
-            "key"
-          ],
+          "columnsFrom": ["permission_key"],
+          "columnsTo": ["key"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2171,12 +2123,8 @@
           "name": "user_mfa_recovery_codes_auth_user_id_auth_user_id_fk",
           "tableFrom": "user_mfa_recovery_codes",
           "tableTo": "auth_user",
-          "columnsFrom": [
-            "auth_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["auth_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2321,12 +2269,8 @@
           "name": "user_permission_grants_user_id_users_id_fk",
           "tableFrom": "user_permission_grants",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2334,12 +2278,8 @@
           "name": "user_permission_grants_permission_key_permissions_key_fk",
           "tableFrom": "user_permission_grants",
           "tableTo": "permissions",
-          "columnsFrom": [
-            "permission_key"
-          ],
-          "columnsTo": [
-            "key"
-          ],
+          "columnsFrom": ["permission_key"],
+          "columnsTo": ["key"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2347,12 +2287,8 @@
           "name": "user_permission_grants_scope_company_id_companies_id_fk",
           "tableFrom": "user_permission_grants",
           "tableTo": "companies",
-          "columnsFrom": [
-            "scope_company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["scope_company_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2360,12 +2296,8 @@
           "name": "user_permission_grants_scope_unit_id_units_id_fk",
           "tableFrom": "user_permission_grants",
           "tableTo": "units",
-          "columnsFrom": [
-            "scope_unit_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["scope_unit_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2373,12 +2305,8 @@
           "name": "user_permission_grants_granted_by_users_id_fk",
           "tableFrom": "user_permission_grants",
           "tableTo": "users",
-          "columnsFrom": [
-            "granted_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["granted_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2526,12 +2454,8 @@
           "name": "user_roles_user_id_users_id_fk",
           "tableFrom": "user_roles",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2539,12 +2463,8 @@
           "name": "user_roles_role_id_roles_id_fk",
           "tableFrom": "user_roles",
           "tableTo": "roles",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2552,12 +2472,8 @@
           "name": "user_roles_scope_company_id_companies_id_fk",
           "tableFrom": "user_roles",
           "tableTo": "companies",
-          "columnsFrom": [
-            "scope_company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["scope_company_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2565,12 +2481,8 @@
           "name": "user_roles_scope_unit_id_units_id_fk",
           "tableFrom": "user_roles",
           "tableTo": "units",
-          "columnsFrom": [
-            "scope_unit_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["scope_unit_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2578,12 +2490,8 @@
           "name": "user_roles_granted_by_users_id_fk",
           "tableFrom": "user_roles",
           "tableTo": "users",
-          "columnsFrom": [
-            "granted_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["granted_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2846,12 +2754,8 @@
           "name": "system_alert_occurrences_alert_id_system_alerts_id_fk",
           "tableFrom": "system_alert_occurrences",
           "tableTo": "system_alerts",
-          "columnsFrom": [
-            "alert_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["alert_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3255,12 +3159,8 @@
           "name": "professional_registrations_person_id_persons_id_fk",
           "tableFrom": "professional_registrations",
           "tableTo": "persons",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3268,12 +3168,8 @@
           "name": "professional_registrations_verified_by_user_id_users_id_fk",
           "tableFrom": "professional_registrations",
           "tableTo": "users",
-          "columnsFrom": [
-            "verified_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["verified_by_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3464,12 +3360,8 @@
           "name": "franchise_agreements_franqueador_company_id_companies_id_fk",
           "tableFrom": "franchise_agreements",
           "tableTo": "companies",
-          "columnsFrom": [
-            "franqueador_company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["franqueador_company_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3477,12 +3369,8 @@
           "name": "franchise_agreements_franqueado_company_id_companies_id_fk",
           "tableFrom": "franchise_agreements",
           "tableTo": "companies",
-          "columnsFrom": [
-            "franqueado_company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["franqueado_company_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3678,12 +3566,8 @@
           "name": "consents_person_id_persons_id_fk",
           "tableFrom": "consents",
           "tableTo": "persons",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3856,12 +3740,8 @@
           "name": "patient_company_links_person_id_persons_id_fk",
           "tableFrom": "patient_company_links",
           "tableTo": "persons",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3869,12 +3749,8 @@
           "name": "patient_company_links_tenant_id_tenants_id_fk",
           "tableFrom": "patient_company_links",
           "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tenant_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3882,12 +3758,8 @@
           "name": "patient_company_links_invited_by_user_id_users_id_fk",
           "tableFrom": "patient_company_links",
           "tableTo": "users",
-          "columnsFrom": [
-            "invited_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["invited_by_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4231,12 +4103,8 @@
           "name": "patient_link_modules_link_id_patient_company_links_id_fk",
           "tableFrom": "patient_link_modules",
           "tableTo": "patient_company_links",
-          "columnsFrom": [
-            "link_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["link_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -4244,12 +4112,8 @@
           "name": "patient_link_modules_responsible_professional_user_id_users_id_fk",
           "tableFrom": "patient_link_modules",
           "tableTo": "users",
-          "columnsFrom": [
-            "responsible_professional_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["responsible_professional_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4380,12 +4244,8 @@
           "name": "member_events_member_id_members_id_fk",
           "tableFrom": "member_events",
           "tableTo": "members",
-          "columnsFrom": [
-            "member_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["member_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -4393,12 +4253,8 @@
           "name": "member_events_actor_user_id_users_id_fk",
           "tableFrom": "member_events",
           "tableTo": "users",
-          "columnsFrom": [
-            "actor_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["actor_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4510,12 +4366,8 @@
           "name": "member_notes_member_id_members_id_fk",
           "tableFrom": "member_notes",
           "tableTo": "members",
-          "columnsFrom": [
-            "member_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["member_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -4523,12 +4375,8 @@
           "name": "member_notes_author_user_id_users_id_fk",
           "tableFrom": "member_notes",
           "tableTo": "users",
-          "columnsFrom": [
-            "author_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["author_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4624,12 +4472,8 @@
           "name": "member_tags_member_id_members_id_fk",
           "tableFrom": "member_tags",
           "tableTo": "members",
-          "columnsFrom": [
-            "member_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["member_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4800,12 +4644,8 @@
           "name": "members_person_id_persons_id_fk",
           "tableFrom": "members",
           "tableTo": "persons",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -4813,12 +4653,8 @@
           "name": "members_company_id_companies_id_fk",
           "tableFrom": "members",
           "tableTo": "companies",
-          "columnsFrom": [
-            "company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["company_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -4826,12 +4662,8 @@
           "name": "members_home_unit_id_units_id_fk",
           "tableFrom": "members",
           "tableTo": "units",
-          "columnsFrom": [
-            "home_unit_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["home_unit_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4847,53 +4679,32 @@
     "public.person_kind": {
       "name": "person_kind",
       "schema": "public",
-      "values": [
-        "pf",
-        "pj"
-      ]
+      "values": ["pf", "pj"]
     },
     "public.company_type": {
       "name": "company_type",
       "schema": "public",
-      "values": [
-        "matriz",
-        "filial"
-      ]
+      "values": ["matriz", "filial"]
     },
     "public.tenant_financial_mode": {
       "name": "tenant_financial_mode",
       "schema": "public",
-      "values": [
-        "centralized",
-        "distributed"
-      ]
+      "values": ["centralized", "distributed"]
     },
     "public.tenant_subscription_status": {
       "name": "tenant_subscription_status",
       "schema": "public",
-      "values": [
-        "trialing",
-        "active",
-        "trial_expired",
-        "suspended",
-        "anonymized"
-      ]
+      "values": ["trialing", "active", "trial_expired", "suspended", "anonymized"]
     },
     "public.tenant_mode": {
       "name": "tenant_mode",
       "schema": "public",
-      "values": [
-        "multi",
-        "solo"
-      ]
+      "values": ["multi", "solo"]
     },
     "public.tenant_topology": {
       "name": "tenant_topology",
       "schema": "public",
-      "values": [
-        "owned",
-        "franchise"
-      ]
+      "values": ["owned", "franchise"]
     },
     "public.alert_category": {
       "name": "alert_category",
@@ -4913,47 +4724,22 @@
     "public.alert_severity": {
       "name": "alert_severity",
       "schema": "public",
-      "values": [
-        "info",
-        "warning",
-        "error",
-        "critical"
-      ]
+      "values": ["info", "warning", "error", "critical"]
     },
     "public.council_body": {
       "name": "council_body",
       "schema": "public",
-      "values": [
-        "CRM",
-        "CRN",
-        "CREFITO",
-        "CREF",
-        "CRF",
-        "CRP",
-        "COREN",
-        "CRO"
-      ]
+      "values": ["CRM", "CRN", "CREFITO", "CREF", "CRF", "CRP", "COREN", "CRO"]
     },
     "public.professional_situation": {
       "name": "professional_situation",
       "schema": "public",
-      "values": [
-        "active",
-        "suspended",
-        "cassated",
-        "expired",
-        "pending_verification",
-        "unknown"
-      ]
+      "values": ["active", "suspended", "cassated", "expired", "pending_verification", "unknown"]
     },
     "public.verification_source": {
       "name": "verification_source",
       "schema": "public",
-      "values": [
-        "operator_attested",
-        "council_api",
-        "manual_audit"
-      ]
+      "values": ["operator_attested", "council_api", "manual_audit"]
     },
     "public.consent_legal_basis": {
       "name": "consent_legal_basis",
@@ -4987,31 +4773,17 @@
     "public.passport_link_status": {
       "name": "passport_link_status",
       "schema": "public",
-      "values": [
-        "active",
-        "revoked",
-        "pending"
-      ]
+      "values": ["active", "revoked", "pending"]
     },
     "public.passport_module": {
       "name": "passport_module",
       "schema": "public",
-      "values": [
-        "academia",
-        "personal_training",
-        "fisioterapia",
-        "nutricao",
-        "pilates"
-      ]
+      "values": ["academia", "personal_training", "fisioterapia", "nutricao", "pilates"]
     },
     "public.passport_module_status": {
       "name": "passport_module_status",
       "schema": "public",
-      "values": [
-        "active",
-        "inactive",
-        "pending"
-      ]
+      "values": ["active", "inactive", "pending"]
     },
     "public.member_event_kind": {
       "name": "member_event_kind",
@@ -5029,12 +4801,7 @@
     "public.member_note_visibility": {
       "name": "member_note_visibility",
       "schema": "public",
-      "values": [
-        "author_only",
-        "unit",
-        "company",
-        "tenant"
-      ]
+      "values": ["author_only", "unit", "company", "tenant"]
     }
   },
   "schemas": {},

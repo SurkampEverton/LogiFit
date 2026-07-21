@@ -17,6 +17,7 @@ import { createHash } from 'node:crypto'
 import { and, asc, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
+import { type ChurnFeatures, bandFromProb, heuristicPredict } from '../src/retencao/predict.js'
 import {
   churnFeaturesSnapshot,
   churnInterventions,
@@ -27,11 +28,6 @@ import {
   tenants,
   users,
 } from '../src/schema/index.js'
-import {
-  bandFromProb,
-  heuristicPredict,
-  type ChurnFeatures,
-} from '../src/retencao/predict.js'
 
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/logifit'

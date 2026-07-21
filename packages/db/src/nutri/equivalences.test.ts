@@ -2,8 +2,8 @@
  * Equivalences ranking — unit tests Sprint 29 Faixa B.1.
  */
 import { describe, expect, it } from 'vitest'
+import { type RawEquivalenceRow, rankEquivalents } from './equivalences'
 import type { Nutrients } from './nutrients-schema'
-import { rankEquivalents, type RawEquivalenceRow } from './equivalences'
 
 const ARROZ_BRANCO: Nutrients = {
   kcal: 128,
@@ -206,10 +206,7 @@ describe('rankEquivalents', () => {
       },
     ]
     // Seed é "batata"; deve achar "arroz" como candidato
-    const r = rankEquivalents(
-      { seedFoodId: 'batata', seedGrams: 150, seedNutrients: BATATA },
-      rows,
-    )
+    const r = rankEquivalents({ seedFoodId: 'batata', seedGrams: 150, seedNutrients: BATATA }, rows)
     expect(r).toHaveLength(1)
     expect(r[0]!.foodId).toBe('arroz')
     expect(r[0]!.equivalentGrams).toBe(100)

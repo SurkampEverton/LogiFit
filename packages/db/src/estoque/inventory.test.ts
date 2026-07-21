@@ -3,13 +3,13 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  type Movement,
   calculateAverageCostCents,
   calculateBalance,
   calculateInventoryAdjustment,
   calculatePeps,
   detectLowStockCrossing,
   signOfKind,
-  type Movement,
 } from './inventory'
 
 const m = (

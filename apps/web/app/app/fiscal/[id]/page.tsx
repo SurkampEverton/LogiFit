@@ -131,7 +131,19 @@ export default async function FiscalEmissionDetailPage({
     <div className="ev-stack" style={{ padding: 'var(--ev-space-lg)' }}>
       <header style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--ev-space-md)' }}>
         <h1 style={{ margin: 0 }}>
-          {KIND_LABEL[em.kind] ?? em.kind} · série {em.serie} nº {em.numero}
+          {KIND_LABEL[em.kind] ?? em.kind}
+          {em.numeroDocumento ? (
+            // Numeracao da autoridade quando ja atribuida; o RPS vira detalhe.
+            <>
+              {' '}
+              {em.serieDocumento ? `· série ${em.serieDocumento} ` : '· '}nº {em.numeroDocumento}
+            </>
+          ) : (
+            <>
+              {' '}
+              · RPS série {em.serie} nº {em.numero}
+            </>
+          )}
         </h1>
         <span className="ev-badge" style={{ background: status?.bg, color: status?.fg }}>
           {status?.label ?? em.status}
@@ -200,6 +212,16 @@ export default async function FiscalEmissionDetailPage({
             margin: 0,
           }}
         >
+          <dt style={{ color: 'var(--ev-text-muted)' }}>RPS</dt>
+          <dd style={{ margin: 0 }}>
+            série {em.serie} nº {em.numero}
+            {em.numeroDocumento && (
+              <span style={{ color: 'var(--ev-text-muted)' }}>
+                {' '}
+                — numeração que enviamos; a nota recebeu outra do município
+              </span>
+            )}
+          </dd>
           <dt style={{ color: 'var(--ev-text-muted)' }}>Valor total</dt>
           <dd style={{ margin: 0, fontWeight: 600 }}>{brl(em.valorTotalCents)}</dd>
           <dt style={{ color: 'var(--ev-text-muted)' }}>Destinatário</dt>

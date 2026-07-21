@@ -18,7 +18,15 @@ export interface ChurnFeaturesInput {
   /** Invoices com status + amounts. */
   invoices: Array<{
     /** Aceita ambas convenções: enum atual (pending/cancelled/refunded) ou histórica (issued/draft/canceled). Apenas paid/overdue são consumidos hoje. */
-    status: 'paid' | 'overdue' | 'pending' | 'cancelled' | 'refunded' | 'issued' | 'draft' | 'canceled'
+    status:
+      | 'paid'
+      | 'overdue'
+      | 'pending'
+      | 'cancelled'
+      | 'refunded'
+      | 'issued'
+      | 'draft'
+      | 'canceled'
     amountCents: number
     dueDate: string // YYYY-MM-DD
     paidAt?: string | null
@@ -72,7 +80,7 @@ export function computeFeatures(input: ChurnFeaturesInput): ChurnFeatures {
   // ─── Frequência 30d e 30-60d ──────────────────────────────────────────
   let last30 = 0
   let prev30 = 0
-  let mostRecentMs = -Infinity
+  let mostRecentMs = Number.NEGATIVE_INFINITY
   for (const c of input.checkInDates) {
     const ms = new Date(c).getTime()
     if (Number.isNaN(ms)) continue
@@ -83,11 +91,15 @@ export function computeFeatures(input: ChurnFeaturesInput): ChurnFeatures {
     if (ms > mostRecentMs) mostRecentMs = ms
   }
   const daysSinceLastCheckin =
-    mostRecentMs === -Infinity
+    mostRecentMs === Number.NEGATIVE_INFINITY
       ? -1
       : Math.floor((asOfMs - mostRecentMs) / (24 * 60 * 60 * 1000))
   const frequencyChangePct =
-    prev30 === 0 ? (last30 === 0 ? 0 : 100) : Number((((last30 - prev30) / prev30) * 100).toFixed(1))
+    prev30 === 0
+      ? last30 === 0
+        ? 0
+        : 100
+      : Number((((last30 - prev30) / prev30) * 100).toFixed(1))
 
   // ─── Invoices overdue ────────────────────────────────────────────────
   let overdueCount = 0

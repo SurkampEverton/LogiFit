@@ -241,9 +241,9 @@ describe('validateRuleDistribution()', () => {
   })
 
   it('per_unit válida', () => {
-    expect(
-      validateRuleDistribution('per_unit', [{ companyId: C_A }, { companyId: C_B }]),
-    ).toEqual({ ok: true })
+    expect(validateRuleDistribution('per_unit', [{ companyId: C_A }, { companyId: C_B }])).toEqual({
+      ok: true,
+    })
   })
 
   it('lista vazia inválida', () => {

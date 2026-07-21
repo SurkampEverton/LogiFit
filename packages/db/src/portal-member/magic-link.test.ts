@@ -3,14 +3,14 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  buildMagicLinkUrl,
-  generateMagicLink,
-  generateRefreshToken,
-  hashToken,
   MAGIC_LINK_MAX_PER_WINDOW,
   MAGIC_LINK_THROTTLE_SECONDS,
   MAGIC_LINK_TTL_MS,
   MEMBER_SESSION_TTL_MS,
+  buildMagicLinkUrl,
+  generateMagicLink,
+  generateRefreshToken,
+  hashToken,
   shouldRateLimit,
   verifyMagicLinkAgainstRow,
 } from './magic-link'

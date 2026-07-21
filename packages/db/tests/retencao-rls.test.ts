@@ -70,10 +70,10 @@ afterAll(async () => {
     )
     .catch(() => {})
   await pool
-    .query(
-      `DELETE FROM persons WHERE tenant_id IN ($1, $2) AND email LIKE 'test-%@example.com'`,
-      [TENANT_REDE, TENANT_FRANQUIA],
-    )
+    .query(`DELETE FROM persons WHERE tenant_id IN ($1, $2) AND email LIKE 'test-%@example.com'`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool.end()
 })

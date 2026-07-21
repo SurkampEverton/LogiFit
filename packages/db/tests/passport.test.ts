@@ -1,3 +1,4 @@
+import { Pool, type PoolClient } from 'pg'
 /**
  * Passaporte cross-tenant — Sprint 01b Faixa B/C (regra 42 + ADR 0077).
  *
@@ -10,7 +11,6 @@
  * **Pré-requisito**: `pnpm db:seed` populou 5 cenários (incluindo passaporte Carlos).
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { Pool, type PoolClient } from 'pg'
 
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/logifit'

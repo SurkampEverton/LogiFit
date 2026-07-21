@@ -81,10 +81,7 @@ afterAll(async () => {
     ])
     .catch(() => {})
   await pool
-    .query('DELETE FROM assessments WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM assessments WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
     .query('DELETE FROM assessment_types WHERE id = $1 OR tenant_id IN ($2, $3)', [
@@ -118,13 +115,10 @@ beforeEach(async () => {
     ])
     .catch(() => {})
   await pool
-    .query('DELETE FROM assessments WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM assessments WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query("DELETE FROM assessment_types WHERE tenant_id IN ($1, $2)", [
+    .query('DELETE FROM assessment_types WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])

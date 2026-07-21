@@ -39,10 +39,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await pool
-    .query('DELETE FROM ap_ar_payments WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM ap_ar_payments WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
     .query('DELETE FROM accounts_receivable WHERE tenant_id IN ($1, $2)', [
@@ -57,16 +54,10 @@ afterAll(async () => {
     ])
     .catch(() => {})
   await pool
-    .query('DELETE FROM approval_rules WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM approval_rules WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query('DELETE FROM suppliers WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM suppliers WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
     .query('DELETE FROM chart_of_accounts WHERE tenant_id IN ($1, $2)', [
@@ -80,10 +71,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await pool
-    .query('DELETE FROM ap_ar_payments WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM ap_ar_payments WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
     .query('DELETE FROM accounts_receivable WHERE tenant_id IN ($1, $2)', [
@@ -98,16 +86,10 @@ beforeEach(async () => {
     ])
     .catch(() => {})
   await pool
-    .query('DELETE FROM approval_rules WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM approval_rules WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query('DELETE FROM suppliers WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM suppliers WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
     .query('DELETE FROM chart_of_accounts WHERE tenant_id IN ($1, $2)', [
@@ -353,12 +335,7 @@ describe('accounts_payable — checks', () => {
       await pool.query(
         `INSERT INTO accounts_payable (tenant_id, company_id, chart_account_id, amount_cents, net_amount_cents, issue_date, due_date, doc_key)
          VALUES ($1, $2, $3, 200000, 200000, '2026-05-05', '2026-05-15', $4)`,
-        [
-          TENANT_FRANQUIA,
-          '00000002-0001-0000-0000-0000000000c1',
-          cIdF.rows[0]!.id,
-          chave,
-        ],
+        [TENANT_FRANQUIA, '00000002-0001-0000-0000-0000000000c1', cIdF.rows[0]!.id, chave],
       )
     } catch (err) {
       errCode = (err as { code?: string }).code ?? ''
@@ -424,9 +401,7 @@ describe('ap_ar_payments — append-only + check source_type', () => {
     const pId = r.rows[0]!.id
 
     const updateBlocked = await withTenantContext(TENANT_REDE, async (c) => {
-      const u = await c.query("UPDATE ap_ar_payments SET reference = 'hacked' WHERE id = $1", [
-        pId,
-      ])
+      const u = await c.query("UPDATE ap_ar_payments SET reference = 'hacked' WHERE id = $1", [pId])
       return u.rowCount === 0
     })
     expect(updateBlocked).toBe(true)

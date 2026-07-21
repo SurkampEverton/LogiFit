@@ -52,10 +52,16 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await pool
-    .query(`DELETE FROM device_incidents WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM device_incidents WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM device_consents WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM device_consents WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool
     .query(`DELETE FROM device_readings_curated WHERE tenant_id IN ($1, $2)`, [
@@ -70,10 +76,16 @@ afterAll(async () => {
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM device_readings WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM device_readings WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM device_connections WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM device_connections WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool.end()
 })
@@ -179,7 +191,10 @@ describe('device_connections — unique active + isolation', () => {
 })
 
 describe('device_readings — dedup + isolation', () => {
-  async function createConnection(tenantId: string, provider = 'garmin'): Promise<{
+  async function createConnection(
+    tenantId: string,
+    provider = 'garmin',
+  ): Promise<{
     memberId: string
     connectionId: string
   }> {

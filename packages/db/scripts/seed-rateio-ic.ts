@@ -12,15 +12,10 @@
  *
  * Uso: `pnpm --filter @repo/db db:seed:rateio-ic`
  */
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { asc, eq, sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import {
-  allocationRules,
-  companies,
-  intercompanyEntries,
-  tenants,
-} from '../src/schema/index.js'
+import { allocationRules, companies, intercompanyEntries, tenants } from '../src/schema/index.js'
 
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/logifit'
@@ -138,15 +133,11 @@ async function main() {
       }
     }
 
-    console.log(
-      `  • ${tenant.name}: rateio + IC seed aplicado (${totalFiliais} filial(is))`,
-    )
+    console.log(`  • ${tenant.name}: rateio + IC seed aplicado (${totalFiliais} filial(is))`)
   }
 
   await pool.end()
-  console.log(
-    `✓ seeded ${totalRules} allocation_rules + ${totalIcs} intercompany_entries`,
-  )
+  console.log(`✓ seeded ${totalRules} allocation_rules + ${totalIcs} intercompany_entries`)
 }
 
 main().catch((err) => {

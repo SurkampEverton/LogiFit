@@ -9,11 +9,7 @@
  *
  * Reusa scaleNutrientsByGrams + addNutrients da nutrients-schema (Sprint 29).
  */
-import {
-  addNutrients,
-  scaleNutrientsByGrams,
-  type Nutrients,
-} from '../nutri/nutrients-schema'
+import { type Nutrients, addNutrients, scaleNutrientsByGrams } from '../nutri/nutrients-schema'
 
 // ─── DailyDiarySummary ─────────────────────────────────────────────────────
 

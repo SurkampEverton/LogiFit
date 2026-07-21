@@ -1,3 +1,4 @@
+import { Pool } from 'pg'
 /**
  * `has_permission()` SQL function — Sprint 01b D.1 (ADR 0019).
  *
@@ -8,7 +9,6 @@
  * `tenant_owner` que dá todas as 25 permissions canônicas).
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { Pool } from 'pg'
 
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/logifit'

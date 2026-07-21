@@ -173,8 +173,7 @@ export function validateGuide(input: ValidateGuideInput): ValidationResult {
   // 7. Quantidade autorizada × usada
   if (
     input.authorization?.quantityAuthorized != null &&
-    input.authorization.quantityUsed +
-      input.items.reduce((s, i) => s + i.quantity, 0) >
+    input.authorization.quantityUsed + input.items.reduce((s, i) => s + i.quantity, 0) >
       input.authorization.quantityAuthorized
   ) {
     issues.push({
@@ -220,11 +219,7 @@ export function validateGuide(input: ValidateGuideInput): ValidationResult {
 
   // 10. Especialidade × kind
   const expected = input.expectedSpecialtyByKind?.[input.kind]
-  if (
-    expected &&
-    input.professional.specialty &&
-    input.professional.specialty !== expected
-  ) {
+  if (expected && input.professional.specialty && input.professional.specialty !== expected) {
     issues.push({
       code: 'SPECIALTY_MISMATCH',
       field: 'professional.specialty',

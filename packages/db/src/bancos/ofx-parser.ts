@@ -120,7 +120,8 @@ export function parseOfx(content: string): ParsedOfx {
     const fitId = extractValue(block, 'FITID')
     const postedRaw = extractValue(block, 'DTPOSTED')
     const amountRaw = extractValue(block, 'TRNAMT')
-    const description = extractValue(block, 'NAME') ?? extractValue(block, 'PAYEE') ?? '(sem descrição)'
+    const description =
+      extractValue(block, 'NAME') ?? extractValue(block, 'PAYEE') ?? '(sem descrição)'
     const memo = extractValue(block, 'MEMO') ?? undefined
     const type = extractValue(block, 'TRNTYPE') ?? undefined
 

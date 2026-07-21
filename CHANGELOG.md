@@ -6,6 +6,33 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Feat — primeira NFS-e autorizada em produção + numeração do documento separada do RPS 2026-07-21
+
+Emissão real em Cascavel/PR: NFS-e **nº 12**, chave `7493210726161203740589886862026077398183`, R$ 0,50, ESP TECNOLOGIA → tomador PF, autorizada em 21/07 16:13:37. Autenticidade
+confirmada no portal do município. As seis tentativas anteriores foram todas rejeitadas; esta
+passou com `item_lista_servico: "172401"`, `optante_simples_nacional: true`, `natureza_operacao: "1"`
+e sem `codigo_cnae` — exatamente os campos corrigidos nesta data.
+
+O teste expôs dois defeitos que só aparecem contra o serviço real:
+
+- **Numeração do documento confundida com a do RPS.** `serie`/`numero` guardam o RPS que nós
+  geramos; a autoridade atribui outro par ao autorizar. A tela exibia "série 13 nº 6" como se
+  fosse a nota, mas a NFS-e em Cascavel é **nº 12** — quem procurasse a nota 6 no portal não
+  acharia nada, e a conciliação com o contador quebraria. Migration 0066 adiciona
+  `numero_documento`/`serie_documento` (texto: município e SEFAZ não garantem numeração puramente
+  numérica); a tela passa a mostrar o número da nota e a exibir o RPS como detalhe rotulado.
+- **Sincronização condicionada à mudança de status.** `queryEmissionStatus` só gravava quando o
+  status mudava — então chave, numeração e URLs de XML/PDF ficavam de fora justamente quando
+  chegam, que é *depois* da nota já estar `completed`. Agora sincroniza sempre que há dado novo.
+  Junto veio a correção de uma regressão introduzida na mesma mudança: `completedAt` era
+  re-carimbado a cada consulta, fazendo a data de autorização andar — agora é `coalesce`.
+
+**O que o teste ainda não respondeu:** como a alíquota renderiza na nota para optante do Simples.
+O payload foi com `aliquota: 3` e `optante_simples_nacional: true`; a pesquisa indica que o
+AtendeNet imprime `SIMPLES NACIONAL` no lugar do número, mas confirmar exige abrir o PDF/DANFSE
+da nota. Sem retenção na fonte (art. 199-A da LC 1/2001 afasta para itens fora do art. 3º da
+LC 116), o campo é informativo.
+
 ### Fix — NFS-e não declarava optante do Simples; payload transmitido vira auditável 2026-07-21
 
 O código de serviço que Cascavel habilita para a ESP apareceu (`172401`), e a verificação

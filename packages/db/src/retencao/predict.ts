@@ -159,7 +159,10 @@ export function heuristicPredict(features: ChurnFeatures): ChurnPrediction {
 
   // Atenuadores
   if (features.achievementsEarned90d >= 3 || features.goalsActiveCount >= 2) {
-    const protect = Math.min(0.15, features.achievementsEarned90d * 0.03 + features.goalsActiveCount * 0.05)
+    const protect = Math.min(
+      0.15,
+      features.achievementsEarned90d * 0.03 + features.goalsActiveCount * 0.05,
+    )
     score = Math.max(0, score - protect)
     factors.push({
       factor: 'engagement_active',

@@ -76,7 +76,10 @@ export function matchAcquirerRules(
   rules: AcquirerRuleRow[],
   bankTx?: BankTxInput,
 ): AcquirerRuleRow | null {
-  const sorted = rules.filter((r) => r.active).slice().sort((a, b) => a.priority - b.priority)
+  const sorted = rules
+    .filter((r) => r.active)
+    .slice()
+    .sort((a, b) => a.priority - b.priority)
   for (const rule of sorted) {
     if (ruleConditionMatches(sale, rule, bankTx)) return rule
   }
@@ -109,9 +112,7 @@ export function ruleConditionMatches(
   if (bankTx) {
     if (rule.targetBankAccountId && rule.targetBankAccountId !== bankTx.bankAccountId) return false
     if (cond.bankDescriptionContains) {
-      if (
-        !bankTx.description.toLowerCase().includes(cond.bankDescriptionContains.toLowerCase())
-      ) {
+      if (!bankTx.description.toLowerCase().includes(cond.bankDescriptionContains.toLowerCase())) {
         return false
       }
     }

@@ -132,17 +132,23 @@ describe('parseOfx — edge cases', () => {
   })
 
   it('transação sem FITID é ignorada', () => {
-    const r = parseOfx(`<OFX><STMTTRN><DTPOSTED>20260501</DTPOSTED><TRNAMT>-100</TRNAMT></STMTTRN></OFX>`)
+    const r = parseOfx(
+      `<OFX><STMTTRN><DTPOSTED>20260501</DTPOSTED><TRNAMT>-100</TRNAMT></STMTTRN></OFX>`,
+    )
     expect(r.transactions).toHaveLength(0)
   })
 
   it('valor com vírgula brasileira (apesar de padrão ser ponto)', () => {
-    const r = parseOfx(`<OFX><STMTTRN><FITID>X1</FITID><DTPOSTED>20260501</DTPOSTED><TRNAMT>-1500,50</TRNAMT></STMTTRN></OFX>`)
+    const r = parseOfx(
+      `<OFX><STMTTRN><FITID>X1</FITID><DTPOSTED>20260501</DTPOSTED><TRNAMT>-1500,50</TRNAMT></STMTTRN></OFX>`,
+    )
     expect(r.transactions[0]?.amountCents).toBe(-150_050)
   })
 
   it('data com hora extraída corretamente', () => {
-    const r = parseOfx(`<OFX><STMTTRN><FITID>X1</FITID><DTPOSTED>20260501143000</DTPOSTED><TRNAMT>100</TRNAMT></STMTTRN></OFX>`)
+    const r = parseOfx(
+      `<OFX><STMTTRN><FITID>X1</FITID><DTPOSTED>20260501143000</DTPOSTED><TRNAMT>100</TRNAMT></STMTTRN></OFX>`,
+    )
     expect(r.transactions[0]?.postedAt).toBe('2026-05-01T14:30:00Z')
   })
 })

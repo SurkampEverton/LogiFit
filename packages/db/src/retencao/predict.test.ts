@@ -134,9 +134,7 @@ describe('predictChurn — LLM com fallback', () => {
       prob30d: 0.42,
       prob60d: 0.5,
       prob90d: 0.55,
-      topFactors: [
-        { factor: 'llm_factor', weight: 0.3, narrative: 'IA disse algo' },
-      ],
+      topFactors: [{ factor: 'llm_factor', weight: 0.3, narrative: 'IA disse algo' }],
     }))
     expect(r.source).toBe('llm')
     expect(r.prob30d).toBe(0.42)

@@ -213,7 +213,11 @@ export function validateRuleDistribution(
         return { ok: true }
       }
       case 'proportional': {
-        const parsed = z.array(ProportionalDistributionItemSchema).min(1).max(20).parse(distribution)
+        const parsed = z
+          .array(ProportionalDistributionItemSchema)
+          .min(1)
+          .max(20)
+          .parse(distribution)
         const totalWeight = parsed.reduce((s, i) => s + i.weight, 0)
         if (totalWeight <= 0) {
           return { ok: false, reason: 'Soma dos pesos deve ser > 0' }

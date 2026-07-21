@@ -150,9 +150,7 @@ export function calculateDre(input: {
     else variableCents += c.amountCents
   }
   const totalCostsCents = fixedCents + variableCents
-  const byCategory = Array.from(byCategoryMap.values()).sort(
-    (a, b) => b.totalCents - a.totalCents,
-  )
+  const byCategory = Array.from(byCategoryMap.values()).sort((a, b) => b.totalCents - a.totalCents)
 
   // Margens
   const grossMarginCents = paidCents - totalCostsCents

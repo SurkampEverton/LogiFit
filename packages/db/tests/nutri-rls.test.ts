@@ -62,25 +62,34 @@ afterAll(async () => {
     .query(`DELETE FROM meal_items WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM meal_plan_meals WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
-    .catch(() => {})
-  await pool
-    .query(`DELETE FROM meal_plans WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
-    .catch(() => {})
-  await pool
-    .query(`DELETE FROM food_measures WHERE food_id IN (SELECT id FROM foods WHERE tenant_id IN ($1, $2))`, [
+    .query(`DELETE FROM meal_plan_meals WHERE tenant_id IN ($1, $2)`, [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM food_equivalences WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM meal_plans WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .catch(() => {})
+  await pool
+    .query(
+      `DELETE FROM food_measures WHERE food_id IN (SELECT id FROM foods WHERE tenant_id IN ($1, $2))`,
+      [TENANT_REDE, TENANT_FRANQUIA],
+    )
+    .catch(() => {})
+  await pool
+    .query(`DELETE FROM food_equivalences WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool
     .query(`DELETE FROM foods WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM tenant_branding WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM tenant_branding WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool.end()
 })
@@ -90,19 +99,28 @@ beforeEach(async () => {
     .query(`DELETE FROM meal_items WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM meal_plan_meals WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM meal_plan_meals WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool
     .query(`DELETE FROM meal_plans WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM food_equivalences WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM food_equivalences WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool
     .query(`DELETE FROM foods WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM tenant_branding WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM tenant_branding WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
 })
 

@@ -48,8 +48,7 @@ export function computeSaleCost(input: SaleCostInput): SaleCostBreakdown {
   const percentFee = Math.round((input.grossAmountCents * input.feeRatePct) / 100)
   const totalFee = percentFee + flat
   const net = input.grossAmountCents - totalFee
-  const margin =
-    input.grossAmountCents === 0 ? 0 : 1 - totalFee / input.grossAmountCents
+  const margin = input.grossAmountCents === 0 ? 0 : 1 - totalFee / input.grossAmountCents
   return {
     grossCents: input.grossAmountCents,
     percentFeeCents: percentFee,

@@ -89,9 +89,7 @@ export const StopOnSchema = z.array(z.enum(REGUA_EVENTS)).optional()
 
 export const GuardsSchema = z
   .object({
-    consent: z
-      .enum(['marketing_messages', 'transactional', 'whatsapp_exchange'])
-      .optional(),
+    consent: z.enum(['marketing_messages', 'transactional', 'whatsapp_exchange']).optional(),
     rate_limit_per_member_24h: z.number().int().positive().max(50).optional(),
     hour_window: z
       .object({
@@ -164,10 +162,7 @@ export function extractTemplateVariables(body: string): string[] {
  * Checa se hora atual está dentro da janela permitida (HH:MM no fuso UTC-3
  * SP por padrão MVP — Sprint 13+ adiciona timezone por tenant).
  */
-export function isWithinHourWindow(
-  now: Date,
-  window: { from: string; to: string },
-): boolean {
+export function isWithinHourWindow(now: Date, window: { from: string; to: string }): boolean {
   const offsetMinutes = -3 * 60 // GMT-3 SP
   const local = new Date(now.getTime() + offsetMinutes * 60_000)
   const h = local.getUTCHours()

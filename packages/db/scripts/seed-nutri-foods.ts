@@ -774,30 +774,170 @@ interface EquivSeed {
 
 const EQUIVS: EquivSeed[] = [
   // Carbos
-  { fromCode: 'TACO-C001', toCode: 'TACO-C002', gramsFrom: 100, gramsTo: 105, category: 'carbo', notes: 'arroz branco ↔ integral' },
-  { fromCode: 'TACO-C001', toCode: 'TACO-C007', gramsFrom: 100, gramsTo: 250, category: 'carbo', notes: 'arroz ↔ batata cozida' },
-  { fromCode: 'TACO-C001', toCode: 'TACO-C008', gramsFrom: 100, gramsTo: 175, category: 'carbo', notes: 'arroz ↔ batata doce' },
-  { fromCode: 'TACO-C001', toCode: 'TACO-C009', gramsFrom: 100, gramsTo: 100, category: 'carbo', notes: 'arroz ↔ mandioca' },
-  { fromCode: 'TACO-C001', toCode: 'TACO-PR005', gramsFrom: 100, gramsTo: 110, category: 'carbo', notes: 'arroz ↔ quinoa cozida' },
-  { fromCode: 'TACO-C003', toCode: 'TACO-C004', gramsFrom: 50, gramsTo: 60, category: 'carbo', notes: 'pão francês ↔ pão integral' },
-  { fromCode: 'TACO-C003', toCode: 'TACO-PR003', gramsFrom: 50, gramsTo: 45, category: 'carbo', notes: 'pão francês ↔ tapioca' },
-  { fromCode: 'TACO-C006', toCode: 'TACO-C001', gramsFrom: 100, gramsTo: 120, category: 'carbo', notes: 'macarrão ↔ arroz' },
+  {
+    fromCode: 'TACO-C001',
+    toCode: 'TACO-C002',
+    gramsFrom: 100,
+    gramsTo: 105,
+    category: 'carbo',
+    notes: 'arroz branco ↔ integral',
+  },
+  {
+    fromCode: 'TACO-C001',
+    toCode: 'TACO-C007',
+    gramsFrom: 100,
+    gramsTo: 250,
+    category: 'carbo',
+    notes: 'arroz ↔ batata cozida',
+  },
+  {
+    fromCode: 'TACO-C001',
+    toCode: 'TACO-C008',
+    gramsFrom: 100,
+    gramsTo: 175,
+    category: 'carbo',
+    notes: 'arroz ↔ batata doce',
+  },
+  {
+    fromCode: 'TACO-C001',
+    toCode: 'TACO-C009',
+    gramsFrom: 100,
+    gramsTo: 100,
+    category: 'carbo',
+    notes: 'arroz ↔ mandioca',
+  },
+  {
+    fromCode: 'TACO-C001',
+    toCode: 'TACO-PR005',
+    gramsFrom: 100,
+    gramsTo: 110,
+    category: 'carbo',
+    notes: 'arroz ↔ quinoa cozida',
+  },
+  {
+    fromCode: 'TACO-C003',
+    toCode: 'TACO-C004',
+    gramsFrom: 50,
+    gramsTo: 60,
+    category: 'carbo',
+    notes: 'pão francês ↔ pão integral',
+  },
+  {
+    fromCode: 'TACO-C003',
+    toCode: 'TACO-PR003',
+    gramsFrom: 50,
+    gramsTo: 45,
+    category: 'carbo',
+    notes: 'pão francês ↔ tapioca',
+  },
+  {
+    fromCode: 'TACO-C006',
+    toCode: 'TACO-C001',
+    gramsFrom: 100,
+    gramsTo: 120,
+    category: 'carbo',
+    notes: 'macarrão ↔ arroz',
+  },
 
   // Proteínas
-  { fromCode: 'TACO-CA001', toCode: 'TACO-CA002', gramsFrom: 100, gramsTo: 72, category: 'proteina', notes: 'frango ↔ patinho (iso-proteína)' },
-  { fromCode: 'TACO-CA001', toCode: 'TACO-CA003', gramsFrom: 100, gramsTo: 88, category: 'proteina', notes: 'frango ↔ lombo suíno' },
-  { fromCode: 'TACO-CA001', toCode: 'TACO-CA004', gramsFrom: 100, gramsTo: 120, category: 'proteina', notes: 'frango ↔ tilápia' },
-  { fromCode: 'TACO-CA001', toCode: 'TACO-CA005', gramsFrom: 100, gramsTo: 126, category: 'proteina', notes: 'frango ↔ salmão' },
-  { fromCode: 'TACO-CA001', toCode: 'TACO-OV001', gramsFrom: 100, gramsTo: 237, category: 'proteina', notes: 'frango ↔ ovos (~5 ovos)' },
-  { fromCode: 'TACO-CA001', toCode: 'TACO-LE003', gramsFrom: 100, gramsTo: 181, category: 'proteina', notes: 'frango ↔ queijo minas' },
-  { fromCode: 'TACO-CA001', toCode: 'TACO-PR001', gramsFrom: 100, gramsTo: 42, category: 'proteina', notes: 'frango ↔ whey protein' },
-  { fromCode: 'TACO-LG001', toCode: 'TACO-LG002', gramsFrom: 100, gramsTo: 95, category: 'proteina', notes: 'feijão preto ↔ carioca' },
-  { fromCode: 'TACO-LG001', toCode: 'TACO-LG003', gramsFrom: 100, gramsTo: 72, category: 'proteina', notes: 'feijão preto ↔ lentilha' },
-  { fromCode: 'TACO-LG001', toCode: 'TACO-LG004', gramsFrom: 100, gramsTo: 54, category: 'proteina', notes: 'feijão preto ↔ grão de bico' },
+  {
+    fromCode: 'TACO-CA001',
+    toCode: 'TACO-CA002',
+    gramsFrom: 100,
+    gramsTo: 72,
+    category: 'proteina',
+    notes: 'frango ↔ patinho (iso-proteína)',
+  },
+  {
+    fromCode: 'TACO-CA001',
+    toCode: 'TACO-CA003',
+    gramsFrom: 100,
+    gramsTo: 88,
+    category: 'proteina',
+    notes: 'frango ↔ lombo suíno',
+  },
+  {
+    fromCode: 'TACO-CA001',
+    toCode: 'TACO-CA004',
+    gramsFrom: 100,
+    gramsTo: 120,
+    category: 'proteina',
+    notes: 'frango ↔ tilápia',
+  },
+  {
+    fromCode: 'TACO-CA001',
+    toCode: 'TACO-CA005',
+    gramsFrom: 100,
+    gramsTo: 126,
+    category: 'proteina',
+    notes: 'frango ↔ salmão',
+  },
+  {
+    fromCode: 'TACO-CA001',
+    toCode: 'TACO-OV001',
+    gramsFrom: 100,
+    gramsTo: 237,
+    category: 'proteina',
+    notes: 'frango ↔ ovos (~5 ovos)',
+  },
+  {
+    fromCode: 'TACO-CA001',
+    toCode: 'TACO-LE003',
+    gramsFrom: 100,
+    gramsTo: 181,
+    category: 'proteina',
+    notes: 'frango ↔ queijo minas',
+  },
+  {
+    fromCode: 'TACO-CA001',
+    toCode: 'TACO-PR001',
+    gramsFrom: 100,
+    gramsTo: 42,
+    category: 'proteina',
+    notes: 'frango ↔ whey protein',
+  },
+  {
+    fromCode: 'TACO-LG001',
+    toCode: 'TACO-LG002',
+    gramsFrom: 100,
+    gramsTo: 95,
+    category: 'proteina',
+    notes: 'feijão preto ↔ carioca',
+  },
+  {
+    fromCode: 'TACO-LG001',
+    toCode: 'TACO-LG003',
+    gramsFrom: 100,
+    gramsTo: 72,
+    category: 'proteina',
+    notes: 'feijão preto ↔ lentilha',
+  },
+  {
+    fromCode: 'TACO-LG001',
+    toCode: 'TACO-LG004',
+    gramsFrom: 100,
+    gramsTo: 54,
+    category: 'proteina',
+    notes: 'feijão preto ↔ grão de bico',
+  },
 
   // Gorduras
-  { fromCode: 'TACO-G001', toCode: 'TACO-NZ001', gramsFrom: 100, gramsTo: 137, category: 'gordura', notes: 'azeite ↔ castanha do Pará' },
-  { fromCode: 'TACO-G001', toCode: 'TACO-F005', gramsFrom: 100, gramsTo: 921, category: 'gordura', notes: 'azeite ↔ abacate (volume)' },
+  {
+    fromCode: 'TACO-G001',
+    toCode: 'TACO-NZ001',
+    gramsFrom: 100,
+    gramsTo: 137,
+    category: 'gordura',
+    notes: 'azeite ↔ castanha do Pará',
+  },
+  {
+    fromCode: 'TACO-G001',
+    toCode: 'TACO-F005',
+    gramsFrom: 100,
+    gramsTo: 921,
+    category: 'gordura',
+    notes: 'azeite ↔ abacate (volume)',
+  },
 ]
 
 async function main(): Promise<void> {
@@ -810,10 +950,7 @@ async function main(): Promise<void> {
     const codeToId = new Map<string, string>()
 
     for (const f of FOODS) {
-      const nameNormalized = f.name
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
+      const nameNormalized = f.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
       const r = await pool.query<{ id: string }>(
         `INSERT INTO foods (tenant_id, source, external_code, name, name_normalized, category, preparation, nutrients)
          VALUES (NULL, 'taco', $1, $2, $3, $4::food_category, $5, $6::jsonb)
@@ -853,7 +990,9 @@ async function main(): Promise<void> {
       const a = codeToId.get(e.fromCode)
       const b = codeToId.get(e.toCode)
       if (!a || !b) {
-        console.warn(`[seed-nutri-foods] equiv pulada (food não encontrado): ${e.fromCode} → ${e.toCode}`)
+        console.warn(
+          `[seed-nutri-foods] equiv pulada (food não encontrado): ${e.fromCode} → ${e.toCode}`,
+        )
         continue
       }
       await pool.query(

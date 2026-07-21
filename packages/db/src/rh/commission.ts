@@ -30,13 +30,15 @@ export type CommissionKind =
   | 'fixo_por_atendimento'
   | 'tabela_por_servico'
 
-export type CommissionBase =
-  | 'faturado'
-  | 'recebido_particular'
-  | 'recebido_convenio'
-  | 'misto'
+export type CommissionBase = 'faturado' | 'recebido_particular' | 'recebido_convenio' | 'misto'
 
-export type EventKind = 'invoice_issued' | 'payment_received' | 'guide_paid' | 'appointment_completed' | 'consulta_signed' | 'evolucao_created'
+export type EventKind =
+  | 'invoice_issued'
+  | 'payment_received'
+  | 'guide_paid'
+  | 'appointment_completed'
+  | 'consulta_signed'
+  | 'evolucao_created'
 
 export interface CommissionEvent {
   /** Tipo do evento que disparou — define qual base aplica */
@@ -197,7 +199,10 @@ export function resolveRule(
   event: { serviceType: string | null; tussCode: string | null },
   rules: CommissionRuleRow[],
 ): CommissionRuleRow | null {
-  const active = rules.filter((r) => r.active).slice().sort((a, b) => a.priority - b.priority)
+  const active = rules
+    .filter((r) => r.active)
+    .slice()
+    .sort((a, b) => a.priority - b.priority)
 
   // 1. Match tussCode + serviceType
   if (event.tussCode && event.serviceType) {
@@ -215,9 +220,7 @@ export function resolveRule(
 
   // 3. Match só serviceType
   if (event.serviceType) {
-    const byService = active.find(
-      (r) => r.serviceType === event.serviceType && r.tussCode === null,
-    )
+    const byService = active.find((r) => r.serviceType === event.serviceType && r.tussCode === null)
     if (byService) return byService
   }
 

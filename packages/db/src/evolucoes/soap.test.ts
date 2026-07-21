@@ -4,9 +4,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   ALLOWED_MIMES_BY_KIND,
+  MAX_SIZE_BY_KIND,
   generateStoragePath,
   hashEvolucaoContent,
-  MAX_SIZE_BY_KIND,
   validateAttachmentUpload,
   validateSoapForLock,
 } from './soap'

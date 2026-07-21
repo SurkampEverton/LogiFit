@@ -13,15 +13,10 @@
  *
  * Uso: `pnpm --filter @repo/db db:seed:treinos`
  */
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { eq, isNull, sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import {
-  exercises,
-  tenants,
-  workoutItems,
-  workouts,
-} from '../src/schema/index.js'
+import { exercises, tenants, workoutItems, workouts } from '../src/schema/index.js'
 
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/logifit'
@@ -29,32 +24,146 @@ const DATABASE_URL =
 // MET values: Compendium of Physical Activities 2024
 const GLOBAL_EXERCISES = [
   // Peito
-  { name: 'Supino reto com barra', met: 6.0, level: 'intermediario', groups: ['peitoral', 'triceps', 'ombro'], equipment: 'barra' },
-  { name: 'Supino inclinado com halteres', met: 5.5, level: 'intermediario', groups: ['peitoral', 'ombro'], equipment: 'halteres' },
-  { name: 'Crucifixo na máquina', met: 4.5, level: 'iniciante', groups: ['peitoral'], equipment: 'máquina' },
+  {
+    name: 'Supino reto com barra',
+    met: 6.0,
+    level: 'intermediario',
+    groups: ['peitoral', 'triceps', 'ombro'],
+    equipment: 'barra',
+  },
+  {
+    name: 'Supino inclinado com halteres',
+    met: 5.5,
+    level: 'intermediario',
+    groups: ['peitoral', 'ombro'],
+    equipment: 'halteres',
+  },
+  {
+    name: 'Crucifixo na máquina',
+    met: 4.5,
+    level: 'iniciante',
+    groups: ['peitoral'],
+    equipment: 'máquina',
+  },
   // Dorsal
-  { name: 'Puxada frontal', met: 5.0, level: 'iniciante', groups: ['dorsal', 'biceps'], equipment: 'máquina' },
-  { name: 'Remada baixa', met: 5.5, level: 'intermediario', groups: ['dorsal', 'biceps'], equipment: 'máquina' },
-  { name: 'Barra fixa', met: 8.0, level: 'avancado', groups: ['dorsal', 'biceps', 'core'], equipment: 'peso corporal' },
+  {
+    name: 'Puxada frontal',
+    met: 5.0,
+    level: 'iniciante',
+    groups: ['dorsal', 'biceps'],
+    equipment: 'máquina',
+  },
+  {
+    name: 'Remada baixa',
+    met: 5.5,
+    level: 'intermediario',
+    groups: ['dorsal', 'biceps'],
+    equipment: 'máquina',
+  },
+  {
+    name: 'Barra fixa',
+    met: 8.0,
+    level: 'avancado',
+    groups: ['dorsal', 'biceps', 'core'],
+    equipment: 'peso corporal',
+  },
   // Quadriceps / posterior
-  { name: 'Agachamento livre', met: 6.0, level: 'intermediario', groups: ['quadriceps', 'gluteo', 'posterior'], equipment: 'barra' },
-  { name: 'Leg press', met: 5.5, level: 'iniciante', groups: ['quadriceps', 'gluteo'], equipment: 'máquina' },
-  { name: 'Cadeira extensora', met: 4.0, level: 'iniciante', groups: ['quadriceps'], equipment: 'máquina' },
-  { name: 'Mesa flexora', met: 4.0, level: 'iniciante', groups: ['posterior'], equipment: 'máquina' },
-  { name: 'Stiff com halteres', met: 5.0, level: 'intermediario', groups: ['posterior', 'gluteo'], equipment: 'halteres' },
+  {
+    name: 'Agachamento livre',
+    met: 6.0,
+    level: 'intermediario',
+    groups: ['quadriceps', 'gluteo', 'posterior'],
+    equipment: 'barra',
+  },
+  {
+    name: 'Leg press',
+    met: 5.5,
+    level: 'iniciante',
+    groups: ['quadriceps', 'gluteo'],
+    equipment: 'máquina',
+  },
+  {
+    name: 'Cadeira extensora',
+    met: 4.0,
+    level: 'iniciante',
+    groups: ['quadriceps'],
+    equipment: 'máquina',
+  },
+  {
+    name: 'Mesa flexora',
+    met: 4.0,
+    level: 'iniciante',
+    groups: ['posterior'],
+    equipment: 'máquina',
+  },
+  {
+    name: 'Stiff com halteres',
+    met: 5.0,
+    level: 'intermediario',
+    groups: ['posterior', 'gluteo'],
+    equipment: 'halteres',
+  },
   // Ombro
-  { name: 'Desenvolvimento militar', met: 5.5, level: 'intermediario', groups: ['ombro', 'triceps'], equipment: 'barra' },
-  { name: 'Elevação lateral', met: 4.5, level: 'iniciante', groups: ['ombro'], equipment: 'halteres' },
+  {
+    name: 'Desenvolvimento militar',
+    met: 5.5,
+    level: 'intermediario',
+    groups: ['ombro', 'triceps'],
+    equipment: 'barra',
+  },
+  {
+    name: 'Elevação lateral',
+    met: 4.5,
+    level: 'iniciante',
+    groups: ['ombro'],
+    equipment: 'halteres',
+  },
   // Braço
-  { name: 'Rosca direta com barra', met: 4.5, level: 'iniciante', groups: ['biceps'], equipment: 'barra' },
+  {
+    name: 'Rosca direta com barra',
+    met: 4.5,
+    level: 'iniciante',
+    groups: ['biceps'],
+    equipment: 'barra',
+  },
   { name: 'Tríceps testa', met: 4.5, level: 'iniciante', groups: ['triceps'], equipment: 'barra' },
-  { name: 'Tríceps corda na polia', met: 4.0, level: 'iniciante', groups: ['triceps'], equipment: 'polia' },
+  {
+    name: 'Tríceps corda na polia',
+    met: 4.0,
+    level: 'iniciante',
+    groups: ['triceps'],
+    equipment: 'polia',
+  },
   // Core
-  { name: 'Prancha frontal', met: 4.0, level: 'iniciante', groups: ['core'], equipment: 'peso corporal' },
-  { name: 'Abdominal crunch', met: 3.5, level: 'iniciante', groups: ['core'], equipment: 'peso corporal' },
+  {
+    name: 'Prancha frontal',
+    met: 4.0,
+    level: 'iniciante',
+    groups: ['core'],
+    equipment: 'peso corporal',
+  },
+  {
+    name: 'Abdominal crunch',
+    met: 3.5,
+    level: 'iniciante',
+    groups: ['core'],
+    equipment: 'peso corporal',
+  },
   // Aeróbico
-  { name: 'Esteira corrida moderada', met: 7.0, level: 'intermediario', groups: ['aerobico', 'quadriceps'], equipment: 'esteira' },
-  { name: 'Bike spinning HIIT', met: 8.5, level: 'avancado', groups: ['aerobico', 'quadriceps'], equipment: 'bike' },
+  {
+    name: 'Esteira corrida moderada',
+    met: 7.0,
+    level: 'intermediario',
+    groups: ['aerobico', 'quadriceps'],
+    equipment: 'esteira',
+  },
+  {
+    name: 'Bike spinning HIIT',
+    met: 8.5,
+    level: 'avancado',
+    groups: ['aerobico', 'quadriceps'],
+    equipment: 'bike',
+  },
 ] as const
 
 const WORKOUT_TEMPLATES = [
@@ -64,12 +173,36 @@ const WORKOUT_TEMPLATES = [
     estimatedDurationMin: 60,
     description: 'Treino completo de membros superiores com foco em hipertrofia.',
     items: [
-      { exerciseName: 'Supino reto com barra', sets: 4, reps: '8-10', loadKg: null, restSeconds: 90 },
-      { exerciseName: 'Supino inclinado com halteres', sets: 3, reps: '10-12', loadKg: null, restSeconds: 60 },
+      {
+        exerciseName: 'Supino reto com barra',
+        sets: 4,
+        reps: '8-10',
+        loadKg: null,
+        restSeconds: 90,
+      },
+      {
+        exerciseName: 'Supino inclinado com halteres',
+        sets: 3,
+        reps: '10-12',
+        loadKg: null,
+        restSeconds: 60,
+      },
       { exerciseName: 'Puxada frontal', sets: 4, reps: '10', loadKg: null, restSeconds: 90 },
       { exerciseName: 'Remada baixa', sets: 3, reps: '10-12', loadKg: null, restSeconds: 60 },
-      { exerciseName: 'Desenvolvimento militar', sets: 3, reps: '10', loadKg: null, restSeconds: 60 },
-      { exerciseName: 'Rosca direta com barra', sets: 3, reps: '12', loadKg: null, restSeconds: 45 },
+      {
+        exerciseName: 'Desenvolvimento militar',
+        sets: 3,
+        reps: '10',
+        loadKg: null,
+        restSeconds: 60,
+      },
+      {
+        exerciseName: 'Rosca direta com barra',
+        sets: 3,
+        reps: '12',
+        loadKg: null,
+        restSeconds: 45,
+      },
     ],
   },
   {
@@ -169,7 +302,9 @@ async function main() {
       if (itemsToInsert.length > 0) {
         await db.insert(workoutItems).values(itemsToInsert)
       }
-      console.log(`  • ${tenant.name}: workout '${wt.name}' criado com ${itemsToInsert.length} items`)
+      console.log(
+        `  • ${tenant.name}: workout '${wt.name}' criado com ${itemsToInsert.length} items`,
+      )
     }
   }
 

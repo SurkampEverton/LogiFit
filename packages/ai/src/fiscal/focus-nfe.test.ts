@@ -81,6 +81,25 @@ describe('FocusNfeProvider', () => {
     )
   })
 
+  it('separa numeracao do documento da numeracao do RPS', async () => {
+    // A primeira NFS-e real saiu como nº 12 em Cascavel enquanto o RPS era
+    // serie 13 nº 6. Exibir o RPS como se fosse a nota manda o operador
+    // procurar no portal do municipio um numero que nao existe.
+    const fetchFn = vi.fn<FiscalFetchFn>(async () =>
+      jsonResponse(200, { status: 'autorizado', numero_nfse: 12, serie_nfse: '1' }),
+    )
+    const result = await providerWith(fetchFn).queryStatus('lf-nfse-x-13-6', 'nfse')
+    expect(result.documentNumber).toBe('12')
+    expect(result.documentSerie).toBe('1')
+  })
+
+  it('numeracao ausente vira null, nao string vazia', async () => {
+    const fetchFn = vi.fn<FiscalFetchFn>(async () => jsonResponse(200, { status: 'autorizado' }))
+    const result = await providerWith(fetchFn).queryStatus('lf-nfse-x-13-6', 'nfse')
+    expect(result.documentNumber).toBeNull()
+    expect(result.documentSerie).toBeNull()
+  })
+
   it('env producao usa api.focusnfe.com.br', async () => {
     const fetchFn = vi.fn<FiscalFetchFn>(async () => jsonResponse(202, {}))
     const provider = new FocusNfeProvider({

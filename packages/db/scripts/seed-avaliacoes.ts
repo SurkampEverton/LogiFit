@@ -18,6 +18,7 @@
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
+import { calculateImc, calculateTmbMifflin } from '../src/avaliacoes/calc.js'
 import {
   assessmentCalculations,
   assessmentMeasurements,
@@ -26,7 +27,6 @@ import {
   members,
   tenants,
 } from '../src/schema/index.js'
-import { calculateImc, calculatePollock7, calculateTmbMifflin } from '../src/avaliacoes/calc.js'
 
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/logifit'
@@ -56,9 +56,23 @@ const GLOBAL_TYPES = [
       { key: 'peso_kg', label: 'Peso', kind: 'number', unit: 'kg', min: 30, max: 250 },
       { key: 'altura_cm', label: 'Altura', kind: 'number', unit: 'cm', min: 100, max: 230 },
       { key: 'pct_gordura', label: '% Gordura', kind: 'number', unit: '%', min: 1, max: 70 },
-      { key: 'massa_magra_kg', label: 'Massa magra', kind: 'number', unit: 'kg', min: 10, max: 150 },
+      {
+        key: 'massa_magra_kg',
+        label: 'Massa magra',
+        kind: 'number',
+        unit: 'kg',
+        min: 10,
+        max: 150,
+      },
       { key: 'pct_agua', label: '% Água corporal', kind: 'number', unit: '%', min: 30, max: 75 },
-      { key: 'gordura_visceral', label: 'Gordura visceral', kind: 'number', unit: 'nível', min: 1, max: 30 },
+      {
+        key: 'gordura_visceral',
+        label: 'Gordura visceral',
+        kind: 'number',
+        unit: 'nível',
+        min: 1,
+        max: 30,
+      },
     ],
   },
   {
@@ -70,11 +84,32 @@ const GLOBAL_TYPES = [
     clinicalReference: 'Pollock & Jackson 1980; Siri 1956',
     fields: [
       { key: 'dobra_tricipital', label: 'Tricipital', kind: 'number', unit: 'mm', min: 0, max: 60 },
-      { key: 'dobra_subescapular', label: 'Subescapular', kind: 'number', unit: 'mm', min: 0, max: 60 },
-      { key: 'dobra_supra_iliaca', label: 'Supra-ilíaca', kind: 'number', unit: 'mm', min: 0, max: 60 },
+      {
+        key: 'dobra_subescapular',
+        label: 'Subescapular',
+        kind: 'number',
+        unit: 'mm',
+        min: 0,
+        max: 60,
+      },
+      {
+        key: 'dobra_supra_iliaca',
+        label: 'Supra-ilíaca',
+        kind: 'number',
+        unit: 'mm',
+        min: 0,
+        max: 60,
+      },
       { key: 'dobra_abdominal', label: 'Abdominal', kind: 'number', unit: 'mm', min: 0, max: 60 },
       { key: 'dobra_peitoral', label: 'Peitoral', kind: 'number', unit: 'mm', min: 0, max: 60 },
-      { key: 'dobra_axilar_media', label: 'Axilar média', kind: 'number', unit: 'mm', min: 0, max: 60 },
+      {
+        key: 'dobra_axilar_media',
+        label: 'Axilar média',
+        kind: 'number',
+        unit: 'mm',
+        min: 0,
+        max: 60,
+      },
       { key: 'dobra_coxa', label: 'Coxa', kind: 'number', unit: 'mm', min: 0, max: 60 },
     ],
   },
@@ -84,15 +119,29 @@ const GLOBAL_TYPES = [
     category: 'anamnese' as const,
     vertical: 'academia' as const,
     fields: [
-      { key: 'objetivo_principal', label: 'Objetivo principal', kind: 'enum',
-        options: ['hipertrofia', 'emagrecimento', 'condicionamento', 'reabilitacao', 'saude_geral'] },
-      { key: 'nivel_atividade', label: 'Nível atividade atual', kind: 'enum',
-        options: ['sedentario', 'leve', 'moderado', 'intenso'] },
+      {
+        key: 'objetivo_principal',
+        label: 'Objetivo principal',
+        kind: 'enum',
+        options: ['hipertrofia', 'emagrecimento', 'condicionamento', 'reabilitacao', 'saude_geral'],
+      },
+      {
+        key: 'nivel_atividade',
+        label: 'Nível atividade atual',
+        kind: 'enum',
+        options: ['sedentario', 'leve', 'moderado', 'intenso'],
+      },
       { key: 'historico_medico', label: 'Histórico médico relevante', kind: 'text' },
       { key: 'medicamentos', label: 'Medicamentos em uso', kind: 'text' },
       { key: 'restricoes_motoras', label: 'Restrições motoras conhecidas', kind: 'text' },
-      { key: 'frequencia_semanal', label: 'Frequência semanal alvo', kind: 'number',
-        unit: 'sessões/semana', min: 1, max: 14 },
+      {
+        key: 'frequencia_semanal',
+        label: 'Frequência semanal alvo',
+        kind: 'number',
+        unit: 'sessões/semana',
+        min: 1,
+        max: 14,
+      },
     ],
   },
   {

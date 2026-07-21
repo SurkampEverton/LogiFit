@@ -251,9 +251,7 @@ async function main() {
         })
     }
 
-    console.log(
-      `  • ${tenant.name}: 2 contas + ${SAMPLE_TX_DESCRIPTIONS.length} tx + 5 rules`,
-    )
+    console.log(`  • ${tenant.name}: 2 contas + ${SAMPLE_TX_DESCRIPTIONS.length} tx + 5 rules`)
   }
 
   await pool.end()

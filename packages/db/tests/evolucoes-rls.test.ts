@@ -40,10 +40,9 @@ async function getOrCreateMember(tenantId: string): Promise<string> {
 }
 
 async function getUser(tenantId: string): Promise<string> {
-  const r = await pool.query<{ id: string }>(
-    `SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`,
-    [tenantId],
-  )
+  const r = await pool.query<{ id: string }>(`SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`, [
+    tenantId,
+  ])
   if (r.rows[0]) return r.rows[0].id
   const p = await pool.query<{ id: string }>(
     `INSERT INTO persons (tenant_id, kind, name, email)
@@ -293,10 +292,9 @@ describe('evolucao_attachments — checks + status flow', () => {
       [TENANT_REDE, ev.rows[0]!.id, userId],
     )
     expect(at.rows[0]!.scan_status).toBe('pending')
-    await pool.query(
-      `UPDATE evolucao_attachments SET scan_status = 'clean' WHERE id = $1`,
-      [at.rows[0]!.id],
-    )
+    await pool.query(`UPDATE evolucao_attachments SET scan_status = 'clean' WHERE id = $1`, [
+      at.rows[0]!.id,
+    ])
     const after = await pool.query<{ scan_status: string }>(
       `SELECT scan_status FROM evolucao_attachments WHERE id = $1`,
       [at.rows[0]!.id],

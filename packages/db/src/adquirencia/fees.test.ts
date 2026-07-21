@@ -3,10 +3,10 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  type FranchiseAgreement,
   computeSaleCost,
   quoteAnticipation,
   splitFranchiseSale,
-  type FranchiseAgreement,
 } from './fees'
 
 describe('computeSaleCost', () => {

@@ -14,11 +14,7 @@
 import { and, eq, sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import {
-  messageTemplates,
-  reguas,
-  tenants,
-} from '../src/schema/index.js'
+import { messageTemplates, reguas, tenants } from '../src/schema/index.js'
 
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/logifit'

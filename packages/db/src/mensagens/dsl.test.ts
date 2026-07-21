@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ReguaDslSchema,
   extractTemplateVariables,
   isWithinHourWindow,
   nextActionAtFromSteps,
   renderTemplate,
-  ReguaDslSchema,
 } from './dsl'
 
 describe('ReguaDslSchema — validação', () => {
@@ -15,9 +15,24 @@ describe('ReguaDslSchema — validação', () => {
         filter: { days_overdue: [1, 3, 7] },
       },
       actions: [
-        { kind: 'send_message' as const, channel: 'whatsapp' as const, template_slug: 'cobranca_d1', delay_days: 0 },
-        { kind: 'send_message' as const, channel: 'whatsapp' as const, template_slug: 'cobranca_d3', delay_days: 2 },
-        { kind: 'send_message' as const, channel: 'email' as const, template_slug: 'cobranca_d7', delay_days: 4 },
+        {
+          kind: 'send_message' as const,
+          channel: 'whatsapp' as const,
+          template_slug: 'cobranca_d1',
+          delay_days: 0,
+        },
+        {
+          kind: 'send_message' as const,
+          channel: 'whatsapp' as const,
+          template_slug: 'cobranca_d3',
+          delay_days: 2,
+        },
+        {
+          kind: 'send_message' as const,
+          channel: 'email' as const,
+          template_slug: 'cobranca_d7',
+          delay_days: 4,
+        },
       ],
       stop_on: ['invoice.paid' as const],
       guards: { consent: 'marketing_messages' as const, rate_limit_per_member_24h: 3 },
@@ -53,9 +68,7 @@ describe('ReguaDslSchema — validação', () => {
   it('delay_days negativo em send_message rejeitado', () => {
     const dsl = {
       trigger: { event: 'invoice.overdue' },
-      actions: [
-        { kind: 'send_message', channel: 'whatsapp', template_slug: 'x', delay_days: -1 },
-      ],
+      actions: [{ kind: 'send_message', channel: 'whatsapp', template_slug: 'x', delay_days: -1 }],
     }
     expect(ReguaDslSchema.safeParse(dsl).success).toBe(false)
   })
@@ -148,11 +161,7 @@ describe('renderTemplate', () => {
 describe('extractTemplateVariables', () => {
   it('extrai vars únicas ordenadas', () => {
     const body = 'Olá {{member.name}}, sua fatura {{invoice.id}} de {{invoice.amount}}.'
-    expect(extractTemplateVariables(body)).toEqual([
-      'invoice.amount',
-      'invoice.id',
-      'member.name',
-    ])
+    expect(extractTemplateVariables(body)).toEqual(['invoice.amount', 'invoice.id', 'member.name'])
   })
 
   it('body sem vars retorna []', () => {

@@ -78,9 +78,9 @@ export function parseNutrients(raw: unknown): Nutrients {
 }
 
 /** Validação não-throw (retorna result discriminado). */
-export function safeParseNutrients(raw: unknown):
-  | { ok: true; data: Nutrients }
-  | { ok: false; issues: string[] } {
+export function safeParseNutrients(
+  raw: unknown,
+): { ok: true; data: Nutrients } | { ok: false; issues: string[] } {
   const r = NutrientsSchema.safeParse(raw)
   if (r.success) return { ok: true, data: r.data }
   return {

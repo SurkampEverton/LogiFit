@@ -3,12 +3,12 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  conditionMatches,
-  matchRules,
-  suggestMatches,
   type PaymentCandidate,
   type RuleRow,
   type TransactionInput,
+  conditionMatches,
+  matchRules,
+  suggestMatches,
 } from './reconcile'
 
 const TX_ALUGUEL: TransactionInput = {
@@ -32,7 +32,9 @@ describe('conditionMatches', () => {
   })
 
   it('amountMinCents/amountMaxCents usa valor absoluto', () => {
-    expect(conditionMatches(TX_ALUGUEL, { amountMinCents: 300_000, amountMaxCents: 400_000 })).toBe(true)
+    expect(conditionMatches(TX_ALUGUEL, { amountMinCents: 300_000, amountMaxCents: 400_000 })).toBe(
+      true,
+    )
     expect(conditionMatches(TX_ALUGUEL, { amountMinCents: 400_000 })).toBe(false)
   })
 
@@ -43,7 +45,9 @@ describe('conditionMatches', () => {
   })
 
   it('postedFrom/postedTo aceita ISO date', () => {
-    expect(conditionMatches(TX_ALUGUEL, { postedFrom: '2026-05-01', postedTo: '2026-05-10' })).toBe(true)
+    expect(conditionMatches(TX_ALUGUEL, { postedFrom: '2026-05-01', postedTo: '2026-05-10' })).toBe(
+      true,
+    )
     expect(conditionMatches(TX_ALUGUEL, { postedFrom: '2026-06-01' })).toBe(false)
   })
 
@@ -126,8 +130,22 @@ describe('suggestMatches — heurística', () => {
 
   it('filtra por kind: tx negativa → AP; tx positiva → AR', () => {
     const candidates: PaymentCandidate[] = [
-      { id: 'ar-1', kind: 'ar', amountCents: 380_000, dueDate: '2026-05-05', description: 'Aluguel matriz', payerName: 'X' },
-      { id: 'ap-1', kind: 'ap', amountCents: 380_000, dueDate: '2026-05-05', description: 'Aluguel matriz', supplierName: 'X' },
+      {
+        id: 'ar-1',
+        kind: 'ar',
+        amountCents: 380_000,
+        dueDate: '2026-05-05',
+        description: 'Aluguel matriz',
+        payerName: 'X',
+      },
+      {
+        id: 'ap-1',
+        kind: 'ap',
+        amountCents: 380_000,
+        dueDate: '2026-05-05',
+        description: 'Aluguel matriz',
+        supplierName: 'X',
+      },
     ]
     const r = suggestMatches(TX_ALUGUEL, candidates) // tx negativa
     expect(r).toHaveLength(1)
@@ -167,8 +185,20 @@ describe('suggestMatches — heurística', () => {
 
   it('top-3 retornado em ordem de score desc', () => {
     const candidates: PaymentCandidate[] = [
-      { id: 'a', kind: 'ap', amountCents: 380_000, dueDate: '2026-05-05', description: 'Aluguel matriz' },
-      { id: 'b', kind: 'ap', amountCents: 380_000, dueDate: '2026-05-12', description: 'Aluguel outro' },
+      {
+        id: 'a',
+        kind: 'ap',
+        amountCents: 380_000,
+        dueDate: '2026-05-05',
+        description: 'Aluguel matriz',
+      },
+      {
+        id: 'b',
+        kind: 'ap',
+        amountCents: 380_000,
+        dueDate: '2026-05-12',
+        description: 'Aluguel outro',
+      },
       { id: 'c', kind: 'ap', amountCents: 379_500, dueDate: '2026-05-05', description: 'Algo' },
       { id: 'd', kind: 'ap', amountCents: 200_000, dueDate: '2026-05-05', description: 'Outra' },
     ]

@@ -40,7 +40,7 @@ const IMC_BANDS: { range: [number, number]; label: string }[] = [
   { range: [25, 30], label: 'sobrepeso' },
   { range: [30, 35], label: 'obesidade_i' },
   { range: [35, 40], label: 'obesidade_ii' },
-  { range: [40, Infinity], label: 'obesidade_iii' },
+  { range: [40, Number.POSITIVE_INFINITY], label: 'obesidade_iii' },
 ]
 
 export function calculateImc(input: ImcInput): CalcResult | null {
@@ -115,11 +115,9 @@ export function calculatePollock7(input: Pollock7Input): CalcResult | null {
 
   let density: number
   if (input.sex === 'male') {
-    density =
-      1.112 - 0.00043499 * sum + 0.00000055 * sum * sum - 0.00028826 * input.ageYears
+    density = 1.112 - 0.00043499 * sum + 0.00000055 * sum * sum - 0.00028826 * input.ageYears
   } else {
-    density =
-      1.0970 - 0.00046971 * sum + 0.00000056 * sum * sum - 0.00012828 * input.ageYears
+    density = 1.097 - 0.00046971 * sum + 0.00000056 * sum * sum - 0.00012828 * input.ageYears
   }
   if (density <= 0 || density > 1.2) return null
   const pctFat = 495 / density - 450
@@ -150,15 +148,9 @@ export interface TmbInput {
 }
 
 export function calculateTmbMifflin(input: TmbInput): CalcResult | null {
-  if (
-    input.weightKg <= 0 ||
-    input.heightCm <= 0 ||
-    input.ageYears <= 0 ||
-    input.ageYears > 120
-  )
+  if (input.weightKg <= 0 || input.heightCm <= 0 || input.ageYears <= 0 || input.ageYears > 120)
     return null
-  const base =
-    10 * input.weightKg + 6.25 * input.heightCm - 5 * input.ageYears
+  const base = 10 * input.weightKg + 6.25 * input.heightCm - 5 * input.ageYears
   const tmb = input.sex === 'male' ? base + 5 : base - 161
   if (tmb < 500 || tmb > 5000) return null
   return { value: Math.round(tmb * 100) / 100 }
@@ -172,26 +164,13 @@ export function calculateTmbMifflin(input: TmbInput): CalcResult | null {
  * Mulheres: TMB = 447.593 + 9.247 × peso + 3.098 × altura − 4.330 × idade
  */
 export function calculateTmbHarrisBenedict(input: TmbInput): CalcResult | null {
-  if (
-    input.weightKg <= 0 ||
-    input.heightCm <= 0 ||
-    input.ageYears <= 0 ||
-    input.ageYears > 120
-  )
+  if (input.weightKg <= 0 || input.heightCm <= 0 || input.ageYears <= 0 || input.ageYears > 120)
     return null
   let tmb: number
   if (input.sex === 'male') {
-    tmb =
-      88.362 +
-      13.397 * input.weightKg +
-      4.799 * input.heightCm -
-      5.677 * input.ageYears
+    tmb = 88.362 + 13.397 * input.weightKg + 4.799 * input.heightCm - 5.677 * input.ageYears
   } else {
-    tmb =
-      447.593 +
-      9.247 * input.weightKg +
-      3.098 * input.heightCm -
-      4.330 * input.ageYears
+    tmb = 447.593 + 9.247 * input.weightKg + 3.098 * input.heightCm - 4.33 * input.ageYears
   }
   if (tmb < 500 || tmb > 5000) return null
   return { value: Math.round(tmb * 100) / 100 }
@@ -211,9 +190,7 @@ export interface KatchMcArdleInput {
   leanMassKg: number
 }
 
-export function calculateTmbKatchMcArdle(
-  input: KatchMcArdleInput,
-): CalcResult | null {
+export function calculateTmbKatchMcArdle(input: KatchMcArdleInput): CalcResult | null {
   if (input.leanMassKg <= 0 || input.leanMassKg > 200) return null
   const tmb = 370 + 21.6 * input.leanMassKg
   if (tmb < 500 || tmb > 5000) return null

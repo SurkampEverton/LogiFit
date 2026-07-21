@@ -16,7 +16,12 @@ describe('computeFeatures', () => {
         '2026-05-10T18:00:00Z',
       ],
       invoices: [
-        { status: 'paid', amountCents: 18900, dueDate: '2026-05-01', paidAt: '2026-05-01T10:00:00Z' },
+        {
+          status: 'paid',
+          amountCents: 18900,
+          dueDate: '2026-05-01',
+          paidAt: '2026-05-01T10:00:00Z',
+        },
       ],
       contractStartedAt: '2025-12-01T00:00:00Z',
     })
@@ -94,11 +99,31 @@ describe('computeFeatures', () => {
       checkInDates: [],
       invoices: [
         // dentro de 6m: 3 invoices
-        { status: 'paid', amountCents: 10000, dueDate: '2026-03-01', paidAt: '2026-03-01T00:00:00Z' },
-        { status: 'paid', amountCents: 20000, dueDate: '2026-04-01', paidAt: '2026-04-01T00:00:00Z' },
-        { status: 'paid', amountCents: 30000, dueDate: '2026-05-01', paidAt: '2026-05-01T00:00:00Z' },
+        {
+          status: 'paid',
+          amountCents: 10000,
+          dueDate: '2026-03-01',
+          paidAt: '2026-03-01T00:00:00Z',
+        },
+        {
+          status: 'paid',
+          amountCents: 20000,
+          dueDate: '2026-04-01',
+          paidAt: '2026-04-01T00:00:00Z',
+        },
+        {
+          status: 'paid',
+          amountCents: 30000,
+          dueDate: '2026-05-01',
+          paidAt: '2026-05-01T00:00:00Z',
+        },
         // fora de 6m (devia ignorar)
-        { status: 'paid', amountCents: 99999, dueDate: '2024-01-01', paidAt: '2024-01-01T00:00:00Z' },
+        {
+          status: 'paid',
+          amountCents: 99999,
+          dueDate: '2024-01-01',
+          paidAt: '2024-01-01T00:00:00Z',
+        },
       ],
       contractStartedAt: '2024-01-01T00:00:00Z',
     })

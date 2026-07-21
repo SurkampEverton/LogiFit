@@ -59,18 +59,44 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await pool.query('DELETE FROM payments WHERE invoice_id IN (SELECT id FROM invoices WHERE contract_id IN (SELECT id FROM contracts WHERE plan_id IN ($1, $2)))', [TEST_PLAN_REDE, TEST_PLAN_FRANQ]).catch(() => {})
-  await pool.query('DELETE FROM invoices WHERE contract_id IN (SELECT id FROM contracts WHERE plan_id IN ($1, $2))', [TEST_PLAN_REDE, TEST_PLAN_FRANQ]).catch(() => {})
-  await pool.query('DELETE FROM contracts WHERE plan_id IN ($1, $2)', [TEST_PLAN_REDE, TEST_PLAN_FRANQ]).catch(() => {})
-  await pool.query('DELETE FROM plans WHERE id IN ($1, $2)', [TEST_PLAN_REDE, TEST_PLAN_FRANQ]).catch(() => {})
+  await pool
+    .query(
+      'DELETE FROM payments WHERE invoice_id IN (SELECT id FROM invoices WHERE contract_id IN (SELECT id FROM contracts WHERE plan_id IN ($1, $2)))',
+      [TEST_PLAN_REDE, TEST_PLAN_FRANQ],
+    )
+    .catch(() => {})
+  await pool
+    .query(
+      'DELETE FROM invoices WHERE contract_id IN (SELECT id FROM contracts WHERE plan_id IN ($1, $2))',
+      [TEST_PLAN_REDE, TEST_PLAN_FRANQ],
+    )
+    .catch(() => {})
+  await pool
+    .query('DELETE FROM contracts WHERE plan_id IN ($1, $2)', [TEST_PLAN_REDE, TEST_PLAN_FRANQ])
+    .catch(() => {})
+  await pool
+    .query('DELETE FROM plans WHERE id IN ($1, $2)', [TEST_PLAN_REDE, TEST_PLAN_FRANQ])
+    .catch(() => {})
   await pool.query('DELETE FROM asaas_keys WHERE api_key LIKE $1', ['test-key-%']).catch(() => {})
   await pool.end()
 })
 
 beforeEach(async () => {
-  await pool.query('DELETE FROM payments WHERE invoice_id IN (SELECT id FROM invoices WHERE contract_id IN (SELECT id FROM contracts WHERE plan_id IN ($1, $2)))', [TEST_PLAN_REDE, TEST_PLAN_FRANQ]).catch(() => {})
-  await pool.query('DELETE FROM invoices WHERE contract_id IN (SELECT id FROM contracts WHERE plan_id IN ($1, $2))', [TEST_PLAN_REDE, TEST_PLAN_FRANQ]).catch(() => {})
-  await pool.query('DELETE FROM contracts WHERE plan_id IN ($1, $2)', [TEST_PLAN_REDE, TEST_PLAN_FRANQ]).catch(() => {})
+  await pool
+    .query(
+      'DELETE FROM payments WHERE invoice_id IN (SELECT id FROM invoices WHERE contract_id IN (SELECT id FROM contracts WHERE plan_id IN ($1, $2)))',
+      [TEST_PLAN_REDE, TEST_PLAN_FRANQ],
+    )
+    .catch(() => {})
+  await pool
+    .query(
+      'DELETE FROM invoices WHERE contract_id IN (SELECT id FROM contracts WHERE plan_id IN ($1, $2))',
+      [TEST_PLAN_REDE, TEST_PLAN_FRANQ],
+    )
+    .catch(() => {})
+  await pool
+    .query('DELETE FROM contracts WHERE plan_id IN ($1, $2)', [TEST_PLAN_REDE, TEST_PLAN_FRANQ])
+    .catch(() => {})
 })
 
 async function withTenantContext<T>(
@@ -221,7 +247,13 @@ describe('invoices — RLS + asaas_id unique + breakdown jsonb', () => {
     const inv = await pool.query<{ breakdown: typeof breakdown }>(
       `INSERT INTO invoices (tenant_id, company_id, contract_id, member_id, amount_cents, due_at, breakdown)
        VALUES ($1, $2, $3, $4, 9900, now() + interval '5 days', $5::jsonb) RETURNING breakdown`,
-      [TENANT_REDE, REDE_MATRIZ_COMPANY_ID, r.rows[0]?.id, TEST_MEMBER_ID, JSON.stringify(breakdown)],
+      [
+        TENANT_REDE,
+        REDE_MATRIZ_COMPANY_ID,
+        r.rows[0]?.id,
+        TEST_MEMBER_ID,
+        JSON.stringify(breakdown),
+      ],
     )
     expect(inv.rows[0]?.breakdown).toEqual(breakdown)
   })

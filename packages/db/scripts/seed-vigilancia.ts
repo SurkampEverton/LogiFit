@@ -73,7 +73,11 @@ const EQUIPMENTS: EquipmentSeed[] = [
 
 const CHECKLIST_ITEMS = [
   { key: 'alcool_70', label: 'Limpar superfícies com álcool 70%', required: true },
-  { key: 'descarte_perfurocortantes', label: 'Esvaziar descartador perfurocortantes', required: true },
+  {
+    key: 'descarte_perfurocortantes',
+    label: 'Esvaziar descartador perfurocortantes',
+    required: true,
+  },
   { key: 'troca_lencois', label: 'Trocar lençóis e toalhas', required: true },
   { key: 'lixo_organico', label: 'Esvaziar lixo orgânico', required: false },
   { key: 'esterilizar_aparelhos', label: 'Esterilizar transdutores/eletrodos', required: false },
@@ -115,10 +119,7 @@ async function main() {
         .select({ id: equipment.id })
         .from(equipment)
         .where(
-          and(
-            eq(equipment.manufacturer, seed.manufacturer),
-            eq(equipment.serialNumber, serial),
-          ),
+          and(eq(equipment.manufacturer, seed.manufacturer), eq(equipment.serialNumber, serial)),
         )
         .limit(1)
 
@@ -164,10 +165,7 @@ async function main() {
           plannedFor,
           status: 'scheduled',
           externalLocation: seed.maintenanceKind === 'calibration', // calibração tipicamente externa
-          externalSupplierId:
-            seed.maintenanceKind === 'calibration'
-              ? crypto.randomUUID()
-              : null,
+          externalSupplierId: seed.maintenanceKind === 'calibration' ? crypto.randomUUID() : null,
           observations: 'Manutenção semestral seed',
           createdByUserId: user.id,
         })
@@ -181,10 +179,7 @@ async function main() {
       .select({ id: cleaningChecklists.id })
       .from(cleaningChecklists)
       .where(
-        and(
-          eq(cleaningChecklists.tenantId, tenant.id),
-          eq(cleaningChecklists.name, checklistName),
-        ),
+        and(eq(cleaningChecklists.tenantId, tenant.id), eq(cleaningChecklists.name, checklistName)),
       )
       .limit(1)
 

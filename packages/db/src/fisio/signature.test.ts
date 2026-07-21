@@ -3,14 +3,14 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  type SignaturePolicyRow,
+  type TenantSignatureOverrideRow,
   hashConsultaContent,
   resolveSignaturePolicy,
   validateCidCode,
   validateCifCode,
   validateCifQualifier,
   validateLockAttempt,
-  type SignaturePolicyRow,
-  type TenantSignatureOverrideRow,
 } from './signature'
 
 const POLICIES: SignaturePolicyRow[] = [

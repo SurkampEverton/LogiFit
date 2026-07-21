@@ -41,17 +41,21 @@ const EVOL_SEEDS: EvolucaoSeed[] = [
   {
     daysAgo: 15,
     soap: {
-      subjetivo: 'Paciente refere dor lombar irradiando MMII direito (EVA 7/10), iniciada após esforço repetitivo no trabalho.',
-      objetivo: 'ADM lombar reduzida (60%). Lasègue positivo à direita. Força 4/5 paravertebrais. Sem sinais neurológicos.',
+      subjetivo:
+        'Paciente refere dor lombar irradiando MMII direito (EVA 7/10), iniciada após esforço repetitivo no trabalho.',
+      objetivo:
+        'ADM lombar reduzida (60%). Lasègue positivo à direita. Força 4/5 paravertebrais. Sem sinais neurológicos.',
       avaliacao: 'Lombalgia mecânica com componente radicular leve. Sem indicação cirúrgica.',
-      plano: '10 sessões 2×/semana — eletroterapia + cinesioterapia ativa + HEP isométricos paravertebrais.',
+      plano:
+        '10 sessões 2×/semana — eletroterapia + cinesioterapia ativa + HEP isométricos paravertebrais.',
     },
     freeText: 'Paciente trabalha em escritório, sentado 8h/dia. Orientado sobre ergonomia.',
   },
   {
     daysAgo: 8,
     soap: {
-      subjetivo: 'Dor diminuiu para EVA 4/10, melhor no período da manhã. Conseguiu dormir sem analgésico anteontem pela 1ª vez.',
+      subjetivo:
+        'Dor diminuiu para EVA 4/10, melhor no período da manhã. Conseguiu dormir sem analgésico anteontem pela 1ª vez.',
       objetivo: 'ADM lombar 75%. Lasègue negativo. Força 5/5. Sem dor à palpação L4-L5.',
       avaliacao: 'Evolução positiva. Manter conduta com progressão de cargas.',
       plano: 'Iniciar fortalecimento global core. HEP atualizado.',
@@ -60,7 +64,8 @@ const EVOL_SEEDS: EvolucaoSeed[] = [
   {
     daysAgo: 1,
     soap: {
-      subjetivo: 'Dor residual EVA 2/10 ao final do dia. Retornou às atividades laborais sem restrição.',
+      subjetivo:
+        'Dor residual EVA 2/10 ao final do dia. Retornou às atividades laborais sem restrição.',
       objetivo: 'ADM completa. Força 5/5. Postura adequada na simulação de tarefa.',
       avaliacao: 'Alta com orientações. Recomenda-se manutenção semanal de Pilates / HEP.',
       plano: 'Alta. Retorno PRN em 30 dias se sintomas recorrentes.',
@@ -140,12 +145,7 @@ async function main() {
     const existingEvol = await db
       .select({ id: evolucoesSessao.id })
       .from(evolucoesSessao)
-      .where(
-        and(
-          eq(evolucoesSessao.tenantId, tenant.id),
-          eq(evolucoesSessao.memberId, memberId),
-        ),
-      )
+      .where(and(eq(evolucoesSessao.tenantId, tenant.id), eq(evolucoesSessao.memberId, memberId)))
       .limit(1)
     if (existingEvol[0]) continue
 

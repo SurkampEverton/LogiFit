@@ -44,8 +44,7 @@ export function resolveSignaturePolicy(input: {
   tenantOverrides: TenantSignatureOverrideRow[]
   tenantId: string
 }): SignaturePolicyRow {
-  const prof =
-    input.professionOrKind === 'custom' ? 'fisio' : input.professionOrKind
+  const prof = input.professionOrKind === 'custom' ? 'fisio' : input.professionOrKind
   const base = input.policies.find((p) => p.profession === prof)
   if (!base) {
     throw new Error(

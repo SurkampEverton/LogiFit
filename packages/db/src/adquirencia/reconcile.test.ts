@@ -3,13 +3,13 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  type AcquirerRuleRow,
+  type BankTxInput,
+  type SaleInput,
   detectDivergences,
   matchAcquirerRules,
   ruleConditionMatches,
   suggestSettlementMatches,
-  type AcquirerRuleRow,
-  type BankTxInput,
-  type SaleInput,
 } from './reconcile'
 
 const STONE_BANK_AC_ID = '11111111-1111-1111-1111-111111111111'

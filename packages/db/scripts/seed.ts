@@ -147,9 +147,7 @@ async function main() {
       .where(eq(roles.key, 'tenant_owner'))
       .limit(1)
     if (!tenantOwnerRole) {
-      throw new Error(
-        'system role "tenant_owner" não encontrada. Roda `pnpm db:migrate` primeiro.',
-      )
+      throw new Error('system role "tenant_owner" não encontrada. Roda `pnpm db:migrate` primeiro.')
     }
 
     if (!KEEP) {

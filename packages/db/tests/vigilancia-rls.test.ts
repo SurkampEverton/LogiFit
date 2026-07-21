@@ -21,10 +21,9 @@ async function getMatriz(tenantId: string): Promise<string> {
 }
 
 async function getUser(tenantId: string): Promise<string> {
-  const r = await pool.query<{ id: string }>(
-    `SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`,
-    [tenantId],
-  )
+  const r = await pool.query<{ id: string }>(`SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`, [
+    tenantId,
+  ])
   if (r.rows[0]) return r.rows[0].id
   const p = await pool.query<{ id: string }>(
     `INSERT INTO persons (tenant_id, kind, name, email)

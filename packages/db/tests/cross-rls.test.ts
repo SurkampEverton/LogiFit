@@ -50,10 +50,9 @@ async function getOrCreateMember(tenantId: string): Promise<string> {
 }
 
 async function getUser(tenantId: string): Promise<string> {
-  const r = await pool.query<{ id: string }>(
-    `SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`,
-    [tenantId],
-  )
+  const r = await pool.query<{ id: string }>(`SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`, [
+    tenantId,
+  ])
   if (r.rows[0]) return r.rows[0].id
   const p = await pool.query<{ id: string }>(
     `INSERT INTO persons (tenant_id, kind, name, email)
@@ -100,28 +99,28 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await pool
-    .query(
-      `DELETE FROM workout_adaptations WHERE tenant_id IN ($1, $2)`,
-      [TENANT_REDE, TENANT_FRANQUIA],
-    )
+    .query(`DELETE FROM workout_adaptations WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool
-    .query(
-      `DELETE FROM member_injury_alerts WHERE tenant_id IN ($1, $2)`,
-      [TENANT_REDE, TENANT_FRANQUIA],
-    )
+    .query(`DELETE FROM member_injury_alerts WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool
-    .query(
-      `DELETE FROM cid_exercise_contraindications WHERE tenant_id IN ($1, $2)`,
-      [TENANT_REDE, TENANT_FRANQUIA],
-    )
+    .query(`DELETE FROM cid_exercise_contraindications WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool
-    .query(
-      `DELETE FROM workouts WHERE tenant_id IN ($1, $2) AND name = 'Test Workout Cross'`,
-      [TENANT_REDE, TENANT_FRANQUIA],
-    )
+    .query(`DELETE FROM workouts WHERE tenant_id IN ($1, $2) AND name = 'Test Workout Cross'`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool.end()
 })

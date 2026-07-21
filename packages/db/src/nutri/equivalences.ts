@@ -92,7 +92,9 @@ export function rankEquivalents(
 
     const candidateKcal = (candidateNutrients.kcal * equivalentGrams) / 100
     const score =
-      seedKcalTotal === 0 ? Math.abs(candidateKcal) : Math.abs(seedKcalTotal - candidateKcal) / seedKcalTotal
+      seedKcalTotal === 0
+        ? Math.abs(candidateKcal)
+        : Math.abs(seedKcalTotal - candidateKcal) / seedKcalTotal
 
     candidates.push({
       foodId: candidateFoodId,

@@ -69,16 +69,10 @@ afterAll(async () => {
     ])
     .catch(() => {})
   await pool
-    .query('DELETE FROM prescriptions WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM prescriptions WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query('DELETE FROM workout_items WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM workout_items WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
     .query('DELETE FROM workouts WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
@@ -104,16 +98,10 @@ beforeEach(async () => {
     ])
     .catch(() => {})
   await pool
-    .query('DELETE FROM prescriptions WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM prescriptions WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query('DELETE FROM workout_items WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM workout_items WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
     .query('DELETE FROM workouts WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
@@ -236,17 +224,17 @@ describe('workouts — RLS + versionamento via parent_workout_id', () => {
 
     const [seenByRede, seenByFranq] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const r = await c.query<{ id: string }>(
-          'SELECT id FROM workouts WHERE id IN ($1, $2)',
-          [wRede, wFranq],
-        )
+        const r = await c.query<{ id: string }>('SELECT id FROM workouts WHERE id IN ($1, $2)', [
+          wRede,
+          wFranq,
+        ])
         return r.rows.map((x) => x.id)
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const r = await c.query<{ id: string }>(
-          'SELECT id FROM workouts WHERE id IN ($1, $2)',
-          [wRede, wFranq],
-        )
+        const r = await c.query<{ id: string }>('SELECT id FROM workouts WHERE id IN ($1, $2)', [
+          wRede,
+          wFranq,
+        ])
         return r.rows.map((x) => x.id)
       }),
     ])
@@ -259,10 +247,9 @@ describe('workouts — RLS + versionamento via parent_workout_id', () => {
   it('check workouts_version_positive — version=0 rejeitado', async () => {
     let errCode = ''
     try {
-      await pool.query(
-        `INSERT INTO workouts (tenant_id, name, version) VALUES ($1, 'Bad', 0)`,
-        [TENANT_REDE],
-      )
+      await pool.query(`INSERT INTO workouts (tenant_id, name, version) VALUES ($1, 'Bad', 0)`, [
+        TENANT_REDE,
+      ])
     } catch (err) {
       errCode = (err as { code?: string }).code ?? ''
     }
@@ -469,10 +456,9 @@ describe('workout_session_items — append-only (UPDATE blocked by RLS)', () => 
     // DELETE bloqueado
     let deleteBlocked = false
     await withTenantContext(TENANT_REDE, async (client) => {
-      const r = await client.query(
-        `DELETE FROM workout_session_items WHERE session_id = $1`,
-        [sR.rows[0]!.id],
-      )
+      const r = await client.query(`DELETE FROM workout_session_items WHERE session_id = $1`, [
+        sR.rows[0]!.id,
+      ])
       if (r.rowCount === 0) deleteBlocked = true
     })
     expect(deleteBlocked).toBe(true)

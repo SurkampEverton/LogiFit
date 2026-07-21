@@ -2,11 +2,7 @@
  * Engajamento — evaluator unit tests (Sprint 09 Faixa B).
  */
 import { describe, expect, it } from 'vitest'
-import {
-  type MemberContext,
-  evaluateRule,
-  parseRuleJsonb,
-} from './evaluator'
+import { type MemberContext, evaluateRule, parseRuleJsonb } from './evaluator'
 
 function emptyCtx(overrides: Partial<MemberContext> = {}): MemberContext {
   return {

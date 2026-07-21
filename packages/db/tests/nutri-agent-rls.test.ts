@@ -147,9 +147,7 @@ describe('nutri_agent_suggestions — checks + isolation', () => {
   ): Promise<string> {
     const memberId = await getOrCreateMember(tenantId)
     const runId = await createRun(tenantId, memberId)
-    const reviewerCols = overrides.reviewedByUser
-      ? `, reviewed_by_user_id, reviewed_at`
-      : ''
+    const reviewerCols = overrides.reviewedByUser ? `, reviewed_by_user_id, reviewed_at` : ''
     const reviewerVals = overrides.reviewedByUser
       ? `, (SELECT id FROM users WHERE tenant_id = $1 LIMIT 1), now()`
       : ''

@@ -108,6 +108,11 @@ interface FocusResponseBody {
   chave_nfe?: string
   chave?: string
   codigo_verificacao?: string
+  /** Numero/serie da NOTA atribuidos pelo municipio/SEFAZ (nao do RPS) */
+  numero?: string | number
+  serie?: string | number
+  numero_nfse?: string | number
+  serie_nfse?: string | number
   caminho_xml_nota_fiscal?: string
   caminho_danfe?: string
   url?: string
@@ -127,6 +132,14 @@ interface FocusResponseBody {
  */
 function isFocusErrorBody(body: FocusResponseBody): boolean {
   return body.status === undefined && typeof body.codigo === 'string' && body.codigo.length > 0
+}
+
+/** Primeiro valor presente, normalizado pra string. Focus alterna os nomes. */
+function firstDefined(...values: Array<string | number | undefined>): string | null {
+  for (const v of values) {
+    if (v !== undefined && v !== null && String(v).length > 0) return String(v)
+  }
+  return null
 }
 
 function mapEmissionStatus(focusStatus: string | undefined): EmissionResult['status'] {
@@ -238,6 +251,8 @@ export class FocusNfeProvider implements FiscalProvider {
       xmlUrl: body.caminho_xml_nota_fiscal ?? null,
       pdfUrl: body.caminho_danfe ?? body.url_danfe ?? body.url ?? null,
       rejectionReason: status === 'rejected' ? extractRejection(body) : null,
+      documentNumber: firstDefined(body.numero_nfse, body.numero),
+      documentSerie: firstDefined(body.serie_nfse, body.serie),
       raw: body,
       sentPayload,
     }

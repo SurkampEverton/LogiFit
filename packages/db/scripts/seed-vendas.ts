@@ -158,9 +158,7 @@ async function main() {
     }
 
     // 6. Distribui 10 leads entre stages 'open' (não won/lost)
-    const openStages = stages.filter(
-      (s) => s.slug !== 'matriculado' && s.slug !== 'perdido',
-    )
+    const openStages = stages.filter((s) => s.slug !== 'matriculado' && s.slug !== 'perdido')
     for (let i = 0; i < SAMPLE_LEADS.length; i++) {
       const sample = SAMPLE_LEADS[i]!
       const stage = openStages[i % openStages.length]!

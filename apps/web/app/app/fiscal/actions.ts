@@ -512,6 +512,8 @@ export const emitNfseFromInvoice = wrapServerAction(
         numero,
         chave: result.chave,
         providerRef: result.providerRef,
+        numeroDocumento: result.documentNumber ?? null,
+        serieDocumento: result.documentSerie ?? null,
         xmlStoragePath: result.xmlUrl ?? null,
         pdfStoragePath: result.pdfUrl ?? null,
         valorTotalCents: inv.amountCents,
@@ -621,6 +623,8 @@ export const emitNfseManual = wrapServerAction(
         numero,
         chave: result.chave,
         providerRef: result.providerRef,
+        numeroDocumento: result.documentNumber ?? null,
+        serieDocumento: result.documentSerie ?? null,
         xmlStoragePath: result.xmlUrl ?? null,
         pdfStoragePath: result.pdfUrl ?? null,
         valorTotalCents: parsed.valorTotalCents,
@@ -1045,6 +1049,8 @@ export const emitNfeReturn = wrapServerAction(
         numero,
         chave: result.chave,
         providerRef: result.providerRef,
+        numeroDocumento: result.documentNumber ?? null,
+        serieDocumento: result.documentSerie ?? null,
         xmlStoragePath: result.xmlUrl ?? null,
         pdfStoragePath: result.pdfUrl ?? null,
         valorTotalCents: ret.returnAmountCents,
@@ -1405,6 +1411,9 @@ export const queryEmissionStatus = wrapServerAction(
         kind: fiscalEmissions.kind,
         status: fiscalEmissions.status,
         providerRef: fiscalEmissions.providerRef,
+        chave: fiscalEmissions.chave,
+        numeroDocumento: fiscalEmissions.numeroDocumento,
+        serieDocumento: fiscalEmissions.serieDocumento,
       })
       .from(fiscalEmissions)
       .where(
@@ -1430,8 +1439,16 @@ export const queryEmissionStatus = wrapServerAction(
     const provider = await getProviderForTenant(session.logifit.tenantId)
     const result = await provider.queryStatus(em.providerRef, em.kind)
 
-    // Atualiza status local se provider retornar mudança
-    if (result.status !== em.status) {
+    // Sincroniza sempre que o provider trouxer algo novo — nao so quando o
+    // STATUS muda. Condicionar ao status deixava chave, numeracao do municipio
+    // e URLs de XML/PDF de fora quando chegavam depois da nota ja estar
+    // `completed`, que e exatamente quando elas chegam.
+    const hasNewData =
+      result.status !== em.status ||
+      (result.documentNumber != null && result.documentNumber !== em.numeroDocumento) ||
+      (result.documentSerie != null && result.documentSerie !== em.serieDocumento) ||
+      (result.chave != null && result.chave !== em.chave)
+    if (hasNewData) {
       await db
         .update(fiscalEmissions)
         .set({
@@ -1442,9 +1459,16 @@ export const queryEmissionStatus = wrapServerAction(
                 ? 'rejected'
                 : em.status,
           chave: result.chave ?? sql`chave`,
+          // Numeracao atribuida pelo municipio/SEFAZ — so chega ao autorizar.
+          numeroDocumento: result.documentNumber ?? sql`numero_documento`,
+          serieDocumento: result.documentSerie ?? sql`serie_documento`,
           xmlStoragePath: result.xmlUrl ?? sql`xml_storage_path`,
           pdfStoragePath: result.pdfUrl ?? sql`pdf_storage_path`,
-          completedAt: result.status === 'completed' ? new Date() : sql`completed_at`,
+          // coalesce, nao `new Date()`: agora que a sincronizacao roda sempre que
+          // ha dado novo, re-carimbar mudaria a data de autorizacao a cada
+          // consulta — data de documento fiscal nao pode andar.
+          completedAt:
+            result.status === 'completed' ? sql`coalesce(completed_at, now())` : sql`completed_at`,
           rejectionReason: result.rejectionReason ?? sql`rejection_reason`,
           updatedAt: new Date(),
         })

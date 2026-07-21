@@ -3,13 +3,13 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  type ChecklistItem,
+  type MaintenanceWindow,
   checkCleaningStatus,
   classifyMaintenances,
   pickAttentionItems,
   validateChecklist,
   validateCnesCode,
-  type ChecklistItem,
-  type MaintenanceWindow,
 } from './anvisa'
 
 describe('classifyMaintenances', () => {

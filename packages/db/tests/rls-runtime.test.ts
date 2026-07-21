@@ -1,3 +1,4 @@
+import { Pool, type PoolClient } from 'pg'
 /**
  * RLS runtime isolation — T6 ADR 0090 (Two-Connections Test).
  *
@@ -15,7 +16,6 @@
  * (member, invoice, evolucao, etc).
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { Pool, type PoolClient } from 'pg'
 
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/logifit'
@@ -141,15 +141,11 @@ describe('RLS isolamento — units (regra 1)', () => {
   it('cada tenant vê só as próprias units', async () => {
     const [redeUnits, franqUnits] = await Promise.all([
       withTenantContext(TENANT_REDE, async (client) => {
-        const r = await client.query<{ name: string }>(
-          `SELECT name FROM units ORDER BY name`,
-        )
+        const r = await client.query<{ name: string }>(`SELECT name FROM units ORDER BY name`)
         return r.rows.map((row) => row.name)
       }),
       withTenantContext(TENANT_FRANQUIA, async (client) => {
-        const r = await client.query<{ name: string }>(
-          `SELECT name FROM units ORDER BY name`,
-        )
+        const r = await client.query<{ name: string }>(`SELECT name FROM units ORDER BY name`)
         return r.rows.map((row) => row.name)
       }),
     ])

@@ -160,17 +160,29 @@ const CIDS: CidSeed[] = [
 interface CifSeed {
   code: string
   description: string
-  component: 'body_functions' | 'body_structures' | 'activities_participation' | 'environmental_factors'
+  component:
+    | 'body_functions'
+    | 'body_structures'
+    | 'activities_participation'
+    | 'environmental_factors'
 }
 
 const CIFS: CifSeed[] = [
   // Funções (b)
   { code: 'b280', description: 'Sensação de dor', component: 'body_functions' },
-  { code: 'b710', description: 'Funções da mobilidade das articulações', component: 'body_functions' },
+  {
+    code: 'b710',
+    description: 'Funções da mobilidade das articulações',
+    component: 'body_functions',
+  },
   { code: 'b730', description: 'Funções da força muscular', component: 'body_functions' },
   { code: 'b735', description: 'Funções do tônus muscular', component: 'body_functions' },
   { code: 'b740', description: 'Funções da resistência muscular', component: 'body_functions' },
-  { code: 'b760', description: 'Funções do controle de movimento voluntário', component: 'body_functions' },
+  {
+    code: 'b760',
+    description: 'Funções do controle de movimento voluntário',
+    component: 'body_functions',
+  },
   { code: 'b770', description: 'Funções da marcha', component: 'body_functions' },
   { code: 'b430', description: 'Funções do sistema hematológico', component: 'body_functions' },
   { code: 'b455', description: 'Funções da tolerância ao exercício', component: 'body_functions' },
@@ -179,15 +191,31 @@ const CIFS: CifSeed[] = [
   { code: 's750', description: 'Estrutura do membro inferior', component: 'body_structures' },
   { code: 's730', description: 'Estrutura do membro superior', component: 'body_structures' },
   { code: 's760', description: 'Estrutura do tronco', component: 'body_structures' },
-  { code: 's120', description: 'Medula espinhal e estruturas relacionadas', component: 'body_structures' },
-  { code: 's410', description: 'Estrutura do sistema cardiovascular', component: 'body_structures' },
+  {
+    code: 's120',
+    description: 'Medula espinhal e estruturas relacionadas',
+    component: 'body_structures',
+  },
+  {
+    code: 's410',
+    description: 'Estrutura do sistema cardiovascular',
+    component: 'body_structures',
+  },
   // Atividades/Participação (d)
   { code: 'd450', description: 'Andar', component: 'activities_participation' },
   { code: 'd455', description: 'Deslocar-se', component: 'activities_participation' },
   { code: 'd540', description: 'Vestir-se', component: 'activities_participation' },
   { code: 'd550', description: 'Comer', component: 'activities_participation' },
-  { code: 'd610', description: 'Aquisição de bens e serviços', component: 'activities_participation' },
-  { code: 'd640', description: 'Realizar trabalho doméstico', component: 'activities_participation' },
+  {
+    code: 'd610',
+    description: 'Aquisição de bens e serviços',
+    component: 'activities_participation',
+  },
+  {
+    code: 'd640',
+    description: 'Realizar trabalho doméstico',
+    component: 'activities_participation',
+  },
   { code: 'd850', description: 'Trabalho remunerado', component: 'activities_participation' },
   { code: 'd910', description: 'Vida comunitária', component: 'activities_participation' },
   { code: 'd920', description: 'Recreação e lazer', component: 'activities_participation' },
@@ -195,9 +223,21 @@ const CIFS: CifSeed[] = [
   { code: 'e310', description: 'Família próxima', component: 'environmental_factors' },
   { code: 'e320', description: 'Amigos', component: 'environmental_factors' },
   { code: 'e355', description: 'Profissionais de saúde', component: 'environmental_factors' },
-  { code: 'e398', description: 'Outros relacionamentos próximos', component: 'environmental_factors' },
-  { code: 'e150', description: 'Design dos edifícios para uso público', component: 'environmental_factors' },
-  { code: 'e155', description: 'Design dos edifícios para uso privado', component: 'environmental_factors' },
+  {
+    code: 'e398',
+    description: 'Outros relacionamentos próximos',
+    component: 'environmental_factors',
+  },
+  {
+    code: 'e150',
+    description: 'Design dos edifícios para uso público',
+    component: 'environmental_factors',
+  },
+  {
+    code: 'e155',
+    description: 'Design dos edifícios para uso privado',
+    component: 'environmental_factors',
+  },
 ]
 
 async function main() {

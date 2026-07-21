@@ -28,10 +28,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await pool
-    .query('DELETE FROM cost_entries WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM cost_entries WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
     .query('DELETE FROM recurring_costs WHERE tenant_id IN ($1, $2)', [
@@ -50,10 +47,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await pool
-    .query('DELETE FROM cost_entries WHERE tenant_id IN ($1, $2)', [
-      TENANT_REDE,
-      TENANT_FRANQUIA,
-    ])
+    .query('DELETE FROM cost_entries WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
     .query('DELETE FROM recurring_costs WHERE tenant_id IN ($1, $2)', [
@@ -138,17 +132,15 @@ describe('cost_categories — unique + isolamento', () => {
 
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query<{ id: string }>(
-          'SELECT id FROM cost_categories WHERE id = $1',
-          [cId],
-        )
+        const x = await c.query<{ id: string }>('SELECT id FROM cost_categories WHERE id = $1', [
+          cId,
+        ])
         return x.rows
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query<{ id: string }>(
-          'SELECT id FROM cost_categories WHERE id = $1',
-          [cId],
-        )
+        const x = await c.query<{ id: string }>('SELECT id FROM cost_categories WHERE id = $1', [
+          cId,
+        ])
         return x.rows
       }),
     ])

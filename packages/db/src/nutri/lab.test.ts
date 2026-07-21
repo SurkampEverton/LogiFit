@@ -3,11 +3,11 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  type LabReferenceRange,
   ageYearsAt,
   classifyLabResult,
   isOutOfRange,
   matchReferenceRange,
-  type LabReferenceRange,
 } from './lab'
 
 function range(over: Partial<LabReferenceRange>): LabReferenceRange {

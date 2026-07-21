@@ -41,7 +41,14 @@ export const AchievementRuleSchema = z.discriminatedUnion('kind', [
     kind: z.literal('goal_reached'),
     params: z.object({
       goal_kind: z
-        .enum(['weight_loss', 'weight_gain', 'frequency', 'strength_pr', 'body_composition', 'custom'])
+        .enum([
+          'weight_loss',
+          'weight_gain',
+          'frequency',
+          'strength_pr',
+          'body_composition',
+          'custom',
+        ])
         .optional(),
       count: z.number().int().min(1).default(1),
     }),
@@ -97,10 +104,7 @@ export interface EvaluationResult {
  * Throws se rule é inválido (não deveria acontecer — validar via Zod no
  * INSERT em achievements.rule).
  */
-export function evaluateRule(
-  rule: AchievementRule,
-  ctx: MemberContext,
-): EvaluationResult {
+export function evaluateRule(rule: AchievementRule, ctx: MemberContext): EvaluationResult {
   switch (rule.kind) {
     case 'checkin_count': {
       const target = rule.params.target
@@ -147,7 +151,10 @@ export function evaluateRule(
   }
 }
 
-function progressOf(current: number, target: number): { current: number; target: number; percent: number } {
+function progressOf(
+  current: number,
+  target: number,
+): { current: number; target: number; percent: number } {
   const percent = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0
   return { current, target, percent }
 }

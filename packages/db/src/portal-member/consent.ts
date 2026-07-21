@@ -35,7 +35,8 @@ export const CONSENT_CATALOG: Record<ConsentPurpose, ConsentPurposeMeta> = {
   },
   cross_module_share: {
     key: 'cross_module_share',
-    labelPt: 'Compartilhar dados entre serviços (Academia ↔ Fisio ↔ Nutri) do mesmo estabelecimento',
+    labelPt:
+      'Compartilhar dados entre serviços (Academia ↔ Fisio ↔ Nutri) do mesmo estabelecimento',
     impactWhenRevokedPt:
       'O fisioterapeuta não verá seus dados de treino da academia, e vice-versa. Cada profissional verá apenas o que registrar.',
     essential: false,

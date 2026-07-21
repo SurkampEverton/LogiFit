@@ -56,10 +56,10 @@ afterAll(async () => {
     .query(`DELETE FROM members WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query(
-      `DELETE FROM persons WHERE tenant_id IN ($1, $2) AND email LIKE 'seed-portal-%'`,
-      [TENANT_REDE, TENANT_FRANQUIA],
-    )
+    .query(`DELETE FROM persons WHERE tenant_id IN ($1, $2) AND email LIKE 'seed-portal-%'`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool.end()
 })
@@ -74,10 +74,10 @@ beforeEach(async () => {
     .query(`DELETE FROM members WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query(
-      `DELETE FROM persons WHERE tenant_id IN ($1, $2) AND email LIKE 'seed-portal-%'`,
-      [TENANT_REDE, TENANT_FRANQUIA],
-    )
+    .query(`DELETE FROM persons WHERE tenant_id IN ($1, $2) AND email LIKE 'seed-portal-%'`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
 })
 

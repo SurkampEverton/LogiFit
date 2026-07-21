@@ -108,7 +108,9 @@ export function forecastCashflow(input: CashflowInputs): CashflowPoint[] {
  *
  * O 44º dígito é DV mod 11 dos primeiros 43.
  */
-export function validateNfeKey(chave: string): { ok: true; uf: string; aamm: string; cnpj: string } | { ok: false; reason: string } {
+export function validateNfeKey(
+  chave: string,
+): { ok: true; uf: string; aamm: string; cnpj: string } | { ok: false; reason: string } {
   const clean = chave.replace(/[^0-9]/g, '')
   if (clean.length !== 44) {
     return { ok: false, reason: `Chave deve ter 44 dígitos (atual: ${clean.length})` }
@@ -116,7 +118,10 @@ export function validateNfeKey(chave: string): { ok: true; uf: string; aamm: str
   const dv = Number(clean[43])
   const expected = calcMod11(clean.slice(0, 43))
   if (dv !== expected) {
-    return { ok: false, reason: `Dígito verificador inválido (esperado ${expected}, recebido ${dv})` }
+    return {
+      ok: false,
+      reason: `Dígito verificador inválido (esperado ${expected}, recebido ${dv})`,
+    }
   }
   return {
     ok: true,

@@ -49,10 +49,9 @@ async function getOrCreateMember(tenantId: string): Promise<string> {
 }
 
 async function getUser(tenantId: string): Promise<string> {
-  const r = await pool.query<{ id: string }>(
-    `SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`,
-    [tenantId],
-  )
+  const r = await pool.query<{ id: string }>(`SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`, [
+    tenantId,
+  ])
   if (r.rows[0]) return r.rows[0].id
   // Cria user mínimo se não houver
   const p = await pool.query<{ id: string }>(
@@ -93,38 +92,56 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await pool
-    .query(`DELETE FROM consulta_correction_notes WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM consulta_correction_notes WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool
     .query(`DELETE FROM consultas WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM tenant_signature_overrides WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM tenant_signature_overrides WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM members WHERE tenant_id IN ($1, $2) AND person_id IN (SELECT id FROM persons WHERE email LIKE 'test-fisio-%' OR email LIKE 'prof-%')`,
-      [TENANT_REDE, TENANT_FRANQUIA])
+    .query(
+      `DELETE FROM members WHERE tenant_id IN ($1, $2) AND person_id IN (SELECT id FROM persons WHERE email LIKE 'test-fisio-%' OR email LIKE 'prof-%')`,
+      [TENANT_REDE, TENANT_FRANQUIA],
+    )
     .catch(() => {})
   await pool
-    .query(`DELETE FROM users WHERE tenant_id IN ($1, $2) AND username LIKE 'prof-%'`,
-      [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM users WHERE tenant_id IN ($1, $2) AND username LIKE 'prof-%'`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM persons WHERE tenant_id IN ($1, $2) AND (email LIKE 'test-fisio-%' OR email LIKE 'prof-%')`,
-      [TENANT_REDE, TENANT_FRANQUIA])
+    .query(
+      `DELETE FROM persons WHERE tenant_id IN ($1, $2) AND (email LIKE 'test-fisio-%' OR email LIKE 'prof-%')`,
+      [TENANT_REDE, TENANT_FRANQUIA],
+    )
     .catch(() => {})
   await pool.end()
 })
 
 beforeEach(async () => {
   await pool
-    .query(`DELETE FROM consulta_correction_notes WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM consulta_correction_notes WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
   await pool
     .query(`DELETE FROM consultas WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM tenant_signature_overrides WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query(`DELETE FROM tenant_signature_overrides WHERE tenant_id IN ($1, $2)`, [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
     .catch(() => {})
 })
 

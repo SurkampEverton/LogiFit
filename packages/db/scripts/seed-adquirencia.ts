@@ -67,13 +67,21 @@ const RULES: RuleSeed[] = [
   {
     name: 'Auto-match Stone settlement',
     priority: 10,
-    condition: { providerEquals: 'stone', bankDescriptionContains: 'stone', daysAfterSettlementMax: 3 },
+    condition: {
+      providerEquals: 'stone',
+      bankDescriptionContains: 'stone',
+      daysAfterSettlementMax: 3,
+    },
     action: 'auto_match_bank',
   },
   {
     name: 'Auto-match Cielo settlement',
     priority: 20,
-    condition: { providerEquals: 'cielo', bankDescriptionContains: 'cielo', daysAfterSettlementMax: 3 },
+    condition: {
+      providerEquals: 'cielo',
+      bankDescriptionContains: 'cielo',
+      daysAfterSettlementMax: 3,
+    },
     action: 'auto_match_bank',
   },
   {
@@ -223,9 +231,7 @@ async function main() {
     }
   }
 
-  console.log(
-    `✓ seed done: ${totalConns} conexões + ${totalSales} vendas + ${totalRules} regras`,
-  )
+  console.log(`✓ seed done: ${totalConns} conexões + ${totalSales} vendas + ${totalRules} regras`)
   await pool.end()
 }
 

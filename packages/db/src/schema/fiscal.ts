@@ -126,6 +126,16 @@ export const fiscalEmissions = pgTable(
     serie: integer('serie').notNull(),
     /** Número sequencial dentro da série; gerado via fiscal_numbering_sequences */
     numero: bigint('numero', { mode: 'number' }).notNull(),
+    /**
+     * Número e série do DOCUMENTO, atribuídos pela autoridade ao autorizar —
+     * distintos de `serie`/`numero`, que são do RPS gerado por nós.
+     *
+     * A primeira NFS-e real saiu como série 1 nº 12 em Cascavel enquanto o RPS
+     * era série 13 nº 6. Exibir o RPS como se fosse a nota manda o operador
+     * procurar no portal do município um número que não existe.
+     */
+    numeroDocumento: text('numero_documento'),
+    serieDocumento: text('serie_documento'),
     /** Chave SEFAZ 44 dígitos (NF-e/NFC-e) ou protocolo municipal (NFS-e). NULL até autorizar */
     chave: text('chave'),
     /** Token interno do provider (Focus retorna 'ref') pra correlação webhook */

@@ -2,11 +2,7 @@
  * Provider abstrato tests — Sprint 18 Faixa B.1.
  */
 import { describe, expect, it } from 'vitest'
-import {
-  feeRateFor,
-  getAdapter,
-  MockAcquirerProvider,
-} from './provider'
+import { MockAcquirerProvider, feeRateFor, getAdapter } from './provider'
 
 describe('MockAcquirerProvider', () => {
   it('testConnection sem merchantId falha', async () => {
@@ -26,27 +22,24 @@ describe('MockAcquirerProvider', () => {
 
   it('fetchSales gera vendas determinísticas por range × merchant', async () => {
     const adapter = new MockAcquirerProvider()
-    const r1 = await adapter.fetchSales(
-      { merchantId: 'A' },
-      false,
-      { from: '2026-05-01', to: '2026-05-03' },
-    )
-    const r2 = await adapter.fetchSales(
-      { merchantId: 'A' },
-      false,
-      { from: '2026-05-01', to: '2026-05-03' },
-    )
+    const r1 = await adapter.fetchSales({ merchantId: 'A' }, false, {
+      from: '2026-05-01',
+      to: '2026-05-03',
+    })
+    const r2 = await adapter.fetchSales({ merchantId: 'A' }, false, {
+      from: '2026-05-01',
+      to: '2026-05-03',
+    })
     expect(r1).toHaveLength(9) // 3 dias × 3 vendas
     expect(r1.map((s) => s.externalId)).toEqual(r2.map((s) => s.externalId))
   })
 
   it('fetchSales: net = gross - fee em toda venda', async () => {
     const adapter = new MockAcquirerProvider()
-    const sales = await adapter.fetchSales(
-      { merchantId: 'X' },
-      false,
-      { from: '2026-05-01', to: '2026-05-01' },
-    )
+    const sales = await adapter.fetchSales({ merchantId: 'X' }, false, {
+      from: '2026-05-01',
+      to: '2026-05-01',
+    })
     for (const s of sales) {
       expect(s.netAmountCents).toBe(s.grossAmountCents - s.feeCents)
       expect(s.grossAmountCents).toBeGreaterThan(0)
@@ -55,21 +48,20 @@ describe('MockAcquirerProvider', () => {
 
   it('fetchSales: range invertido retorna vazio', async () => {
     const adapter = new MockAcquirerProvider()
-    const sales = await adapter.fetchSales(
-      { merchantId: 'X' },
-      false,
-      { from: '2026-05-10', to: '2026-05-01' },
-    )
+    const sales = await adapter.fetchSales({ merchantId: 'X' }, false, {
+      from: '2026-05-10',
+      to: '2026-05-01',
+    })
     expect(sales).toHaveLength(0)
   })
 
   it('requestAnticipation aprova com taxa 1.99%', async () => {
     const adapter = new MockAcquirerProvider()
-    const r = await adapter.requestAnticipation(
-      { merchantId: 'X' },
-      false,
-      { salesIds: ['s1', 's2'], externalSaleIds: ['NSU1', 'NSU2'], originalAmountCents: 100_000 },
-    )
+    const r = await adapter.requestAnticipation({ merchantId: 'X' }, false, {
+      salesIds: ['s1', 's2'],
+      externalSaleIds: ['NSU1', 'NSU2'],
+      originalAmountCents: 100_000,
+    })
     expect(r.status).toBe('credited')
     expect(r.feeCents).toBe(1990) // 1.99% de 100k
     expect(r.anticipatedAmountCents).toBe(98010)

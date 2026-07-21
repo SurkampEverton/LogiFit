@@ -407,6 +407,13 @@
       "when": 1779565674955,
       "tag": "0065_company_habilitacoes_fiscais",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1779565674956,
+      "tag": "0066_documento_numero_serie",
+      "breakpoints": true
     }
   ]
 }

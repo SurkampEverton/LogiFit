@@ -11,10 +11,25 @@ describe('calculateDre — receita', () => {
     const r = calculateDre({
       period,
       invoices: [
-        { amountCents: 15000, status: 'paid', paidAt: new Date('2026-05-10'), dueAt: new Date('2026-05-05') },
-        { amountCents: 25000, status: 'paid', paidAt: new Date('2026-05-20'), dueAt: new Date('2026-05-15') },
+        {
+          amountCents: 15000,
+          status: 'paid',
+          paidAt: new Date('2026-05-10'),
+          dueAt: new Date('2026-05-05'),
+        },
+        {
+          amountCents: 25000,
+          status: 'paid',
+          paidAt: new Date('2026-05-20'),
+          dueAt: new Date('2026-05-15'),
+        },
         // Fora do período (paid em abril)
-        { amountCents: 99999, status: 'paid', paidAt: new Date('2026-04-15'), dueAt: new Date('2026-04-10') },
+        {
+          amountCents: 99999,
+          status: 'paid',
+          paidAt: new Date('2026-04-15'),
+          dueAt: new Date('2026-04-10'),
+        },
       ],
       costEntries: [],
     })
@@ -25,7 +40,12 @@ describe('calculateDre — receita', () => {
     const r = calculateDre({
       period,
       invoices: [
-        { amountCents: 10000, status: 'paid', paidAt: new Date('2026-05-15'), dueAt: new Date('2026-05-10') },
+        {
+          amountCents: 10000,
+          status: 'paid',
+          paidAt: new Date('2026-05-15'),
+          dueAt: new Date('2026-05-10'),
+        },
         { amountCents: 5000, status: 'pending', paidAt: null, dueAt: new Date('2026-05-20') },
         { amountCents: 3000, status: 'overdue', paidAt: null, dueAt: new Date('2026-05-05') },
       ],
@@ -41,8 +61,18 @@ describe('calculateDre — receita', () => {
     const r = calculateDre({
       period,
       invoices: [
-        { amountCents: 10000, status: 'paid', paidAt: new Date('2026-05-10'), dueAt: new Date('2026-05-05') },
-        { amountCents: 2000, status: 'refunded', paidAt: new Date('2026-05-25'), dueAt: new Date('2026-05-05') },
+        {
+          amountCents: 10000,
+          status: 'paid',
+          paidAt: new Date('2026-05-10'),
+          dueAt: new Date('2026-05-05'),
+        },
+        {
+          amountCents: 2000,
+          status: 'refunded',
+          paidAt: new Date('2026-05-25'),
+          dueAt: new Date('2026-05-05'),
+        },
       ],
       costEntries: [],
     })
@@ -135,7 +165,12 @@ describe('calculateDre — margens', () => {
     const r = calculateDre({
       period,
       invoices: [
-        { amountCents: 1000000, status: 'paid', paidAt: new Date('2026-05-10'), dueAt: new Date('2026-05-05') },
+        {
+          amountCents: 1000000,
+          status: 'paid',
+          paidAt: new Date('2026-05-10'),
+          dueAt: new Date('2026-05-05'),
+        },
       ],
       costEntries: [
         {
@@ -222,10 +257,21 @@ describe('forecastRevenue', () => {
   })
 
   it('valores inválidos retornam vazio', () => {
-    expect(forecastRevenue({ baselineMonthlyCents: -1, monthlyChurnRate: 0.1, monthsAhead: 3 }).monthly).toEqual([])
-    expect(forecastRevenue({ baselineMonthlyCents: 1000, monthlyChurnRate: 1.5, monthsAhead: 3 }).monthly).toEqual([])
-    expect(forecastRevenue({ baselineMonthlyCents: 1000, monthlyChurnRate: 0.1, monthsAhead: 0 }).monthly).toEqual([])
-    expect(forecastRevenue({ baselineMonthlyCents: 1000, monthlyChurnRate: 0.1, monthsAhead: 100 }).monthly).toEqual([])
+    expect(
+      forecastRevenue({ baselineMonthlyCents: -1, monthlyChurnRate: 0.1, monthsAhead: 3 }).monthly,
+    ).toEqual([])
+    expect(
+      forecastRevenue({ baselineMonthlyCents: 1000, monthlyChurnRate: 1.5, monthsAhead: 3 })
+        .monthly,
+    ).toEqual([])
+    expect(
+      forecastRevenue({ baselineMonthlyCents: 1000, monthlyChurnRate: 0.1, monthsAhead: 0 })
+        .monthly,
+    ).toEqual([])
+    expect(
+      forecastRevenue({ baselineMonthlyCents: 1000, monthlyChurnRate: 0.1, monthsAhead: 100 })
+        .monthly,
+    ).toEqual([])
   })
 
   it('total projetado bate com soma', () => {

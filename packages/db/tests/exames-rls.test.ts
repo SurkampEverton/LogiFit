@@ -40,10 +40,9 @@ async function getOrCreateMember(tenantId: string): Promise<string> {
 }
 
 async function getUser(tenantId: string): Promise<string> {
-  const r = await pool.query<{ id: string }>(
-    `SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`,
-    [tenantId],
-  )
+  const r = await pool.query<{ id: string }>(`SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`, [
+    tenantId,
+  ])
   if (r.rows[0]) return r.rows[0].id
   const p = await pool.query<{ id: string }>(
     `INSERT INTO persons (tenant_id, kind, name, email)
@@ -113,7 +112,10 @@ async function withTenantContext<T>(
 }
 
 describe('exam_documents — checks + isolation', () => {
-  async function insertDoc(tenantId: string, opts: { source?: string; uploaderUser?: boolean } = {}) {
+  async function insertDoc(
+    tenantId: string,
+    opts: { source?: string; uploaderUser?: boolean } = {},
+  ) {
     const memberId = await getOrCreateMember(tenantId)
     const source = opts.source ?? 'professional_upload'
     const uploadedByUserId = opts.uploaderUser !== false ? await getUser(tenantId) : null
@@ -293,15 +295,17 @@ describe('tenant_exam_ai_settings — opt-out', () => {
     )
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query(`SELECT tenant_id FROM tenant_exam_ai_settings WHERE tenant_id = $1`, [
-          TENANT_REDE,
-        ])
+        const x = await c.query(
+          `SELECT tenant_id FROM tenant_exam_ai_settings WHERE tenant_id = $1`,
+          [TENANT_REDE],
+        )
         return x.rows.length
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query(`SELECT tenant_id FROM tenant_exam_ai_settings WHERE tenant_id = $1`, [
-          TENANT_REDE,
-        ])
+        const x = await c.query(
+          `SELECT tenant_id FROM tenant_exam_ai_settings WHERE tenant_id = $1`,
+          [TENANT_REDE],
+        )
         return x.rows.length
       }),
     ])

@@ -28,14 +28,16 @@ import { z } from 'zod'
 
 // ─── DSL Zod (validação JSONB) ──────────────────────────────────────────
 
-export const ApproverSchema = z.object({
-  role: z.string().min(1).max(80).optional(),
-  userId: z.string().uuid().optional(),
-  companyId: z.string().uuid().optional(),
-}).refine(
-  (v) => v.role !== undefined || v.userId !== undefined,
-  'Cada approver requer role OU user_id',
-)
+export const ApproverSchema = z
+  .object({
+    role: z.string().min(1).max(80).optional(),
+    userId: z.string().uuid().optional(),
+    companyId: z.string().uuid().optional(),
+  })
+  .refine(
+    (v) => v.role !== undefined || v.userId !== undefined,
+    'Cada approver requer role OU user_id',
+  )
 
 export const RequiredApproversSchema = z.object({
   mode: z.enum(['series', 'parallel']).default('series'),
@@ -87,9 +89,7 @@ export function pickApprovalRule(
   if (candidates.length === 0) return null
 
   // Prioriza rule de company_id específica
-  const companyRules = companyId
-    ? candidates.filter((r) => r.companyId === companyId)
-    : []
+  const companyRules = companyId ? candidates.filter((r) => r.companyId === companyId) : []
   const globalRules = candidates.filter((r) => r.companyId === null)
 
   const pool = companyRules.length > 0 ? companyRules : globalRules

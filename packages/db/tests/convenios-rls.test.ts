@@ -94,9 +94,7 @@ afterAll(async () => {
     ])
     .catch(() => {})
   // Clean test plans
-  await pool
-    .query(`DELETE FROM insurance_plans WHERE ans_code LIKE 'TEST-%'`)
-    .catch(() => {})
+  await pool.query(`DELETE FROM insurance_plans WHERE ans_code LIKE 'TEST-%'`).catch(() => {})
   await pool.end()
 })
 

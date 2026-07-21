@@ -2,14 +2,14 @@
  * calc — unit tests Sprint 29 Faixa B.1.
  */
 import { describe, expect, it } from 'vitest'
-import type { Nutrients } from './nutrients-schema'
 import {
+  type MealInput,
   calculateMealNutrition,
   calculateMealPlanNutrition,
   compareAgainstTargets,
   statusEmoji,
-  type MealInput,
 } from './calc'
+import type { Nutrients } from './nutrients-schema'
 import {
   addNutrients,
   parseNutrients,
@@ -119,10 +119,7 @@ describe('addNutrients', () => {
   })
 
   it('mantém campos exclusivos de um lado', () => {
-    const r = addNutrients(
-      { kcal: 100, fiber_g: 2 },
-      { kcal: 50, sodium_mg: 100 },
-    )
+    const r = addNutrients({ kcal: 100, fiber_g: 2 }, { kcal: 50, sodium_mg: 100 })
     expect(r.kcal).toBe(150)
     expect(r.fiber_g).toBe(2)
     expect(r.sodium_mg).toBe(100)
@@ -135,9 +132,7 @@ describe('calculateMealNutrition', () => {
       mealId: 'm1',
       name: 'Almoço',
       order: 1,
-      items: [
-        { foodId: 'f1', foodName: 'Arroz', grams: 150, nutrients: ARROZ_BRANCO },
-      ],
+      items: [{ foodId: 'f1', foodName: 'Arroz', grams: 150, nutrients: ARROZ_BRANCO }],
     }
     const r = calculateMealNutrition(meal)
     expect(r.totals.kcal).toBe(192) // 128 * 1.5
@@ -171,9 +166,7 @@ describe('calculateMealPlanNutrition', () => {
         mealId: 'm1',
         name: 'Café',
         order: 1,
-        items: [
-          { foodId: 'f1', foodName: 'Pão', grams: 50, nutrients: ARROZ_BRANCO },
-        ],
+        items: [{ foodId: 'f1', foodName: 'Pão', grams: 50, nutrients: ARROZ_BRANCO }],
       },
       {
         mealId: 'm2',
@@ -188,9 +181,7 @@ describe('calculateMealPlanNutrition', () => {
         mealId: 'm3',
         name: 'Jantar',
         order: 3,
-        items: [
-          { foodId: 'f3', foodName: 'Salada', grams: 100, nutrients: SALADA },
-        ],
+        items: [{ foodId: 'f3', foodName: 'Salada', grams: 100, nutrients: SALADA }],
       },
     ]
     const r = calculateMealPlanNutrition(meals)

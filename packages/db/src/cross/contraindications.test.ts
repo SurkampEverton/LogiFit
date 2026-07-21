@@ -3,17 +3,22 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  buildAdaptationDiff,
-  detectContraindications,
-  maxSeverity,
-  mergeRules,
   type ContraindicationRule,
   type ContraindicationRuleSourced,
   type ExerciseInfo,
   type WorkoutItemInput,
+  buildAdaptationDiff,
+  detectContraindications,
+  maxSeverity,
+  mergeRules,
 } from './contraindications'
 
-function ex(id: string, name: string, muscleGroups: string[], patterns: string[] = []): ExerciseInfo {
+function ex(
+  id: string,
+  name: string,
+  muscleGroups: string[],
+  patterns: string[] = [],
+): ExerciseInfo {
   return { id, name, muscleGroups, movementPatterns: patterns }
 }
 
@@ -70,21 +75,14 @@ describe('detectContraindications', () => {
 
   it('match por muscle_group', () => {
     const items = [item('i1', ex('e1', 'Agachamento', ['lombar', 'quadriceps']))]
-    const rules = [
-      rule('r1', 'MG30.0', { muscleGroup: 'lombar', severity: 'modify' }),
-    ]
+    const rules = [rule('r1', 'MG30.0', { muscleGroup: 'lombar', severity: 'modify' })]
     const r = detectContraindications(['MG30.0'], items, rules)
     expect(r.matches).toHaveLength(1)
     expect(r.matches[0]!.rules[0]!.matchedBy).toBe('muscle_group')
   })
 
   it('match por movement_pattern', () => {
-    const items = [
-      item(
-        'i1',
-        ex('e1', 'Stiff', ['lombar', 'posterior'], ['flexao_lombar_carga']),
-      ),
-    ]
+    const items = [item('i1', ex('e1', 'Stiff', ['lombar', 'posterior'], ['flexao_lombar_carga']))]
     const rules = [
       rule('r1', 'MG30.0', {
         movementPattern: 'flexao_lombar_carga',

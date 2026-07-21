@@ -161,8 +161,7 @@ export function detectLowStockCrossing(input: {
   balanceBefore: number
   balanceAfter: number
 }): LowStockAlert {
-  const crossedDown =
-    input.balanceBefore > input.minStock && input.balanceAfter <= input.minStock
+  const crossedDown = input.balanceBefore > input.minStock && input.balanceAfter <= input.minStock
   return {
     itemId: input.itemId,
     currentBalance: input.balanceAfter,
@@ -232,7 +231,8 @@ export function calculateTurnover(input: {
     runningBalance += sign * Number(m.quantity)
   }
   const avgBalance = (input.initialBalance + runningBalance) / 2
-  const turnover = avgBalance === 0 ? 0 : cogs / (avgBalance * (input.movements[0]?.unitCostCents ?? 1))
+  const turnover =
+    avgBalance === 0 ? 0 : cogs / (avgBalance * (input.movements[0]?.unitCostCents ?? 1))
   return {
     turnover: Number(turnover.toFixed(2)),
     avgBalance,

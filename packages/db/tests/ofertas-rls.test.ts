@@ -46,22 +46,46 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await pool.query('DELETE FROM credit_consumptions WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA]).catch(() => {})
-  await pool.query('DELETE FROM appointment_credits WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA]).catch(() => {})
-  await pool.query('DELETE FROM referral_uses WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA]).catch(() => {})
-  await pool.query('DELETE FROM referrals WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA]).catch(() => {})
-  await pool.query('DELETE FROM promotion_uses WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA]).catch(() => {})
-  await pool.query('DELETE FROM promotions WHERE id IN ($1, $2)', [TEST_PROMO_REDE_ID, TEST_PROMO_FRANQ_ID]).catch(() => {})
+  await pool
+    .query('DELETE FROM credit_consumptions WHERE tenant_id IN ($1, $2)', [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
+    .catch(() => {})
+  await pool
+    .query('DELETE FROM appointment_credits WHERE tenant_id IN ($1, $2)', [
+      TENANT_REDE,
+      TENANT_FRANQUIA,
+    ])
+    .catch(() => {})
+  await pool
+    .query('DELETE FROM referral_uses WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
+    .catch(() => {})
+  await pool
+    .query('DELETE FROM referrals WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
+    .catch(() => {})
+  await pool
+    .query('DELETE FROM promotion_uses WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
+    .catch(() => {})
+  await pool
+    .query('DELETE FROM promotions WHERE id IN ($1, $2)', [TEST_PROMO_REDE_ID, TEST_PROMO_FRANQ_ID])
+    .catch(() => {})
   await pool.end()
 })
 
 beforeEach(async () => {
-  await pool.query('DELETE FROM credit_consumptions WHERE tenant_id = $1', [TENANT_REDE]).catch(() => {})
-  await pool.query('DELETE FROM appointment_credits WHERE tenant_id = $1', [TENANT_REDE]).catch(() => {})
+  await pool
+    .query('DELETE FROM credit_consumptions WHERE tenant_id = $1', [TENANT_REDE])
+    .catch(() => {})
+  await pool
+    .query('DELETE FROM appointment_credits WHERE tenant_id = $1', [TENANT_REDE])
+    .catch(() => {})
   await pool.query('DELETE FROM referral_uses WHERE tenant_id = $1', [TENANT_REDE]).catch(() => {})
   await pool.query('DELETE FROM referrals WHERE tenant_id = $1', [TENANT_REDE]).catch(() => {})
   await pool.query('DELETE FROM promotion_uses WHERE tenant_id = $1', [TENANT_REDE]).catch(() => {})
-  await pool.query('DELETE FROM promotions WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA]).catch(() => {})
+  await pool
+    .query('DELETE FROM promotions WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
+    .catch(() => {})
 })
 
 async function withTenantContext<T>(
@@ -286,10 +310,7 @@ describe('plans.kind — check constraint', () => {
     expect(r1.rows[0]?.id).toBeTruthy()
     expect(r2.rows[0]?.id).toBeTruthy()
 
-    await pool.query('DELETE FROM plans WHERE id IN ($1, $2)', [
-      r1.rows[0]?.id,
-      r2.rows[0]?.id,
-    ])
+    await pool.query('DELETE FROM plans WHERE id IN ($1, $2)', [r1.rows[0]?.id, r2.rows[0]?.id])
   })
 
   it('kind inválido (não plan|bundle) rejeitado', async () => {
