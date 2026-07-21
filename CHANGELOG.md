@@ -30,11 +30,18 @@ do mapeamento encontrou um defeito bem mais caro do que o que estava sendo perse
   provider — depurar as seis rejeições de 20/07 foi adivinhação porque não havia como saber qual
   código tinha saído. Documento fiscal é retido 5 anos (regra 34); o que saiu faz parte do dossiê.
 
-**Não alterado de propósito:** a alíquota de ISS e o código de serviço da ESP. Os 300 bp atuais
-foram escolhidos para o item 1.06 e não há fonte primária para o item efetivamente usado; e o
-enquadramento vem do fato gerador, não do que a prefeitura por acaso habilitou — gravar `172401`
-numa empresa de TI faria a nota **passar** declarando serviço não prestado, em município que não
-cancela por webservice. Rejeição tem efeito zero; nota aceita com vício material é irreversível.
+**Enquadramento da ESP resolvido:** o enquadramento vem do fato gerador, não do que a prefeitura
+por acaso habilitou — a pergunta era se a empresa fatura TI (e aí `172401` declararia serviço não
+prestado) ou palestras. Confirmado que fatura palestras/seminários: catálogo passa a `17.24` /
+`172401` com discriminação coerente. O CNAE 6204000 (TI) segue descasado do serviço faturado —
+questão para o contador, com impacto potencial no anexo do Simples (III vs V com fator-r).
+
+**Alíquota permanece não confirmada, e a entrada do catálogo ficou inativa.** Os 300 bp foram
+escolhidos para o item 1.06 e não há fonte primária para o 17.24. Enquanto o código estava errado,
+qualquer emissão era **rejeitada** — rede de proteção acidental que a correção removeu: agora a
+nota sairia **válida** com imposto possivelmente errado, em município que não cancela por
+webservice. Rejeição tem efeito zero; nota aceita com vício material é irreversível. Reativar
+depois de confirmar a alíquota com o contador ou no Código Tributário Municipal de Cascavel.
 
 Validado: typecheck limpo, `lint:custom` limpo, `audit-tenant-scope` limpo, 1.536 testes verdes.
 
