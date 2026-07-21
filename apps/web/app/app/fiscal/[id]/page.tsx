@@ -269,7 +269,14 @@ export default async function FiscalEmissionDetailPage({
             <>
               <dt style={{ color: 'var(--ev-text-muted)' }}>Janela de cancelamento</dt>
               <dd style={{ margin: 0 }}>
-                {cancelWindowOpen ? `até ${dt(em.cancelDeadlineAt)}` : 'expirada'}
+                {/* Sem prazo gravado nao significa "expirada" — significa que a
+                    regra e do municipio e nao a conhecemos. Dizer "expirada"
+                    faria o operador desistir de um cancelamento possivel. */}
+                {em.cancelDeadlineAt
+                  ? cancelWindowOpen
+                    ? `até ${dt(em.cancelDeadlineAt)}`
+                    : 'expirada'
+                  : 'definida pelo município — consulte o portal da prefeitura'}
               </dd>
             </>
           )}

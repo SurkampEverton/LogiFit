@@ -241,6 +241,19 @@ async function resolveNfseProfileForCompany(
 }
 
 /**
+ * Prazo de cancelamento a gravar, ou `null` quando a regra e desconhecida.
+ *
+ * NFS-e nao tem prazo nacional — e municipal e varia (24h, mesmo mes, analise
+ * fiscal caso a caso). Carimbar 24h fixas inventava um prazo, exibia como fato
+ * e ainda BLOQUEAVA o cancelamento depois dele: o operador ficava impedido de
+ * cancelar algo que a prefeitura ainda aceitaria. `null` nao exibe e nao bloqueia.
+ */
+function nfseCancelDeadline(profile: ReturnType<typeof findMunicipalityNfseProfile>): Date | null {
+  const hours = profile?.cancelWindowHours
+  return hours ? new Date(Date.now() + hours * 60 * 60 * 1000) : null
+}
+
+/**
  * Decide série e ambiente de uma NFS-e a partir do perfil do município.
  *
  * NFS-e é municipal: série de RPS e disponibilidade de sandbox variam por
@@ -532,7 +545,7 @@ export const emitNfseFromInvoice = wrapServerAction(
         },
         submittedAt: new Date(),
         completedAt: outcome.completedAt,
-        cancelDeadlineAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h
+        cancelDeadlineAt: nfseCancelDeadline(findMunicipalityNfseProfile(service.municipalityCode)),
         createdByUserId: session.logifit.userId,
       })
       .returning({ id: fiscalEmissions.id })
@@ -642,7 +655,7 @@ export const emitNfseManual = wrapServerAction(
         },
         submittedAt: new Date(),
         completedAt: outcome.completedAt,
-        cancelDeadlineAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        cancelDeadlineAt: nfseCancelDeadline(findMunicipalityNfseProfile(service.municipalityCode)),
         createdByUserId: session.logifit.userId,
       })
       .returning({ id: fiscalEmissions.id })
@@ -1063,6 +1076,7 @@ export const emitNfeReturn = wrapServerAction(
         },
         submittedAt: new Date(),
         completedAt: outcome.completedAt,
+        // NF-e devolução: prazo de cancelamento é regra da SEFAZ, não municipal.
         cancelDeadlineAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         createdByUserId: session.logifit.userId,
       })
@@ -1163,7 +1177,7 @@ export const cancelEmission = wrapServerAction(
     if (em.cancelDeadlineAt && em.cancelDeadlineAt < new Date())
       throw new ApiException({
         code: 'VALIDATION_ERROR',
-        message: 'Janela de cancelamento (24h) expirada — use estorno via NF-e devolução',
+        message: 'Janela de cancelamento expirada — use estorno via NF-e devolução',
         request_id: '',
       })
 

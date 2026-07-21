@@ -97,3 +97,19 @@ describe('isExternalPortalLink', () => {
     expect(isExternalPortalLink('')).toBe(false)
   })
 })
+
+describe('cancelWindowHours', () => {
+  it('Cascavel declara prazo desconhecido, nao um numero inventado', () => {
+    // Perfil chutado e pior que perfil ausente: null nao exibe prazo e nao
+    // bloqueia o cancelamento, deixando a regra com quem a define.
+    expect(MUNICIPALITY_NFSE_PROFILES[CASCAVEL]?.cancelWindowHours).toBeNull()
+  })
+
+  it('todo perfil declara a janela explicitamente — inclusive quando e null', () => {
+    for (const [code, profile] of Object.entries(MUNICIPALITY_NFSE_PROFILES)) {
+      expect(profile, `perfil ${code} sem cancelWindowHours declarado`).toHaveProperty(
+        'cancelWindowHours',
+      )
+    }
+  })
+})

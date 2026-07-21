@@ -6,6 +6,29 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fix — prazo de cancelamento inventado bloqueava cancelamento legítimo 2026-07-21
+
+Perguntar "dá pra cancelar as notas emitidas?" revelou que o sistema carimbava **24h fixas** de
+janela de cancelamento em toda NFS-e, em quatro pontos do código. NFS-e **não tem prazo nacional** —
+é regra municipal e varia (24h, mesmo mês, análise fiscal caso a caso). O número era invenção
+nossa, exibido como fato na tela **e usado para bloquear** a Server Action de cancelamento: o
+operador ficava impedido pelo LogiFit de cancelar algo que a prefeitura ainda aceitaria.
+
+- `cancelWindowHours` entra no perfil do município, com `null` significando **não sabemos** —
+  não exibe prazo e não bloqueia, deixando a regra com quem a define. Cascavel fica `null`: a regra
+  não foi confirmada em fonte primária, e perfil chutado é pior que perfil ausente.
+- A tela deixou de dizer **"expirada"** quando não há prazo gravado. Ausência de prazo não é prazo
+  vencido — dizer isso faria o operador desistir de um cancelamento possível. Agora informa que a
+  janela é definida pelo município.
+- A mensagem de erro parou de afirmar "(24h)".
+- NF-e devolução mantém 24h: ali o prazo é regra da SEFAZ, não municipal.
+
+O prazo inventado que já tinha sido gravado na NFS-e nº 12 foi limpo.
+
+**Inventário do que existe de fato:** das 16 emissões no banco, **11 estão rejeitadas** (sem efeito
+fiscal, nada a cancelar) e das 5 autorizadas **4 são do provider `mock`** (dados de seed, sem
+existência fiscal). Só a NFS-e nº 12 é real.
+
 ### Fix — payload NFS-e conferido campo a campo contra a doc da Focus 2026-07-21
 
 Verificação da implementação contra a referência oficial (`doc.focusnfe.com.br/reference/emitir_nfse`

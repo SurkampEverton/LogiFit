@@ -45,6 +45,19 @@ export interface MunicipalityNfseProfile {
   /** Cancelamento por webservice funciona? Quando false, só pelo portal. */
   supportsWebserviceCancel: boolean
   /**
+   * Prazo de cancelamento em horas, quando conhecido. `null` = NÃO SABEMOS.
+   *
+   * NFS-e não tem prazo nacional: cada município escolhe (24h, mesmo mês,
+   * 5 dias, análise fiscal caso a caso). O código antes carimbava 24h fixas em
+   * toda emissão e usava esse número tanto pra exibir "janela até X" quanto pra
+   * BLOQUEAR o cancelamento — inventando um prazo e impedindo o operador de
+   * cancelar algo que a prefeitura ainda aceitaria.
+   *
+   * `null` é a resposta honesta: não exibe prazo e não bloqueia, deixando a
+   * regra com quem a define.
+   */
+  cancelWindowHours: number | null
+  /**
    * Exige credenciamento explícito pra emissão via webservice, além de ter
    * login no portal. Emitir manualmente no portal NÃO implica este passo.
    */
@@ -77,6 +90,9 @@ export const MUNICIPALITY_NFSE_PROFILES: Record<string, MunicipalityNfseProfile>
     hasHomologacao: false,
     defaultRpsSerie: 13,
     supportsWebserviceCancel: false,
+    // Regra de Cascavel não confirmada em fonte primária — perfil chutado é
+    // pior que perfil ausente (ver docstring do módulo).
+    cancelWindowHours: null,
     requiresWebserviceCredenciamento: true,
     // Guia da Focus pra Cascavel marca "Código CNAE — Não utilizado".
     sendsCnae: false,
