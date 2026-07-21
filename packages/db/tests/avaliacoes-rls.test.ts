@@ -32,8 +32,11 @@ beforeAll(async () => {
   pool = new Pool({ connectionString: DATABASE_URL })
   await pool.query(
     `INSERT INTO persons (id, tenant_id, kind, name, document, email)
-     VALUES ($1, $2, 'pf', 'Member Avaliacao Teste', '52998224725', 'avaltest@test.local')
+     VALUES ($1, $2, 'pf', 'Member Avaliacao Teste', '96385274128', 'avaltest@test.local')
      ON CONFLICT (id) DO NOTHING`,
+    // CPF dedicado deste teste: 52998224725 é o "CPF válido de exemplo" mais
+    // usado e colidiu com a pessoa criada pelo fluxo de convite de contador —
+    // o ON CONFLICT (id) não protege contra o unique (tenant, document).
     [TEST_PERSON_ID, TENANT_REDE],
   )
   await pool.query(

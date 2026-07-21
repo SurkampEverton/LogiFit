@@ -78,7 +78,7 @@ async function withTenantContext<T>(
 }
 
 describe('members — RLS isolamento per-tenant', () => {
-  it('Tenant Rede vê seu member; Franquia vê 0', async () => {
+  it('Tenant Rede vê seu member; Franquia não o vê', async () => {
     const [redeMembers, franquiaMembers] = await Promise.all([
       withTenantContext(TENANT_REDE, async (client) => {
         const r = await client.query<{ id: string }>('SELECT id FROM members')
@@ -89,9 +89,9 @@ describe('members — RLS isolamento per-tenant', () => {
         return r.rows
       }),
     ])
-    expect(redeMembers.length).toBeGreaterThanOrEqual(1)
     expect(redeMembers.some((m) => m.id === TEST_MEMBER_ID)).toBe(true)
-    expect(franquiaMembers.length).toBe(0)
+    // Franquia tem members próprios no seed — o invariante é não ver o da Rede
+    expect(franquiaMembers.some((m) => m.id === TEST_MEMBER_ID)).toBe(false)
   })
 
   it('INSERT com tenant_id != app.tenant_id é rejeitado (WITH CHECK)', async () => {
@@ -121,8 +121,11 @@ describe('member_events — append-only', () => {
     )
 
     await withTenantContext(TENANT_REDE, async (client) => {
-      const events = await client.query<{ id: string }>('SELECT id FROM member_events')
-      expect(events.rows.length).toBe(1)
+      const events = await client.query<{ id: string }>(
+        `SELECT id FROM member_events WHERE member_id = $1 AND kind = 'member.created'`,
+        [TEST_MEMBER_ID],
+      )
+      expect(events.rows.length).toBeGreaterThanOrEqual(1)
       const eventId = events.rows[0]?.id
 
       // UPDATE — sem policy de UPDATE → 0 rows

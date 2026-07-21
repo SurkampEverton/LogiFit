@@ -169,6 +169,11 @@ async function withTenantContext<T>(
 
 describe('cid_exercise_contraindications — global + tenant override', () => {
   it('global (tenant_id NULL) visível em ambos tenants', async () => {
+    // Limpa resíduo de rodadas anteriores que falharam antes do DELETE final —
+    // sem isso cada falha acumula uma linha e a contagem nunca volta a ser 1.
+    await pool.query(
+      `DELETE FROM cid_exercise_contraindications WHERE cid_code = 'MG30.0' AND tenant_id IS NULL`,
+    )
     await pool.query(
       `INSERT INTO cid_exercise_contraindications
        (tenant_id, cid_code, muscle_group, severity, source)

@@ -43,16 +43,35 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  for (const tbl of [
-    'stock_inventory_entries',
-    'stock_inventories',
-    'stock_movements',
-    'stock_items',
-  ]) {
-    await pool
-      .query(`DELETE FROM ${tbl} WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
-      .catch(() => {})
-  }
+  // Limpeza CIRÚRGICA, só dos SKUs deste teste. O DELETE por tenant inteiro
+  // quebrou quando o seed de vendas (Sprint 24b) passou a referenciar
+  // stock_items via sale_items: a sentença falhava por FK em OUTRO item
+  // (WHEY-900), o .catch engolia, e o resíduo GAZE-100 virava 23505 na rodada
+  // seguinte. Deletar por tenant também apagaria dados de seed legítimos.
+  const TEST_SKUS = ['GAZE-100', 'DUP-001', 'ISO-001', 'NEG-001', 'NF-001', 'INV-CHK-001', 'INV-OK-001']
+  await pool.query(
+    `DELETE FROM stock_inventory_entries WHERE item_id IN (
+       SELECT id FROM stock_items WHERE tenant_id IN ($1, $2) AND (sku = ANY($3) OR sku LIKE 'ITEM-MV-%')
+     )`,
+    [TENANT_REDE, TENANT_FRANQUIA, TEST_SKUS],
+  )
+  await pool.query(
+    `DELETE FROM stock_inventories WHERE tenant_id IN ($1, $2) AND id NOT IN (
+       SELECT DISTINCT inventory_id FROM stock_inventory_entries
+     )`,
+    [TENANT_REDE, TENANT_FRANQUIA],
+  )
+  await pool.query(
+    `DELETE FROM stock_movements WHERE item_id IN (
+       SELECT id FROM stock_items WHERE tenant_id IN ($1, $2) AND (sku = ANY($3) OR sku LIKE 'ITEM-MV-%')
+     )`,
+    [TENANT_REDE, TENANT_FRANQUIA, TEST_SKUS],
+  )
+  await pool.query(`DELETE FROM stock_items WHERE tenant_id IN ($1, $2) AND (sku = ANY($3) OR sku LIKE 'ITEM-MV-%')`, [
+    TENANT_REDE,
+    TENANT_FRANQUIA,
+    TEST_SKUS,
+  ])
   await pool
     .query(`DELETE FROM users WHERE tenant_id IN ($1, $2) AND username LIKE 'stock-%'`, [
       TENANT_REDE,
@@ -69,16 +88,35 @@ afterAll(async () => {
 })
 
 beforeEach(async () => {
-  for (const tbl of [
-    'stock_inventory_entries',
-    'stock_inventories',
-    'stock_movements',
-    'stock_items',
-  ]) {
-    await pool
-      .query(`DELETE FROM ${tbl} WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
-      .catch(() => {})
-  }
+  // Limpeza CIRÚRGICA, só dos SKUs deste teste. O DELETE por tenant inteiro
+  // quebrou quando o seed de vendas (Sprint 24b) passou a referenciar
+  // stock_items via sale_items: a sentença falhava por FK em OUTRO item
+  // (WHEY-900), o .catch engolia, e o resíduo GAZE-100 virava 23505 na rodada
+  // seguinte. Deletar por tenant também apagaria dados de seed legítimos.
+  const TEST_SKUS = ['GAZE-100', 'DUP-001', 'ISO-001', 'NEG-001', 'NF-001', 'INV-CHK-001', 'INV-OK-001']
+  await pool.query(
+    `DELETE FROM stock_inventory_entries WHERE item_id IN (
+       SELECT id FROM stock_items WHERE tenant_id IN ($1, $2) AND (sku = ANY($3) OR sku LIKE 'ITEM-MV-%')
+     )`,
+    [TENANT_REDE, TENANT_FRANQUIA, TEST_SKUS],
+  )
+  await pool.query(
+    `DELETE FROM stock_inventories WHERE tenant_id IN ($1, $2) AND id NOT IN (
+       SELECT DISTINCT inventory_id FROM stock_inventory_entries
+     )`,
+    [TENANT_REDE, TENANT_FRANQUIA],
+  )
+  await pool.query(
+    `DELETE FROM stock_movements WHERE item_id IN (
+       SELECT id FROM stock_items WHERE tenant_id IN ($1, $2) AND (sku = ANY($3) OR sku LIKE 'ITEM-MV-%')
+     )`,
+    [TENANT_REDE, TENANT_FRANQUIA, TEST_SKUS],
+  )
+  await pool.query(`DELETE FROM stock_items WHERE tenant_id IN ($1, $2) AND (sku = ANY($3) OR sku LIKE 'ITEM-MV-%')`, [
+    TENANT_REDE,
+    TENANT_FRANQUIA,
+    TEST_SKUS,
+  ])
 })
 
 async function withTenantContext<T>(
