@@ -1,4 +1,4 @@
-import { isExternalPortalLink } from '@repo/ai'
+import { classifyFiscalAsset } from '@repo/ai'
 /**
  * GET /api/fiscal/emissions/{id}/{pdf|xml} — download de DANFE/XML (Sprint 36b.5).
  *
@@ -83,7 +83,7 @@ export async function GET(
 
   // Link do portal do municipio: nao ha arquivo pra proxyar, e a pagina exige
   // a sessao do contribuinte. Devolver a URL e mais util que um 404 generico.
-  if (isExternalPortalLink(path)) {
+  if (classifyFiscalAsset(path) === 'external-portal') {
     return NextResponse.json(
       {
         ok: false,

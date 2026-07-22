@@ -105,6 +105,11 @@ const CancelEmissionSchema = z.object({
   justification: z.string().min(15).max(255),
 })
 
+const RegisterPortalCancellationSchema = z.object({
+  emissionId: z.string().uuid(),
+  justification: z.string().min(15).max(255),
+})
+
 const IssueCceSchema = z.object({
   emissionId: z.string().uuid(),
   correction: z.string().min(15).max(1000),
@@ -1228,6 +1233,104 @@ export const cancelEmission = wrapServerAction(
       justification: parsed.justification.slice(0, 80),
     })
     return { ok: true as const, status: result.status }
+  },
+)
+
+// ─── registerPortalCancellation (MFA gate regra 43 — `cancelNfe`) ────────
+//
+// Municipios sem cancelamento por webservice (Cascavel/IPM) so cancelam no
+// portal, e o cancelamento feito la NAO propaga de volta pra Focus — consultar
+// status segue devolvendo `autorizado`. Sem um caminho manual, o sistema fica
+// eternamente divergente da realidade fiscal.
+//
+// Esta action registra o cancelamento JA FEITO no portal: marca a emissao
+// cancelada localmente e grava o evento com `source='portal_manual'`, deixando
+// claro no historico que a baixa veio do operador, nao do provider. So vale
+// onde o webservice NAO existe — onde existe, `cancelEmission` e a verdade.
+
+export const registerPortalCancellation = wrapServerAction(
+  { module: 'fiscal', action: 'cancelNfe', resourceType: 'fiscal_emission' },
+  async (
+    input: z.infer<typeof RegisterPortalCancellationSchema>,
+    { session, setAuditResource },
+  ) => {
+    await requireFocusFlag()
+    await requirePermission(session.logifit.userId, 'fiscal.cancel')
+    const parsed = RegisterPortalCancellationSchema.parse(input)
+    const [em] = await db
+      .select({
+        id: fiscalEmissions.id,
+        companyId: fiscalEmissions.companyId,
+        kind: fiscalEmissions.kind,
+        status: fiscalEmissions.status,
+      })
+      .from(fiscalEmissions)
+      .where(
+        and(
+          eq(fiscalEmissions.id, parsed.emissionId),
+          eq(fiscalEmissions.tenantId, session.logifit.tenantId),
+        ),
+      )
+      .limit(1)
+    if (!em)
+      throw new ApiException({
+        code: 'NOT_FOUND',
+        message: 'Emissão não encontrada',
+        request_id: '',
+      })
+    if (em.status !== 'completed')
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: `Não é possível cancelar emissão em status '${em.status}'`,
+        request_id: '',
+      })
+    if (em.kind !== 'nfse')
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message: 'Registro manual de cancelamento só se aplica a NFS-e',
+        request_id: '',
+      })
+    // So legitimo onde NAO ha webservice. Onde ha, o cancelamento tem que passar
+    // pelo provider (cancelEmission) — registrar manual mascararia a verdade.
+    const profile = await resolveNfseProfileForCompany(session.logifit.tenantId, em.companyId)
+    if (profile?.supportsWebserviceCancel)
+      throw new ApiException({
+        code: 'VALIDATION_ERROR',
+        message:
+          'Este município cancela por webservice — use "Cancelar emissão", não o registro manual',
+        request_id: '',
+      })
+
+    await db.transaction(async (tx) => {
+      await tx.insert(fiscalEvents).values({
+        tenantId: session.logifit.tenantId,
+        emissionId: em.id,
+        kind: 'cancellation',
+        justification: parsed.justification,
+        status: 'completed',
+        // Sem provider_ref: nao houve chamada ao provider. A fonte fica gravada.
+        payload: { source: 'portal_manual', registeredBy: session.logifit.userId },
+        submittedAt: new Date(),
+        completedAt: new Date(),
+        createdByUserId: session.logifit.userId,
+      })
+      await tx
+        .update(fiscalEmissions)
+        .set({ status: 'cancelled', cancelledAt: new Date(), updatedAt: new Date() })
+        .where(
+          and(
+            eq(fiscalEmissions.id, em.id),
+            eq(fiscalEmissions.tenantId, session.logifit.tenantId),
+          ),
+        )
+    })
+
+    setAuditResource(em.id, {
+      eventKind: 'cancellation',
+      source: 'portal_manual',
+      justification: parsed.justification.slice(0, 80),
+    })
+    return { ok: true as const, status: 'cancelled' as const }
   },
 )
 

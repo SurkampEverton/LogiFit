@@ -114,24 +114,10 @@ export const MUNICIPALITY_NFSE_PROFILES: Record<string, MunicipalityNfseProfile>
       // Conferido campo a campo contra a doc da Focus em 2026-07-21.
       'A doc da Focus para o município confirma: CNAE e código tributário municipal não são ' +
       'utilizados, NBS é opcional, série de RPS 13, sem homologação e cancelamento por ' +
-      'webservice não funcional.',
+      'webservice não funcional. O cancelamento feito no portal NÃO propaga de volta para a ' +
+      'Focus (consultar status segue devolvendo autorizado); a baixa no LogiFit é registrada ' +
+      'manualmente via registerPortalCancellation.',
   },
-}
-
-/**
- * O "arquivo" devolvido pelo provider é na verdade um link para o portal da
- * prefeitura?
- *
- * Municípios como Cascavel não entregam PDF: devolvem a URL de consulta de
- * autenticidade, que exige a sessão do próprio contribuinte. Não há o que
- * proxyar — a UI precisa oferecer o link, não um botão de download.
- *
- * O código antes tratava URL absoluta como sinal de emissão mock. Uma nota
- * real e autorizada em Cascavel caía nesse ramo e a tela informava ao
- * operador que sua nota era de teste.
- */
-export function isExternalPortalLink(path: string | null | undefined): boolean {
-  return typeof path === 'string' && /^https?:\/\//i.test(path)
 }
 
 /** Perfil do município, ou null quando ainda não catalogado. */

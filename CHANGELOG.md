@@ -6,6 +6,40 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Feat — DANFSE (PDF) da NFS-e + cancelamento manual com aviso por município 2026-07-21
+
+Duas lacunas expostas por "preciso do PDF" e "quero cancelar pelo sistema".
+
+**O PDF existia e a gente pegava o campo errado.** A Focus serve o DANFSE da NFS-e em
+`url_danfse` (com "s") — um PDF real, público, no S3 dela. Nosso mapeamento procurava `url_danfe`
+(sem "s", que é o campo da **NF-e**) e por isso o "PDF" caía no `url` genérico, que em Cascavel é o
+link do portal. Verificado direto: `url_danfse` retorna `200 application/pdf`, 60 KB, `%PDF-1.5`.
+
+- `classifyFiscalAsset()` distingue três casos: `focus-relative` (caminho na API, proxy com auth),
+  `focus-file` (URL absoluta no S3 da Focus, proxy **sem** auth — mandar Basic quebra o S3), e
+  `external-portal` (página do município, não é arquivo). `isExternalPortalLink` passa a ser um
+  caso desse classificador.
+- `pdfFromBody()` prefere `caminho_danfse`/`url_danfse` (NFS-e), depois `caminho_danfe`/`url_danfe`
+  (NF-e), e só então o `url` do portal como último recurso.
+- `downloadFiscalFile` proxia o S3 público; a rota devolve `EXTERNAL_ONLY` (409) só para link de
+  portal de verdade. A NFS-e nº 12 teve o `pdf_storage_path` corrigido para o DANFSE real.
+
+**Cancelamento agora existe no sistema para todo município, com aviso.** Antes, município sem
+cancelamento por webservice (Cascavel) escondia o botão e mostrava só um texto. Agora o botão
+aparece sempre:
+
+- Município **com** webservice → "🚫 Cancelar emissão" → cancela pelo provider (fluxo atual).
+- Município **sem** → "🚫 Registrar cancelamento" → diálogo com **aviso** explicando que a baixa
+  na prefeitura é feita no portal e que confirmar aqui só registra a baixa no sistema. Nova action
+  `registerPortalCancellation` marca a nota cancelada localmente, grava evento com
+  `source='portal_manual'` (deixa claro no histórico que não veio do provider), sob o mesmo gate de
+  MFA recente + permissão `fiscal.cancel`. Só é permitida onde o webservice **não** existe — onde
+  existe, mascarar seria errado.
+
+**Descoberto no processo:** o cancelamento feito no portal de Cascavel **não propaga de volta** para
+a Focus — consultar status segue devolvendo `autorizado`. Sem o registro manual, o sistema ficaria
+eternamente divergente da realidade. Registrado no perfil do município.
+
 ### Fix — prazo de cancelamento inventado bloqueava cancelamento legítimo 2026-07-21
 
 Perguntar "dá pra cancelar as notas emitidas?" revelou que o sistema carimbava **24h fixas** de

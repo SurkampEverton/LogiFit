@@ -44,6 +44,71 @@ export const FOCUS_NFE_HOSTS = {
   homologacao: 'homologacao.focusnfe.com.br',
 } as const
 
+/**
+ * A URL aponta pra um ARQUIVO hospedado pela Focus (DANFSE/XML)?
+ *
+ * A Focus serve o PDF da NFS-e no S3 dela (`focusnfe.s3.<região>.amazonaws.com`),
+ * público, fora dos hosts da API. É arquivo real e proxyável — distinto do link
+ * de portal do município, que é uma página que exige a sessão do contribuinte.
+ */
+export function isFocusAssetUrl(url: string): boolean {
+  try {
+    const h = new URL(url).hostname
+    return (
+      h === FOCUS_NFE_HOSTS.producao ||
+      h === FOCUS_NFE_HOSTS.homologacao ||
+      (h.startsWith('focusnfe.s3.') && h.endsWith('.amazonaws.com'))
+    )
+  } catch {
+    return false
+  }
+}
+
+export type FiscalAssetKind = 'none' | 'focus-relative' | 'focus-file' | 'external-portal'
+
+/**
+ * Classifica o `caminho`/URL que a Focus devolve pra XML/PDF:
+ *  - `focus-relative`: caminho na API da Focus (`/arquivos/...`), proxyável com auth.
+ *  - `focus-file`: URL absoluta de arquivo da Focus (S3), proxyável sem auth.
+ *  - `external-portal`: página do portal do município — não é arquivo, exige sessão.
+ *  - `none`: ausente/inválido.
+ */
+export function classifyFiscalAsset(path: string | null | undefined): FiscalAssetKind {
+  if (!path) return 'none'
+  if (path.startsWith('/')) return 'focus-relative'
+  if (isFocusAssetUrl(path)) return 'focus-file'
+  return 'external-portal'
+}
+
+/**
+ * O "arquivo" devolvido pelo provider é na verdade um link pro portal da
+ * prefeitura? Municípios como Cascavel devolvem a URL de consulta de
+ * autenticidade como "pdf", e ela exige a sessão do contribuinte — não há o
+ * que proxyar. Ver `classifyFiscalAsset`.
+ */
+export function isExternalPortalLink(path: string | null | undefined): boolean {
+  return classifyFiscalAsset(path) === 'external-portal'
+}
+
+/**
+ * Escolhe a melhor URL de PDF do corpo da Focus.
+ *
+ * NFS-e usa `danfse` (com s); NF-e/NFC-e usam `danfe`. O `url` genérico é, em
+ * municípios como Cascavel, o link do PORTAL — só serve de último recurso, senão
+ * a nota real fica sem o DANFSE que a Focus de fato hospeda no S3. Bug real:
+ * mapear só `url_danfe` (sem s) fazia o PDF da NFS-e cair no link do portal.
+ */
+function pdfFromBody(body: FocusResponseBody): string | null {
+  return (
+    body.caminho_danfse ??
+    body.url_danfse ??
+    body.caminho_danfe ??
+    body.url_danfe ??
+    body.url ??
+    null
+  )
+}
+
 export class FiscalProviderRateLimitError extends Error {
   constructor() {
     super('Focus NFe rate limit excedido (HTTP 429)')
@@ -115,6 +180,9 @@ interface FocusResponseBody {
   serie_nfse?: string | number
   caminho_xml_nota_fiscal?: string
   caminho_danfe?: string
+  /** DANFSE de NFS-e — Focus usa 'danfse' (com s); 'danfe' é NF-e. */
+  caminho_danfse?: string
+  url_danfse?: string
   url?: string
   url_danfe?: string
   mensagem_sefaz?: string
@@ -249,7 +317,7 @@ export class FocusNfeProvider implements FiscalProvider {
       status,
       chave: body.chave_nfe ?? body.chave ?? body.codigo_verificacao ?? null,
       xmlUrl: body.caminho_xml_nota_fiscal ?? null,
-      pdfUrl: body.caminho_danfe ?? body.url_danfe ?? body.url ?? null,
+      pdfUrl: pdfFromBody(body),
       rejectionReason: status === 'rejected' ? extractRejection(body) : null,
       documentNumber: firstDefined(body.numero_nfse, body.numero),
       documentSerie: firstDefined(body.serie_nfse, body.serie),

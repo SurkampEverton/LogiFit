@@ -16,6 +16,7 @@ import {
   FOCUS_NFE_HOSTS,
   type FiscalProvider,
   FocusNfeProvider,
+  classifyFiscalAsset,
   mockFiscalProvider,
 } from '@repo/ai'
 import { db } from '@repo/db/client'
@@ -119,14 +120,21 @@ export async function resolveWebhookSecret(tenantId: string): Promise<string | n
  * têm arquivo baixável) ou quando o path não é relativo ao host Focus.
  */
 export async function downloadFiscalFile(tenantId: string, path: string): Promise<Response | null> {
-  // Caminho relativo = arquivo hospedado na Focus, que sabemos autenticar e
-  // proxyar. URL absoluta NAO e sinal de mock: Cascavel devolve o link do
-  // portal do municipio como "pdf" de uma nota real, e tratar isso como mock
-  // fazia a tela dizer que uma nota autorizada era de teste. Quem decide o que
-  // fazer com URL externa e o caller — aqui so recusamos o que nao sabemos
-  // buscar com seguranca (regra 37: nunca fetch em host fora da allowlist).
-  if (!path.startsWith('/')) return null
+  const kind = classifyFiscalAsset(path)
+  // Link de portal do municipio (ou vazio): nao e arquivo, nao ha o que proxyar.
+  if (kind === 'external-portal' || kind === 'none') return null
 
+  // Arquivo publico no S3 da Focus (DANFSE): host validado por classifyFiscalAsset
+  // (focusnfe.s3.*.amazonaws.com), fetch SEM auth — mandar Basic quebra o S3 (400).
+  if (kind === 'focus-file') {
+    return safeFetch(path, {
+      method: 'GET',
+      allowedHosts: [new URL(path).hostname],
+      timeoutMs: 30_000,
+    })
+  }
+
+  // focus-relative: caminho na API da Focus, exige Basic auth do tenant.
   const [creds] = await db
     .select({
       encrypted: fiscalProviderCredentials.apiTokenEncrypted,

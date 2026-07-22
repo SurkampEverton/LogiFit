@@ -5,6 +5,9 @@ import {
   FiscalProviderRateLimitError,
   FiscalProviderUnavailableError,
   FocusNfeProvider,
+  classifyFiscalAsset,
+  isExternalPortalLink,
+  isFocusAssetUrl,
 } from './focus-nfe'
 import type { NfseEmissionInput } from './provider'
 
@@ -300,5 +303,34 @@ describe('FocusNfeProvider', () => {
     const health = await providerWith(fetchFn).healthCheck()
     expect(health.ok).toBe(false)
     expect(health.message).toMatch(/HTTP 401/)
+  })
+})
+
+describe('classifyFiscalAsset / isExternalPortalLink', () => {
+  it('caminho relativo é arquivo da Focus proxyável (focus-relative)', () => {
+    expect(classifyFiscalAsset('/arquivos/x/XMLsNFSe/nota-nfse.xml')).toBe('focus-relative')
+    expect(isExternalPortalLink('/arquivos/x/nota.xml')).toBe(false)
+  })
+
+  it('URL do S3 da Focus é arquivo (focus-file), não portal', () => {
+    // O DANFSE real da NFS-e vem daqui — 200 application/pdf, público.
+    const s3 = 'https://focusnfe.s3.sa-east-1.amazonaws.com/arquivos/x/DANFSEs/NFSe123-nfse.pdf'
+    expect(classifyFiscalAsset(s3)).toBe('focus-file')
+    expect(isFocusAssetUrl(s3)).toBe(true)
+    expect(isExternalPortalLink(s3)).toBe(false)
+  })
+
+  it('link do portal do município é external-portal', () => {
+    const portal =
+      'https://cascavel.atende.net/autoatendimento/servicos/consulta-de-autenticidade-de-nota-fiscal-eletronica-nfse/detalhar/1/identificador/749'
+    expect(classifyFiscalAsset(portal)).toBe('external-portal')
+    expect(isExternalPortalLink(portal)).toBe(true)
+    expect(isFocusAssetUrl(portal)).toBe(false)
+  })
+
+  it('ausência de caminho é none, não portal', () => {
+    expect(classifyFiscalAsset(null)).toBe('none')
+    expect(classifyFiscalAsset('')).toBe('none')
+    expect(isExternalPortalLink(undefined)).toBe(false)
   })
 })

@@ -10,7 +10,13 @@
  */
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { cancelEmission, issueCce, queryEmissionStatus, retryEmission } from '../actions'
+import {
+  cancelEmission,
+  issueCce,
+  queryEmissionStatus,
+  registerPortalCancellation,
+  retryEmission,
+} from '../actions'
 
 type DialogKind = 'cancel' | 'cce' | null
 
@@ -19,7 +25,8 @@ export function EmissionActions({
   status,
   kind,
   cancelWindowOpen,
-  cancelBlockedReason,
+  webserviceCancel,
+  cancelWarning,
   canRetry,
   hasProviderRef,
 }: {
@@ -27,8 +34,10 @@ export function EmissionActions({
   status: string
   kind: string
   cancelWindowOpen: boolean
-  /** Prefeitura sem cancelamento por webservice — texto explicando onde cancelar */
-  cancelBlockedReason: string | null
+  /** Município cancela por webservice? Quando false, o botão vira baixa manual. */
+  webserviceCancel: boolean
+  /** Aviso exibido no diálogo quando o cancelamento é só pelo portal. */
+  cancelWarning: string | null
   canRetry: boolean
   hasProviderRef: boolean
 }) {
@@ -74,11 +83,17 @@ export function EmissionActions({
         () => issueCce({ emissionId, correction: text }),
         () => setInfo('Carta de correção enviada.'),
       )
-    } else {
+    } else if (webserviceCancel) {
       void run(
         'cancel',
         () => cancelEmission({ emissionId, justification: text }),
         () => setInfo('Cancelamento enviado ao provider.'),
+      )
+    } else {
+      void run(
+        'cancel',
+        () => registerPortalCancellation({ emissionId, justification: text }),
+        () => setInfo('Cancelamento registrado. A baixa na prefeitura é feita no portal.'),
       )
     }
   }
@@ -87,7 +102,7 @@ export function EmissionActions({
     <section className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
       <h2 style={{ marginTop: 0 }}>Ações</h2>
       <div className="flex flex-wrap items-center gap-2">
-        {cancelWindowOpen && !cancelBlockedReason && (
+        {cancelWindowOpen && (
           <button
             type="button"
             className="ev-btn"
@@ -97,21 +112,12 @@ export function EmissionActions({
               setDialogText('')
             }}
           >
-            {pending === 'cancel' ? 'Cancelando…' : '🚫 Cancelar emissão'}
+            {pending === 'cancel'
+              ? 'Processando…'
+              : webserviceCancel
+                ? '🚫 Cancelar emissão'
+                : '🚫 Registrar cancelamento'}
           </button>
-        )}
-        {cancelWindowOpen && cancelBlockedReason && (
-          <p
-            role="note"
-            style={{
-              margin: 0,
-              color: 'var(--ev-text-muted)',
-              borderLeft: '3px solid var(--ev-warning, #92400e)',
-              paddingLeft: 'var(--ev-space-sm)',
-            }}
-          >
-            {cancelBlockedReason}
-          </p>
         )}
         {canIssueCce && (
           <button
@@ -193,12 +199,33 @@ export function EmissionActions({
             style={{ borderColor: 'var(--ev-border)', background: 'var(--ev-surface)' }}
           >
             <h3 className="text-lg font-semibold" style={{ margin: 0 }}>
-              {isCce ? 'Carta de Correção Eletrônica' : 'Cancelar emissão fiscal'}
+              {isCce
+                ? 'Carta de Correção Eletrônica'
+                : webserviceCancel
+                  ? 'Cancelar emissão fiscal'
+                  : 'Registrar cancelamento feito no portal'}
             </h3>
+            {!isCce && !webserviceCancel && cancelWarning && (
+              <p
+                className="text-sm"
+                role="note"
+                style={{
+                  margin: 0,
+                  padding: 'var(--ev-space-sm)',
+                  borderLeft: '3px solid var(--ev-warning, #92400e)',
+                  background: 'var(--ev-warning-bg, #fef3c7)',
+                  color: 'var(--ev-warning, #92400e)',
+                }}
+              >
+                {cancelWarning}
+              </p>
+            )}
             <p className="text-sm" style={{ color: 'var(--ev-text-muted)' }}>
               {isCce
                 ? 'Descreva a correção (campos não-fiscais: endereço, transportadora). Mínimo 15 caracteres; até 30 CC-e por chave.'
-                : 'Informe a justificativa do cancelamento (mínimo 15 caracteres). Ação de alto risco — exige MFA recente.'}
+                : webserviceCancel
+                  ? 'Informe a justificativa do cancelamento (mínimo 15 caracteres). Ação de alto risco — exige MFA recente.'
+                  : 'Informe a referência do cancelamento feito no portal (protocolo, data ou motivo — mínimo 15 caracteres). Ação de alto risco — exige MFA recente.'}
             </p>
             <textarea
               className="ev-input w-full"
@@ -221,7 +248,11 @@ export function EmissionActions({
                 disabled={dialogText.trim().length < minLen}
                 onClick={submitDialog}
               >
-                {isCce ? 'Enviar CC-e' : 'Confirmar cancelamento'}
+                {isCce
+                  ? 'Enviar CC-e'
+                  : webserviceCancel
+                    ? 'Confirmar cancelamento'
+                    : 'Registrar cancelamento'}
               </button>
             </div>
           </div>

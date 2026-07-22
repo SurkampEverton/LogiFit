@@ -101,10 +101,12 @@ export default async function FiscalEmissionDetailPage({
     em.status === 'completed' && (!em.cancelDeadlineAt || em.cancelDeadlineAt > new Date())
   const canRetry = em.status === 'rejected' && em.retryCount < 3
 
-  // Algumas prefeituras não expõem cancelamento por webservice. Oferecer o botão
-  // nesse caso só produz erro e a impressão falsa de que a nota foi cancelada —
-  // melhor dizer de cara onde o cancelamento realmente acontece.
-  let cancelBlockedReason: string | null = null
+  // Algumas prefeituras não expõem cancelamento por webservice — nesses casos o
+  // cancelamento acontece no portal e NÃO propaga de volta pra Focus. O botão
+  // continua disponível, mas vira "registrar cancelamento" (baixa manual, com
+  // aviso), em vez de disparar um webservice que não existe.
+  let cancelWarning: string | null = null
+  let webserviceCancel = true
   if (em.kind === 'nfse' && cancelWindowOpen) {
     const [svc] = await db
       .select({ municipalityCode: fiscalServiceCatalog.municipalityCode })
@@ -119,10 +121,12 @@ export default async function FiscalEmissionDetailPage({
       .limit(1)
     const profile = findMunicipalityNfseProfile(svc?.municipalityCode)
     if (profile && !profile.supportsWebserviceCancel) {
-      cancelBlockedReason = [
-        `A prefeitura de ${profile.name}/${profile.uf} não permite cancelar NFS-e por webservice`,
-        `— cancele no portal do município (${profile.system}) com o mesmo login usado para emitir`,
-        'e depois use "Re-consultar status" para sincronizar aqui.',
+      webserviceCancel = false
+      cancelWarning = [
+        `A prefeitura de ${profile.name}/${profile.uf} não cancela NFS-e por webservice.`,
+        `Cancele primeiro no portal do município (${profile.system}), com o mesmo login usado`,
+        'para emitir. Confirmar aqui apenas registra essa baixa no sistema — não cancela pela',
+        'prefeitura.',
       ].join(' ')
     }
   }
@@ -288,7 +292,8 @@ export default async function FiscalEmissionDetailPage({
         status={em.status}
         kind={em.kind}
         cancelWindowOpen={cancelWindowOpen}
-        cancelBlockedReason={cancelBlockedReason}
+        webserviceCancel={webserviceCancel}
+        cancelWarning={cancelWarning}
         canRetry={canRetry}
         hasProviderRef={em.providerRef !== null}
       />
