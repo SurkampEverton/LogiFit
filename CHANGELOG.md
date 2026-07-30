@@ -6,6 +6,50 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Feat — Sprint 41a: `@repo/fiscal` e a fundação de assinatura 2026-07-30
+
+Primeiro código da emissão própria ([ADR 0108](docs/decisions/0108-emissao-fiscal-propria-nfe-nfce-nfse.md)).
+Package novo `packages/fiscal/`, com piso de cobertura 80% — fiscal sai de
+`@repo/ai`, onde nunca deveria ter morado.
+
+**Leitura do certificado A1** (`core/cert/pkcs12.ts`) consumindo o
+`company_certificates` que o Sprint 17 já deixou cifrado. Erros distinguem a
+ação do operador: senha errada, arquivo corrompido, e "exportado sem a chave
+privada" — este último é engano comum e a mensagem diz o que refazer.
+
+**Chave privada que não vaza por construção** (`core/cert/secret-pem.ts`).
+`toString`, `toJSON` e o inspetor do Node devolvem `[REDACTED]`; o PEM vive em
+closure, sem propriedade enumerável para um serializador genérico encontrar. Só
+`reveal()` devolve o valor, e é grep-ável em review. Depender de disciplina
+("não logue isso") falha na primeira vez que alguém faz `logger.info({ cert })`
+ou que o Sentry serializa o contexto de uma exceção.
+
+**Assinatura XMLDSig por perfil** (`core/xml/sign.ts` + `profiles.ts`). Os
+algoritmos são dado nomeado por documento, não default escondido na lib — o
+órgão rejeita com "assinatura inválida" sem dizer qual das cinco escolhas está
+errada, e perfil explícito transforma isso em diff visível. **Perfil com
+`verifiedAgainst: null` é recusado fora de teste**: os dois perfis nascem assim
+de propósito, porque fixá-los de memória seria inventar um fato que só se
+descobre errado na primeira rejeição. Conferir contra o manual é item de gate
+do 41a (NF-e) e do Sprint 42 (NFS-e).
+
+**Golden-file** do XML assinado, com par de chaves determinístico — se
+`xml-crypto` ou `node-forge` mudarem canonicalização ou espaçamento, vira diff
+no CI em vez de rejeição do órgão meses depois.
+
+Dois erros encontrados e corrigidos durante o trabalho, ambos por verificar em
+vez de assumir:
+
+- `getField` do forge casa por `shortName` (`CN`), não por `name`
+  (`commonName`) — deixava `subjectCn` vazio e CNPJ `null` em certificado que
+  tinha os dois.
+- **forge não decodifica `otherName`** — devolve `"[object Object]"`. A primeira
+  versão da extração do CNPJ via extensão ICP-Brasil (OID 2.16.76.1.3.3) lia
+  `altNames` e nunca teria funcionado com certificado real. Reescrita para
+  parsear o DER cru da extensão e caminhar a ASN.1.
+
+28 testes verdes, cobertura de branches 81.69%.
+
 ### Decisão — emissão fiscal passa a ser própria; Sprint 36 encerrado 2026-07-30
 
 Reversão de duas decisões aceitas. Os [ADRs 0108](docs/decisions/0108-emissao-fiscal-propria-nfe-nfce-nfse.md)
