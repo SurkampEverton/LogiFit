@@ -1,7 +1,14 @@
 # ADR 0076 — NFS-e Nacional como provider complementar (caminho de redução de custo fiscal)
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR 0108](0108-emissao-fiscal-propria-nfe-nfce-nfse.md) (2026-07-30)
 - **Date:** 2026-04-25
+
+> **Por que caiu:** as duas premissas centrais deste ADR deixaram de ser verdadeiras.
+>
+> 1. **O modelo de custo** (Focus corroendo margem em Business) foi eliminado pelo [ADR 0105](0105-conta-focus-por-tenant-byo.md) — a conta Focus é do tenant, não da LogiFit. Os 4 gatilhos de ativação, todos derivados de volume e custo, ficaram sem sentido.
+> 2. **A adesão municipal voluntária e parcial** virou obrigatoriedade: a **Resolução CGSN 189/2026** determina que ME/EPP do Simples emitam NFS-e **exclusivamente pelo Emissor Nacional** a partir de 01/09/2026, e a **LC 214/2025** obrigou todo município a aderir ao padrão nacional.
+>
+> **O que continua valendo:** o desenho de provider plugável, a regra de que **evento sempre vai no provider que emitiu**, a coluna `provider` em `fiscal_emissions` e a ausência de migração retroativa. O [ADR 0108](0108-emissao-fiscal-propria-nfe-nfce-nfse.md) reusa tudo isso.
 
 ## Context
 

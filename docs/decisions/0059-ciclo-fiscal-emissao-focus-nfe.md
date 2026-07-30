@@ -1,7 +1,11 @@
 # ADR 0059 — Ciclo fiscal de emissão completo via Focus NFe
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR 0108](0108-emissao-fiscal-propria-nfe-nfce-nfse.md) (2026-07-30)
 - **Date:** 2026-04-23
+
+> **O que caiu:** a decisão estruturante *"LogiFit não toca em motor tributário"* e a Focus NFe como **única fachada** de emissão. O [ADR 0108](0108-emissao-fiscal-propria-nfe-nfce-nfse.md) internaliza emissão e cálculo; a Focus fica como **fallback** para padrão municipal de NFS-e sem adapter próprio.
+>
+> **O que continua valendo:** o mapa das 8 operações fiscais reais dos tenants, a interface `FiscalProvider`, o schema `fiscal_emissions` / `fiscal_events` / `fiscal_numbering_sequences` / `fiscal_service_catalog`, a rota `/app/fiscal` e os eventos de domínio. O ADR 0108 é explicitamente incremental sobre essa camada — ela **não** muda.
 
 ## Context
 

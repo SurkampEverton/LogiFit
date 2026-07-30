@@ -1,6 +1,6 @@
 # Regras do Projeto LogiFit
 
-**46 regras duras e inquebráveis.** Organizadas em 4 blocos + regras transversais. Violação = CI vermelho, revert, ou sprint não fecha.
+**47 regras duras e inquebráveis.** Organizadas em 4 blocos + regras transversais. Violação = CI vermelho, revert, ou sprint não fecha.
 
 > **Como usar:** toda discussão técnica começa perguntando "isso fere alguma regra?". Se sim, ou mudamos a regra (ADR) ou mudamos a solução. Regras não são sugestões.
 
@@ -21,6 +21,7 @@
 - **Design system "Equilíbrio Vital" (44)**
 - **Mensagens ao usuário (45)**
 - **Soberania de dependência externa (46)**
+- **Emissão fiscal (47)**
 
 ---
 
@@ -256,6 +257,26 @@ Sem ADR, sem dependência. CI bloqueia commit que adiciona import de SDK de prov
 **Princípio cultural:** dropar dependência externa quando viável é **encorajado** sem precisar de ADR; **adicionar** exige defesa pública.
 
 Ver [ADR 0091](decisions/0091-self-host-total-oracle-sp.md).
+
+---
+
+## Emissão fiscal
+
+**47.** **Nenhum default tributário é inferido silenciosamente.** Produto sem `fiscal_profile_id`, ou emissão em que nenhuma `tax_rule` casa com o contexto, **aborta antes de qualquer chamada externa** com erro nominal que diz *o que* falta e *onde* configurar — nunca emite documento com CST/CFOP/alíquota chutados.
+
+Motivo: nota **rejeitada** custa 5 minutos; nota **autorizada e errada** vira passivo fiscal do cliente, é irreversível pelo LogiFit e não é bug de software — é dano a terceiro. A assimetria é tão grande que falhar alto é sempre a escolha certa.
+
+Aplicações concretas:
+
+- **Erro carrega contexto**, não só código: `profile_id / operation_nature / uf_origem / uf_destino / regime`. Erro genérico obriga o operador a adivinhar
+- **Comportamento por CST vive em `tax_ref_icms_cst` como flag**, nunca como `switch`/`if` no cálculo. CST novo = linha na tabela de referência, não deploy
+- **Regra empatada resolve por desempate determinístico** (`priority DESC → updated_at DESC → id DESC`). Sem isso a escolha cai na ordem física do Postgres e o mesmo produto tributa diferente entre duas vendas
+- **Aritmética em centavos inteiros**; float binário é proibido em toda a cadeia fiscal
+- **Nada transmite sem sombra verde** — enquanto houver provider externo emitindo, o motor próprio calcula em paralelo e a divergência é comparada contra o documento autorizado antes de qualquer cut-over
+
+Lint `no-inferred-tax-default` em CI. Ver [ADR 0108](decisions/0108-emissao-fiscal-propria-nfe-nfce-nfse.md).
+
+**Exceção de RLS:** as tabelas `tax_ref_*` são catálogo canônico nacional e nascem **sem `tenant_id`**, à revelia da regra 1 — mesmo precedente de CID/CIF ([ADR 0028](decisions/0028-cid-cif-catalogos-globais.md)). Devem constar na allowlist de `pnpm db:rls-check`.
 
 ---
 

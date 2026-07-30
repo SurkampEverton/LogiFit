@@ -6,6 +6,58 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Decisão — emissão fiscal passa a ser própria; Sprint 36 encerrado 2026-07-30
+
+Reversão de duas decisões aceitas. Os [ADRs 0108](docs/decisions/0108-emissao-fiscal-propria-nfe-nfce-nfse.md)
+e [0109](docs/decisions/0109-impressao-documentos-fiscais.md) internalizam emissão, motor tributário e
+impressão de documentos fiscais; os ADRs **0059** (Focus como única fachada) e **0076** (NFS-e nacional
+como provider complementar futuro) ficam **Superseded**.
+
+Reverter ADR aceito exige premissa mudada, não preferência. Mudaram três, e nenhuma estava documentada:
+
+- **O argumento de custo já tinha morrido.** O ADR 0076 inteiro foi construído sobre margem negativa em
+  Business (R$ 600 de Focus contra mensalidade de R$ 449). O ADR 0105 (conta Focus é do tenant) eliminou
+  esse custo da LogiFit. Internalizar **não economiza um centavo** — o ganho é atrito de onboarding,
+  soberania (regra 46) e controle do ciclo.
+- **A NFS-e virou canal único para a nossa base.** A **Resolução CGSN 189/2026** obriga ME/EPP do Simples
+  a emitir **exclusivamente pelo Emissor Nacional** a partir de 01/09/2026 — sistemas municipais deixam de
+  ser opção para o Simples. Como a base LogiFit é Simples, **um adapter cobre o Brasil inteiro**. Isso
+  tirou 8-10 adapters municipais do caminho crítico e o cronograma de 8-12 para **6-8 meses**.
+- **Existe implementação de referência em produção** (Deep Control, fora deste repo): arquitetura de 4
+  camadas, pipeline de emissão e 10 armadilhas com incidente real datado. O risco de design cai a quase
+  zero; sobra execução.
+
+O princípio central inverte o que o Sprint 36 fazia: **o produto não carrega alíquota**, carrega
+classificadores (NCM/CEST/origem/perfil fiscal). A tributação vive em `tax_rules` e é resolvida na
+emissão. Uma primeira redação do ADR 0108 propunha um envelope fechado recusando categorias inteiras
+(ST, industrialização, importação) — descartada: o que garante segurança não é "não sei fazer ST", é
+**falhar alto quando nenhuma regra casa**, caso a caso, com contexto.
+
+**Sprint 36 → `done`.** O escopo restante deixou de fazer sentido sobre a Focus. Migrou para os Sprints
+41-46 o que é agnóstico de provider (retenções, botões de emissão contextualizados, ZIP de XMLs, portal
+do contador, `search_index`, job de usage snapshot). Descartado com motivo: E2E Focus sandbox dos 8 tipos
+e a negociação comercial de R$ 0,12/nota — a Focus vira fallback de padrão municipal sem adapter, e
+negociar volume perdeu objeto.
+
+**Programa:** Sprints 41 (fundação de assinatura + motor tributário) → 42 (NFS-e Emissor Nacional) →
+43 (NF-e 55, com DIFAL fechado — lacuna conhecida da referência que não é herdada) → 44 (NFC-e 65) →
+45 (impressão) → 46 (reforma IBS/CBS/IS). Fase C (padrões municipais) fica condicional, fora do crítico.
+
+**Corte com sombra primeiro:** não é possível comparar nosso XML com o da Focus — ela monta o XML
+internamente. O que é comparável é o **nosso cálculo contra os valores da nota que ela já autorizou**.
+O motor roda em paralelo a cada emissão real, um job diário compara, e só depois de evidência acumulada
+o tenant vira por flag. Zero transmissão durante a sombra.
+
+**Regra nova 47** em [`docs/rules.md`](docs/rules.md): nenhum default tributário é inferido
+silenciosamente — produto sem perfil fiscal ou sem regra casada aborta antes de qualquer chamada externa.
+Nota rejeitada custa 5 minutos; nota autorizada e errada é passivo fiscal do cliente, irreversível.
+`tax_ref_*` nascem sem `tenant_id` (exceção à regra 1, precedente do ADR 0028).
+
+**Risco assumido e registrado:** manutenção perpétua de 20-30% de um dev; 6-8 meses de roadmap (Fisio ou
+Nutri atrasa em bloco — decisão ainda aberta); canal único vira ponto único de falha para toda a base; e
+o plano depende de uma norma que entra em vigor em 5 semanas — prorrogação da CGSN 189 devolve os
+adapters municipais ao caminho crítico.
+
 ### Feat — re-consulta de status reconhece baixa do provider (limite do Cascavel documentado) 2026-07-21
 
 Pergunta: "dá pra consultar a situação da nota e atualizar o cancelamento?". Verificado ao vivo — a
