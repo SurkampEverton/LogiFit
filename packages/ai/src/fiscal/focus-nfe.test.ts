@@ -84,6 +84,14 @@ describe('FocusNfeProvider', () => {
     )
   })
 
+  it('reconhece baixa quando o provider reporta cancelado', async () => {
+    // So vale em municipio que propaga a baixa de volta pra Focus. Cascavel/IPM
+    // nao propaga — la o cancelamento entra por registro manual, nao por aqui.
+    const fetchFn = vi.fn<FiscalFetchFn>(async () => jsonResponse(200, { status: 'cancelado' }))
+    const result = await providerWith(fetchFn).queryStatus('lf-nfse-x-13-6', 'nfse')
+    expect(result.status).toBe('cancelled')
+  })
+
   it('separa numeracao do documento da numeracao do RPS', async () => {
     // A primeira NFS-e real saiu como nº 12 em Cascavel enquanto o RPS era
     // serie 13 nº 6. Exibir o RPS como se fosse a nota manda o operador

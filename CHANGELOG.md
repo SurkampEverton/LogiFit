@@ -6,6 +6,25 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Feat — re-consulta de status reconhece baixa do provider (limite do Cascavel documentado) 2026-07-21
+
+Pergunta: "dá pra consultar a situação da nota e atualizar o cancelamento?". Verificado ao vivo — a
+Focus **ainda reporta `autorizado`** para a NFS-e nº 12, mesmo depois do cancelamento no portal.
+Cascavel/IPM não propaga a baixa de volta para a Focus, que é a nossa única janela programática. A
+consulta de status, portanto, não detecta esse cancelamento específico.
+
+No caminho, um defeito latente: mesmo que a Focus reportasse `cancelado`, o sistema não saberia
+captar — `EmissionResult.status` não tinha o estado `cancelled` e `queryEmissionStatus` só mapeava
+`completed`/`rejected`. Corrigido:
+
+- `mapEmissionStatus` reconhece `cancelado` → `cancelled`.
+- `queryEmissionStatus` grava `status='cancelled'` + `cancelledAt` (via `coalesce`, para a data não
+  andar a cada consulta) quando o provider reporta a baixa.
+
+Efeito: em municípios onde o cancelamento **propaga** para a Focus, "Re-consultar status" agora
+atualiza a nota sozinho. Em Cascavel, que não propaga, o caminho continua sendo o **Registrar
+cancelamento** manual — e o perfil do município documenta isso explicitamente.
+
 ### Feat — DANFSE (PDF) da NFS-e + cancelamento manual com aviso por município 2026-07-21
 
 Duas lacunas expostas por "preciso do PDF" e "quero cancelar pelo sistema".

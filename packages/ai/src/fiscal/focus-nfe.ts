@@ -219,6 +219,10 @@ function mapEmissionStatus(focusStatus: string | undefined): EmissionResult['sta
     case 'erro_autorizacao':
     case 'denegado':
       return 'rejected'
+    case 'cancelado':
+      // So aparece em municipio que propaga a baixa de volta pra Focus.
+      // Cascavel/IPM nao propaga — cancelamento la fica invisivel aqui.
+      return 'cancelled'
     default:
       // Body sem status (202 recém-enfileirado) → queued
       return 'queued'

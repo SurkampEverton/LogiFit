@@ -1574,7 +1574,13 @@ export const queryEmissionStatus = wrapServerAction(
               ? 'completed'
               : result.status === 'rejected'
                 ? 'rejected'
-                : em.status,
+                : // Provider reportou baixa (municipio que propaga p/ Focus).
+                  // Cascavel/IPM nao propaga — la a baixa entra por registerPortalCancellation.
+                  result.status === 'cancelled'
+                  ? 'cancelled'
+                  : em.status,
+          cancelledAt:
+            result.status === 'cancelled' ? sql`coalesce(cancelled_at, now())` : sql`cancelled_at`,
           chave: result.chave ?? sql`chave`,
           // Numeracao atribuida pelo municipio/SEFAZ — so chega ao autorizar.
           numeroDocumento: result.documentNumber ?? sql`numero_documento`,

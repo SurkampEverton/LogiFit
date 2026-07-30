@@ -205,8 +205,8 @@ export interface NfceEmissionInput {
 export interface EmissionResult {
   /** Identificador do provider (Focus: `ref`) pra correlacionar webhook */
   providerRef: string
-  /** Status inicial — `queued` ou `completed` (síncrono) */
-  status: 'queued' | 'processing' | 'completed' | 'rejected'
+  /** Status inicial — `queued` ou `completed` (síncrono); `cancelled` só via re-consulta */
+  status: 'queued' | 'processing' | 'completed' | 'rejected' | 'cancelled'
   /** Chave SEFAZ 44 dígitos (NF-e/NFC-e) ou protocolo municipal (NFS-e); NULL se queued */
   chave: string | null
   /** Quando síncrono, URLs assinadas pra XML + PDF (TTL provider-side) */
