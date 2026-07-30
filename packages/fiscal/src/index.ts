@@ -6,8 +6,10 @@
  * errada vira passivo fiscal do cliente e é irreversível pelo LogiFit.
  *
  * **Entregue (41a):** fundação de assinatura — leitura de A1, XMLDSig por perfil.
- * **Próximo (41b/c):** motor tributário de 4 camadas — `tax_ref_*`,
- * `fiscal_profiles`, `tax_rules`, `Resolve()`, `CalculateTax()`.
+ * **Entregue (41b):** camada 2 — `resolveTaxRule()` com score de especificidade
+ *   e desempate determinístico, mais o schema em `@repo/db`.
+ * **Próximo (41c):** camada 3 — `calculateTax()` dirigido por flags de
+ *   `tax_ref_icms_cst`, CRUD admin, defaults por ramo e modo sombra.
  */
 
 export {
@@ -28,3 +30,13 @@ export {
   TRANSFORM,
 } from './core/xml/profiles'
 export { SignatureError, type SignXmlOptions, signXml } from './core/xml/sign'
+export {
+  type ClientType,
+  NoMatchingRuleError,
+  type RejectionReason,
+  type ResolvedTax,
+  type ResolveRequest,
+  type TaxRegime,
+  type TaxRule,
+} from './taxengine/models'
+export { compareTiebreak, resolveTaxRule, scoreRule } from './taxengine/resolve'

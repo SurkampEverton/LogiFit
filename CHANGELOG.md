@@ -6,6 +6,47 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Feat — Sprint 41b: schema do motor tributário + camada de resolução 2026-07-30
+
+**Schema (10 tabelas).** `tax_ref_*` são catálogo da legislação federal, sem
+`tenant_id` — exceção declarada na regra 47. A mais importante é
+`tax_ref_icms_cst`: guarda o comportamento de cada CST como **flag**, e é ela
+que dirige o cálculo. CST novo vira linha na tabela; um `switch (cst)` no código
+precisaria ser reaberto a cada nota técnica. `products` ganha
+`fiscal_profile_id` — sem ele a emissão aborta com erro nominal, nunca com
+default chutado.
+
+`fiscal_tax_shadow_runs` implementa o modo sombra: não dá para comparar nosso
+XML com o da Focus (ela monta o XML internamente), mas dá para comparar **o
+nosso cálculo contra os valores da nota que ela já autorizou**. Sem `UPDATE` nem
+`DELETE` na policy — evidência que o usuário pode editar não é evidência.
+
+**Resolução** (`resolveTaxRule`): filtro de compatibilidade → score de
+especificidade → desempate determinístico. Função pura, sem banco e sem relógio,
+o que permite rodar a sombra sobre milhares de emissões passadas.
+
+Três armadilhas da implementação de referência viraram teste, cada uma com o
+incidente que a originou escrito junto:
+
+- **Desempate total** `priority → updatedAt → id`. Sem ele, duas regras
+  igualmente específicas deixavam a escolha na ordem física do Postgres, e o
+  mesmo produto tributava diferente entre duas vendas. Travado com 100 execuções
+  de ordem rotacionada.
+- **`client_type` some no fluxo de venda** — o resolver de item não o preenche,
+  então regra com esse campo é descartada ali. Em vez de tratar como folclore
+  ("use NULL em regra de venda"), o erro agora **conta quantas regras caíram por
+  isso e instrui a deixar o campo vazio**.
+- **Falha alta com contexto** — `NoMatchingRuleError` carrega perfil, natureza,
+  UF origem→destino, regime, e o agregado de descartes por motivo, ordenado por
+  frequência. "12 caíram por natureza" aponta o campo errado de imediato;
+  "nenhuma regra casou" obriga a conferir regra por regra.
+
+Migration `0067` escrita à mão: o snapshot do `drizzle-kit` drifou das
+migrations manuais 0059-0066 e `db:generate` produz um catch-up de 590 linhas
+com tabelas que já existem. Regenerar o snapshot ficou como dívida registrada.
+
+56 testes verdes, cobertura de branches 87,65%.
+
 ### Feat — Sprint 41a: `@repo/fiscal` e a fundação de assinatura 2026-07-30
 
 Primeiro código da emissão própria ([ADR 0108](docs/decisions/0108-emissao-fiscal-propria-nfe-nfce-nfse.md)).
