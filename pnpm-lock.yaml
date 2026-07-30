@@ -47,6 +47,9 @@ importers:
       '@repo/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@repo/fiscal':
+        specifier: workspace:*
+        version: link:../../packages/fiscal
       '@repo/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n

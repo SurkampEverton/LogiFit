@@ -21,6 +21,12 @@ export {
 } from './core/cert/pkcs12'
 export { type SecretPem, isSecretPem, secretPem } from './core/cert/secret-pem'
 export {
+  type CertificateRejection,
+  CertificateRejectedError,
+  type ValidateCertificateInput,
+  validateCertificateUpload,
+} from './core/cert/validate'
+export {
   C14N,
   DIGEST,
   NFE_PROFILE,

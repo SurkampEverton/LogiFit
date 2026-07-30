@@ -23,6 +23,10 @@
  * tabela, não deploy. Um `switch (cst)` no cálculo teria que ser reaberto a cada
  * alteração da legislação, e é onde o motor de referência acumulou dívida.
  *
+ * **O item vive em `stock_items`**, não numa tabela `products`: o LogiFit não
+ * tem cadastro de produto separado do estoque (Sprint 24, ADR 0101). As colunas
+ * fiscais novas entram lá.
+ *
  * **Fora de escopo por decisão do ADR 0108:** monofásico de combustível, ANP,
  * PMPF, CIDE e cadeia de importação. LogiFit não vende combustível nem importa;
  * carregar essas colunas seria ~40% de complexidade sem caso de uso.

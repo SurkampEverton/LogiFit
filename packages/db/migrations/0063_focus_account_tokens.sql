@@ -51,6 +51,13 @@ ALTER TABLE fiscal_platform_credentials FORCE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE ON fiscal_platform_credentials TO logifit_app;
 
 -- Sem policy por tenant: contexto de tenant NUNCA lê o segredo da plataforma.
+--
+-- DROP antes do CREATE porque `CREATE POLICY` não tem `OR REPLACE`: sem isto a
+-- migration quebra em qualquer banco onde o SQL já tenha sido aplicado à mão
+-- sem o registro em `__drizzle_migrations` — que é exatamente o estado do
+-- ambiente de dev em 2026-07-30. Mesma convenção já documentada no
+-- `scripts/migrate.ts` para a fase de policies.
+DROP POLICY IF EXISTS fiscal_platform_credentials_system_all ON fiscal_platform_credentials;
 CREATE POLICY fiscal_platform_credentials_system_all ON fiscal_platform_credentials
   FOR ALL
   USING (current_setting('app.role', true) = 'system')

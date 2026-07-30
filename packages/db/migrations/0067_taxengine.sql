@@ -259,19 +259,22 @@ CREATE INDEX IF NOT EXISTS tax_rules_unit_idx
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Classificadores no produto
 -- ═══════════════════════════════════════════════════════════════════════════
--- `products` já trazia barcode/ncm/cest_code do Sprint 24. Falta o vínculo com
--- o perfil — sem ele a emissão aborta com erro nominal (regra 47), nunca com
--- default chutado.
+-- `stock_items` já trazia barcode/ncm/cest_code do Sprint 24. Falta o vínculo
+-- com o perfil — sem ele a emissão aborta com erro nominal (regra 47), nunca
+-- com default chutado.
 
-ALTER TABLE products
+-- A tabela e `stock_items`, nao `products`: o LogiFit nao tem cadastro de
+-- produto separado do estoque (Sprint 24 / ADR 0101). barcode/ncm/cest_code ja
+-- vieram de la; falta so o vinculo fiscal.
+ALTER TABLE stock_items
   ADD COLUMN IF NOT EXISTS fiscal_profile_id uuid REFERENCES fiscal_profiles(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS origem text,
   ADD COLUMN IF NOT EXISTS sped_item_type text,
   ADD COLUMN IF NOT EXISTS fator_conversao_tributavel numeric,
   ADD COLUMN IF NOT EXISTS sem_gtin boolean NOT NULL DEFAULT false;
 
-COMMENT ON COLUMN products.fiscal_profile_id IS
-  'Perfil fiscal. Obrigatorio pra emitir: produto sem perfil aborta com erro nominal (regra 47).';
+COMMENT ON COLUMN stock_items.fiscal_profile_id IS
+  'Perfil fiscal. Obrigatorio pra emitir item de revenda: sem perfil a emissao aborta com erro nominal (regra 47).';
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Modo sombra (ADR 0108)

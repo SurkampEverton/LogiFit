@@ -19,6 +19,7 @@
     "@repo/db": "workspace:*",
     "@repo/email": "workspace:*",
     "@repo/errors": "workspace:*",
+    "@repo/fiscal": "workspace:*",
     "@repo/i18n": "workspace:*",
     "@repo/security": "workspace:*",
     "@repo/ui": "workspace:*",

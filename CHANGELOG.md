@@ -6,6 +6,57 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Feat — Sprint 41a.2: cadastro do certificado A1 2026-07-30
+
+Lacuna do meu próprio planejamento do 41a, achada por pergunta direta: escrevi
+"reusa `company_certificates` do Sprint 17" assumindo que o cadastro existisse.
+A tabela existe desde o Sprint 17, o leitor de `.pfx` desde o 41a — mas **nada
+ligava os dois**. Não havia como o cliente subir certificado, e nenhum estava
+armazenado. Sem isso a emissão própria não sai do papel: nota nenhuma é
+assinada.
+
+Nova rota `/app/settings/fiscal/certificado` com upload, mais 3 Server Actions.
+O arquivo é write-only: entra, é validado, cifrado e gravado; a listagem devolve
+só metadados.
+
+`validateCertificateUpload()` recusa **antes de cifrar**, com causa distinta por
+ação do operador: senha errada (redigita), arquivo que não é DER ou grande
+demais (escolheu errado), exportado sem chave privada (reexporta marcando a
+opção), vencido (renova na AC), CNPJ de outra empresa, e e-CPF no lugar de
+e-CNPJ. Cada um desses só apareceria na primeira emissão se passasse daqui.
+
+A checagem de CNPJ existe porque o engano mais comum em rede com filial é subir
+o certificado da matriz na filial — passa no cadastro e falha na SEFAZ, ou pior,
+autoriza nota com o CNPJ errado. A tela mostra o CNPJ esperado **antes** de
+escolher o arquivo.
+
+Upload e revogação entram em `HIGH_RISK_ACTIONS` com MFA recente de 15 min e
+`alsoBlockedFromAi` (regra 41 + 43): o certificado é a chave que autoriza emitir
+em nome do cliente, e não há caso de uso legítimo para o LLM tocar material
+criptográfico de terceiro.
+
+Convenção de armazenamento definida (o Sprint 17 declarou as colunas mas nunca
+escreveu nelas): envelope inline `enc:v1:` para a senha e para o base64 do
+`.pfx`. Sem `DELETE` na revogação — a linha vira `revoked` e permanece, porque é
+o que responde "com qual certificado esta nota foi assinada?".
+
+Três defeitos corrigidos no caminho, todos por verificar em vez de assumir:
+
+- `companies.name` não existe — razão social vive em `persons` (ADR 0047).
+- `products` não existe — o item é `stock_items`; carreguei o nome da
+  implementação de referência sem conferir o schema do LogiFit. A migration
+  `0067` foi corrigida.
+- `0063_focus_account_tokens.sql` criava policy sem `DROP IF EXISTS` e quebrava
+  em banco onde o SQL já tinha sido aplicado à mão — que é o estado do ambiente
+  de dev. Contrariava a convenção do próprio `migrate.ts`.
+
+Migration `0067` aplicada e conferida no banco de dev: 8 tabelas `tax_ref_*`
+seedadas, 4 tabelas de configuração com 2 policies cada, colunas fiscais em
+`stock_items`. `db:rls-check` não acusa nenhuma tabela nova (as 10 violações são
+partições de `patient_link_events` e `webhook_events`, pré-existentes).
+
+67 testes verdes, cobertura de branches 87,97%.
+
 ### Feat — Sprint 41b: schema do motor tributário + camada de resolução 2026-07-30
 
 **Schema (10 tabelas).** `tax_ref_*` são catálogo da legislação federal, sem

@@ -30,6 +30,22 @@ export const HIGH_RISK_ACTIONS: readonly HighRiskAction[] = [
   // são alto risco (afetam histórico fiscal e numeração; auditoria SEFAZ)
   { action: 'issueCce', requireMfaMaxAgeMins: 15, category: 'fiscal' },
   { action: 'inutilizeRange', requireMfaMaxAgeMins: 15, category: 'fiscal' },
+  // Sprint 41a.2 — Certificado A1 (ADR 0108). É a chave que autoriza emitir
+  // nota em nome do cliente: quem troca o certificado passa a assinar por ele.
+  // Nunca exposto ao assistente de IA (regra 41) — não há caso de uso legítimo
+  // para o LLM manipular material criptográfico do cliente.
+  {
+    action: 'uploadCompanyCertificate',
+    requireMfaMaxAgeMins: 15,
+    category: 'fiscal',
+    alsoBlockedFromAi: true,
+  },
+  {
+    action: 'revokeCompanyCertificate',
+    requireMfaMaxAgeMins: 15,
+    category: 'fiscal',
+    alsoBlockedFromAi: true,
+  },
 
   // Financeiro — sprint 04 (Asaas), 06 (cobrança), 17 (Open Finance)
   { action: 'voidPaidInvoice', requireMfaMaxAgeMins: 15, category: 'financeiro' },
