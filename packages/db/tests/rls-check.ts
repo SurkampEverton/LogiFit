@@ -28,6 +28,20 @@ const ALLOWLIST_NO_TENANT = new Set([
   '__drizzle_migrations_journal', // idem
 ])
 
+/**
+ * Famílias inteiras de tabela global, por prefixo.
+ *
+ * `tax_ref_*` são catálogo da legislação federal (CST de ICMS/PIS/COFINS/IPI,
+ * CSOSN, origem, modBC, CFOP) — iguais para todos os tenants. Replicar por
+ * tenant multiplicaria a manutenção sem isolar nada que seja de alguém.
+ * Exceção declarada na regra 47, com precedente do ADR 0028 (CID/CIF).
+ *
+ * Prefixo em vez de listar uma a uma porque a família cresce: `tax_ref_ncm` e
+ * `tax_ref_cest` entram quando houver caso de uso, e um allowlist que precisa
+ * ser editado a cada tabela nova acaba sendo contornado.
+ */
+const ALLOWLIST_NO_TENANT_PREFIXES = ['tax_ref_']
+
 interface CheckIssue {
   rule: string
   table: string
@@ -103,7 +117,21 @@ async function main(): Promise<void> {
 
     // ─── 4. tabelas no allowlist devem realmente não ter tenant_id ─────
     // (sanity check — se alguém adicionar tenant_id em cnpj_cache por engano)
-    for (const allowed of ALLOWLIST_NO_TENANT) {
+    //
+    // Tabelas cobertas por prefixo entram na mesma verificação: ganhar um
+    // `tenant_id` sem sair do allowlist deixaria a tabela sem RLS **e** com
+    // dado de tenant — exatamente o cenário que a regra 1 existe para impedir.
+    const prefixed = await pool.query<{ table_name: string }>(
+      `
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND ${ALLOWLIST_NO_TENANT_PREFIXES.map((_, i) => `table_name LIKE $${i + 1}`).join(' OR ')};
+      `,
+      ALLOWLIST_NO_TENANT_PREFIXES.map((p) => `${p}%`),
+    )
+    const allowedTables = [...ALLOWLIST_NO_TENANT, ...prefixed.rows.map((r) => r.table_name)]
+
+    for (const allowed of allowedTables) {
       if (allowed.startsWith('__drizzle')) continue
       const r = await pool.query<{ exists: boolean }>(
         `

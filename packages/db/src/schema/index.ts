@@ -184,3 +184,6 @@ export * from './retencoes'
 
 // Sprint 17b — Devolução de compra (ADR 0104 + ADR 0058; débito #2 da auditoria 36b): nfe_returns DESACOPLADO da inbox — original_chave digitada (44 dígitos) em vez de FK obrigatória pra nfe_received (que só nasce no Sprint 17; campo já preparado pro backfill). Emissão via finNFe=4 + notas_referenciadas.
 export * from './nfe-returns'
+
+// Sprint 41b — Motor tributário (ADR 0108 + regra 47): 7 tabelas `tax_ref_*` de catálogo nacional SEM tenant_id (exceção declarada à regra 1, precedente ADR 0028 — allowlist por prefixo em db:rls-check) + fiscal_profiles + tax_rules (contexto de casamento + carga fiscal em basis points; colunas de reforma IBS/CBS já nascem aqui pro Sprint 46) + operation_natures/_defaults. O produto NÃO carrega alíquota: carrega classificadores, e a tributação é resolvida na emissão. Comportamento por CST vive como FLAG em tax_ref_icms_cst, nunca switch no cálculo.
+export * from './taxengine'
