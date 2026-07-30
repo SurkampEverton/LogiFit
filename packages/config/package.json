@@ -20,7 +20,7 @@
     "vitest": "^2.0.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.49.0",
+    "@playwright/test": "^1.62.0",
     "vitest": "^2.1.5"
   }
 }
