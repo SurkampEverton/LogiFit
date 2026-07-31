@@ -299,8 +299,13 @@ export const taxRules = pgTable(
     modBcSt: text('mod_bc_st'),
     pRedBcStBp: integer('p_red_bc_st_bp'),
     pIcmsStBp: integer('p_icms_st_bp'),
-    /** Base de ST já retida em operação anterior, em centavos (CST 60). */
-    vBcStRetCents: integer('v_bc_st_ret_cents'),
+    /**
+     * Base do ST já retido em operação anterior, **por unidade** em centavos
+     * (CST 60). O cálculo multiplica pela quantidade do item — antes era lido
+     * como valor absoluto da operação e não escalava, então toda venda daquele
+     * produto declarava a mesma base independente da quantidade.
+     */
+    vBcStRetUnitCents: integer('v_bc_st_ret_unit_cents'),
     pStBp: integer('p_st_bp'),
 
     // ─── PIS / COFINS ────────────────────────────────────────────────────
@@ -333,7 +338,21 @@ export const taxRules = pgTable(
     csllRetido: boolean('csll_retido').notNull().default(false),
     pisRetido: boolean('pis_retido').notNull().default(false),
     cofinsRetido: boolean('cofins_retido').notNull().default(false),
-    /** Piso do documento para reter PCC, em centavos (Lei 10.833/2003: R$ 5.000). */
+    /**
+     * Alíquota do PIS **retido** (PCC) — distinta da alíquota de saída.
+     * Coincidem no Simples e no Presumido cumulativo (0,65%), divergem no
+     * Lucro Real não-cumulativo, onde a saída é 1,65% e a retenção continua
+     * 0,65%. Sem coluna própria o motor retinha o dobro nesses tenants.
+     */
+    pisRetidoAliqBp: integer('pis_retido_aliq_bp'),
+    /** Alíquota da COFINS **retida** (PCC): 3%, contra 7,6% de saída no Real. */
+    cofinsRetidoAliqBp: integer('cofins_retido_aliq_bp'),
+    /**
+     * Piso de dispensa do PCC em centavos, quando o tenant quer elevá-lo.
+     * O piso legal incide sobre o **valor retido** e é R$ 10,00 desde a Lei
+     * 13.137/2015 — os R$ 5.000,00 sobre o pagamento foram revogados em
+     * 22/06/2015, junto com a soma mensal do antigo § 4º.
+     */
     retencaoMinimaCents: integer('retencao_minima_cents'),
 
     // ─── Reforma tributária (NT 2025.002) — Sprint 46 ────────────────────

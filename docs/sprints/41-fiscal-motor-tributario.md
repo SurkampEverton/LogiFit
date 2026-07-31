@@ -56,7 +56,8 @@ Ao fim do sprint, o motor roda em **modo sombra** sobre toda emissão que a Focu
 ### 41c — Cálculo + admin + sombra
 
 - `calculateTax(ResolvedTax, quantity, baseValue, …)` → `TaxBreakdown`, **inteiramente dirigido pelas flags** de `tax_ref_icms_cst`; CST ausente da referência trata como CST 00 com aviso
-- Cobertura de cálculo do sprint: ICMS próprio, redução de BC, diferimento, ICMS-ST por MVA, ST retido (CST 60), PIS/COFINS percentual e por quantidade, IPI, ISS, retenções (IRRF com piso R$ 10,00 do RIR; PCC com mínimo de R$ 5.000,00 da Lei 10.833/2003)
+- Cobertura de cálculo do sprint: ICMS próprio, redução de BC, diferimento, ICMS-ST por MVA, ST retido (CST 60), PIS/COFINS percentual e por quantidade, IPI, ISS, retenções (IRRF com piso R$ 10,00 do RIR; **PCC com piso R$ 10,00 sobre o valor retido somado dos três** — os R$ 5.000,00 sobre o pagamento que este plano trazia na v1 foram **revogados em 22/06/2015** pela Lei 13.137/2015, art. 24, junto com a soma mensal do § 4º; implementá-los faria o motor deixar de reter em praticamente toda emissão de clínica ou academia)
+- **Retenção é do documento, não do item.** `calculateTax()` é por item; `calculateRetentions()` recebe o total da nota e roda uma vez. Apurar por linha fragmenta o piso legal — 4 itens de R$ 600,00 apuram R$ 9,00 de IRRF cada, todos dispensados, e a nota sai sem reter quando o devido são R$ 36,00
 - **Fora do sprint, e recusado explicitamente:** monofásico de combustível, ANP, PMPF, CIDE, cadeia de importação. LogiFit não vende combustível nem importa
 - Aritmética em **centavos inteiros** com `roundCents` em toda a cadeia. **Float binário proibido** — é o ponto mais provável de bug no port Go → TypeScript
 - 3 Server Actions de configuração (`fiscal.admin`) + 2 de teste sem emitir (`resolveTaxPreview`, `calculateTaxPreview`)
@@ -78,6 +79,18 @@ Cada uma vem de incidente real datado na implementação de referência. São te
 | 6 | Emissão sem perfil fiscal / sem regra passava silenciosa | Aborta com **nome e código** do produto |
 | 7 | CFOP interno com `idDest ≠ 1` → **cStat 733** | Venda presencial a consumidor de outra UF |
 | 8 | Grupo `IBSCBS` em CST 6xx/7xx → **cStat 1021** | Grupo omitido nesses CSTs |
+
+### As 5 que a revisão adversarial do 41c acrescentou
+
+Nenhuma veio da implementação de referência — todas nasceram do port e foram achadas revisando o cálculo contra a legislação, antes de qualquer emissão. Viraram teste junto com as 8 originais.
+
+| # | Armadilha | Teste |
+|---|---|---|
+| 9 | Piso do IRRF e do PCC avaliados **por item**: nota de N linhas fragmenta o limite e sai sem retenção | Nota de 4×R$ 600 retém sobre R$ 2.400, não sobre cada linha |
+| 10 | PCC caindo na alíquota de **saída** por falta de coluna própria — no Lucro Real retém 2,5× o devido | Saída 1,65%/7,6% com retenção 0,65%/3% na mesma regra |
+| 11 | Diferimento acima de 100% (erro de escala) → **ICMS negativo** contaminando o total | `p_diferimento_bp > 10000` aborta; CHECK no banco também |
+| 12 | Alíquota ausente virando 0% em silêncio = imposto não cobrado | CST que declara imposto devido sem alíquota aborta nomeando o campo |
+| 13 | `vBCSTRet` constante da regra: toda venda de CST 60 declarava a mesma base, vendendo 1 ou 100 | Quantidades 1 e 10 produzem bases proporcionais |
 
 ## Dependências
 

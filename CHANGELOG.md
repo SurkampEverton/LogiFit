@@ -6,6 +6,70 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Feat — Sprint 41c: `calculateTax()` — o cálculo dirigido por flags 2026-07-31
+
+Camada 3 do motor: `ResolvedTax` → `TaxBreakdown`. Cobre ICMS próprio, redução
+de BC, diferimento, desoneração, ICMS-ST por MVA, ST retido (CST 60),
+PIS/COFINS percentual e por quantidade, IPI, ISS e as retenções federais.
+
+**Nenhum `switch (cst)`.** O que decide se um CST calcula ICMS próprio, ST,
+redução ou diferimento são as flags de `tax_ref_icms_cst`, lidas do banco. CST
+novo, ou mudança de regra da SEFAZ, é linha na tabela em vez de deploy.
+
+Aritmética inteira isolada em `money.ts`: centavos, basis points (1% = 100 bp) e
+quantidade em milésimos. `applyComplementBp` existe separado de `applyBp` porque
+`base - applyBp(base, red)` arredonda duas vezes e erra um centavo quando a
+fração cai em 0,5 — e um centavo de diferença entre o total e a soma dos itens é
+a rejeição 685.
+
+**A parte que importa: uma revisão adversarial de 50 agentes achou 14 defeitos
+reais no que eu tinha acabado de escrever**, 7 deles críticos. Refutou outros 30.
+O mais grave não era bug de código, era lei errada:
+
+- **O piso do PCC que implementei está revogado desde 22/06/2015.** Usei os
+  R$ 5.000,00 sobre o pagamento (Lei 10.833/2003, art. 31 § 3º). A Lei
+  13.137/2015, art. 24, trocou por **R$ 10,00 sobre o valor retido** e revogou a
+  soma mensal do § 4º. Do jeito que eu tinha escrito, toda emissão entre
+  R$ 215,06 e R$ 5.000,00 — ou seja, praticamente toda nota de clínica ou
+  academia — sairia **sem retenção nenhuma**. Deixar de reter é infração da
+  fonte pagadora, o lado caro do erro. O próprio repo já discordava de mim:
+  `packages/ai/src/fiscal/retencoes/tables.ts` usa R$ 10,00 desde o Sprint 36.
+- **Retenção é do pagamento, não da linha da nota.** Eu apurava dentro do
+  cálculo por item; uma NFS-e de 4 itens de R$ 600,00 apurava R$ 9,00 de IRRF em
+  cada, todos abaixo do piso, e a nota inteira saía sem reter os R$ 36,00
+  devidos. `calculateRetentions()` agora recebe o total do documento e roda uma
+  vez só — o DARF também é um só.
+- **PIS/COFINS retidos caíam na alíquota de saída** por não existir coluna
+  própria. Coincide no Simples e no Presumido cumulativo; no Lucro Real a saída
+  é 1,65%/7,6% contra 0,65%/3% da retenção — 2,5× o devido. Colunas novas
+  `pis_retido_aliq_bp` e `cofins_retido_aliq_bp`.
+- **Diferimento acima de 100% produzia ICMS negativo**, em silêncio,
+  contaminando o total da nota. Erro de escala (120 em vez de 12) chega como
+  12000 bp. Agora aborta, e o CHECK no banco cobre as 14 alíquotas — antes cobria
+  4.
+- **Alíquota ausente virava 0%** — imposto simplesmente não cobrado, sem aviso.
+- **`vBCSTRet` era constante da regra** e não escalava: toda venda de CST 60
+  declarava a mesma base, vendendo 1 unidade ou 100. É o caso central do negócio
+  (academia revendendo suplemento comprado com ST retido). Virou pauta unitária
+  multiplicada pela quantidade, com precedência para o valor rateado da compra.
+
+Os dois testes que eu tinha escrito para as armadilhas 3 e 5 **não testavam
+nada**: um comparava `sumBreakdowns` com uma reimplementação da mesma soma sobre
+os mesmos objetos, o outro passava sem nunca executar o `clampZero` que dizia
+verificar. Reescritos contra o invariante e com valores conferidos à mão.
+
+Novo `TaxConfigurationError`: regra achada mas mal preenchida aborta nomeando o
+campo e onde configurar, em vez de calcular com zero (regra 47).
+
+Uma correção recusada de propósito: a revisão sugeriu dispensar INSS abaixo de
+R$ 10,00. A regra de valor mínimo manda **acumular** para a competência
+seguinte, não deixar de reter, e acumulação é da folha. Reter a menos é
+infração; na dúvida, retém.
+
+As 5 armadilhas novas entraram no plano do sprint ao lado das 8 originais.
+Migration `0068` aplicada e conferida no banco. 140 testes, cobertura de branches
+95,27% em `calculate.ts` e 100% em `money.ts`.
+
 ### Feat — Sprint 41a.2: cadastro do certificado A1 2026-07-30
 
 Lacuna do meu próprio planejamento do 41a, achada por pergunta direta: escrevi

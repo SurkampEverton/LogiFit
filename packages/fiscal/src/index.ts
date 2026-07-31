@@ -37,6 +37,41 @@ export {
 } from './core/xml/profiles'
 export { SignatureError, type SignXmlOptions, signXml } from './core/xml/sign'
 export {
+  type CalculateTaxInput,
+  type ContributionBreakdown,
+  type CstBehavior,
+  IBS_CBS_CST_SEM_GRUPO,
+  type IcmsBreakdown,
+  type IcmsStBreakdown,
+  type IcmsStRetidoBreakdown,
+  IRRF_PISO_CENTS,
+  type IpiBreakdown,
+  type IssBreakdown,
+  type OperationValues,
+  PCC_DISPENSA_VALOR_RETIDO_CENTS,
+  type RetentionBreakdown,
+  TaxConfigurationError,
+  type TaxBreakdown,
+  calculateRetentions,
+  calculateTax,
+  resolveCsosn,
+  sumBreakdowns,
+} from './taxengine/calculate'
+export {
+  BP_SCALE,
+  MoneyOverflowError,
+  NonIntegerMoneyError,
+  QTY_SCALE,
+  addBp,
+  applyBp,
+  applyComplementBp,
+  applyPerUnit,
+  assertInteger,
+  clampZero,
+  divRound,
+  sumCents,
+} from './taxengine/money'
+export {
   type ClientType,
   NoMatchingRuleError,
   type RejectionReason,

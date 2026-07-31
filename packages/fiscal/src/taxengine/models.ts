@@ -60,7 +60,8 @@ export interface TaxRule {
   modBcSt?: string | null
   pRedBcStBp?: number | null
   pIcmsStBp?: number | null
-  vBcStRetCents?: number | null
+  /** Base do ST já retido, **por unidade** — multiplicada pela quantidade. */
+  vBcStRetUnitCents?: number | null
   pStBp?: number | null
 
   pisCst?: string | null
@@ -86,6 +87,11 @@ export interface TaxRule {
   csllRetido: boolean
   pisRetido: boolean
   cofinsRetido: boolean
+  /** Alíquota do PIS retido (PCC) — distinta da de saída no Lucro Real. */
+  pisRetidoAliqBp?: number | null
+  /** Alíquota da COFINS retida (PCC) — distinta da de saída no Lucro Real. */
+  cofinsRetidoAliqBp?: number | null
+  /** Piso de dispensa do PCC sobre o valor retido, quando elevado pelo tenant. */
   retencaoMinimaCents?: number | null
 
   classTrib?: string | null
