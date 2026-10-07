@@ -71,7 +71,8 @@ EMAIL_FROM_NAME=LogiFit
 ### 1.5 Smoke test
 
 ```bash
-node D:/LogiFit/LogiFit/scripts/test-email-smoke.mjs
+# na raiz do repositório
+node scripts/test-email-smoke.mjs
 ```
 
 Esperado: email aparece em `http://localhost:8025` (Mailhog) OU em prod no email destino real.
