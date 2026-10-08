@@ -299,131 +299,180 @@
     {
       "idx": 42,
       "version": "7",
+      "when": 1779121842287,
+      "tag": "0042_passport_signup_otps",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1779122842287,
+      "tag": "0043_member_event_meu_kinds",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1779123842287,
+      "tag": "0044_passport_global_identities",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1779124842287,
+      "tag": "0045_passport_global_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1779125842287,
+      "tag": "0046_passport_email_verification",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1779126842287,
+      "tag": "0047_passport_email_change",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1779127842287,
+      "tag": "0048_feature_flags",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
       "when": 1779554670955,
       "tag": "0049_patient_link_events",
       "breakpoints": true
     },
     {
-      "idx": 43,
+      "idx": 50,
       "version": "7",
       "when": 1779555670955,
       "tag": "0050_fiscal_apuracao",
       "breakpoints": true
     },
     {
-      "idx": 44,
+      "idx": 51,
       "version": "7",
       "when": 1779556670955,
       "tag": "0052_fiscal_apuracao_flag",
       "breakpoints": true
     },
     {
-      "idx": 45,
+      "idx": 52,
       "version": "7",
       "when": 1779557670955,
       "tag": "0053_fiscal_apuracao_permissions",
       "breakpoints": true
     },
     {
-      "idx": 46,
+      "idx": 53,
       "version": "7",
       "when": 1779558670955,
       "tag": "0054_fiscal_focus_flag",
       "breakpoints": true
     },
     {
-      "idx": 47,
+      "idx": 54,
       "version": "7",
       "when": 1779559670955,
       "tag": "0055_pos_vendas",
       "breakpoints": true
     },
     {
-      "idx": 48,
+      "idx": 55,
       "version": "7",
       "when": 1779560670955,
       "tag": "0056_usage_snapshots",
       "breakpoints": true
     },
     {
-      "idx": 49,
+      "idx": 56,
       "version": "7",
       "when": 1779561670955,
       "tag": "0057_search_index",
       "breakpoints": true
     },
     {
-      "idx": 50,
+      "idx": 57,
       "version": "7",
       "when": 1779562670955,
       "tag": "0058_user_invites",
       "breakpoints": true
     },
     {
-      "idx": 51,
+      "idx": 58,
       "version": "7",
       "when": 1779563670955,
       "tag": "0059_retencoes",
       "breakpoints": true
     },
     {
-      "idx": 52,
+      "idx": 59,
       "version": "7",
       "when": 1779564670955,
       "tag": "0060_user_fk_integrity",
       "breakpoints": true
     },
     {
-      "idx": 53,
+      "idx": 60,
       "version": "7",
       "when": 1779565670955,
       "tag": "0061_nfe_returns",
       "breakpoints": true
     },
     {
-      "idx": 54,
+      "idx": 61,
       "version": "7",
       "when": 1779565671955,
       "tag": "0062_focus_empresa_link",
       "breakpoints": true
     },
     {
-      "idx": 55,
+      "idx": 62,
       "version": "7",
       "when": 1779565672955,
       "tag": "0063_focus_account_tokens",
       "breakpoints": true
     },
     {
-      "idx": 56,
+      "idx": 63,
       "version": "7",
       "when": 1779565673955,
       "tag": "0064_codigo_tributacao_nacional",
       "breakpoints": true
     },
     {
-      "idx": 57,
+      "idx": 64,
       "version": "7",
       "when": 1779565674955,
       "tag": "0065_company_habilitacoes_fiscais",
       "breakpoints": true
     },
     {
-      "idx": 58,
+      "idx": 65,
       "version": "7",
       "when": 1779565674956,
       "tag": "0066_documento_numero_serie",
       "breakpoints": true
     },
     {
-      "idx": 59,
+      "idx": 66,
       "version": "7",
       "when": 1779565675956,
       "tag": "0067_taxengine",
       "breakpoints": true
     },
     {
-      "idx": 60,
+      "idx": 67,
       "version": "7",
       "when": 1779565676956,
       "tag": "0068_taxengine_retencoes",

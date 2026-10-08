@@ -42,6 +42,11 @@ const ALLOWLIST_NO_TENANT = new Set([
  */
 const ALLOWLIST_NO_TENANT_PREFIXES = ['tax_ref_']
 
+// Tabelas COM tenant_id mas sem RLS por design — cada uma justificada.
+const ALLOWLIST_TENANT_NO_RLS = new Set([
+  'webhook_events', // policies/0019_financeiro_rls.sql — webhook chega sem auth
+])
+
 interface CheckIssue {
   rule: string
   table: string
@@ -59,7 +64,7 @@ async function main(): Promise<void> {
       FROM pg_class c
       JOIN pg_namespace n ON n.oid = c.relnamespace
       JOIN pg_attribute a ON a.attrelid = c.oid
-      WHERE c.relkind = 'r'
+      WHERE c.relkind IN ('r', 'p')
         AND n.nspname = 'public'
         AND a.attname = 'tenant_id'
         AND a.attnum > 0
@@ -67,6 +72,7 @@ async function main(): Promise<void> {
       ORDER BY c.relname;
     `)
     for (const row of noRls.rows) {
+      if (ALLOWLIST_TENANT_NO_RLS.has(row.table_name)) continue
       issues.push({
         rule: 'tenant-id-needs-rls',
         table: row.table_name,
@@ -79,7 +85,7 @@ async function main(): Promise<void> {
       SELECT c.relname AS table_name
       FROM pg_class c
       JOIN pg_namespace n ON n.oid = c.relnamespace
-      WHERE c.relkind = 'r'
+      WHERE c.relkind IN ('r', 'p')
         AND n.nspname = 'public'
         AND c.relrowsecurity
         AND NOT c.relforcerowsecurity
@@ -99,9 +105,12 @@ async function main(): Promise<void> {
       SELECT c.relname AS table_name
       FROM pg_class c
       JOIN pg_namespace n ON n.oid = c.relnamespace
-      WHERE c.relkind = 'r'
+      WHERE c.relkind IN ('r', 'p')
         AND n.nspname = 'public'
         AND c.relrowsecurity
+        -- partição sem policy é intencional: acesso pelo parent usa as policies
+        -- do parent; acesso direto à partição fica negado (ver 0061)
+        AND NOT c.relispartition
         AND NOT EXISTS (
           SELECT 1 FROM pg_policy p WHERE p.polrelid = c.oid
         )
