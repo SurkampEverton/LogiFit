@@ -28,7 +28,16 @@
  *     />
  *   </CommandPaletteProvider>
  */
-import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import {
+  type ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from 'react'
 
 // ─── Context + hook + provider ──────────────────────────────────────────
 
@@ -129,6 +138,7 @@ export function CommandPalette({ placeholder = 'Buscar…', onSearch }: Props) {
   }, [query, onSearch])
 
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: o clique é só atalho de mouse para fechar pelo backdrop; teclado fecha via Esc nativo do <dialog> modal (evento close → setOpen(false))
     <dialog
       ref={dialogRef}
       aria-labelledby={titleId}

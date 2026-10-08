@@ -127,9 +127,7 @@ export function markRecoveryCodeUsed(
   if (index < 0 || index >= codes.length) {
     throw new Error('markRecoveryCodeUsed: index out of range')
   }
-  return codes.map((c, i) =>
-    i === index ? { ...c, used_at: new Date().toISOString() } : c,
-  )
+  return codes.map((c, i) => (i === index ? { ...c, used_at: new Date().toISOString() } : c))
 }
 
 /**

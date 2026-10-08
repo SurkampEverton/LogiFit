@@ -12,8 +12,8 @@
  */
 
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // Carrega .env.local manualmente (sem dotenv lib)
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -88,9 +88,10 @@ if (!inboxRes.ok) {
 }
 const inbox = await inboxRes.json()
 
-const ourEmail = inbox.items?.find((msg) =>
-  msg.Raw?.To?.includes(TEST_EMAIL) ||
-  msg.To?.some?.((t) => `${t.Mailbox}@${t.Domain}` === TEST_EMAIL),
+const ourEmail = inbox.items?.find(
+  (msg) =>
+    msg.Raw?.To?.includes(TEST_EMAIL) ||
+    msg.To?.some?.((t) => `${t.Mailbox}@${t.Domain}` === TEST_EMAIL),
 )
 
 if (!ourEmail) {

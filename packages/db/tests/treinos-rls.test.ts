@@ -446,7 +446,7 @@ describe('workout_session_items — append-only (UPDATE blocked by RLS)', () => 
     let updateBlocked = false
     await withTenantContext(TENANT_REDE, async (client) => {
       const r = await client.query(
-        `UPDATE workout_session_items SET rpe = 1 WHERE session_id = $1`,
+        'UPDATE workout_session_items SET rpe = 1 WHERE session_id = $1',
         [sR.rows[0]!.id],
       )
       if (r.rowCount === 0) updateBlocked = true
@@ -456,7 +456,7 @@ describe('workout_session_items — append-only (UPDATE blocked by RLS)', () => 
     // DELETE bloqueado
     let deleteBlocked = false
     await withTenantContext(TENANT_REDE, async (client) => {
-      const r = await client.query(`DELETE FROM workout_session_items WHERE session_id = $1`, [
+      const r = await client.query('DELETE FROM workout_session_items WHERE session_id = $1', [
         sR.rows[0]!.id,
       ])
       if (r.rowCount === 0) deleteBlocked = true

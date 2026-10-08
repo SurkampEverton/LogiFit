@@ -49,10 +49,7 @@ function isPrivateIp(ip: string): boolean {
   return PRIVATE_IP_RANGES.some((re) => re.test(ip))
 }
 
-export async function safeFetch(
-  input: string | URL,
-  options: SafeFetchOptions,
-): Promise<Response> {
+export async function safeFetch(input: string | URL, options: SafeFetchOptions): Promise<Response> {
   const url = typeof input === 'string' ? new URL(input) : input
 
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {

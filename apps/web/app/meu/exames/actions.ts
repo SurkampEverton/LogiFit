@@ -73,6 +73,7 @@ export const listMyExams = wrapMemberAction(
     action: 'exam.list_my',
     returnTo: '/meu/exames',
   },
+  // biome-ignore lint/suspicious/noConfusingVoidType: `void` torna o parâmetro opcional para o caller chamar a action sem argumento; `undefined` quebraria os call sites (TS2554)
   async (_input: void, { session }) => {
     const r = await pool.query<MyExamRow>(
       `SELECT id, status::text AS status, exam_type_detected, laboratory,

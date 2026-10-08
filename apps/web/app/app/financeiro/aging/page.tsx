@@ -40,8 +40,8 @@ function formatBrl(cents: number): string {
 }
 
 function daysBetween(due: string, today: string): number {
-  const d1 = new Date(due + 'T00:00:00Z').getTime()
-  const d2 = new Date(today + 'T00:00:00Z').getTime()
+  const d1 = new Date(`${due}T00:00:00Z`).getTime()
+  const d2 = new Date(`${today}T00:00:00Z`).getTime()
   return Math.floor((d2 - d1) / (1000 * 60 * 60 * 24))
 }
 
@@ -133,7 +133,7 @@ export default async function AgingPage() {
           <h2 style={{ margin: 0, fontSize: 'var(--ev-font-md)' }}>Contas a pagar</h2>
           <span style={{ color: 'var(--ev-muted)' }}>Total: {formatBrl(totalAp)}</span>
         </header>
-        <BucketTable buckets={apBuckets} kind="pagar" />
+        <BucketTable buckets={apBuckets} />
       </section>
 
       <section className="ev-card" style={{ padding: 'var(--ev-space-md)' }}>
@@ -141,13 +141,13 @@ export default async function AgingPage() {
           <h2 style={{ margin: 0, fontSize: 'var(--ev-font-md)' }}>Contas a receber</h2>
           <span style={{ color: 'var(--ev-muted)' }}>Total: {formatBrl(totalAr)}</span>
         </header>
-        <BucketTable buckets={arBuckets} kind="receber" />
+        <BucketTable buckets={arBuckets} />
       </section>
     </div>
   )
 }
 
-function BucketTable({ buckets, kind }: { buckets: AgingBucket[]; kind: 'pagar' | 'receber' }) {
+function BucketTable({ buckets }: { buckets: AgingBucket[] }) {
   const max = Math.max(1, ...buckets.map((b) => b.cents))
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ev-space-sm)' }}>

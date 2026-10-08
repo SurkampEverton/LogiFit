@@ -1,15 +1,12 @@
 import { expect, test } from '@playwright/test'
+import { deleteAllMessages, waitForMessage } from '../helpers/mailhog'
 import {
-  deleteAllMessages,
-  waitForMessage,
-} from '../helpers/mailhog'
-import {
+  type TestPassportIdentity,
   closePassportPool,
   createTestPassportIdentity,
   deleteTestPassportIdentity,
   insertEmailVerificationToken,
   readIdentity,
-  type TestPassportIdentity,
 } from '../helpers/test-passport-identity'
 
 /**
@@ -48,9 +45,7 @@ test.describe('Portal do paciente — change_email confirmation', () => {
     await closePassportPool()
   })
 
-  test('confirma troca de email → notifica old email + atualiza identity', async ({
-    request,
-  }) => {
+  test('confirma troca de email → notifica old email + atualiza identity', async ({ request }) => {
     const newEmail = `change-new-${Date.now()}@logifit.test`
 
     // 2. INSERT token change_email
@@ -69,7 +64,7 @@ test.describe('Portal do paciente — change_email confirmation', () => {
       maxRedirects: 0,
     })
     expect([302, 307, 308]).toContain(res.status())
-    const location = res.headers()['location']
+    const location = res.headers().location
     expect(location).toContain('/meu/perfil/email-trocado')
 
     // 5. Asserta DB: identity.email mudou + email_verified_at setado
@@ -89,9 +84,7 @@ test.describe('Portal do paciente — change_email confirmation', () => {
     expect(from).toContain('no-reply@logifit.com.br')
   })
 
-  test('token expirado retorna erro amigável (redirect email-erro)', async ({
-    request,
-  }) => {
+  test('token expirado retorna erro amigável (redirect email-erro)', async ({ request }) => {
     // Insere token já expirado (ttl negativa)
     const { token } = await insertEmailVerificationToken({
       identityId: identity.identityId,
@@ -105,7 +98,7 @@ test.describe('Portal do paciente — change_email confirmation', () => {
       maxRedirects: 0,
     })
     expect([302, 307, 308]).toContain(res.status())
-    const location = res.headers()['location']
+    const location = res.headers().location
     expect(location).toContain('/cadastro/email-erro')
     expect(location).toContain('reason=')
 
@@ -114,14 +107,12 @@ test.describe('Portal do paciente — change_email confirmation', () => {
     expect(after!.email.toLowerCase()).toBe(identity.email.toLowerCase())
   })
 
-  test('token inválido (não existe) redireciona pra email-erro sem 500', async ({
-    request,
-  }) => {
+  test('token inválido (não existe) redireciona pra email-erro sem 500', async ({ request }) => {
     const res = await request.get('/api/meu/perfil/email/confirm-change?t=invalid-token-xyz', {
       maxRedirects: 0,
     })
     expect([302, 307, 308]).toContain(res.status())
-    const location = res.headers()['location']
+    const location = res.headers().location
     expect(location).toContain('/cadastro/email-erro')
   })
 
@@ -140,7 +131,7 @@ test.describe('Portal do paciente — change_email confirmation', () => {
     })
     // Deve dar erro — confirmPassportEmailChange filtra kind='change_email'
     expect([302, 307, 308]).toContain(res.status())
-    const location = res.headers()['location']
+    const location = res.headers().location
     expect(location).toContain('/cadastro/email-erro')
 
     // Identity intacta

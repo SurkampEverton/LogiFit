@@ -41,15 +41,15 @@ beforeAll(async () => {
 
 afterAll(async () => {
   // Cleanup do user fictício
-  await pool.query(`DELETE FROM user_permission_grants WHERE user_id = $1`, [TEST_USER_ID])
-  await pool.query(`DELETE FROM users WHERE id = $1`, [TEST_USER_ID])
-  await pool.query(`DELETE FROM persons WHERE id = $1`, [TEST_PERSON_PF_ID])
+  await pool.query('DELETE FROM user_permission_grants WHERE user_id = $1', [TEST_USER_ID])
+  await pool.query('DELETE FROM users WHERE id = $1', [TEST_USER_ID])
+  await pool.query('DELETE FROM persons WHERE id = $1', [TEST_PERSON_PF_ID])
   await pool.end()
 })
 
 beforeEach(async () => {
   // Limpa grants entre testes
-  await pool.query(`DELETE FROM user_permission_grants WHERE user_id = $1`, [TEST_USER_ID])
+  await pool.query('DELETE FROM user_permission_grants WHERE user_id = $1', [TEST_USER_ID])
 })
 
 async function hasPermission(
@@ -59,7 +59,7 @@ async function hasPermission(
   scopeId?: string,
 ): Promise<boolean> {
   const r = await pool.query<{ has_permission: boolean }>(
-    `SELECT has_permission($1, $2, $3, $4) AS has_permission`,
+    'SELECT has_permission($1, $2, $3, $4) AS has_permission',
     [userId, permission, scopeType ?? null, scopeId ?? null],
   )
   return r.rows[0]?.has_permission === true

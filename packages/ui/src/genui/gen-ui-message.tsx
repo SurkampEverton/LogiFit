@@ -14,14 +14,8 @@
 import type { ReactNode } from 'react'
 import { CidSuggestion, type CidSuggestionProps } from './cid-suggestion'
 import { EvolutionChart, type EvolutionChartProps } from './evolution-chart'
-import {
-  ExerciseRecommendation,
-  type ExerciseRecommendationProps,
-} from './exercise-recommendation'
-import {
-  MeasurementComparison,
-  type MeasurementComparisonProps,
-} from './measurement-comparison'
+import { ExerciseRecommendation, type ExerciseRecommendationProps } from './exercise-recommendation'
+import { MeasurementComparison, type MeasurementComparisonProps } from './measurement-comparison'
 import { PatientCard, type PatientCardProps } from './patient-card'
 import { ReportSection, type ReportSectionProps } from './report-section'
 
@@ -97,17 +91,20 @@ export function GenUIMessage(props: GenUIMessageProps): ReactNode {
       {props.blocks.map((b, i) => {
         if (b.kind === 'text' && b.content) {
           return (
+            // biome-ignore lint/suspicious/noArrayIndexKey: blocos de texto não têm id; a lista é só-anexar (stream do assistente) e nunca reordenada
             <p key={i} style={{ margin: 0, lineHeight: 'var(--ev-leading-normal)' }}>
               {b.content}
             </p>
           )
         }
         if (b.kind === 'tool_call' && b.call) {
+          // biome-ignore lint/suspicious/noArrayIndexKey: ToolCallLike.id vem do LLM e não é garantido único dentro da mensagem; lista só-anexar, nunca reordenada
           return <div key={i}>{renderToolCall(b.call, props.onAddCid)}</div>
         }
         if (b.kind === 'invalid') {
           return (
             <div
+              // biome-ignore lint/suspicious/noArrayIndexKey: blocos inválidos não têm id; lista só-anexar, nunca reordenada
               key={i}
               style={{
                 padding: 'var(--ev-space-2)',

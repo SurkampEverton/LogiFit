@@ -64,11 +64,11 @@ export function GenUIDemoForm({ initialPrompt = '' }: Props) {
   }
 
   // Auto-submit quando a URL traz `?q=`
+  // biome-ignore lint/correctness/useExhaustiveDependencies: dispara só quando o `?q=` muda; `submit` é recriada a cada render e incluí-la causaria reenvio em loop
   useEffect(() => {
     if (initialPrompt && initialPrompt.length > 1) {
       void submit(initialPrompt)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPrompt])
 
   function handleSubmit(e: React.FormEvent) {

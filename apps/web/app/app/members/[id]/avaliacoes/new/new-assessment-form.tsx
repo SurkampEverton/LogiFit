@@ -214,6 +214,7 @@ export function NewAssessmentForm({ memberId, types, defaultAgeYears, defaultSex
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {selectedType.fields.map((f) => (
+                // biome-ignore lint/a11y/noLabelWithoutControl: falso positivo — o select/textarea/input é filho do label, mas escolhido por ternário que o Biome não percorre
                 <label key={f.key} className="space-y-1 text-sm">
                   <span className="block font-medium">
                     {f.label}

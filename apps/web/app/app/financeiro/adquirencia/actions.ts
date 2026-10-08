@@ -386,8 +386,8 @@ export const listAcquirerSales = wrapServerAction(
       where.push(eq(acquirerSales.status, parsed.status))
     if (parsed.reconciled === 'yes') where.push(sql`${acquirerSales.reconciledAt} IS NOT NULL`)
     if (parsed.reconciled === 'no') where.push(isNull(acquirerSales.reconciledAt))
-    if (parsed.from) where.push(gte(acquirerSales.capturedAt, new Date(parsed.from + 'T00:00:00Z')))
-    if (parsed.to) where.push(lte(acquirerSales.capturedAt, new Date(parsed.to + 'T23:59:59Z')))
+    if (parsed.from) where.push(gte(acquirerSales.capturedAt, new Date(`${parsed.from}T00:00:00Z`)))
+    if (parsed.to) where.push(lte(acquirerSales.capturedAt, new Date(`${parsed.to}T23:59:59Z`)))
 
     const rows = await db
       .select({
@@ -629,7 +629,7 @@ export const suggestSettlementMatchesAction = wrapServerAction(
       })
 
     // Carrega bank_transactions positivas ± 7 dias do settlement esperado
-    const settlementDate = new Date(sale.expectedSettlementDate + 'T00:00:00Z')
+    const settlementDate = new Date(`${sale.expectedSettlementDate}T00:00:00Z`)
     const fromDate = new Date(settlementDate)
     fromDate.setDate(fromDate.getDate() - 7)
     const toDate = new Date(settlementDate)
@@ -777,8 +777,8 @@ export const getUnifiedRevenue = wrapServerAction(
   { module: 'financeiro', action: 'acquirer.unified_revenue' },
   async (input: z.infer<typeof GetUnifiedRevenueInputSchema>, { session }) => {
     const parsed = GetUnifiedRevenueInputSchema.parse(input)
-    const fromDate = new Date(parsed.periodFrom + 'T00:00:00Z')
-    const toDate = new Date(parsed.periodTo + 'T23:59:59Z')
+    const fromDate = new Date(`${parsed.periodFrom}T00:00:00Z`)
+    const toDate = new Date(`${parsed.periodTo}T23:59:59Z`)
 
     // Online (Sprint 04 invoices)
     const onlineWhere = [
@@ -866,8 +866,8 @@ export async function quoteAnticipationPreview(input: {
       : Math.round(
           sales.reduce((s, x) => {
             const dd =
-              (new Date(x.expectedSettlementDate + 'T00:00:00Z').getTime() -
-                new Date(today + 'T00:00:00Z').getTime()) /
+              (new Date(`${x.expectedSettlementDate}T00:00:00Z`).getTime() -
+                new Date(`${today}T00:00:00Z`).getTime()) /
               (24 * 60 * 60 * 1000)
             return s + Math.max(0, dd)
           }, 0) / sales.length,

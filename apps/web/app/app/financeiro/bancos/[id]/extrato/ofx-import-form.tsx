@@ -83,6 +83,7 @@ export function OfxImportForm({ bankAccountId }: { bankAccountId: string }) {
           )}
           {result && (
             <div
+              // biome-ignore lint/a11y/useSemanticElements: <output> é inline por padrão e quebraria o layout (padding/borda) do bloco de sucesso; role="status" num div é suficiente
               className="ev-alert ev-alert-success"
               role="status"
               style={{ padding: 'var(--ev-space-sm)' }}

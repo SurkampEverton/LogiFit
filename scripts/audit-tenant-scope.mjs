@@ -52,8 +52,7 @@ const RE_PGTABLE = /export const (\w+)\s*=\s*pgTable\(\s*['"][^'"]+['"]\s*,\s*\{
 const tenantScoped = new Set()
 for (const f of walk(join(ROOT, 'packages/db/src/schema'))) {
   const src = readFileSync(f, 'utf8')
-  let m
-  while ((m = RE_PGTABLE.exec(src))) {
+  for (const m of src.matchAll(RE_PGTABLE)) {
     // Corta no próximo `export const`. A janela fixa anterior (2500 chars)
     // vazava pra tabela seguinte e marcava GLOBAIS como tenant-scoped quando
     // vinham logo antes de uma tenant-scoped — permissions, role_permissions,
@@ -119,8 +118,7 @@ const candidates = []
 for (const f of walk(join(ROOT, 'apps'))) {
   if (f.includes('.test.')) continue
   const src = readFileSync(f, 'utf8')
-  let m
-  while ((m = RE_QUERY.exec(src))) {
+  for (const m of src.matchAll(RE_QUERY)) {
     if (!tenantScoped.has(m[2])) continue
     const stmt = statementAround(src, m.index)
     // Preâmbulo: a isenção é escrita como comentário ACIMA do statement, que é

@@ -16,11 +16,7 @@ import { logBoundaryError } from './logger'
 import { translate } from './translators'
 
 // Códigos que merecem ir pro GlitchTip (não enviamos VALIDATION_ERROR, etc).
-const CAPTURE_CODES = new Set([
-  'INTERNAL_ERROR',
-  'SERVICE_UNAVAILABLE',
-  'AI_PROVIDER_ERROR',
-])
+const CAPTURE_CODES = new Set(['INTERNAL_ERROR', 'SERVICE_UNAVAILABLE', 'AI_PROVIDER_ERROR'])
 
 export interface WrapActionContext {
   /** Identifica o módulo (ex: 'agenda', 'financeiro.invoice') pra logging/alerts. */
@@ -93,7 +89,8 @@ export function wrapAction<TArgs, TData>(
         ...(process.env.NODE_ENV !== 'production' && !(e instanceof ApiException)
           ? {
               dev_original_message: e instanceof Error ? e.message : String(e),
-              dev_stack: e instanceof Error ? e.stack?.split('\n').slice(0, 4).join(' | ') : undefined,
+              dev_stack:
+                e instanceof Error ? e.stack?.split('\n').slice(0, 4).join(' | ') : undefined,
             }
           : {}),
       })

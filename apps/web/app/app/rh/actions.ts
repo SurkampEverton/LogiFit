@@ -489,8 +489,8 @@ export const closePeriod = wrapServerAction(
           eq(commissionEntries.personId, parsed.personId),
           eq(commissionEntries.companyId, parsed.companyId),
           eq(commissionEntries.status, 'pending'),
-          sql`${commissionEntries.earnedAt} >= ${parsed.periodStart + 'T00:00:00Z'}::timestamptz`,
-          sql`${commissionEntries.earnedAt} <= ${parsed.periodEnd + 'T23:59:59Z'}::timestamptz`,
+          sql`${commissionEntries.earnedAt} >= ${`${parsed.periodStart}T00:00:00Z`}::timestamptz`,
+          sql`${commissionEntries.earnedAt} <= ${`${parsed.periodEnd}T23:59:59Z`}::timestamptz`,
         ),
       )
 

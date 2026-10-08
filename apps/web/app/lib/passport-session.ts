@@ -81,7 +81,7 @@ export async function getPassportSession(): Promise<PassportSessionClaims | null
 
   // Update last_seen_at fire-and-forget
   void pool
-    .query(`UPDATE passport_global_sessions SET last_seen_at = now() WHERE id = $1`, [row.id])
+    .query('UPDATE passport_global_sessions SET last_seen_at = now() WHERE id = $1', [row.id])
     .catch(() => {})
 
   return {
@@ -240,7 +240,7 @@ export async function withPassportContext<T>(
  * Caller (`loginPassport` Sprint 02b3 completo) chama após validar TOTP.
  */
 export async function markPassportSessionMfaVerified(sessionId: string): Promise<void> {
-  await pool.query(`UPDATE passport_global_sessions SET mfa_verified_at = now() WHERE id = $1`, [
+  await pool.query('UPDATE passport_global_sessions SET mfa_verified_at = now() WHERE id = $1', [
     sessionId,
   ])
 }

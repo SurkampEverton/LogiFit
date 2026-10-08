@@ -175,7 +175,7 @@ describe('contracts — RLS + billing_day check', () => {
     const contractId = r.rows[0]?.id
 
     await withTenantContext(TENANT_REDE, async (client) => {
-      const visible = await client.query(`SELECT id FROM contracts WHERE id = $1`, [contractId])
+      const visible = await client.query('SELECT id FROM contracts WHERE id = $1', [contractId])
       expect(visible.rows.length).toBe(1)
     })
   })
@@ -278,7 +278,7 @@ describe('payments — append-only via policies', () => {
     )
 
     await withTenantContext(TENANT_REDE, async (client) => {
-      const upd = await client.query(`UPDATE payments SET amount_cents = 0 WHERE asaas_id = $1`, [
+      const upd = await client.query('UPDATE payments SET amount_cents = 0 WHERE asaas_id = $1', [
         'asaas-pay-test-1',
       ])
       expect(upd.rowCount).toBe(0)

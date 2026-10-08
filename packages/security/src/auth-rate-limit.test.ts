@@ -15,16 +15,18 @@ import {
   AUTH_LOCKOUT_DURATION_MS,
   AUTH_LOCKOUT_THRESHOLD,
   type AuthAttemptRow,
+  type PoolLike,
   checkAuthLockout,
   countRecentFailures,
   evaluateLockout,
-  type PoolLike,
   recordAuthAttempt,
   shouldLockout,
   shouldRequireCaptcha,
 } from './auth-rate-limit'
 
-function mkRow(opts: Partial<AuthAttemptRow> & { attemptedAt: Date; success: boolean }): AuthAttemptRow {
+function mkRow(
+  opts: Partial<AuthAttemptRow> & { attemptedAt: Date; success: boolean },
+): AuthAttemptRow {
   return {
     email: opts.email ?? 'maria@example.com',
     ip: opts.ip ?? '203.0.113.5',

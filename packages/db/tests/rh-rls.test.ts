@@ -23,7 +23,7 @@ async function getMatriz(tenantId: string): Promise<string> {
 async function getOrCreatePerson(tenantId: string, hint: string): Promise<string> {
   const email = `test-rh-${hint}-${tenantId.slice(0, 8)}@example.com`
   const existing = await pool.query<{ id: string }>(
-    `SELECT id FROM persons WHERE tenant_id = $1 AND email = $2 LIMIT 1`,
+    'SELECT id FROM persons WHERE tenant_id = $1 AND email = $2 LIMIT 1',
     [tenantId, email],
   )
   if (existing.rows[0]) return existing.rows[0].id

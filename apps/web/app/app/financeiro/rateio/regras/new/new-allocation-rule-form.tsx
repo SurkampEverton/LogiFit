@@ -31,7 +31,7 @@ export function NewAllocationRuleForm({ companies }: { companies: CompanyOption[
 
   // Estado da distribuição varia por kind
   const [fixedItems, setFixedItems] = useState<FixedItem[]>(() =>
-    companies.slice(0, 3).map((c, i, arr) => ({
+    companies.slice(0, 3).map((c, _i, arr) => ({
       companyId: c.id,
       percent: Number((100 / arr.length).toFixed(2)),
     })),
@@ -159,6 +159,7 @@ export function NewAllocationRuleForm({ companies }: { companies: CompanyOption[
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ev-space-sm)' }}>
             {fixedItems.map((item, idx) => (
               <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: linhas não têm id próprio e companyId é editável/duplicável na linha (trocar o select remontaria a linha e perderia o foco); todos os campos são controlados
                 key={idx}
                 style={{ display: 'flex', gap: 'var(--ev-space-sm)', alignItems: 'center' }}
               >
@@ -215,6 +216,7 @@ export function NewAllocationRuleForm({ companies }: { companies: CompanyOption[
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ev-space-sm)' }}>
             {propItems.map((item, idx) => (
               <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: linhas não têm id próprio e companyId é editável/duplicável na linha (trocar o select remontaria a linha e perderia o foco); todos os campos são controlados
                 key={idx}
                 style={{ display: 'flex', gap: 'var(--ev-space-sm)', alignItems: 'center' }}
               >

@@ -56,7 +56,15 @@ export function CidSuggestion(props: CidSuggestionProps): ReactNode {
         </span>
       </header>
 
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 'var(--ev-space-2)' }}>
+      <ul
+        style={{
+          listStyle: 'none',
+          padding: 0,
+          margin: 0,
+          display: 'grid',
+          gap: 'var(--ev-space-2)',
+        }}
+      >
         {items.map((c) => (
           <li
             key={c.code}
@@ -76,11 +84,19 @@ export function CidSuggestion(props: CidSuggestionProps): ReactNode {
                 <code style={{ fontWeight: 'var(--ev-weight-semibold)' }}>{c.code}</code>{' '}
                 <span>{c.description}</span>
               </div>
-              <div style={{ fontSize: 'var(--ev-text-xs)', color: 'var(--ev-text-muted)', marginTop: 2 }}>
+              <div
+                style={{
+                  fontSize: 'var(--ev-text-xs)',
+                  color: 'var(--ev-text-muted)',
+                  marginTop: 2,
+                }}
+              >
                 {c.rationale}
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+            <div
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}
+            >
               <span
                 style={{
                   fontSize: 'var(--ev-text-xs)',

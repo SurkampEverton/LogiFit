@@ -71,6 +71,7 @@ export function PrescribeWorkoutForm({ memberId, workouts }: Props) {
         </div>
       )}
       {success && (
+        // biome-ignore lint/a11y/useSemanticElements: <output> é inline por padrão e quebraria o layout do aviso de sucesso; role="status" no div é suficiente
         <div
           role="status"
           className="rounded-md border p-3 text-sm"

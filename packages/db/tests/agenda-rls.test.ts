@@ -256,7 +256,7 @@ describe('appointment_waitlist — INSERT/DELETE only', () => {
 
     await withTenantContext(TENANT_REDE, async (client) => {
       const upd = await client.query(
-        `UPDATE appointment_waitlist SET created_at = now() WHERE recurring_slot_id = $1`,
+        'UPDATE appointment_waitlist SET created_at = now() WHERE recurring_slot_id = $1',
         [FAKE_SLOT],
       )
       expect(upd.rowCount).toBe(0)

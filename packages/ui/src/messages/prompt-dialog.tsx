@@ -158,7 +158,7 @@ export function PromptDialog(): React.ReactElement | null {
             placeholder={options.placeholder}
             aria-labelledby={labelId}
             aria-describedby={error ? errorId : undefined}
-            aria-invalid={error ? true : false}
+            aria-invalid={Boolean(error)}
             className="ev-input"
             style={{ width: '100%' }}
           />

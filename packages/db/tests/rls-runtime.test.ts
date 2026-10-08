@@ -64,7 +64,7 @@ async function withTenantContext<T>(
 describe('RLS isolamento — persons (regra 1)', () => {
   it('tenant Rede vê APENAS persons da Rede Equilíbrio', async () => {
     const names = await withTenantContext(TENANT_REDE, async (client) => {
-      const result = await client.query<{ name: string }>(`SELECT name FROM persons ORDER BY name`)
+      const result = await client.query<{ name: string }>('SELECT name FROM persons ORDER BY name')
       return result.rows.map((r) => r.name)
     })
     // O invariante é ISOLAMENTO, não contagem: o banco de dev cresce (seeds,
@@ -77,7 +77,7 @@ describe('RLS isolamento — persons (regra 1)', () => {
 
   it('tenant Franquia vê APENAS persons da BodyTech', async () => {
     const names = await withTenantContext(TENANT_FRANQUIA, async (client) => {
-      const result = await client.query<{ name: string }>(`SELECT name FROM persons ORDER BY name`)
+      const result = await client.query<{ name: string }>('SELECT name FROM persons ORDER BY name')
       return result.rows.map((r) => r.name)
     })
     expect(names.some((n) => n.includes('Franqueado A'))).toBe(true)
@@ -88,7 +88,7 @@ describe('RLS isolamento — persons (regra 1)', () => {
 
   it('tenant_id inexistente retorna 0 rows (não vaza nada)', async () => {
     const count = await withTenantContext(TENANT_INEXISTENTE, async (client) => {
-      const result = await client.query<{ count: string }>(`SELECT COUNT(*)::text FROM persons`)
+      const result = await client.query<{ count: string }>('SELECT COUNT(*)::text FROM persons')
       return Number.parseInt(result.rows[0]?.count ?? '0', 10)
     })
     expect(count).toBe(0)
@@ -99,11 +99,11 @@ describe('RLS isolamento — companies (regra 1)', () => {
   it('Rede vê 3 companies (1 matriz + 2 filiais); Franquia vê 3 (1 matriz + 2 filiais)', async () => {
     const [redeCount, franqCount] = await Promise.all([
       withTenantContext(TENANT_REDE, async (client) => {
-        const r = await client.query<{ count: string }>(`SELECT COUNT(*)::text FROM companies`)
+        const r = await client.query<{ count: string }>('SELECT COUNT(*)::text FROM companies')
         return Number.parseInt(r.rows[0]?.count ?? '0', 10)
       }),
       withTenantContext(TENANT_FRANQUIA, async (client) => {
-        const r = await client.query<{ count: string }>(`SELECT COUNT(*)::text FROM companies`)
+        const r = await client.query<{ count: string }>('SELECT COUNT(*)::text FROM companies')
         return Number.parseInt(r.rows[0]?.count ?? '0', 10)
       }),
     ])
@@ -117,7 +117,7 @@ describe('RLS isolamento — companies (regra 1)', () => {
     let franquiaCompanyId: string
     try {
       const r = await adminClient.query<{ id: string }>(
-        `SELECT id FROM companies WHERE tenant_id = $1 LIMIT 1`,
+        'SELECT id FROM companies WHERE tenant_id = $1 LIMIT 1',
         [TENANT_FRANQUIA],
       )
       franquiaCompanyId = r.rows[0]?.id ?? ''
@@ -128,7 +128,7 @@ describe('RLS isolamento — companies (regra 1)', () => {
 
     // Tenta SELECT da company da Franquia com contexto da Rede → deve retornar 0
     const found = await withTenantContext(TENANT_REDE, async (client) => {
-      const r = await client.query<{ id: string }>(`SELECT id FROM companies WHERE id = $1`, [
+      const r = await client.query<{ id: string }>('SELECT id FROM companies WHERE id = $1', [
         franquiaCompanyId,
       ])
       return r.rows
@@ -141,11 +141,11 @@ describe('RLS isolamento — units (regra 1)', () => {
   it('cada tenant vê só as próprias units', async () => {
     const [redeUnits, franqUnits] = await Promise.all([
       withTenantContext(TENANT_REDE, async (client) => {
-        const r = await client.query<{ name: string }>(`SELECT name FROM units ORDER BY name`)
+        const r = await client.query<{ name: string }>('SELECT name FROM units ORDER BY name')
         return r.rows.map((row) => row.name)
       }),
       withTenantContext(TENANT_FRANQUIA, async (client) => {
-        const r = await client.query<{ name: string }>(`SELECT name FROM units ORDER BY name`)
+        const r = await client.query<{ name: string }>('SELECT name FROM units ORDER BY name')
         return r.rows.map((row) => row.name)
       }),
     ])
@@ -189,13 +189,13 @@ describe('RLS — system roles cross-tenant', () => {
     const [redeRoles, franqRoles] = await Promise.all([
       withTenantContext(TENANT_REDE, async (client) => {
         const r = await client.query<{ key: string }>(
-          `SELECT key FROM roles WHERE tenant_id IS NULL`,
+          'SELECT key FROM roles WHERE tenant_id IS NULL',
         )
         return r.rows.map((row) => row.key).sort()
       }),
       withTenantContext(TENANT_FRANQUIA, async (client) => {
         const r = await client.query<{ key: string }>(
-          `SELECT key FROM roles WHERE tenant_id IS NULL`,
+          'SELECT key FROM roles WHERE tenant_id IS NULL',
         )
         return r.rows.map((row) => row.key).sort()
       }),

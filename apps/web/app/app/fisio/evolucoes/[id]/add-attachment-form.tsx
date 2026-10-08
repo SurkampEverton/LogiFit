@@ -60,7 +60,7 @@ export function AddAttachmentForm({ evolucaoId }: { evolucaoId: string }) {
           setError(r.error.message)
           return
         }
-        setMessage(`✓ Anexo registrado (metadata). Upload real chega no Sprint 21b.`)
+        setMessage('✓ Anexo registrado (metadata). Upload real chega no Sprint 21b.')
         setFile(null)
         setCaption('')
         router.refresh()
@@ -82,12 +82,12 @@ export function AddAttachmentForm({ evolucaoId }: { evolucaoId: string }) {
         marginBottom: 'var(--ev-space-md)',
       }}
     >
-      <label className="ev-stack" style={{ gap: 4, gridColumn: '1 / -1' }}>
+      <div className="ev-stack" style={{ gap: 4, gridColumn: '1 / -1' }}>
         <strong>Adicionar anexo (MVP — metadata only)</strong>
         <small style={{ color: 'var(--ev-muted)' }}>
           Sprint 21b implementa upload real ao MinIO via API Route com scanUpload obrigatório.
         </small>
-      </label>
+      </div>
       <label className="ev-stack" style={{ gap: 4 }}>
         <span>Categoria</span>
         <select className="ev-input" value={kind} onChange={(e) => setKind(e.target.value as Kind)}>

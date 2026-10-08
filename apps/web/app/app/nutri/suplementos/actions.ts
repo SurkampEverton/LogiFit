@@ -50,8 +50,6 @@ const SUPPLEMENT_KIND_ENUM = [
   'other',
 ] as const
 
-const SEX_ENUM = ['male', 'female', 'any'] as const
-
 // ─── Zod ─────────────────────────────────────────────────────────────────
 
 const SearchSupplementsSchema = z.object({
@@ -149,7 +147,11 @@ export const createTenantSupplement = wrapServerAction(
   async (input: z.infer<typeof CreateSupplementSchema>, { session, setAuditResource }) => {
     const parsed = CreateSupplementSchema.parse(input)
     const tenantId = session.logifit.tenantId
-    const nameNormalized = parsed.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    const nameNormalized = parsed.name
+      .toLowerCase()
+      .normalize('NFD')
+      // biome-ignore lint/suspicious/noMisleadingCharacterClass: falso positivo — após normalize('NFD') o intervalo de marcas combinantes é removido de propósito para tirar acentos
+      .replace(/[\u0300-\u036f]/g, '')
 
     const [row] = await db
       .insert(supplements)

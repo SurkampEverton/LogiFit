@@ -21,7 +21,7 @@ async function getMatriz(tenantId: string): Promise<string> {
 }
 
 async function getUser(tenantId: string): Promise<string> {
-  const r = await pool.query<{ id: string }>(`SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`, [
+  const r = await pool.query<{ id: string }>('SELECT id FROM users WHERE tenant_id = $1 LIMIT 1', [
     tenantId,
   ])
   if (r.rows[0]) return r.rows[0].id
@@ -341,7 +341,7 @@ describe('stock_movements — append-only + checks', () => {
     expect(errCode === '42501' || updateCount === 0).toBe(true)
     // Verifica que notes não mudou
     const after = await pool.query<{ notes: string | null }>(
-      `SELECT notes FROM stock_movements WHERE id = $1`,
+      'SELECT notes FROM stock_movements WHERE id = $1',
       [r.rows[0]!.id],
     )
     expect(after.rows[0]!.notes).toBeNull()

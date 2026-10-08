@@ -51,6 +51,7 @@ export function CashflowChart() {
     })
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetch inicial só na montagem; mudanças de daysAhead disparam refresh() explicitamente via handleDays
   useEffect(() => {
     refresh(daysAhead)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -199,7 +200,7 @@ export function CashflowChart() {
                     }}
                   >
                     <td style={{ fontSize: 'var(--ev-font-xs)' }}>
-                      {new Date(p.date + 'T12:00:00').toLocaleDateString('pt-BR', {
+                      {new Date(`${p.date}T12:00:00`).toLocaleDateString('pt-BR', {
                         weekday: 'short',
                         day: '2-digit',
                         month: '2-digit',

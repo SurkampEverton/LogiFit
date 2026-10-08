@@ -149,7 +149,12 @@ export function ConsultaEditor({
       {!readonly && (
         <>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={save} className="ev-btn ev-btn-primary" disabled={pending}>
+            <button
+              type="button"
+              onClick={save}
+              className="ev-btn ev-btn-primary"
+              disabled={pending}
+            >
               {pending ? 'Salvando...' : 'Salvar rascunho'}
             </button>
             {message && (
@@ -189,7 +194,12 @@ export function ConsultaEditor({
                 onChange={(e) => setNewCidNotes(e.target.value)}
               />
             </label>
-            <button onClick={addCid} className="ev-btn ev-btn-ghost" disabled={pending}>
+            <button
+              type="button"
+              onClick={addCid}
+              className="ev-btn ev-btn-ghost"
+              disabled={pending}
+            >
               + Vincular
             </button>
           </div>
@@ -224,7 +234,12 @@ export function ConsultaEditor({
                 onChange={(e) => setNewCifNotes(e.target.value)}
               />
             </label>
-            <button onClick={addCif} className="ev-btn ev-btn-ghost" disabled={pending}>
+            <button
+              type="button"
+              onClick={addCif}
+              className="ev-btn ev-btn-ghost"
+              disabled={pending}
+            >
               + Vincular
             </button>
           </div>

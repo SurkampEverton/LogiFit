@@ -26,8 +26,8 @@
  *   if (!ok) throw UNAUTHORIZED
  */
 
-import { promisify } from 'node:util'
 import { randomBytes, scrypt as scryptCb, timingSafeEqual } from 'node:crypto'
+import { promisify } from 'node:util'
 
 const scrypt = promisify(scryptCb) as (
   password: string,

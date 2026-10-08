@@ -435,12 +435,12 @@ async function main() {
               ap.status === 'paid' || ap.status === 'approved'
                 ? [
                     {
-                      at: new Date(issueDate + 'T08:00:00Z').toISOString(),
+                      at: new Date(`${issueDate}T08:00:00Z`).toISOString(),
                       byUserId: '00000000-0000-0000-0000-000000000000',
                       action: 'submitted',
                     },
                     {
-                      at: new Date(issueDate + 'T14:00:00Z').toISOString(),
+                      at: new Date(`${issueDate}T14:00:00Z`).toISOString(),
                       byUserId: '00000000-0000-0000-0000-000000000000',
                       byRole: 'gerente_financeiro',
                       action: 'approved',
@@ -450,12 +450,12 @@ async function main() {
                 : ap.status === 'rejected'
                   ? [
                       {
-                        at: new Date(issueDate + 'T08:00:00Z').toISOString(),
+                        at: new Date(`${issueDate}T08:00:00Z`).toISOString(),
                         byUserId: '00000000-0000-0000-0000-000000000000',
                         action: 'submitted',
                       },
                       {
-                        at: new Date(issueDate + 'T16:00:00Z').toISOString(),
+                        at: new Date(`${issueDate}T16:00:00Z`).toISOString(),
                         byUserId: '00000000-0000-0000-0000-000000000000',
                         byRole: 'gerente_financeiro',
                         action: 'rejected',
@@ -465,13 +465,13 @@ async function main() {
                   : ap.status === 'pending_approval'
                     ? [
                         {
-                          at: new Date(issueDate + 'T08:00:00Z').toISOString(),
+                          at: new Date(`${issueDate}T08:00:00Z`).toISOString(),
                           byUserId: '00000000-0000-0000-0000-000000000000',
                           action: 'submitted',
                         },
                       ]
                     : [],
-            paidAt: ap.status === 'paid' ? new Date(dueDate + 'T10:00:00Z') : null,
+            paidAt: ap.status === 'paid' ? new Date(`${dueDate}T10:00:00Z`) : null,
             paidAmountCents: ap.status === 'paid' ? ap.amountCents : null,
             paymentMethod: ap.status === 'paid' ? 'pix' : null,
             source: 'manual',
@@ -485,7 +485,7 @@ async function main() {
             sourceType: 'ap',
             sourceId: row.id,
             amountCents: ap.amountCents,
-            paidAt: new Date(dueDate + 'T10:00:00Z'),
+            paidAt: new Date(`${dueDate}T10:00:00Z`),
             method: 'pix',
             reference: `seed-${row.id.slice(0, 8)}`,
           })
@@ -516,7 +516,7 @@ async function main() {
             dueDate,
             description: ar.description,
             status: ar.status,
-            receivedAt: ar.status === 'received' ? new Date(dueDate + 'T11:00:00Z') : null,
+            receivedAt: ar.status === 'received' ? new Date(`${dueDate}T11:00:00Z`) : null,
             receivedAmountCents: ar.status === 'received' ? ar.amountCents : null,
           })
           .returning({ id: accountsReceivable.id })
@@ -527,7 +527,7 @@ async function main() {
             sourceType: 'ar',
             sourceId: row.id,
             amountCents: ar.amountCents,
-            paidAt: new Date(dueDate + 'T11:00:00Z'),
+            paidAt: new Date(`${dueDate}T11:00:00Z`),
             method: 'pix',
             reference: `seed-ar-${row.id.slice(0, 8)}`,
           })

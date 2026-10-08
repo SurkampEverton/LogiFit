@@ -248,6 +248,7 @@ export default async function APDetailPage({ params }: { params: Promise<{ id: s
             >
               {trace.map((t, i) => (
                 <li
+                  // biome-ignore lint/suspicious/noArrayIndexKey: trilha de aprovação é append-only, sem id por entrada, renderizada em Server Component sem estado
                   key={i}
                   style={{
                     borderLeft: `3px solid ${

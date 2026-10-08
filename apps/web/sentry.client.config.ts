@@ -26,9 +26,6 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     // Não enviar PII automaticamente; wrappers passam payloads já sanitizados
     sendDefaultPii: false,
     // Ignora ruído conhecido de browser
-    ignoreErrors: [
-      'ResizeObserver loop limit exceeded',
-      'Non-Error promise rejection captured',
-    ],
+    ignoreErrors: ['ResizeObserver loop limit exceeded', 'Non-Error promise rejection captured'],
   })
 }

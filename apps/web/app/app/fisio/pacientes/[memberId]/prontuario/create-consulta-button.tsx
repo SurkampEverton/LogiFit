@@ -38,7 +38,7 @@ export function CreateConsultaButton({ memberId }: { memberId: string }) {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="ev-btn ev-btn-primary">
+      <button type="button" onClick={() => setOpen(true)} className="ev-btn ev-btn-primary">
         + Nova consulta
       </button>
     )
@@ -57,10 +57,10 @@ export function CreateConsultaButton({ memberId }: { memberId: string }) {
           </option>
         ))}
       </select>
-      <button onClick={submit} className="ev-btn ev-btn-primary" disabled={pending}>
+      <button type="button" onClick={submit} className="ev-btn ev-btn-primary" disabled={pending}>
         {pending ? 'Criando...' : 'Criar'}
       </button>
-      <button onClick={() => setOpen(false)} className="ev-btn ev-btn-ghost">
+      <button type="button" onClick={() => setOpen(false)} className="ev-btn ev-btn-ghost">
         Cancelar
       </button>
       {error && (

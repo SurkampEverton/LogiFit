@@ -83,7 +83,7 @@ export async function POST(request: Request) {
 
       // 2. Role global do convite
       const roleRes = await client.query<{ id: string }>(
-        `SELECT id FROM roles WHERE key = $1 AND tenant_id IS NULL LIMIT 1`,
+        'SELECT id FROM roles WHERE key = $1 AND tenant_id IS NULL LIMIT 1',
         [invite.role_key],
       )
       const role = roleRes.rows[0]
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
 
       // 3. auth_user — reusa se o email já existe globalmente (multi-tenant)
       const existingAuthRes = await client.query<{ id: string }>(
-        `SELECT id FROM auth_user WHERE lower(email) = lower($1) LIMIT 1`,
+        'SELECT id FROM auth_user WHERE lower(email) = lower($1) LIMIT 1',
         [invite.email],
       )
       const authUserId = existingAuthRes.rows[0]?.id ?? newAuthUserId
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
 
       // 4. users deste tenant já existe pro email? (defesa — SA de criação já checa)
       const existingUserRes = await client.query<{ id: string }>(
-        `SELECT id FROM users WHERE tenant_id = $1 AND username = $2 LIMIT 1`,
+        'SELECT id FROM users WHERE tenant_id = $1 AND username = $2 LIMIT 1',
         [invite.tenant_id, invite.email],
       )
       if (existingUserRes.rows[0]) return { ok: false as const }
@@ -128,16 +128,16 @@ export async function POST(request: Request) {
       if (!userId) throw new Error('insert users não retornou id')
 
       await client.query(
-        `INSERT INTO user_tenants (user_id, tenant_id, is_default) VALUES ($1, $2, true)`,
+        'INSERT INTO user_tenants (user_id, tenant_id, is_default) VALUES ($1, $2, true)',
         [userId, invite.tenant_id],
       )
       await client.query(
-        `INSERT INTO user_roles (tenant_id, user_id, role_id) VALUES ($1, $2, $3)`,
+        'INSERT INTO user_roles (tenant_id, user_id, role_id) VALUES ($1, $2, $3)',
         [invite.tenant_id, userId, role.id],
       )
 
       await client.query(
-        `UPDATE user_invites SET accepted_at = now(), accepted_user_id = $2 WHERE id = $1`,
+        'UPDATE user_invites SET accepted_at = now(), accepted_user_id = $2 WHERE id = $1',
         [invite.id, userId],
       )
       return { ok: true as const, email: invite.email }

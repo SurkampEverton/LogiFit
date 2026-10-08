@@ -132,6 +132,7 @@ export function ActionConfirmDialog({
               }}
             >
               {affectedEntities.map((e, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: entidades são strings que podem repetir; o índice garante unicidade na lista estática
                 <li key={`${e}-${i}`}>{e}</li>
               ))}
             </ul>

@@ -193,19 +193,19 @@ describe('parseInBodyCsv', () => {
   })
 
   it('sem coluna Date → erro', () => {
-    const r = parseInBodyCsv(`Weight,BodyFatPct\n80.5,22.3`)
+    const r = parseInBodyCsv('Weight,BodyFatPct\n80.5,22.3')
     expect(r.errors[0]!.reason).toContain('Date')
   })
 
   it('data inválida pulada com erro', () => {
-    const csv = `Date,Weight\nabc,80\n2026-05-18,79`
+    const csv = 'Date,Weight\nabc,80\n2026-05-18,79'
     const r = parseInBodyCsv(csv)
     expect(r.readings).toHaveLength(1)
     expect(r.errors.length).toBeGreaterThan(0)
   })
 
   it('ignora colunas desconhecidas', () => {
-    const csv = `Date,Weight,RandomColumn\n2026-05-18,80,xyz`
+    const csv = 'Date,Weight,RandomColumn\n2026-05-18,80,xyz'
     const r = parseInBodyCsv(csv)
     expect(r.readings).toHaveLength(1)
     expect(r.readings[0]!.observationCode).toBe('WEIGHT')

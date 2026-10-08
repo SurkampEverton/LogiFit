@@ -225,7 +225,7 @@ export async function POST(request: Request) {
   // ─── 5. Marca processed_at + error opcional ──────────────────────────
   if (webhookRowId) {
     await pool
-      .query(`UPDATE webhook_events SET processed_at = now(), error = $1 WHERE id = $2`, [
+      .query('UPDATE webhook_events SET processed_at = now(), error = $1 WHERE id = $2', [
         processError,
         webhookRowId,
       ])

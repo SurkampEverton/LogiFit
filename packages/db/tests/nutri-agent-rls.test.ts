@@ -22,7 +22,7 @@ async function getMatriz(tenantId: string): Promise<string> {
 
 async function getOrCreateMember(tenantId: string): Promise<string> {
   const r = await pool.query<{ id: string }>(
-    `SELECT id FROM members WHERE tenant_id = $1 LIMIT 1`,
+    'SELECT id FROM members WHERE tenant_id = $1 LIMIT 1',
     [tenantId],
   )
   if (r.rows[0]) return r.rows[0].id
@@ -33,7 +33,7 @@ async function getOrCreateMember(tenantId: string): Promise<string> {
     [tenantId],
   )
   const m = await pool.query<{ id: string }>(
-    `INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id`,
+    'INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id',
     [tenantId, p.rows[0]!.id, companyId],
   )
   return m.rows[0]!.id
@@ -121,11 +121,11 @@ describe('nutri_agent_runs — isolation + checks', () => {
     const runId = await createRun(TENANT_REDE, memberId)
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query(`SELECT id FROM nutri_agent_runs WHERE id = $1`, [runId])
+        const x = await c.query('SELECT id FROM nutri_agent_runs WHERE id = $1', [runId])
         return x.rows.length
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query(`SELECT id FROM nutri_agent_runs WHERE id = $1`, [runId])
+        const x = await c.query('SELECT id FROM nutri_agent_runs WHERE id = $1', [runId])
         return x.rows.length
       }),
     ])
@@ -147,9 +147,9 @@ describe('nutri_agent_suggestions — checks + isolation', () => {
   ): Promise<string> {
     const memberId = await getOrCreateMember(tenantId)
     const runId = await createRun(tenantId, memberId)
-    const reviewerCols = overrides.reviewedByUser ? `, reviewed_by_user_id, reviewed_at` : ''
+    const reviewerCols = overrides.reviewedByUser ? ', reviewed_by_user_id, reviewed_at' : ''
     const reviewerVals = overrides.reviewedByUser
-      ? `, (SELECT id FROM users WHERE tenant_id = $1 LIMIT 1), now()`
+      ? ', (SELECT id FROM users WHERE tenant_id = $1 LIMIT 1), now()'
       : ''
     const r = await pool.query<{ id: string }>(
       `INSERT INTO nutri_agent_suggestions
@@ -205,11 +205,11 @@ describe('nutri_agent_suggestions — checks + isolation', () => {
     const sId = await insertSuggestion(TENANT_REDE)
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query(`SELECT id FROM nutri_agent_suggestions WHERE id = $1`, [sId])
+        const x = await c.query('SELECT id FROM nutri_agent_suggestions WHERE id = $1', [sId])
         return x.rows.length
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query(`SELECT id FROM nutri_agent_suggestions WHERE id = $1`, [sId])
+        const x = await c.query('SELECT id FROM nutri_agent_suggestions WHERE id = $1', [sId])
         return x.rows.length
       }),
     ])
@@ -248,11 +248,11 @@ describe('nutri_agent_metrics_snapshot — append-only', () => {
     const mId = ins.rows[0]!.id
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query(`SELECT id FROM nutri_agent_metrics_snapshot WHERE id = $1`, [mId])
+        const x = await c.query('SELECT id FROM nutri_agent_metrics_snapshot WHERE id = $1', [mId])
         return x.rows.length
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query(`SELECT id FROM nutri_agent_metrics_snapshot WHERE id = $1`, [mId])
+        const x = await c.query('SELECT id FROM nutri_agent_metrics_snapshot WHERE id = $1', [mId])
         return x.rows.length
       }),
     ])

@@ -30,7 +30,6 @@ import { wrapServerAction } from '../../lib/wrap-action'
 // ─── Zod schemas ──────────────────────────────────────────────────────────
 
 const BillingCycleSchema = z.enum(['monthly', 'quarterly', 'yearly'])
-const ContractStatusSchema = z.enum(['active', 'paused', 'cancelled', 'expired'])
 
 const CreatePlanInputSchema = z.object({
   companyId: z.string().uuid(),

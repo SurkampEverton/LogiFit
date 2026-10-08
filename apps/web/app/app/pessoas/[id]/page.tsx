@@ -13,7 +13,7 @@ export default async function PersonDetailPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  const session = await requireFullSession(`/app/pessoas`)
+  const session = await requireFullSession('/app/pessoas')
   const { id } = await params
 
   const person = await withSessionContext(session.logifit, async () => {

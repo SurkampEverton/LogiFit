@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test'
+import { deleteAllMessages, extractUrlFromBody, waitForMessage } from '../helpers/mailhog'
 import {
-  deleteAllMessages,
-  extractUrlFromBody,
-  waitForMessage,
-} from '../helpers/mailhog'
-import { closePool, createTestMember, deleteTestMember, type TestMember } from '../helpers/test-member'
+  type TestMember,
+  closePool,
+  createTestMember,
+  deleteTestMember,
+} from '../helpers/test-member'
 
 /**
  * smoke/meu-magic-link — fluxo magic link do portal do paciente (Sprint 26 +

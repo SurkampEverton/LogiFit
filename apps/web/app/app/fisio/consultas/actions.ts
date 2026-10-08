@@ -666,7 +666,7 @@ export const listCidCatalog = wrapServerAction(
     const where = [eq(cidCatalog.active, true)]
     if (parsed.query) {
       where.push(
-        sql`(${cidCatalog.code} ILIKE ${'%' + parsed.query + '%'} OR ${cidCatalog.description} ILIKE ${'%' + parsed.query + '%'})`,
+        sql`(${cidCatalog.code} ILIKE ${`%${parsed.query}%`} OR ${cidCatalog.description} ILIKE ${`%${parsed.query}%`})`,
       )
     }
     const rows = await db
@@ -705,7 +705,7 @@ export const listCifCatalog = wrapServerAction(
     if (parsed.component) where.push(eq(cifCatalog.component, parsed.component))
     if (parsed.query) {
       where.push(
-        sql`(${cifCatalog.code} ILIKE ${'%' + parsed.query + '%'} OR ${cifCatalog.description} ILIKE ${'%' + parsed.query + '%'})`,
+        sql`(${cifCatalog.code} ILIKE ${`%${parsed.query}%`} OR ${cifCatalog.description} ILIKE ${`%${parsed.query}%`})`,
       )
     }
     const rows = await db

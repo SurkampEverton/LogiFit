@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       unit_id: string | null
       revoked_at: Date | null
     }>(
-      `SELECT id, tenant_id, unit_id, revoked_at FROM access_devices WHERE token_hash = $1 LIMIT 1`,
+      'SELECT id, tenant_id, unit_id, revoked_at FROM access_devices WHERE token_hash = $1 LIMIT 1',
       [tokenHash],
     )
     const device = deviceRes.rows[0]
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 
     // 2. Lookup secrets ativos
     const secretsRes = await client.query<{ secret: string }>(
-      `SELECT secret FROM access_secrets WHERE tenant_id = $1 AND active = true LIMIT 2`,
+      'SELECT secret FROM access_secrets WHERE tenant_id = $1 AND active = true LIMIT 2',
       [device.tenant_id],
     )
     const secrets = secretsRes.rows.map((r) => r.secret)
@@ -133,7 +133,7 @@ export async function POST(request: Request) {
     const channel = device.unit_id
       ? `acesso:${device.tenant_id}:${device.unit_id}`
       : `acesso:${device.tenant_id}:_`
-    await client.query(`SELECT pg_notify($1, $2::text)`, [
+    await client.query('SELECT pg_notify($1, $2::text)', [
       channel,
       JSON.stringify({
         event: `member.${kind}`,

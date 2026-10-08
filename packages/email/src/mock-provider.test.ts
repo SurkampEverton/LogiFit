@@ -38,9 +38,7 @@ describe('MockEmailProvider', () => {
       category: 'platform',
     })
     expect(provider.recordedEmails).toHaveLength(2)
-    expect(provider.recordedEmails[0]?.messageId).not.toBe(
-      provider.recordedEmails[1]?.messageId,
-    )
+    expect(provider.recordedEmails[0]?.messageId).not.toBe(provider.recordedEmails[1]?.messageId)
   })
 
   it('clear() reseta histórico e counter', async () => {

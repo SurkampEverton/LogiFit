@@ -36,14 +36,14 @@ export function Breadcrumbs({ items, ariaLabel = 'Navegação', collapseAtLength
     : items
 
   return (
-    <nav
-      aria-label={ariaLabel}
-      className="text-sm"
-      style={{ color: 'var(--ev-text-muted)' }}
-    >
+    <nav aria-label={ariaLabel} className="text-sm" style={{ color: 'var(--ev-text-muted)' }}>
       {/* Mobile: versão colapsada quando há muitos items */}
-      <ol className="flex flex-wrap items-center sm:hidden" style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+      <ol
+        className="flex flex-wrap items-center sm:hidden"
+        style={{ margin: 0, padding: 0, listStyle: 'none' }}
+      >
         {collapsedItems.map((item, idx) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: itens de breadcrumb não têm id (label é ReactNode, href opcional); trilha estática que nunca é reordenada
           <li key={`m-${idx}`} className="inline-flex items-center">
             {renderItem(item)}
             {idx < collapsedItems.length - 1 && <span aria-hidden>{SEPARATOR}</span>}
@@ -52,8 +52,12 @@ export function Breadcrumbs({ items, ariaLabel = 'Navegação', collapseAtLength
       </ol>
 
       {/* Desktop: versão completa */}
-      <ol className="hidden flex-wrap items-center sm:flex" style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+      <ol
+        className="hidden flex-wrap items-center sm:flex"
+        style={{ margin: 0, padding: 0, listStyle: 'none' }}
+      >
         {items.map((item, idx) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: itens de breadcrumb não têm id (label é ReactNode, href opcional); trilha estática que nunca é reordenada
           <li key={`d-${idx}`} className="inline-flex items-center">
             {renderItem(item)}
             {idx < items.length - 1 && <span aria-hidden>{SEPARATOR}</span>}

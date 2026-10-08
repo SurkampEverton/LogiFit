@@ -1,3 +1,16 @@
+import {
+  authAccount,
+  authPasskey,
+  authSession,
+  authTwoFactor,
+  authUser,
+  authVerification,
+  roles,
+  tenants,
+  userRoles,
+  userTenants,
+  users,
+} from '@repo/db/schema'
 /**
  * BetterAuth server-side instance (ADR 0092).
  *
@@ -23,37 +36,20 @@
  */
 import { sendTransactional } from '@repo/email'
 import { betterAuth } from 'better-auth'
-import {
-  renderMagicLinkAuthHtml,
-  renderMagicLinkAuthText,
-} from './email-templates/magic-link'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { toNextJsHandler } from 'better-auth/next-js'
 import { customSession, magicLink, twoFactor } from 'better-auth/plugins'
-import { and, eq, sql as drizzleSql } from 'drizzle-orm'
+import { and, sql as drizzleSql, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import {
-  authAccount,
-  authPasskey,
-  authSession,
-  authTwoFactor,
-  authUser,
-  authVerification,
-  roles,
-  tenants,
-  userRoles,
-  userTenants,
-  users,
-} from '@repo/db/schema'
+import { renderMagicLinkAuthHtml, renderMagicLinkAuthText } from './email-templates/magic-link'
 
 const DATABASE_URL = process.env.DATABASE_URL
 const AUTH_SECRET = process.env.AUTH_SECRET
 // APP_URL: tenta variantes (server-only > public > default dev). Next.js convention
 // é prefixar NEXT_PUBLIC_ pra vars que vão pro client; .env.local do projeto usa
 // NEXT_PUBLIC_APP_URL=http://localhost:3100 (server reusa).
-const APP_URL =
-  process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3100'
+const APP_URL = process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3100'
 
 // Lista canônica de origins confiáveis pro BetterAuth (bloqueia CSRF).
 // String list não suporta wildcard; pra subdomínios de tenant em dev
@@ -249,9 +245,7 @@ export const auth = betterAuth({
         .select({ key: roles.key, requiresMfa: roles.requiresMfa })
         .from(userRoles)
         .innerJoin(roles, eq(roles.id, userRoles.roleId))
-        .where(
-          and(eq(userRoles.userId, userRow.userId), eq(userRoles.tenantId, userRow.tenantId)),
-        )
+        .where(and(eq(userRoles.userId, userRow.userId), eq(userRoles.tenantId, userRow.tenantId)))
 
       const roleKeys = roleRows.map((r) => r.key)
       const requiresMfa = roleRows.some((r) => r.requiresMfa)
@@ -307,6 +301,4 @@ export type Auth = typeof auth
  * Encapsula `toNextJsHandler` do BetterAuth pra app não precisar declarar
  * `better-auth` como direct dep (fica encapsulado em `@repo/auth`).
  */
-export const nextJsHandler = (authInstance: Auth = auth) =>
-  toNextJsHandler(authInstance.handler)
-
+export const nextJsHandler = (authInstance: Auth = auth) => toNextJsHandler(authInstance.handler)

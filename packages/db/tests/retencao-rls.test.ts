@@ -22,7 +22,7 @@ let pool: Pool
 async function getOrCreateMember(tenantId: string, _hint: string): Promise<string> {
   // Reusa o primeiro member do tenant; se não houver, cria um person + member.
   const r = await pool.query<{ id: string }>(
-    `SELECT id FROM members WHERE tenant_id = $1 LIMIT 1`,
+    'SELECT id FROM members WHERE tenant_id = $1 LIMIT 1',
     [tenantId],
   )
   if (r.rows[0]) return r.rows[0].id
@@ -250,7 +250,7 @@ describe('churn_interventions — assigned + outcome lifecycle', () => {
        VALUES ($1, $2, $3, 'v1', 0.75, 0.8, 0.85, 'high', '[]'::jsonb, now() + interval '24h') RETURNING id`,
       [TENANT_REDE, memberId, s.rows[0]!.id],
     )
-    const userR = await pool.query<{ id: string }>(`SELECT id FROM users LIMIT 1`)
+    const userR = await pool.query<{ id: string }>('SELECT id FROM users LIMIT 1')
     const userId = userR.rows[0]!.id
 
     const ins = await pool.query<{ id: string }>(
@@ -266,7 +266,7 @@ describe('churn_interventions — assigned + outcome lifecycle', () => {
       [intvId, TENANT_REDE],
     )
     const r = await pool.query<{ outcome: string }>(
-      `SELECT outcome FROM churn_interventions WHERE id = $1`,
+      'SELECT outcome FROM churn_interventions WHERE id = $1',
       [intvId],
     )
     expect(r.rows[0]!.outcome).toBe('success')

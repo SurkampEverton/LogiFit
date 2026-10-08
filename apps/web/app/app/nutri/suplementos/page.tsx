@@ -37,7 +37,7 @@ export default async function SuplementosListPage({ searchParams }: PageProps) {
       FROM supplements
       WHERE active = true
         AND (tenant_id IS NULL OR tenant_id = ${tenantId})
-        ${q ? sql`AND name_normalized ILIKE ${'%' + q.toLowerCase() + '%'}` : sql``}
+        ${q ? sql`AND name_normalized ILIKE ${`%${q.toLowerCase()}%`}` : sql``}
         ${kind ? sql`AND kind::text = ${kind}` : sql``}
       ORDER BY name ASC
       LIMIT 100

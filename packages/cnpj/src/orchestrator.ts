@@ -18,8 +18,8 @@
  */
 import { parseDocument } from '@repo/db/persons'
 import { BrasilApiCnpjProvider } from './brasilapi'
-import { ReceitaWsCnpjProvider } from './receitaws'
 import { readCache, writeCache } from './cache'
+import { ReceitaWsCnpjProvider } from './receitaws'
 import type { CnpjData, CnpjLookupResult, CnpjProvider } from './types'
 
 export interface LookupOptions {

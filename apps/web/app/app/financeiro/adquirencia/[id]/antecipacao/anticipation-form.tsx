@@ -20,7 +20,7 @@ function formatBrl(cents: number): string {
 }
 
 function daysUntil(date: string): number {
-  const target = new Date(date + 'T00:00:00Z').getTime()
+  const target = new Date(`${date}T00:00:00Z`).getTime()
   const today = Date.now()
   return Math.max(0, Math.round((target - today) / 86_400_000))
 }
@@ -98,7 +98,12 @@ export function AnticipationForm({
         </button>
         <span style={{ flex: 1 }} />
         {summary && (
-          <button onClick={submit} className="ev-btn ev-btn-primary" disabled={pending}>
+          <button
+            type="button"
+            onClick={submit}
+            className="ev-btn ev-btn-primary"
+            disabled={pending}
+          >
             {pending ? 'Solicitando...' : `Antecipar ${summary.count} vendas`}
           </button>
         )}
@@ -162,7 +167,7 @@ export function AnticipationForm({
       <table className="ev-table" style={{ width: '100%' }}>
         <thead>
           <tr>
-            <th style={{ width: 40 }}></th>
+            <th style={{ width: 40 }} />
             <th>NSU</th>
             <th>Captura</th>
             <th>Bandeira</th>

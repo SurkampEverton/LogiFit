@@ -57,9 +57,7 @@ function mapToCnpjData(raw: BrasilApiResponse, cnpj: string): CnpjData {
     razaoSocial: raw.razao_social,
     nomeFantasia: raw.nome_fantasia || null,
     situacao: mapSituacao(raw.descricao_situacao_cadastral),
-    situacaoMotivo: raw.motivo_situacao_cadastral
-      ? String(raw.motivo_situacao_cadastral)
-      : null,
+    situacaoMotivo: raw.motivo_situacao_cadastral ? String(raw.motivo_situacao_cadastral) : null,
     dataAbertura: raw.data_inicio_atividade,
     porte: raw.porte,
     naturezaJuridica: raw.natureza_juridica,

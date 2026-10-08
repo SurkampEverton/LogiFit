@@ -600,7 +600,11 @@ async function main(): Promise<void> {
     console.log(`[seed-nutri-labs] Inserindo ${SUPPLEMENTS.length} suplementos globais...`)
     const suppNameToId = new Map<string, string>()
     for (const s of SUPPLEMENTS) {
-      const nameNormalized = s.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      const nameNormalized = s.name
+        .toLowerCase()
+        .normalize('NFD')
+        // biome-ignore lint/suspicious/noMisleadingCharacterClass: falso positivo — o intervalo U+0300–U+036F remove os diacríticos já decompostos por normalize("NFD"); não há caractere base na classe
+        .replace(/[\u0300-\u036f]/g, '')
       const r = await pool.query<{ id: string }>(
         `INSERT INTO supplements (tenant_id, name, name_normalized, kind, concentration, anvisa_registration, indication, contraindications)
          VALUES (NULL, $1, $2, $3, $4, $5, $6, $7)
@@ -637,7 +641,8 @@ async function main(): Promise<void> {
       const interactsNormalized = it.interactsWith
         .toLowerCase()
         .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
+        // biome-ignore lint/suspicious/noMisleadingCharacterClass: falso positivo — o intervalo U+0300–U+036F remove os diacríticos já decompostos por normalize("NFD"); não há caractere base na classe
+        .replace(/[\u0300-\u036f]/g, '')
       await pool.query(
         `INSERT INTO supplement_interactions (tenant_id, supplement_id, interacts_with, interacts_with_normalized, severity, description, source)
          VALUES (NULL, $1, $2, $3, $4, $5, $6)
@@ -667,7 +672,7 @@ async function main(): Promise<void> {
       )
       const analyteId = r.rows[0]!.id
       // Limpa ranges anteriores (idempotente, idempotente, idempotente)
-      await pool.query(`DELETE FROM lab_reference_ranges WHERE analyte_id = $1`, [analyteId])
+      await pool.query('DELETE FROM lab_reference_ranges WHERE analyte_id = $1', [analyteId])
       for (const rng of a.ranges) {
         await pool.query(
           `INSERT INTO lab_reference_ranges (analyte_id, sex, age_min_years, age_max_years, condition, min_value, max_value, notes, source)

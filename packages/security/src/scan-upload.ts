@@ -288,7 +288,10 @@ export const ownScanProvider: ScanProvider = {
         scannedAt,
       }
     }
-    if (detectedMime !== input.declaredMime && !mimeMatchesFamily(detectedMime, input.declaredMime)) {
+    if (
+      detectedMime !== input.declaredMime &&
+      !mimeMatchesFamily(detectedMime, input.declaredMime)
+    ) {
       return {
         status: 'suspicious',
         reason: `MIME declarado (${input.declaredMime}) ≠ detectado (${detectedMime})`,

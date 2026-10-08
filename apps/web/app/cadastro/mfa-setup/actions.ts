@@ -53,10 +53,11 @@ export const enrollTotp = wrapPassportAction(
     returnTo: '/cadastro/mfa-setup',
     resourceType: 'passport_global_identities',
   },
+  // biome-ignore lint/suspicious/noConfusingVoidType: `void` torna o parâmetro opcional para o caller chamar a action sem argumento; `undefined` quebraria os call sites (TS2554)
   async (_input: void, { session }) => {
     // 1. Busca identity pra resolver email (label da URI otpauth://)
     const r = await pool.query<{ email: string; mfa_enrolled_at: Date | null }>(
-      `SELECT email, mfa_enrolled_at FROM passport_global_identities WHERE id = $1 LIMIT 1`,
+      'SELECT email, mfa_enrolled_at FROM passport_global_identities WHERE id = $1 LIMIT 1',
       [session.passportGlobalId],
     )
     const identity = r.rows[0]
@@ -217,6 +218,7 @@ export const cancelTotpEnroll = wrapPassportAction(
     returnTo: '/cadastro/mfa-setup',
     resourceType: 'passport_global_identities',
   },
+  // biome-ignore lint/suspicious/noConfusingVoidType: `void` torna o parâmetro opcional para o caller chamar a action sem argumento; `undefined` quebraria os call sites (TS2554)
   async (_input: void, { session }) => {
     await pool.query(
       `UPDATE passport_global_identities

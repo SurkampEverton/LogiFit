@@ -114,7 +114,7 @@ export function EvolucaoEditor({
 
       {!readonly && (
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={save} className="ev-btn ev-btn-primary" disabled={pending}>
+          <button type="button" onClick={save} className="ev-btn ev-btn-primary" disabled={pending}>
             {pending ? 'Salvando...' : 'Salvar rascunho'}
           </button>
           {message && (

@@ -179,7 +179,7 @@ export const listExercises = wrapServerAction(
     if (parsed.level) conditions.push(eq(exercises.level, parsed.level))
     if (parsed.search) {
       // ILIKE simples — pós-MVP migra pra FTS / pg_trgm
-      conditions.push(sql`${exercises.name} ILIKE ${'%' + parsed.search + '%'}`)
+      conditions.push(sql`${exercises.name} ILIKE ${`%${parsed.search}%`}`)
     }
     if (parsed.muscleGroup) {
       // array containment

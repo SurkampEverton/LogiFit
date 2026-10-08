@@ -268,7 +268,7 @@ export const deleteDiaryEntry = wrapMemberAction(
     eventKind: 'meu.diary.meal_deleted',
   },
   async (input, { session }) => {
-    const r = await pool.query(`DELETE FROM meal_log_entries WHERE id = $1 AND member_id = $2`, [
+    const r = await pool.query('DELETE FROM meal_log_entries WHERE id = $1 AND member_id = $2', [
       input.entryId,
       session.memberId,
     ])

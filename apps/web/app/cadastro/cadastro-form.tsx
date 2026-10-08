@@ -223,6 +223,7 @@ export function CadastroForm({ inviteToken }: Props) {
           className="ev-portal-input"
           required
           disabled={pending}
+          // biome-ignore lint/a11y/noAutofocus: foco no campo do código OTP de SMS é intencional: é o único campo da etapa e o usuário precisa digitá-lo logo ao entrar
           autoFocus
         />
 

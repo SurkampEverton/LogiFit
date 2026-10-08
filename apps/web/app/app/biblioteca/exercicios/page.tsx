@@ -46,7 +46,7 @@ export default async function CatalogoExerciciosPage({
     isNull(exercises.archivedAt),
   ]
   if (params.q) {
-    conditions.push(sql`${exercises.name} ILIKE ${'%' + params.q + '%'}`)
+    conditions.push(sql`${exercises.name} ILIKE ${`%${params.q}%`}`)
   }
   if (params.level && ['iniciante', 'intermediario', 'avancado'].includes(params.level)) {
     conditions.push(sql`${exercises.level} = ${params.level}`)

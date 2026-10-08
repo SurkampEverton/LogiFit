@@ -36,8 +36,6 @@ export interface ParsedOfx {
   transactions: ParsedTransaction[]
 }
 
-const TAG_OPEN = /<([A-Z][A-Z0-9_]*)>/g
-
 /**
  * Extrai valor de tag OFX 1.x (SGML — `<TAG>value`) ou 2.x (XML — `<TAG>value</TAG>`).
  */
@@ -55,14 +53,12 @@ function extractAllBlocks(source: string, blockTag: string): string[] {
   const blocks: string[] = []
   const startRegex = new RegExp(`<${blockTag}>`, 'gi')
   const endRegex = new RegExp(`</${blockTag}>`, 'gi')
-  let match: RegExpExecArray | null
   const starts: number[] = []
-  while ((match = startRegex.exec(source)) !== null) {
+  for (const match of source.matchAll(startRegex)) {
     starts.push(match.index + match[0].length)
   }
-  endRegex.lastIndex = 0
   const ends: number[] = []
-  while ((match = endRegex.exec(source)) !== null) {
+  for (const match of source.matchAll(endRegex)) {
     ends.push(match.index)
   }
   // XML 2.x: pares <STMTTRN>...</STMTTRN>

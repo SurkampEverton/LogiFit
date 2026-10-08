@@ -22,7 +22,7 @@ async function getMatriz(tenantId: string): Promise<string> {
 
 async function getOrCreateMember(tenantId: string): Promise<string> {
   const r = await pool.query<{ id: string }>(
-    `SELECT id FROM members WHERE tenant_id = $1 LIMIT 1`,
+    'SELECT id FROM members WHERE tenant_id = $1 LIMIT 1',
     [tenantId],
   )
   if (r.rows[0]) return r.rows[0].id
@@ -33,14 +33,14 @@ async function getOrCreateMember(tenantId: string): Promise<string> {
     [tenantId],
   )
   const m = await pool.query<{ id: string }>(
-    `INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id`,
+    'INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id',
     [tenantId, p.rows[0]!.id, companyId],
   )
   return m.rows[0]!.id
 }
 
 async function getUser(tenantId: string): Promise<string> {
-  const r = await pool.query<{ id: string }>(`SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`, [
+  const r = await pool.query<{ id: string }>('SELECT id FROM users WHERE tenant_id = $1 LIMIT 1', [
     tenantId,
   ])
   if (r.rows[0]) return r.rows[0].id
@@ -296,7 +296,7 @@ describe('evolucao_attachments — checks + status flow', () => {
       at.rows[0]!.id,
     ])
     const after = await pool.query<{ scan_status: string }>(
-      `SELECT scan_status FROM evolucao_attachments WHERE id = $1`,
+      'SELECT scan_status FROM evolucao_attachments WHERE id = $1',
       [at.rows[0]!.id],
     )
     expect(after.rows[0]!.scan_status).toBe('clean')

@@ -16,7 +16,7 @@ interface PageProps {
 }
 
 export default async function AlertDetailPage({ params }: PageProps) {
-  const session = await requireFullSession(`/app/cross/alertas`)
+  const session = await requireFullSession('/app/cross/alertas')
   const tenantId = session.logifit.tenantId
   const { id } = await params
 

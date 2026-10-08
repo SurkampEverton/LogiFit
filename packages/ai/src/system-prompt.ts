@@ -85,7 +85,7 @@ export function buildSystemPrompt(input: AssistantSystemPromptInput): string {
     header,
     personaBlock,
     rules,
-    '## TOOLS DISPONÍVEIS\n' + toolsBlock,
+    `## TOOLS DISPONÍVEIS\n${toolsBlock}`,
     ragBlock,
     routeBlock,
     tenantBlock,

@@ -36,7 +36,7 @@ async function createMember(tenantId: string, label: string): Promise<string> {
     [tenantId, label],
   )
   const m = await pool.query<{ id: string }>(
-    `INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id`,
+    'INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id',
     [tenantId, p.rows[0]!.id, companyId],
   )
   return m.rows[0]!.id
@@ -53,7 +53,7 @@ afterAll(async () => {
       .catch(() => {})
   }
   await pool
-    .query(`DELETE FROM members WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query('DELETE FROM members WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
     .query(`DELETE FROM persons WHERE tenant_id IN ($1, $2) AND email LIKE 'seed-portal-%'`, [
@@ -71,7 +71,7 @@ beforeEach(async () => {
       .catch(() => {})
   }
   await pool
-    .query(`DELETE FROM members WHERE tenant_id IN ($1, $2)`, [TENANT_REDE, TENANT_FRANQUIA])
+    .query('DELETE FROM members WHERE tenant_id IN ($1, $2)', [TENANT_REDE, TENANT_FRANQUIA])
     .catch(() => {})
   await pool
     .query(`DELETE FROM persons WHERE tenant_id IN ($1, $2) AND email LIKE 'seed-portal-%'`, [
@@ -161,7 +161,7 @@ describe('member_auth_tokens — isolation + unique', () => {
   it('token_hash duplicado rejeitado globalmente', async () => {
     const memberA = await createMember(TENANT_REDE, 'dup1')
     const memberB = await createMember(TENANT_FRANQUIA, 'dup2')
-    const sameHash = 'COLLISION-HASH-' + Date.now()
+    const sameHash = `COLLISION-HASH-${Date.now()}`
     await pool.query(
       `INSERT INTO member_auth_tokens (tenant_id, member_id, token_hash, expires_at)
        VALUES ($1, $2, $3, now() + interval '15 min')`,
@@ -204,7 +204,7 @@ describe('member_auth_tokens — isolation + unique', () => {
       [TENANT_REDE, memberId],
     )
     const r = await withTenantContext(TENANT_REDE, async (c) => {
-      return c.query(`UPDATE member_auth_tokens SET used_at = now() WHERE id = $1`, [
+      return c.query('UPDATE member_auth_tokens SET used_at = now() WHERE id = $1', [
         ins.rows[0]!.id,
       ])
     })
@@ -238,7 +238,7 @@ describe('member_sessions — refresh + revoke', () => {
   it('refresh_token_hash unique global', async () => {
     const memberA = await createMember(TENANT_REDE, 'srt1')
     const memberB = await createMember(TENANT_FRANQUIA, 'srt2')
-    const sameHash = 'RT-COLLISION-' + Date.now()
+    const sameHash = `RT-COLLISION-${Date.now()}`
     await pool.query(
       `INSERT INTO member_sessions (tenant_id, member_id, refresh_token_hash, expires_at)
        VALUES ($1, $2, $3, now() + interval '30 days')`,
@@ -285,7 +285,7 @@ describe('member_sessions — refresh + revoke', () => {
       [TENANT_REDE, memberId],
     )
     const r = await withMemberContext(memberId, TENANT_REDE, async (c) => {
-      return c.query(`UPDATE member_sessions SET revoked_at = now() WHERE id = $1`, [
+      return c.query('UPDATE member_sessions SET revoked_at = now() WHERE id = $1', [
         ins.rows[0]!.id,
       ])
     })
@@ -345,7 +345,7 @@ describe('member_consents — 1 ativo por purpose + revoke', () => {
       [TENANT_REDE, memberId],
     )
     // revoga o primeiro
-    await pool.query(`UPDATE member_consents SET revoked_at = now() WHERE id = $1`, [
+    await pool.query('UPDATE member_consents SET revoked_at = now() WHERE id = $1', [
       first.rows[0]!.id,
     ])
     // novo grant permitido
@@ -371,7 +371,7 @@ describe('member_consents — 1 ativo por purpose + revoke', () => {
       [TENANT_REDE, memberId],
     )
     const r = await withMemberContext(memberId, TENANT_REDE, async (c) => {
-      return c.query(`UPDATE member_consents SET revoked_at = now() WHERE id = $1`, [
+      return c.query('UPDATE member_consents SET revoked_at = now() WHERE id = $1', [
         ins.rows[0]!.id,
       ])
     })

@@ -274,6 +274,7 @@ export default async function ExamDetailPage({ params }: PageProps) {
               <h2 style={{ marginTop: 0 }}>Exames sugeridos para complementar</h2>
               <ul>
                 {followUp.map((s, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: lista read-only de strings sugeridas pela IA, sem id e possivelmente repetidas; nunca reordena
                   <li key={i}>{s}</li>
                 ))}
               </ul>

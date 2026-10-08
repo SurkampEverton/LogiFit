@@ -55,7 +55,7 @@ describe('Passaporte — isolamento per-tenant', () => {
   it('Academia vê APENAS seu link do Carlos', async () => {
     const links = await withTenantContext(ACADEMIA_TENANT, async (client) => {
       const r = await client.query<{ status: string; tenant_id: string }>(
-        `SELECT status, tenant_id FROM patient_company_links WHERE passport_passport_id = $1`,
+        'SELECT status, tenant_id FROM patient_company_links WHERE passport_passport_id = $1',
         [PASSPORT_CARLOS],
       )
       return r.rows
@@ -68,7 +68,7 @@ describe('Passaporte — isolamento per-tenant', () => {
   it('Clinica vê APENAS seu link do Carlos', async () => {
     const links = await withTenantContext(CLINICA_TENANT, async (client) => {
       const r = await client.query<{ tenant_id: string }>(
-        `SELECT tenant_id FROM patient_company_links WHERE passport_passport_id = $1`,
+        'SELECT tenant_id FROM patient_company_links WHERE passport_passport_id = $1',
         [PASSPORT_CARLOS],
       )
       return r.rows
@@ -80,7 +80,7 @@ describe('Passaporte — isolamento per-tenant', () => {
   it('Tenant solo (Mariana) NÃO vê passaporte do Carlos', async () => {
     const links = await withTenantContext(SOLO_TENANT, async (client) => {
       const r = await client.query<{ id: string }>(
-        `SELECT id FROM patient_company_links WHERE passport_passport_id = $1`,
+        'SELECT id FROM patient_company_links WHERE passport_passport_id = $1',
         [PASSPORT_CARLOS],
       )
       return r.rows
@@ -137,7 +137,7 @@ describe('Constraint global — 1 módulo ativo por (passport, module)', () => {
         ],
       )
       const linkRes = await client.query<{ id: string }>(
-        `SELECT id FROM patient_company_links WHERE tenant_id = $1 AND passport_passport_id = $2 ORDER BY created_at DESC LIMIT 1`,
+        'SELECT id FROM patient_company_links WHERE tenant_id = $1 AND passport_passport_id = $2 ORDER BY created_at DESC LIMIT 1',
         [SOLO_TENANT, PASSPORT_CARLOS],
       )
       const newLinkId = linkRes.rows[0]?.id
@@ -155,7 +155,7 @@ describe('Constraint global — 1 módulo ativo por (passport, module)', () => {
       }
 
       // Cleanup
-      await client.query(`DELETE FROM patient_company_links WHERE id = $1`, [newLinkId])
+      await client.query('DELETE FROM patient_company_links WHERE id = $1', [newLinkId])
     } finally {
       client.release()
     }
@@ -215,7 +215,7 @@ describe('patient_data_access_log — append-only', () => {
 
     // Cleanup (como admin)
     if (logId) {
-      await pool.query(`DELETE FROM patient_data_access_log WHERE id = $1`, [logId])
+      await pool.query('DELETE FROM patient_data_access_log WHERE id = $1', [logId])
     }
   })
 })
@@ -238,7 +238,7 @@ describe('tenants.mode=solo — check constraint', () => {
 
   it('Permite mode=solo com cross_company_access=false (seed cenário 5)', async () => {
     const r = await pool.query<{ mode: string; cross_company_access: boolean }>(
-      `SELECT mode, cross_company_access FROM tenants WHERE id = $1`,
+      'SELECT mode, cross_company_access FROM tenants WHERE id = $1',
       [SOLO_TENANT],
     )
     expect(r.rows[0]?.mode).toBe('solo')

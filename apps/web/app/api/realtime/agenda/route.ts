@@ -50,7 +50,6 @@ export async function GET(request: Request) {
       try {
         client = await pool.connect()
         // LISTEN no canal do tenant
-        // biome-ignore lint/security/noNonNullAssertion: PoolClient.query existe
         await client.query(`LISTEN "${channel}"`)
 
         // pg client emite 'notification' nos LISTEN
@@ -66,7 +65,7 @@ export async function GET(request: Request) {
             clearInterval(pingInterval)
             return
           }
-          send(`: ping\n\n`)
+          send(': ping\n\n')
         }, 25_000)
 
         // Aguarda cancel (cliente fechou aba ou request abort)

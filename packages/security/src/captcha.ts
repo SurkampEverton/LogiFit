@@ -50,9 +50,7 @@ export async function verifyCaptcha(input: CaptchaVerifyInput): Promise<CaptchaV
 
   if (!secret) {
     if (process.env.NODE_ENV === 'production') {
-      throw new Error(
-        '[captcha] TURNSTILE_SECRET_KEY não setado em produção — config inválida',
-      )
+      throw new Error('[captcha] TURNSTILE_SECRET_KEY não setado em produção — config inválida')
     }
     // Mock: dev/test/storybook — aceita qualquer token não-vazio
     return {
@@ -92,9 +90,7 @@ export async function verifyCaptcha(input: CaptchaVerifyInput): Promise<CaptchaV
     return {
       valid: false,
       provider: 'turnstile',
-      errorCodes: [
-        err instanceof Error ? `fetch_error:${err.message}` : 'fetch_error:unknown',
-      ],
+      errorCodes: [err instanceof Error ? `fetch_error:${err.message}` : 'fetch_error:unknown'],
     }
   }
 }

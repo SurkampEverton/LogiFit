@@ -29,7 +29,7 @@ async function getMatriz(tenantId: string): Promise<string> {
 
 async function getOrCreateMember(tenantId: string): Promise<string> {
   const r = await pool.query<{ id: string }>(
-    `SELECT id FROM members WHERE tenant_id = $1 LIMIT 1`,
+    'SELECT id FROM members WHERE tenant_id = $1 LIMIT 1',
     [tenantId],
   )
   if (r.rows[0]) return r.rows[0].id
@@ -40,7 +40,7 @@ async function getOrCreateMember(tenantId: string): Promise<string> {
     [tenantId],
   )
   const m = await pool.query<{ id: string }>(
-    `INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id`,
+    'INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id',
     [tenantId, p.rows[0]!.id, companyId],
   )
   return m.rows[0]!.id
@@ -52,37 +52,37 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await pool
-    .query(`DELETE FROM device_incidents WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM device_incidents WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM device_consents WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM device_consents WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM device_readings_curated WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM device_readings_curated WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM device_readings_daily_summary WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM device_readings_daily_summary WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM device_readings WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM device_readings WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM device_connections WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM device_connections WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
@@ -177,11 +177,11 @@ describe('device_connections — unique active + isolation', () => {
     const cId = r.rows[0]!.id
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query(`SELECT id FROM device_connections WHERE id = $1`, [cId])
+        const x = await c.query('SELECT id FROM device_connections WHERE id = $1', [cId])
         return x.rows.length
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query(`SELECT id FROM device_connections WHERE id = $1`, [cId])
+        const x = await c.query('SELECT id FROM device_connections WHERE id = $1', [cId])
         return x.rows.length
       }),
     ])
@@ -240,11 +240,11 @@ describe('device_readings — dedup + isolation', () => {
     const rId = r.rows[0]!.id
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query(`SELECT id FROM device_readings WHERE id = $1`, [rId])
+        const x = await c.query('SELECT id FROM device_readings WHERE id = $1', [rId])
         return x.rows.length
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query(`SELECT id FROM device_readings WHERE id = $1`, [rId])
+        const x = await c.query('SELECT id FROM device_readings WHERE id = $1', [rId])
         return x.rows.length
       }),
     ])
@@ -351,11 +351,11 @@ describe('device_incidents — tenant scope', () => {
     const iId = inc.rows[0]!.id
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query(`SELECT id FROM device_incidents WHERE id = $1`, [iId])
+        const x = await c.query('SELECT id FROM device_incidents WHERE id = $1', [iId])
         return x.rows.length
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query(`SELECT id FROM device_incidents WHERE id = $1`, [iId])
+        const x = await c.query('SELECT id FROM device_incidents WHERE id = $1', [iId])
         return x.rows.length
       }),
     ])

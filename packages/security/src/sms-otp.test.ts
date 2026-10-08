@@ -9,12 +9,7 @@
  *   - 3 templates SMS pt-BR/en-US/es-419
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  generateOtpCode,
-  hashOtpCode,
-  sendSmsOtp,
-  verifyOtpCode,
-} from './sms-otp'
+import { generateOtpCode, hashOtpCode, sendSmsOtp, verifyOtpCode } from './sms-otp'
 
 describe('sms-otp', () => {
   describe('generateOtpCode', () => {
@@ -169,9 +164,7 @@ describe('sms-otp', () => {
       })
 
       it('lança quando faltam TWILIO_* em prod', async () => {
-        await expect(
-          sendSmsOtp({ phone: '+55119', code: '123456' }),
-        ).rejects.toThrow(/TWILIO_/)
+        await expect(sendSmsOtp({ phone: '+55119', code: '123456' })).rejects.toThrow(/TWILIO_/)
       })
     })
 
@@ -194,7 +187,9 @@ describe('sms-otp', () => {
 
         expect(fetchSpy).toHaveBeenCalledOnce()
         const [url, init] = fetchSpy.mock.calls[0]!
-        expect(url).toContain('https://api.twilio.com/2010-04-01/Accounts/AC_test_sid/Messages.json')
+        expect(url).toContain(
+          'https://api.twilio.com/2010-04-01/Accounts/AC_test_sid/Messages.json',
+        )
         expect(init.method).toBe('POST')
         expect(init.headers.authorization).toMatch(/^Basic /)
         // Basic auth = base64(account_sid:token)

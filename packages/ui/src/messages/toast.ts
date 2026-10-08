@@ -1,6 +1,6 @@
 'use client'
-import { toast as sonnerToast } from 'sonner'
 import type { ApiError } from '@repo/errors'
+import { toast as sonnerToast } from 'sonner'
 
 /**
  * Helpers imperativos de toast (regra 45 + ADR 0089).
@@ -42,8 +42,7 @@ export const toast = {
    * `request_id` aparece como description (com botão copy futuro).
    */
   fromApiError(error: ApiError) {
-    const isCritical =
-      error.code === 'INTERNAL_ERROR' || error.code === 'SERVICE_UNAVAILABLE'
+    const isCritical = error.code === 'INTERNAL_ERROR' || error.code === 'SERVICE_UNAVAILABLE'
     const fn = isCritical ? toast.critical : toast.error
     return fn(error.message, {
       description: `request_id: ${error.request_id}`,

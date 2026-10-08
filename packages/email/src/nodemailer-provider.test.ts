@@ -25,9 +25,7 @@ describe('NodemailerEmailProvider', () => {
       const realCreateTransport = nodemailer.createTransport
       const createSpy = vi
         .spyOn(nodemailer, 'createTransport')
-        .mockImplementation(() =>
-          realCreateTransport({ jsonTransport: true }),
-        )
+        .mockImplementation(() => realCreateTransport({ jsonTransport: true }))
 
       const provider = new NodemailerEmailProvider({
         host: 'localhost',
@@ -83,9 +81,9 @@ describe('NodemailerEmailProvider', () => {
       vi.spyOn(nodemailer, 'createTransport').mockImplementation(
         () =>
           ({
-            sendMail: vi.fn().mockRejectedValue(
-              Object.assign(new Error('Invalid login'), { code: 'EAUTH' }),
-            ),
+            sendMail: vi
+              .fn()
+              .mockRejectedValue(Object.assign(new Error('Invalid login'), { code: 'EAUTH' })),
             close: vi.fn(),
             // biome-ignore lint/suspicious/noExplicitAny: mock interno test-only
           }) as any,
@@ -147,9 +145,9 @@ describe('NodemailerEmailProvider', () => {
       vi.spyOn(nodemailer, 'createTransport').mockImplementation(
         () =>
           ({
-            sendMail: vi.fn().mockRejectedValue(
-              Object.assign(new Error('No recipients'), { code: 'EENVELOPE' }),
-            ),
+            sendMail: vi
+              .fn()
+              .mockRejectedValue(Object.assign(new Error('No recipients'), { code: 'EENVELOPE' })),
             close: vi.fn(),
             // biome-ignore lint/suspicious/noExplicitAny: mock interno test-only
           }) as any,
@@ -176,9 +174,11 @@ describe('NodemailerEmailProvider', () => {
       vi.spyOn(nodemailer, 'createTransport').mockImplementation(
         () =>
           ({
-            sendMail: vi.fn().mockRejectedValue(
-              Object.assign(new Error('Some weird error'), { code: 'EWHATEVER' }),
-            ),
+            sendMail: vi
+              .fn()
+              .mockRejectedValue(
+                Object.assign(new Error('Some weird error'), { code: 'EWHATEVER' }),
+              ),
             close: vi.fn(),
             // biome-ignore lint/suspicious/noExplicitAny: mock interno test-only
           }) as any,

@@ -19,7 +19,7 @@
  * Quando uma feature do Sprint 01a/02 introduzir o padrão, o lint começa a
  * enforçar automaticamente — zero refactor pós-fato.
  */
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { extname, join, relative } from 'node:path'
 
 const ROOT = process.cwd()
@@ -84,10 +84,7 @@ function hasExemption(lines, idx, tag) {
   if (current.includes(tag)) return true
   const above = lines[idx - 1] ?? ''
   const aboveTrimmed = above.trim()
-  if (
-    (aboveTrimmed.startsWith('//') || aboveTrimmed.startsWith('*')) &&
-    above.includes(tag)
-  ) {
+  if ((aboveTrimmed.startsWith('//') || aboveTrimmed.startsWith('*')) && above.includes(tag)) {
     return true
   }
   return false
@@ -347,8 +344,7 @@ function checkHighRiskActionMfa(file, lines) {
 // ───────────────────────────────────────────────────────────
 const RE_HAS_CROSS_TENANT_ACCESS = /\bhas_cross_tenant_access\s*\(/
 // Match Drizzle insert `db.insert(patientDataAccessLog)` OR raw SQL `INSERT INTO patient_data_access_log`
-const RE_ACCESS_LOG_WRITE =
-  /\b(?:patientDataAccessLog|INSERT\s+INTO\s+patient_data_access_log)\b/i
+const RE_ACCESS_LOG_WRITE = /\b(?:patientDataAccessLog|INSERT\s+INTO\s+patient_data_access_log)\b/i
 function checkCrossTenantReadMustLog(file, lines) {
   if (file.includes('.test.')) return
   if (file.includes('e2e')) return

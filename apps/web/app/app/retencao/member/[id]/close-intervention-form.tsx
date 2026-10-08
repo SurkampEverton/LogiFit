@@ -36,7 +36,7 @@ export function CloseInterventionForm({ interventionId }: { interventionId: stri
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="ev-btn ev-btn-ghost">
+      <button type="button" onClick={() => setOpen(true)} className="ev-btn ev-btn-ghost">
         Encerrar
       </button>
     )

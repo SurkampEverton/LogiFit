@@ -97,7 +97,7 @@ export default async function EvolucoesListPage({
               <th>Vinculada agendamento?</th>
               <th>Fechada em</th>
               <th>Anexos</th>
-              <th></th>
+              <th />
             </tr>
           </thead>
           <tbody>

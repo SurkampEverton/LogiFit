@@ -1,3 +1,4 @@
+import { cnpjCache } from '@repo/db/schema'
 /**
  * Cache `cnpj_cache` — leitura/escrita do dado normalizado por 7 dias.
  *
@@ -8,11 +9,10 @@
  * configurável por tenant via `tenant_cnpj_settings` (raramente
  * necessário — dado muda pouco).
  */
-import { eq, sql as drizzleSql } from 'drizzle-orm'
+import { sql as drizzleSql, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import { cnpjCache } from '@repo/db/schema'
-import { cnpjDataSchema, type CnpjData } from './types'
+import { type CnpjData, cnpjDataSchema } from './types'
 
 const CACHE_TTL_DAYS = 7
 const CACHE_TTL_MS = CACHE_TTL_DAYS * 24 * 60 * 60 * 1000
@@ -59,9 +59,7 @@ export async function readCache(cnpj: string): Promise<CnpjData | null> {
   const parsed = cnpjDataSchema.safeParse(row.data)
   if (!parsed.success) {
     // Cache corrompido — log + retorna null pra forçar re-fetch
-    console.warn(
-      `[cnpj/cache] cache corrompido pra ${cnpj}: ${parsed.error.message.slice(0, 200)}`,
-    )
+    console.warn(`[cnpj/cache] cache corrompido pra ${cnpj}: ${parsed.error.message.slice(0, 200)}`)
     return null
   }
   return parsed.data
@@ -112,8 +110,6 @@ export async function invalidateCache(cnpj: string): Promise<void> {
  */
 export async function purgeExpiredCache(): Promise<number> {
   const { db } = getClient()
-  const result = await db
-    .delete(cnpjCache)
-    .where(drizzleSql`${cnpjCache.expiresAt} < NOW()`)
+  const result = await db.delete(cnpjCache).where(drizzleSql`${cnpjCache.expiresAt} < NOW()`)
   return result.rowCount ?? 0
 }

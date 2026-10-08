@@ -299,8 +299,8 @@ export const listBankTransactions = wrapServerAction(
     if (parsed.reconciled === 'yes') where.push(sql`${bankTransactions.reconciledAt} IS NOT NULL`)
     if (parsed.reconciled === 'no') where.push(isNull(bankTransactions.reconciledAt))
     if (parsed.from)
-      where.push(gte(bankTransactions.postedAt, new Date(parsed.from + 'T00:00:00Z')))
-    if (parsed.to) where.push(lte(bankTransactions.postedAt, new Date(parsed.to + 'T23:59:59Z')))
+      where.push(gte(bankTransactions.postedAt, new Date(`${parsed.from}T00:00:00Z`)))
+    if (parsed.to) where.push(lte(bankTransactions.postedAt, new Date(`${parsed.to}T23:59:59Z`)))
 
     const rows = await db
       .select({
@@ -422,7 +422,6 @@ export const suggestMatchesAction = wrapServerAction(
       })
 
     // Carrega candidatos AP/AR pendentes próximos da data (±30 dias)
-    const postedDate = new Date(tx.postedAt).toISOString().slice(0, 10)
     const fromDate = new Date(tx.postedAt)
     fromDate.setDate(fromDate.getDate() - 30)
     const toDate = new Date(tx.postedAt)
@@ -468,8 +467,12 @@ export const suggestMatchesAction = wrapServerAction(
 
     // Resolve nomes dos persons
     const personIds = new Set<string>()
-    aps.forEach((a) => a.supplierPersonId && personIds.add(a.supplierPersonId))
-    ars.forEach((a) => a.payerPersonId && personIds.add(a.payerPersonId))
+    for (const a of aps) {
+      if (a.supplierPersonId) personIds.add(a.supplierPersonId)
+    }
+    for (const a of ars) {
+      if (a.payerPersonId) personIds.add(a.payerPersonId)
+    }
     const personRows =
       personIds.size > 0
         ? await db

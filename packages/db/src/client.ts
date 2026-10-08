@@ -34,7 +34,7 @@ function wrapScopedClient(client: PoolClient): PoolClient {
   const cached = scopedWrappers.get(client)
   if (cached) return cached
   const proxy = new Proxy(client, {
-    get(target, prop, receiver) {
+    get(target, prop) {
       if (prop === 'release') return () => undefined
       const value = Reflect.get(target, prop, target)
       return typeof value === 'function' ? value.bind(target) : value

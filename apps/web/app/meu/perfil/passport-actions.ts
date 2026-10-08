@@ -92,7 +92,7 @@ export const changePassword = wrapPassportAction(
   async (input, { session }) => {
     // 1. Busca password_hash atual
     const r = await pool.query<{ password_hash: string }>(
-      `SELECT password_hash FROM passport_global_identities WHERE id = $1 LIMIT 1`,
+      'SELECT password_hash FROM passport_global_identities WHERE id = $1 LIMIT 1',
       [session.passportGlobalId],
     )
     const identity = r.rows[0]
@@ -149,10 +149,11 @@ export const regenerateRecoveryCodes = wrapPassportAction(
     resourceType: 'passport_global_identities',
     requireMfa: true,
   },
+  // biome-ignore lint/suspicious/noConfusingVoidType: `void` torna o parâmetro opcional para o caller chamar a action sem argumento; `undefined` quebraria os call sites (TS2554)
   async (_input: void, { session }) => {
     // Valida MFA já está enrolled (sem MFA, não há codes pra regenerar)
     const r = await pool.query<{ mfa_enrolled_at: Date | null }>(
-      `SELECT mfa_enrolled_at FROM passport_global_identities WHERE id = $1 LIMIT 1`,
+      'SELECT mfa_enrolled_at FROM passport_global_identities WHERE id = $1 LIMIT 1',
       [session.passportGlobalId],
     )
     if (!r.rows[0]?.mfa_enrolled_at) {
@@ -195,6 +196,7 @@ export const listMyPassportSessions = wrapPassportAction(
     returnTo: '/meu/perfil',
     // SEM requireMfa — read-only audit
   },
+  // biome-ignore lint/suspicious/noConfusingVoidType: `void` torna o parâmetro opcional para o caller chamar a action sem argumento; `undefined` quebraria os call sites (TS2554)
   async (_input: void, { session }) => {
     const r = await pool.query<{
       id: string
@@ -280,7 +282,7 @@ export const deactivateAccount = wrapPassportAction(
   async (input, { session }) => {
     // 1. Valida email confirmação bate (anti-clique-acidental)
     const r = await pool.query<{ email: string; deactivated_at: Date | null }>(
-      `SELECT email, deactivated_at FROM passport_global_identities WHERE id = $1 LIMIT 1`,
+      'SELECT email, deactivated_at FROM passport_global_identities WHERE id = $1 LIMIT 1',
       [session.passportGlobalId],
     )
     const identity = r.rows[0]
@@ -501,8 +503,8 @@ export const requestPassportEmailChange = wrapPassportAction(
     return {
       ok: true as const,
       note:
-        `Enviamos um link de confirmação pro novo email. Clique no link de lá pra ativar a troca. ` +
-        `O link expira em 24 horas. Você só pode pedir uma nova troca a cada 24 horas.`,
+        'Enviamos um link de confirmação pro novo email. Clique no link de lá pra ativar a troca. ' +
+        'O link expira em 24 horas. Você só pode pedir uma nova troca a cada 24 horas.',
     }
   },
 )
@@ -633,7 +635,7 @@ export async function confirmPassportEmailChange(input: unknown) {
   try {
     await client.query('BEGIN')
     await client.query(
-      `UPDATE passport_email_verification_tokens SET used_at = now() WHERE id = $1`,
+      'UPDATE passport_email_verification_tokens SET used_at = now() WHERE id = $1',
       [row.token_id],
     )
     await client.query(
@@ -696,6 +698,7 @@ export const resendPassportEmailVerification = wrapPassportAction(
     resourceType: 'passport_global_identities',
     requireMfa: false,
   },
+  // biome-ignore lint/suspicious/noConfusingVoidType: `void` torna o parâmetro opcional para o caller chamar a action sem argumento; `undefined` quebraria os call sites (TS2554)
   async (_input: void, { session }) => {
     // 1. Lookup identity (email atual + nome + status verificado)
     const r = await pool.query<{

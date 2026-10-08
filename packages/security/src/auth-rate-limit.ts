@@ -131,10 +131,7 @@ export async function recordAuthAttempt(input: RecordAttemptInput): Promise<void
     )
   } catch (err) {
     // Logging apenas — não propaga (não bloqueia login por audit-falha)
-    console.warn(
-      '[recordAuthAttempt] INSERT falhou:',
-      err instanceof Error ? err.message : err,
-    )
+    console.warn('[recordAuthAttempt] INSERT falhou:', err instanceof Error ? err.message : err)
   }
 }
 
@@ -207,9 +204,7 @@ export interface EvaluateLockoutResult {
  * por email (5 falhas no mesmo email de IPs diferentes = email comprometido)
  * E por IP (5 falhas no mesmo IP em emails diferentes = brute force).
  */
-export async function evaluateLockout(
-  input: EvaluateLockoutInput,
-): Promise<EvaluateLockoutResult> {
+export async function evaluateLockout(input: EvaluateLockoutInput): Promise<EvaluateLockoutResult> {
   const windowMs = input.windowMs ?? AUTH_FAILURE_WINDOW_MS
   const threshold = input.threshold ?? AUTH_LOCKOUT_THRESHOLD
   const durationMs = input.lockoutDurationMs ?? AUTH_LOCKOUT_DURATION_MS

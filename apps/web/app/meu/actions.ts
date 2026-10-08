@@ -108,7 +108,7 @@ export async function requestMagicLink(input: unknown) {
 
   // 1. Resolve tenant pelo slug
   const tenantRes = await pool.query<{ id: string }>(
-    `SELECT id FROM tenants WHERE slug = $1 LIMIT 1`,
+    'SELECT id FROM tenants WHERE slug = $1 LIMIT 1',
     [tenantSlug],
   )
   const tenantId = tenantRes.rows[0]?.id
@@ -161,9 +161,7 @@ export async function requestMagicLink(input: unknown) {
   //
   //    Category 'platform' — magic link é canal de AUTH da plataforma
   //    (LogiFit é controlador LGPD da identidade global, ADR 0097)
-  const verifyUrl =
-    `https://${tenantSlug}.logifit.com.br/meu/login/verify?t=${link.token}` +
-    (redirectTo ? `&to=${encodeURIComponent(redirectTo)}` : '')
+  const verifyUrl = `https://${tenantSlug}.logifit.com.br/meu/login/verify?t=${link.token}${redirectTo ? `&to=${encodeURIComponent(redirectTo)}` : ''}`
 
   const emailResult = await sendTransactional({
     to: email,
@@ -258,7 +256,7 @@ export async function verifyMagicLink(input: unknown) {
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
-    await client.query(`UPDATE member_auth_tokens SET used_at = now() WHERE id = $1`, [row.id])
+    await client.query('UPDATE member_auth_tokens SET used_at = now() WHERE id = $1', [row.id])
     await client.query(
       `INSERT INTO member_sessions (tenant_id, member_id, refresh_token_hash, expires_at, device_label)
        VALUES ($1, $2, $3, $4, $5)`,

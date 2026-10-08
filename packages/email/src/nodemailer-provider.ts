@@ -14,11 +14,7 @@
 
 import nodemailer, { type Transporter } from 'nodemailer'
 import { resolveEmailSender } from './resolve-sender'
-import type {
-  EmailProvider,
-  SendTransactionalInput,
-  SendTransactionalResult,
-} from './types'
+import type { EmailProvider, SendTransactionalInput, SendTransactionalResult } from './types'
 
 export interface NodemailerProviderConfig {
   host: string
@@ -57,9 +53,7 @@ export class NodemailerEmailProvider implements EmailProvider {
     })
   }
 
-  async sendTransactional(
-    input: SendTransactionalInput,
-  ): Promise<SendTransactionalResult> {
+  async sendTransactional(input: SendTransactionalInput): Promise<SendTransactionalResult> {
     let sender: ReturnType<typeof resolveEmailSender>
     try {
       sender = resolveEmailSender(input)

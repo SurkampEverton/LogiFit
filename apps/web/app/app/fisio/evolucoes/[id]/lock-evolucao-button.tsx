@@ -39,7 +39,7 @@ export function LockEvolucaoButton({ evolucaoId }: { evolucaoId: string }) {
           <option value="icp_brasil">✍️ ICP-Brasil (opcional)</option>
         </select>
       </label>
-      <button onClick={submit} className="ev-btn ev-btn-primary" disabled={pending}>
+      <button type="button" onClick={submit} className="ev-btn ev-btn-primary" disabled={pending}>
         {pending ? 'Fechando...' : '🔒 Fechar evolução'}
       </button>
       {error && (

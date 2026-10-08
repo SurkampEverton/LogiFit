@@ -72,7 +72,7 @@ describe('process_trial_lifecycle — transições de estado', () => {
     await pool.query('SELECT process_trial_lifecycle()')
 
     const r = await pool.query<{ subscription_status: string }>(
-      `SELECT subscription_status FROM tenants WHERE id = $1`,
+      'SELECT subscription_status FROM tenants WHERE id = $1',
       [TRIAL_TENANT_ACTIVE],
     )
     expect(r.rows[0]?.subscription_status).toBe('trialing')
@@ -84,7 +84,7 @@ describe('process_trial_lifecycle — transições de estado', () => {
     await pool.query('SELECT process_trial_lifecycle()')
 
     const r = await pool.query<{ subscription_status: string }>(
-      `SELECT subscription_status FROM tenants WHERE id = $1`,
+      'SELECT subscription_status FROM tenants WHERE id = $1',
       [TRIAL_TENANT_EXPIRED],
     )
     expect(r.rows[0]?.subscription_status).toBe('trial_expired')
@@ -94,13 +94,13 @@ describe('process_trial_lifecycle — transições de estado', () => {
     await createTrialTenant(TRIAL_TENANT_OLD, 'old-trial', 35, 'trial_expired')
 
     const result = await pool.query<{ process_trial_lifecycle: { newly_anonymized: number } }>(
-      `SELECT process_trial_lifecycle() AS process_trial_lifecycle`,
+      'SELECT process_trial_lifecycle() AS process_trial_lifecycle',
     )
     expect(result.rows[0]?.process_trial_lifecycle.newly_anonymized).toBe(1)
 
     // Confere status
     const tenant = await pool.query<{ subscription_status: string }>(
-      `SELECT subscription_status FROM tenants WHERE id = $1`,
+      'SELECT subscription_status FROM tenants WHERE id = $1',
       [TRIAL_TENANT_OLD],
     )
     expect(tenant.rows[0]?.subscription_status).toBe('anonymized')
@@ -111,7 +111,7 @@ describe('process_trial_lifecycle — transições de estado', () => {
       document: string | null
       email: string | null
       phone: string | null
-    }>(`SELECT name, document, email, phone FROM persons WHERE tenant_id = $1`, [TRIAL_TENANT_OLD])
+    }>('SELECT name, document, email, phone FROM persons WHERE tenant_id = $1', [TRIAL_TENANT_OLD])
     expect(people.rows).toHaveLength(2)
     for (const p of people.rows) {
       expect(p.name).toBe('Anonimizado')
@@ -125,7 +125,7 @@ describe('process_trial_lifecycle — transições de estado', () => {
       action: string
       legal_basis: string | null
       payload: { aggregates_preserved: { persons_count: number } }
-    }>(`SELECT action, legal_basis, payload FROM audit_log WHERE tenant_id = $1`, [
+    }>('SELECT action, legal_basis, payload FROM audit_log WHERE tenant_id = $1', [
       TRIAL_TENANT_OLD,
     ])
     expect(audit.rows).toHaveLength(1)
@@ -152,7 +152,7 @@ describe('process_trial_lifecycle — transições de estado', () => {
     await createTrialTenant(TRIAL_TENANT_OLD, 'old-aggregates', 35, 'trial_expired')
 
     const beforeCount = await pool.query<{ count: string }>(
-      `SELECT COUNT(*)::text FROM persons WHERE tenant_id = $1`,
+      'SELECT COUNT(*)::text FROM persons WHERE tenant_id = $1',
       [TRIAL_TENANT_OLD],
     )
     expect(Number.parseInt(beforeCount.rows[0]?.count ?? '0', 10)).toBe(2)
@@ -160,7 +160,7 @@ describe('process_trial_lifecycle — transições de estado', () => {
     await pool.query('SELECT process_trial_lifecycle()')
 
     const afterCount = await pool.query<{ count: string }>(
-      `SELECT COUNT(*)::text FROM persons WHERE tenant_id = $1`,
+      'SELECT COUNT(*)::text FROM persons WHERE tenant_id = $1',
       [TRIAL_TENANT_OLD],
     )
     expect(Number.parseInt(afterCount.rows[0]?.count ?? '0', 10)).toBe(2)
@@ -177,7 +177,7 @@ describe('anonymize_trial_data — chamada direta', () => {
         anonymized: boolean
         aggregates_preserved: { persons_count: number }
       }
-    }>(`SELECT anonymize_trial_data($1) AS anonymize_trial_data`, [TRIAL_TENANT_OLD])
+    }>('SELECT anonymize_trial_data($1) AS anonymize_trial_data', [TRIAL_TENANT_OLD])
 
     expect(result.rows[0]?.anonymize_trial_data.anonymized).toBe(true)
     expect(result.rows[0]?.anonymize_trial_data.aggregates_preserved.persons_count).toBe(2)
@@ -186,10 +186,10 @@ describe('anonymize_trial_data — chamada direta', () => {
   it('skip se já anonymized (idempotência intra-função)', async () => {
     await createTrialTenant(TRIAL_TENANT_OLD, 'already-anon', 35, 'trial_expired')
     // Primeira chamada
-    await pool.query(`SELECT anonymize_trial_data($1)`, [TRIAL_TENANT_OLD])
+    await pool.query('SELECT anonymize_trial_data($1)', [TRIAL_TENANT_OLD])
     // Segunda chamada
     const result = await pool.query<{ anonymize_trial_data: { skipped?: boolean } }>(
-      `SELECT anonymize_trial_data($1) AS anonymize_trial_data`,
+      'SELECT anonymize_trial_data($1) AS anonymize_trial_data',
       [TRIAL_TENANT_OLD],
     )
     expect(result.rows[0]?.anonymize_trial_data.skipped).toBe(true)

@@ -138,7 +138,7 @@ export function NewTemplateForm() {
         </div>
         {detectedVars.length === 0 ? (
           <p className="text-xs italic text-[color:var(--ev-text-muted)]">
-            Use <code>{`{{var.path}}`}</code> no corpo pra criar variáveis.
+            Use <code>{'{{var.path}}'}</code> no corpo pra criar variáveis.
           </p>
         ) : (
           <div className="flex gap-1 flex-wrap">
@@ -153,8 +153,8 @@ export function NewTemplateForm() {
           </div>
         )}
         <p className="text-[10px] text-[color:var(--ev-text-muted)]">
-          Sugestões: <code>{`{{member.name}}`}</code>, <code>{`{{member.email}}`}</code>,{' '}
-          <code>{`{{invoice.amount}}`}</code>, <code>{`{{invoice.due_date}}`}</code>
+          Sugestões: <code>{'{{member.name}}'}</code>, <code>{'{{member.email}}'}</code>,{' '}
+          <code>{'{{invoice.amount}}'}</code>, <code>{'{{invoice.due_date}}'}</code>
         </p>
       </div>
 

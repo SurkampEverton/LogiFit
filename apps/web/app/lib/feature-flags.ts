@@ -50,7 +50,7 @@ export async function isFeatureEnabled(key: string): Promise<boolean> {
 
   try {
     const r = await pool.query<{ enabled: boolean }>(
-      `SELECT enabled FROM feature_flags WHERE key = $1 LIMIT 1`,
+      'SELECT enabled FROM feature_flags WHERE key = $1 LIMIT 1',
       [key],
     )
     const enabled = r.rows[0]?.enabled ?? false

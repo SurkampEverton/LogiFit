@@ -194,7 +194,7 @@ export default async function RetencaoHomePage() {
               <th>Fonte</th>
               <th>Intervenção?</th>
               <th>Última predição</th>
-              <th></th>
+              <th />
             </tr>
           </thead>
           <tbody>

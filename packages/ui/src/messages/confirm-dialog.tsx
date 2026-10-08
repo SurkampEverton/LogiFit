@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
 
 /**
  * ConfirmDialog — substitui `window.confirm()` (proibido pela regra 45 + ADR 0089).
@@ -116,17 +116,14 @@ export function ConfirmDialog(): React.ReactElement | null {
             gap: 'var(--ev-space-2)',
           }}
         >
-          <button
-            type="button"
-            onClick={() => handle(false)}
-            className="ev-btn ev-btn-ghost"
-          >
+          <button type="button" onClick={() => handle(false)} className="ev-btn ev-btn-ghost">
             {cancelLabel}
           </button>
           <button
             type="button"
             onClick={() => handle(true)}
             className={options.danger ? 'ev-btn ev-btn-danger' : 'ev-btn ev-btn-primary'}
+            // biome-ignore lint/a11y/noAutofocus: foco inicial no botão de ação dentro de <dialog> modal, conforme o padrão WAI-ARIA de diálogo
             autoFocus
           >
             {confirmLabel}

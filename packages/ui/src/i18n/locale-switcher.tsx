@@ -15,7 +15,7 @@
  * `aria-label` obrigatório pra screen reader (sem label visível por design —
  * geralmente vai no header compacto).
  */
-import { LOCALE_NAMES, LOCALES, type Locale } from '@repo/i18n'
+import { LOCALES, LOCALE_NAMES, type Locale } from '@repo/i18n'
 import { useId, useTransition } from 'react'
 
 interface Props {

@@ -18,7 +18,7 @@
  *     <RescheduleForm onSuccess={() => setOpen(false)} />
  *   </ResponsiveModal>
  */
-import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { type ReactNode, useEffect, useId, useRef } from 'react'
 
 interface Props {
   open: boolean
@@ -53,6 +53,7 @@ export function ResponsiveModal({
   }, [open])
 
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: o clique é só atalho de mouse para fechar pelo backdrop; teclado fecha via Esc nativo do <dialog> modal (evento close → onOpenChange(false))
     <dialog
       ref={dialogRef}
       aria-labelledby={titleId}

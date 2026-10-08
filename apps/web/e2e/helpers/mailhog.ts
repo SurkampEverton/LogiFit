@@ -86,13 +86,13 @@ export function extractUrlFromBody(body: string, pattern?: RegExp): string | nul
  * de emails enviados via nodemailer (que codifica linhas longas).
  */
 export function decodeQuotedPrintable(input: string): string {
-  return input
-    // Soft line breaks: =\n ou =\r\n (juntam linhas quebradas)
-    .replace(/=\r?\n/g, '')
-    // Hex escapes: =XX
-    .replace(/=([0-9A-Fa-f]{2})/g, (_, hex) =>
-      String.fromCharCode(Number.parseInt(hex, 16)),
-    )
+  return (
+    input
+      // Soft line breaks: =\n ou =\r\n (juntam linhas quebradas)
+      .replace(/=\r?\n/g, '')
+      // Hex escapes: =XX
+      .replace(/=([0-9A-Fa-f]{2})/g, (_, hex) => String.fromCharCode(Number.parseInt(hex, 16)))
+  )
 }
 
 /**
@@ -103,9 +103,11 @@ function decodeMimeHeader(header: string): string {
   return header.replace(/=\?UTF-8\?([QB])\?([^?]+)\?=/gi, (_, enc, data) => {
     if (enc.toUpperCase() === 'Q') {
       // Quoted-printable encoding pra header (similar mas underscore vira espaço)
-      return data.replace(/_/g, ' ').replace(/=([0-9A-Fa-f]{2})/g, (__: string, hex: string) =>
-        String.fromCharCode(Number.parseInt(hex, 16)),
-      )
+      return data
+        .replace(/_/g, ' ')
+        .replace(/=([0-9A-Fa-f]{2})/g, (__: string, hex: string) =>
+          String.fromCharCode(Number.parseInt(hex, 16)),
+        )
     }
     // Base64
     return Buffer.from(data, 'base64').toString('utf-8')
