@@ -1,0 +1,12 @@
+# Arquivos gitignored que o Claude Code copia para todo worktree novo.
+# Sintaxe de .gitignore. So copia o que casa com o padrao E e' gitignored —
+# arquivo rastreado nunca e' duplicado.
+#
+# POR QUE: worktree e' checkout limpo. Sem isto ele nasce sem .env.local e o
+# app nao sobe (os scripts da raiz carregam as variaveis com
+# `dotenv -e .env.local`), e a sessao gasta o comeco descobrindo por que.
+#
+# Vale para: `claude --worktree`, worktree de subagente, e as sessoes paralelas
+# do app desktop. NAO vale se algum dia houver hook WorktreeCreate — nesse caso
+# a copia tem de ser feita dentro do proprio hook.
+.env.local

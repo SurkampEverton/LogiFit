@@ -1,0 +1,62 @@
+{
+  "autoCompactWindow": 300000,
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
+    "CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS": "4",
+    "CLAUDE_CODE_GLOB_NO_IGNORE": "false",
+    "CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION": "false"
+  },
+  "permissions": {
+    "deny": ["Read(**/migrations/meta/*_snapshot.json)"]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/scripts/hooks/estado-sessao.mjs\"; [ ! -f \"$f\" ] || node \"$f\"",
+            "timeout": 15,
+            "statusMessage": "Estado da sessao: branch, PR e handoff..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/scripts/hooks/revisao-guard.sh\"; [ ! -f \"$f\" ] || bash \"$f\"",
+            "timeout": 15,
+            "statusMessage": "Guard: revisao adversarial antes da PR..."
+          }
+        ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/scripts/hooks/agente-modelo.mjs\"; [ ! -f \"$f\" ] || node \"$f\"",
+            "timeout": 10,
+            "statusMessage": "Subagente: modelo padrao..."
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/scripts/hooks/revisao-marca.mjs\"; [ ! -f \"$f\" ] || node \"$f\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

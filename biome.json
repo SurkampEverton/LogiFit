@@ -17,6 +17,7 @@
       "**/build",
       "**/out",
       "prototipo/**",
+      "scripts/hooks/**",
       "Img/**",
       "*.OTF",
       "**/*.tsbuildinfo"

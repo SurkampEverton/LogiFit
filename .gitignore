@@ -33,6 +33,9 @@ Thumbs.db
 # Claude Code — local settings (não versionar)
 .claude/settings.local.json
 
+# Claude Code — worktrees locais (cada um é um checkout completo)
+.claude/worktrees/
+
 # Docker dev volumes (Postgres + Redis + MinIO + Mailhog + GlitchTip)
 .docker-data/
 
