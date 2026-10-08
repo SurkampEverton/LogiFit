@@ -7,9 +7,7 @@
     "CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION": "false"
   },
   "permissions": {
-    "deny": [
-      "Read(**/migrations/meta/*_snapshot.json)"
-    ]
+    "deny": ["Read(**/migrations/meta/*_snapshot.json)"]
   },
   "hooks": {
     "SessionStart": [
