@@ -100,6 +100,7 @@ export default async function ReguasListPage() {
                 </div>
                 <div className="flex gap-1 flex-wrap text-[11px] text-[color:var(--ev-text-muted)]">
                   {actions.slice(0, 5).map((a, idx) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: badges read-only de passos da régua, sem id; a ordem é o significado e nunca muda no cliente
                     <span key={idx} className="rounded-full bg-[color:var(--ev-bg)] px-2 py-0.5">
                       {a.kind === 'send_message' ? `📤 ${a.channel}` : '⏱️ wait'}
                     </span>

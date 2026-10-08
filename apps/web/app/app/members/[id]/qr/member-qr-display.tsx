@@ -45,6 +45,7 @@ function QrPlaceholder({ value }: { value: string }) {
       width="280"
       height="280"
       style={{ display: 'block', margin: '0 auto' }}
+      role="img"
       aria-label="QR code de acesso"
     >
       <rect width="25" height="25" fill="white" />
@@ -52,6 +53,7 @@ function QrPlaceholder({ value }: { value: string }) {
         const x = i % 25
         const y = Math.floor(i / 25)
         if (!on) return null
+        // biome-ignore lint/suspicious/noArrayIndexKey: o índice é a posição da célula no grid fixo 25x25 (identidade real); lista nunca reordena
         return <rect key={i} x={x} y={y} width="1" height="1" fill="black" />
       })}
       {/* Finder patterns (3 cantos) */}
@@ -93,21 +95,22 @@ export function MemberQrDisplay({ memberId }: { memberId: string }) {
     }
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refetch só quando memberId muda; fetchQr é recriada a cada render e só depende de memberId
   useEffect(() => {
     fetchQr()
-    // biome-ignore lint/correctness/useExhaustiveDependencies: fetchQr referencia memberId
   }, [memberId])
 
   // Auto-refresh 30s (antes do token vencer 60s)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intervalo criado uma vez no mount; fetchQr capturada fica presa ao memberId do mount (se memberId mudar sem remount, segue buscando o QR anterior)
   useEffect(() => {
     const id = setInterval(() => {
       fetchQr()
     }, 30_000)
     return () => clearInterval(id)
-    // biome-ignore lint/correctness/useExhaustiveDependencies: fetchQr não muda durante lifecycle
   }, [])
 
   // Countdown visual
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `data` não é lido no efeito; é dependência de propósito para reiniciar o tick de 1s a cada novo QR, alinhado ao countdown reiniciado
   useEffect(() => {
     const id = setInterval(() => {
       setCountdown((c) => (c > 0 ? c - 1 : 0))
@@ -116,13 +119,13 @@ export function MemberQrDisplay({ memberId }: { memberId: string }) {
   }, [data])
 
   // Refresh on tab visible
+  // biome-ignore lint/correctness/useExhaustiveDependencies: listener registrado uma vez no mount; fetchQr capturada fica presa ao memberId do mount (se memberId mudar sem remount, segue buscando o QR anterior)
   useEffect(() => {
     function onVis() {
       if (document.visibilityState === 'visible') fetchQr()
     }
     document.addEventListener('visibilitychange', onVis)
     return () => document.removeEventListener('visibilitychange', onVis)
-    // biome-ignore lint/correctness/useExhaustiveDependencies: fetchQr não muda
   }, [])
 
   if (error) {

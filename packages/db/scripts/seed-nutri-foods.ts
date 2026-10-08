@@ -950,7 +950,11 @@ async function main(): Promise<void> {
     const codeToId = new Map<string, string>()
 
     for (const f of FOODS) {
-      const nameNormalized = f.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      const nameNormalized = f.name
+        .toLowerCase()
+        .normalize('NFD')
+        // biome-ignore lint/suspicious/noMisleadingCharacterClass: falso positivo — o intervalo U+0300–U+036F remove os diacríticos já decompostos por normalize("NFD"); não há caractere base na classe
+        .replace(/[\u0300-\u036f]/g, '')
       const r = await pool.query<{ id: string }>(
         `INSERT INTO foods (tenant_id, source, external_code, name, name_normalized, category, preparation, nutrients)
          VALUES (NULL, 'taco', $1, $2, $3, $4::food_category, $5, $6::jsonb)
@@ -971,7 +975,7 @@ async function main(): Promise<void> {
       foodCount++
 
       // Limpa medidas anteriores antes de re-inserir (idempotente)
-      await pool.query(`DELETE FROM food_measures WHERE food_id = $1`, [foodId])
+      await pool.query('DELETE FROM food_measures WHERE food_id = $1', [foodId])
       for (const [i, m] of (f.measures ?? []).entries()) {
         await pool.query(
           `INSERT INTO food_measures (food_id, measure, grams, display_order)

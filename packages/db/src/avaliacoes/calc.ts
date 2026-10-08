@@ -47,7 +47,7 @@ export function calculateImc(input: ImcInput): CalcResult | null {
   if (input.weightKg <= 0 || input.heightCm <= 0) return null
   const heightM = input.heightCm / 100
   const imc = input.weightKg / (heightM * heightM)
-  if (!isFinite(imc) || imc <= 0 || imc > 100) return null
+  if (!Number.isFinite(imc) || imc <= 0 || imc > 100) return null
   const band = IMC_BANDS.find((b) => imc >= b.range[0] && imc < b.range[1])
   return {
     value: Math.round(imc * 100) / 100,

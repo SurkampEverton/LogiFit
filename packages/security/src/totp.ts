@@ -149,10 +149,7 @@ export function verifyTotp(
     try {
       const expectedToken = computeTotpToken(secretBase32, currentStep + i)
       const expectedBuf = Buffer.from(expectedToken, 'utf8')
-      if (
-        expectedBuf.length === tokenBuf.length &&
-        timingSafeEqual(expectedBuf, tokenBuf)
-      ) {
+      if (expectedBuf.length === tokenBuf.length && timingSafeEqual(expectedBuf, tokenBuf)) {
         matchFound = true
       }
     } catch {
@@ -175,7 +172,7 @@ export function verifyTotp(
 export function generateTotpUri(
   secretBase32: string,
   accountName: string,
-  issuer: string = 'LogiFit',
+  issuer = 'LogiFit',
 ): string {
   const label = `${issuer}:${accountName}`
   const params = new URLSearchParams({

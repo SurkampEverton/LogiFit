@@ -69,6 +69,7 @@ export function NewCategoryForm() {
         </div>
       )}
       {success && (
+        // biome-ignore lint/a11y/useSemanticElements: <output> é inline por padrão e quebraria o layout (borda/padding) do bloco de sucesso; role="status" num div é suficiente
         <div
           role="status"
           className="rounded-md border p-2 text-xs"

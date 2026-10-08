@@ -32,7 +32,7 @@ async function getMatriz(tenantId: string): Promise<string> {
 
 async function getOrCreateMember(tenantId: string): Promise<string> {
   const r = await pool.query<{ id: string }>(
-    `SELECT id FROM members WHERE tenant_id = $1 LIMIT 1`,
+    'SELECT id FROM members WHERE tenant_id = $1 LIMIT 1',
     [tenantId],
   )
   if (r.rows[0]) return r.rows[0].id
@@ -43,14 +43,14 @@ async function getOrCreateMember(tenantId: string): Promise<string> {
     [tenantId],
   )
   const m = await pool.query<{ id: string }>(
-    `INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id`,
+    'INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id',
     [tenantId, p.rows[0]!.id, companyId],
   )
   return m.rows[0]!.id
 }
 
 async function getUser(tenantId: string): Promise<string> {
-  const r = await pool.query<{ id: string }>(`SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`, [
+  const r = await pool.query<{ id: string }>('SELECT id FROM users WHERE tenant_id = $1 LIMIT 1', [
     tenantId,
   ])
   if (r.rows[0]) return r.rows[0].id
@@ -99,19 +99,19 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await pool
-    .query(`DELETE FROM workout_adaptations WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM workout_adaptations WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM member_injury_alerts WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM member_injury_alerts WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM cid_exercise_contraindications WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM cid_exercise_contraindications WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
@@ -127,19 +127,19 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await pool
-    .query(`DELETE FROM workout_adaptations WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM workout_adaptations WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM member_injury_alerts WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM member_injury_alerts WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM cid_exercise_contraindications WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM cid_exercise_contraindications WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
@@ -194,7 +194,7 @@ describe('cid_exercise_contraindications — global + tenant override', () => {
     ])
     expect(redeCount).toBe(1)
     expect(franqCount).toBe(1)
-    await pool.query(`DELETE FROM cid_exercise_contraindications WHERE tenant_id IS NULL`)
+    await pool.query('DELETE FROM cid_exercise_contraindications WHERE tenant_id IS NULL')
   })
 
   it('check at_least_one_target — sem exercise/muscle/movement rejeita', async () => {
@@ -254,14 +254,14 @@ describe('cid_exercise_contraindications — global + tenant override', () => {
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
         const x = await c.query(
-          `SELECT id FROM cid_exercise_contraindications WHERE id = $1 AND tenant_id IS NOT NULL`,
+          'SELECT id FROM cid_exercise_contraindications WHERE id = $1 AND tenant_id IS NOT NULL',
           [cId],
         )
         return x.rows.length
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
         const x = await c.query(
-          `SELECT id FROM cid_exercise_contraindications WHERE id = $1 AND tenant_id IS NOT NULL`,
+          'SELECT id FROM cid_exercise_contraindications WHERE id = $1 AND tenant_id IS NOT NULL',
           [cId],
         )
         return x.rows.length
@@ -353,11 +353,11 @@ describe('member_injury_alerts — isolation + checks', () => {
     const aId = r.rows[0]!.id
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query(`SELECT id FROM member_injury_alerts WHERE id = $1`, [aId])
+        const x = await c.query('SELECT id FROM member_injury_alerts WHERE id = $1', [aId])
         return x.rows.length
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query(`SELECT id FROM member_injury_alerts WHERE id = $1`, [aId])
+        const x = await c.query('SELECT id FROM member_injury_alerts WHERE id = $1', [aId])
         return x.rows.length
       }),
     ])
@@ -462,11 +462,11 @@ describe('workout_adaptations — 1:1 alert + checks', () => {
     const adId = r.rows[0]!.id
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query(`SELECT id FROM workout_adaptations WHERE id = $1`, [adId])
+        const x = await c.query('SELECT id FROM workout_adaptations WHERE id = $1', [adId])
         return x.rows.length
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query(`SELECT id FROM workout_adaptations WHERE id = $1`, [adId])
+        const x = await c.query('SELECT id FROM workout_adaptations WHERE id = $1', [adId])
         return x.rows.length
       }),
     ])

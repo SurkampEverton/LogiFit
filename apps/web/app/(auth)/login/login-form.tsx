@@ -53,6 +53,7 @@ export function LoginForm({
 
   if (status === 'sent') {
     return (
+      // biome-ignore lint/a11y/useSemanticElements: <output> é inline por padrão e quebraria o layout do bloco de confirmação; role="status" num div é suficiente
       <div
         role="status"
         className="rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-surface)] p-4 text-sm"

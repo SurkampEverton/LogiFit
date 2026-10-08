@@ -28,7 +28,7 @@ async function getMatriz(tenantId: string): Promise<string> {
 
 async function getOrCreateMember(tenantId: string): Promise<string> {
   const r = await pool.query<{ id: string }>(
-    `SELECT id FROM members WHERE tenant_id = $1 LIMIT 1`,
+    'SELECT id FROM members WHERE tenant_id = $1 LIMIT 1',
     [tenantId],
   )
   if (r.rows[0]) return r.rows[0].id
@@ -39,14 +39,14 @@ async function getOrCreateMember(tenantId: string): Promise<string> {
     [tenantId],
   )
   const m = await pool.query<{ id: string }>(
-    `INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id`,
+    'INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id',
     [tenantId, p.rows[0]!.id, companyId],
   )
   return m.rows[0]!.id
 }
 
 async function getUser(tenantId: string): Promise<string> {
-  const r = await pool.query<{ id: string }>(`SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`, [
+  const r = await pool.query<{ id: string }>('SELECT id FROM users WHERE tenant_id = $1 LIMIT 1', [
     tenantId,
   ])
   if (r.rows[0]) return r.rows[0].id
@@ -68,25 +68,25 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await pool
-    .query(`DELETE FROM teleconsultation_sessions WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM teleconsultation_sessions WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM meal_log_reviews WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM meal_log_reviews WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM food_log_daily_summary WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM food_log_daily_summary WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM meal_log_entries WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM meal_log_entries WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
@@ -96,25 +96,25 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await pool
-    .query(`DELETE FROM teleconsultation_sessions WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM teleconsultation_sessions WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM meal_log_reviews WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM meal_log_reviews WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM food_log_daily_summary WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM food_log_daily_summary WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM meal_log_entries WHERE tenant_id IN ($1, $2)`, [
+    .query('DELETE FROM meal_log_entries WHERE tenant_id IN ($1, $2)', [
       TENANT_REDE,
       TENANT_FRANQUIA,
     ])
@@ -197,11 +197,11 @@ describe('meal_log_entries — checks + isolation', () => {
     const eId = r.rows[0]!.id
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query(`SELECT id FROM meal_log_entries WHERE id = $1`, [eId])
+        const x = await c.query('SELECT id FROM meal_log_entries WHERE id = $1', [eId])
         return x.rows.length
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query(`SELECT id FROM meal_log_entries WHERE id = $1`, [eId])
+        const x = await c.query('SELECT id FROM meal_log_entries WHERE id = $1', [eId])
         return x.rows.length
       }),
     ])
@@ -279,11 +279,11 @@ describe('meal_log_reviews — isolation', () => {
     const rId = r.rows[0]!.id
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query(`SELECT id FROM meal_log_reviews WHERE id = $1`, [rId])
+        const x = await c.query('SELECT id FROM meal_log_reviews WHERE id = $1', [rId])
         return x.rows.length
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query(`SELECT id FROM meal_log_reviews WHERE id = $1`, [rId])
+        const x = await c.query('SELECT id FROM meal_log_reviews WHERE id = $1', [rId])
         return x.rows.length
       }),
     ])
@@ -388,11 +388,11 @@ describe('teleconsultation_sessions — checks + isolation', () => {
     const tId = await createBaseTeleconsulta(TENANT_REDE)
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query(`SELECT id FROM teleconsultation_sessions WHERE id = $1`, [tId])
+        const x = await c.query('SELECT id FROM teleconsultation_sessions WHERE id = $1', [tId])
         return x.rows.length
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query(`SELECT id FROM teleconsultation_sessions WHERE id = $1`, [tId])
+        const x = await c.query('SELECT id FROM teleconsultation_sessions WHERE id = $1', [tId])
         return x.rows.length
       }),
     ])

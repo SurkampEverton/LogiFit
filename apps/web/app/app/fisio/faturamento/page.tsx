@@ -182,7 +182,7 @@ export default async function FaturamentoPage({
               <th>Status</th>
               <th>Enviada</th>
               <th>Paga</th>
-              <th></th>
+              <th />
             </tr>
           </thead>
           <tbody>

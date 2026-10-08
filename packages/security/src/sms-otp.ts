@@ -70,8 +70,7 @@ export function verifyOtpCode(plain: string, hash: string): boolean {
 const SMS_TEMPLATES: Record<NonNullable<SmsOtpSendInput['locale']>, (code: string) => string> = {
   'pt-BR': (code) =>
     `Seu código LogiFit é ${code}. Válido por 5 minutos. Não compartilhe com ninguém.`,
-  'en-US': (code) =>
-    `Your LogiFit code is ${code}. Valid for 5 minutes. Do not share with anyone.`,
+  'en-US': (code) => `Your LogiFit code is ${code}. Valid for 5 minutes. Do not share with anyone.`,
   'es-419': (code) =>
     `Tu código LogiFit es ${code}. Válido por 5 minutos. No lo compartas con nadie.`,
 }
@@ -101,9 +100,7 @@ export async function sendSmsOtp(input: SmsOtpSendInput): Promise<SmsOtpSendResu
 
   if (!accountSid || !authToken || !fromNumber) {
     if (process.env.NODE_ENV === 'production') {
-      throw new Error(
-        '[sms-otp] TWILIO_* credentials não setadas em produção — config inválida',
-      )
+      throw new Error('[sms-otp] TWILIO_* credentials não setadas em produção — config inválida')
     }
     // Mock: dev/test — loga código pra dev testar manualmente
     // biome-ignore lint/suspicious/noConsole: dev-only mock provider

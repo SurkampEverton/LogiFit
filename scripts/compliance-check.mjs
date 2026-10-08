@@ -14,7 +14,7 @@
  * Falha (exit 1) na primeira divergência. Sai 0 com sumário.
  */
 import { createHash } from 'node:crypto'
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 const ROOT = process.cwd()
@@ -80,11 +80,20 @@ function checkThreatModels() {
     warnings.push(`compliance: diretório ${THREAT_DIR} ausente`)
     return
   }
-  const STRIDE = ['Spoofing', 'Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service', 'Elevation of Privilege']
+  const STRIDE = [
+    'Spoofing',
+    'Tampering',
+    'Repudiation',
+    'Information Disclosure',
+    'Denial of Service',
+    'Elevation of Privilege',
+  ]
   let checked = 0
   for (const file of files) {
     const content = readFileSync(join(THREAT_DIR, file), 'utf8')
-    const missing = STRIDE.filter((cat) => !new RegExp(`\\b${cat.replace(/ /g, '\\s+')}\\b`, 'i').test(content))
+    const missing = STRIDE.filter(
+      (cat) => !new RegExp(`\\b${cat.replace(/ /g, '\\s+')}\\b`, 'i').test(content),
+    )
     if (missing.length > 0) {
       warnings.push(`⚠ ${file}: STRIDE incompleto, faltando ${missing.join(', ')}`)
     }

@@ -89,7 +89,7 @@ export const forecastCashflowAction = wrapServerAction(
       eq(invoices.tenantId, session.logifit.tenantId),
       sql`${invoices.status} IN ('open','pending','overdue')`,
       gte(invoices.dueAt, new Date(startStr)),
-      lte(invoices.dueAt, new Date(endStr + 'T23:59:59Z')),
+      lte(invoices.dueAt, new Date(`${endStr}T23:59:59Z`)),
     ]
     if (parsed.companyId) whereInv.push(eq(invoices.companyId, parsed.companyId))
     const invs = await db

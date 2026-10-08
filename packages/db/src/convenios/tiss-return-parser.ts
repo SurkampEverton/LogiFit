@@ -38,8 +38,7 @@ export interface ParsedReturnXml {
 function extractAll(xml: string, tag: string): string[] {
   const re = new RegExp(`<(?:[a-zA-Z]+:)?${tag}[^>]*>([\\s\\S]*?)<\\/(?:[a-zA-Z]+:)?${tag}>`, 'g')
   const out: string[] = []
-  let m: RegExpExecArray | null
-  while ((m = re.exec(xml)) !== null) out.push(m[1] ?? '')
+  for (const m of xml.matchAll(re)) out.push(m[1] ?? '')
   return out
 }
 

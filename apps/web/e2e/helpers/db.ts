@@ -52,7 +52,9 @@ export async function twoConnectionsTest<T>(
     throw new Error('twoConnectionsTest: tenantIdA/B precisam ser UUIDs válidos')
   }
   if (tenantIdA === tenantIdB) {
-    throw new Error('twoConnectionsTest: tenantIdA === tenantIdB — pega 2 distintos para testar isolamento')
+    throw new Error(
+      'twoConnectionsTest: tenantIdA === tenantIdB — pega 2 distintos para testar isolamento',
+    )
   }
   const connectionString = process.env.DATABASE_URL
   if (!connectionString) {

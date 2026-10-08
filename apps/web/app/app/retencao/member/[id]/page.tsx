@@ -209,6 +209,7 @@ export default async function MemberRiskDetailPage({
               <p style={{ marginTop: 0, color: 'var(--ev-muted)' }}>—</p>
             ) : (
               factors.map((f, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: fatores read-only do snapshot da predição, sem id estável e `factor` pode repetir; ordem fixa
                 <div key={i}>
                   <div
                     style={{
@@ -275,7 +276,7 @@ export default async function MemberRiskDetailPage({
               <th>Encerrada</th>
               <th>Outcome</th>
               <th>Notas</th>
-              <th></th>
+              <th />
             </tr>
           </thead>
           <tbody>

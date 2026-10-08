@@ -88,10 +88,7 @@ export function requireRecentMfa(
  * Uso típico (preferido sobre `requireRecentMfa` direto):
  *   await requireRecentMfaForAction(session, 'cancelNfe')
  */
-export function requireRecentMfaForAction(
-  session: MfaCheckSession,
-  actionName: string,
-): void {
+export function requireRecentMfaForAction(session: MfaCheckSession, actionName: string): void {
   const action = getHighRiskAction(actionName)
   if (!action) return // não é high-risk — passa direto
   requireRecentMfa(session, { maxAgeMins: action.requireMfaMaxAgeMins })

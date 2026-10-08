@@ -31,11 +31,7 @@ function getMessage(e: unknown, fallback?: string): string {
 }
 
 function extractZodIssues(e: unknown): Record<string, unknown> {
-  if (
-    e instanceof Error &&
-    'issues' in e &&
-    Array.isArray((e as { issues: unknown[] }).issues)
-  ) {
+  if (e instanceof Error && 'issues' in e && Array.isArray((e as { issues: unknown[] }).issues)) {
     return { issues: (e as { issues: unknown[] }).issues }
   }
   return {}
@@ -100,8 +96,7 @@ export const anthropicTranslator: ErrorTranslator = {
 }
 
 export const geminiTranslator: ErrorTranslator = {
-  matches: (e) =>
-    isErrorWithName(e, 'GoogleAIError') || hasErrorMessage(e, /vertex|gemini/i),
+  matches: (e) => isErrorWithName(e, 'GoogleAIError') || hasErrorMessage(e, /vertex|gemini/i),
   translate: () => ({
     code: 'AI_PROVIDER_ERROR',
     message: 'Erro no provedor de IA',

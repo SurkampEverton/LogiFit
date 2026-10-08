@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { test } from '@playwright/test'
 
 /**
  * smoke/auth-magic-link — fluxo de login via magic link (Sprint 01a).

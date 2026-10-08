@@ -24,7 +24,7 @@ async function getMatriz(tenantId: string): Promise<string> {
 
 async function getOrCreateMember(tenantId: string): Promise<string> {
   const r = await pool.query<{ id: string }>(
-    `SELECT id FROM members WHERE tenant_id = $1 LIMIT 1`,
+    'SELECT id FROM members WHERE tenant_id = $1 LIMIT 1',
     [tenantId],
   )
   if (r.rows[0]) return r.rows[0].id
@@ -35,7 +35,7 @@ async function getOrCreateMember(tenantId: string): Promise<string> {
     [tenantId],
   )
   const m = await pool.query<{ id: string }>(
-    `INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id`,
+    'INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id',
     [tenantId, p.rows[0]!.id, companyId],
   )
   return m.rows[0]!.id
@@ -138,7 +138,7 @@ async function withTenantContext<T>(
 describe('tuss_catalog + insurance_plans — read-all global', () => {
   it('todo tenant lê TUSS', async () => {
     const r = await withTenantContext(TENANT_REDE, async (c) => {
-      const x = await c.query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM tuss_catalog`)
+      const x = await c.query<{ count: string }>('SELECT COUNT(*)::text AS count FROM tuss_catalog')
       return Number(x.rows[0]!.count)
     })
     expect(r).toBeGreaterThanOrEqual(2)
@@ -274,7 +274,7 @@ describe('billing_guides + items — checks', () => {
        VALUES ($1, $2, $3, $4, 'sp_sadt', 'GUI-001', 11000, '2026.01') RETURNING id`,
       [TENANT_REDE, companyId, memberId, mi.rows[0]!.id],
     )
-    const userR = await pool.query<{ id: string }>(`SELECT id FROM users LIMIT 1`)
+    const userR = await pool.query<{ id: string }>('SELECT id FROM users LIMIT 1')
     if (!userR.rows[0]) return
 
     // Item consistente: 2 × 5500 = 11000

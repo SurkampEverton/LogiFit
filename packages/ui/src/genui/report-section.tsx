@@ -47,6 +47,7 @@ function renderMarkdownLight(body: string): ReactNode[] {
       out.push(
         <ul key={`b${bi}`} style={{ margin: '0 0 var(--ev-space-2) 1.25rem' }}>
           {lines.map((l, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: itens vêm de linhas de texto que podem repetir; lista derivada do body, sem estado por item
             <li key={i}>{renderInline(l.replace(/^\s*-\s+/, ''))}</li>
           ))}
         </ul>,
@@ -67,9 +68,8 @@ function renderInline(text: string): ReactNode[] {
   const parts: ReactNode[] = []
   const re = /(\*\*[^*]+\*\*|\*[^*]+\*)/g
   let last = 0
-  let m: RegExpExecArray | null
   let idx = 0
-  while ((m = re.exec(text)) !== null) {
+  for (const m of text.matchAll(re)) {
     if (m.index > last) parts.push(text.slice(last, m.index))
     const token = m[0]
     if (token.startsWith('**')) {

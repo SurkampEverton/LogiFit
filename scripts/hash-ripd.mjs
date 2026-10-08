@@ -11,7 +11,7 @@
  * Cruzamento com compliance-check.mjs.
  */
 import { createHash } from 'node:crypto'
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const ROOT = process.cwd()
@@ -48,7 +48,9 @@ for (const file of files) {
       console.error(`✗ ${file}: faltando linha "Hash SHA-256:"`)
       divergent++
     } else {
-      console.error(`✗ ${file}: faltando linha "Hash SHA-256:" (adicione manualmente no frontmatter)`)
+      console.error(
+        `✗ ${file}: faltando linha "Hash SHA-256:" (adicione manualmente no frontmatter)`,
+      )
     }
     continue
   }
@@ -57,13 +59,12 @@ for (const file of files) {
   if (current === expected) continue
 
   if (checkOnly) {
-    console.error(`✗ ${file}: hash divergente (esperado ${expected.slice(0, 12)}…, atual ${current.slice(0, 12) || '∅'}…)`)
+    console.error(
+      `✗ ${file}: hash divergente (esperado ${expected.slice(0, 12)}…, atual ${current.slice(0, 12) || '∅'}…)`,
+    )
     divergent++
   } else {
-    const updatedContent = content.replace(
-      /^Hash SHA-256:.*$/m,
-      `Hash SHA-256: ${expected}`,
-    )
+    const updatedContent = content.replace(/^Hash SHA-256:.*$/m, `Hash SHA-256: ${expected}`)
     writeFileSync(path, updatedContent, 'utf8')
     console.log(`✓ ${file}: ${expected.slice(0, 16)}…`)
     updated++

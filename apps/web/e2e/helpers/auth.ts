@@ -17,12 +17,7 @@ export type Persona =
   | 'member'
   | 'contador_externo'
 
-export type Scenario =
-  | 'rede-propria'
-  | 'franquia-classica'
-  | 'franquia-passaporte'
-  | 'mix'
-  | 'solo'
+export type Scenario = 'rede-propria' | 'franquia-classica' | 'franquia-passaporte' | 'mix' | 'solo'
 
 export async function loginAs(
   _context: BrowserContext,

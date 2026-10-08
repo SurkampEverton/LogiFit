@@ -10,7 +10,7 @@
  *
  * Importado por scripts/i18n-check.mjs. Também executável standalone para listar uso.
  */
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 

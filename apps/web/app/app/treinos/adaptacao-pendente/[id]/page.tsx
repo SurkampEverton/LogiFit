@@ -157,6 +157,7 @@ export default async function AdaptationDetailPage({ params }: PageProps) {
             >
               {(changes.replaced ?? []).map((rep, i) => (
                 <li
+                  // biome-ignore lint/suspicious/noArrayIndexKey: diff read-only gerado pela IA; sem id próprio e a ordem é fixa
                   key={i}
                   style={{
                     background: 'var(--ev-warning-soft, #fef3c7)',
@@ -186,6 +187,7 @@ export default async function AdaptationDetailPage({ params }: PageProps) {
             >
               {(changes.removed ?? []).map((rm, i) => (
                 <li
+                  // biome-ignore lint/suspicious/noArrayIndexKey: diff read-only gerado pela IA; sem id próprio e a ordem é fixa
                   key={i}
                   style={{
                     background: 'var(--ev-danger-soft, #fee2e2)',

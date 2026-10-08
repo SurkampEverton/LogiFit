@@ -22,7 +22,7 @@ async function getMatriz(tenantId: string): Promise<string> {
 
 async function getOrCreateMember(tenantId: string): Promise<string> {
   const r = await pool.query<{ id: string }>(
-    `SELECT id FROM members WHERE tenant_id = $1 LIMIT 1`,
+    'SELECT id FROM members WHERE tenant_id = $1 LIMIT 1',
     [tenantId],
   )
   if (r.rows[0]) return r.rows[0].id
@@ -33,14 +33,14 @@ async function getOrCreateMember(tenantId: string): Promise<string> {
     [tenantId],
   )
   const m = await pool.query<{ id: string }>(
-    `INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id`,
+    'INSERT INTO members (tenant_id, person_id, company_id) VALUES ($1, $2, $3) RETURNING id',
     [tenantId, p.rows[0]!.id, companyId],
   )
   return m.rows[0]!.id
 }
 
 async function getUser(tenantId: string): Promise<string> {
-  const r = await pool.query<{ id: string }>(`SELECT id FROM users WHERE tenant_id = $1 LIMIT 1`, [
+  const r = await pool.query<{ id: string }>('SELECT id FROM users WHERE tenant_id = $1 LIMIT 1', [
     tenantId,
   ])
   if (r.rows[0]) return r.rows[0].id
@@ -188,11 +188,11 @@ describe('exam_documents — checks + isolation', () => {
     const eId = r.rows[0]!.id
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
-        const x = await c.query(`SELECT id FROM exam_documents WHERE id = $1`, [eId])
+        const x = await c.query('SELECT id FROM exam_documents WHERE id = $1', [eId])
         return x.rows.length
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
-        const x = await c.query(`SELECT id FROM exam_documents WHERE id = $1`, [eId])
+        const x = await c.query('SELECT id FROM exam_documents WHERE id = $1', [eId])
         return x.rows.length
       }),
     ])
@@ -281,7 +281,7 @@ describe('tenant_exam_ai_settings — opt-out', () => {
       [TENANT_REDE],
     )
     const r = await pool.query<{ ai_interpretation_enabled: boolean }>(
-      `SELECT ai_interpretation_enabled FROM tenant_exam_ai_settings WHERE tenant_id = $1`,
+      'SELECT ai_interpretation_enabled FROM tenant_exam_ai_settings WHERE tenant_id = $1',
       [TENANT_REDE],
     )
     expect(r.rows[0]!.ai_interpretation_enabled).toBe(false)
@@ -296,14 +296,14 @@ describe('tenant_exam_ai_settings — opt-out', () => {
     const [redeVisible, franqVisible] = await Promise.all([
       withTenantContext(TENANT_REDE, async (c) => {
         const x = await c.query(
-          `SELECT tenant_id FROM tenant_exam_ai_settings WHERE tenant_id = $1`,
+          'SELECT tenant_id FROM tenant_exam_ai_settings WHERE tenant_id = $1',
           [TENANT_REDE],
         )
         return x.rows.length
       }),
       withTenantContext(TENANT_FRANQUIA, async (c) => {
         const x = await c.query(
-          `SELECT tenant_id FROM tenant_exam_ai_settings WHERE tenant_id = $1`,
+          'SELECT tenant_id FROM tenant_exam_ai_settings WHERE tenant_id = $1',
           [TENANT_REDE],
         )
         return x.rows.length

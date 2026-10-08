@@ -92,7 +92,7 @@ export default async function ProntuarioPage({
               <th>Status</th>
               <th>Política</th>
               <th>Fechado em</th>
-              <th></th>
+              <th />
             </tr>
           </thead>
           <tbody>

@@ -117,7 +117,7 @@ function parseDateTime(dateRaw: string, timeRaw: string): string | null {
   if (/^\d{4}-\d{2}-\d{2}/.test(dateRaw)) {
     const iso = `${dateRaw.slice(0, 10)}T${time}Z`
     const d = new Date(iso)
-    return isNaN(d.getTime()) ? null : d.toISOString()
+    return Number.isNaN(d.getTime()) ? null : d.toISOString()
   }
   // BR: dd/mm/yyyy
   const brMatch = dateRaw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
@@ -125,7 +125,7 @@ function parseDateTime(dateRaw: string, timeRaw: string): string | null {
     const [, d, m, y] = brMatch
     const iso = `${y}-${m}-${d}T${time}Z`
     const dt = new Date(iso)
-    return isNaN(dt.getTime()) ? null : dt.toISOString()
+    return Number.isNaN(dt.getTime()) ? null : dt.toISOString()
   }
   return null
 }

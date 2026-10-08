@@ -12,11 +12,7 @@
  */
 
 import { resolveEmailSender } from './resolve-sender'
-import type {
-  EmailProvider,
-  SendTransactionalInput,
-  SendTransactionalResult,
-} from './types'
+import type { EmailProvider, SendTransactionalInput, SendTransactionalResult } from './types'
 
 export interface RecordedEmail extends SendTransactionalInput {
   resolvedFrom: string

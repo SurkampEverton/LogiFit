@@ -201,7 +201,7 @@ export const registerARReceived = wrapServerAction(
       sourceType: 'ar',
       sourceId: parsed.arId,
       amountCents: parsed.amountCents,
-      paidAt: new Date(parsed.paidAt + 'T12:00:00Z'),
+      paidAt: new Date(`${parsed.paidAt}T12:00:00Z`),
       method: parsed.method,
       reference: parsed.reference ?? null,
       notes: parsed.notes ?? null,

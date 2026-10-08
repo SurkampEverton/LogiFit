@@ -89,6 +89,7 @@ export function ReconciliacaoList({ sales }: { sales: PendingSale[] }) {
               </span>
               {!sugs && (
                 <button
+                  type="button"
                   onClick={() => loadSuggestions(s.id)}
                   className="ev-btn ev-btn-primary"
                   disabled={pending}
@@ -145,6 +146,7 @@ export function ReconciliacaoList({ sales }: { sales: PendingSale[] }) {
                       </div>
                     )}
                     <button
+                      type="button"
                       onClick={() => confirm(s.id, sug.bankTx.id)}
                       className="ev-btn ev-btn-primary"
                       style={{ marginTop: 8, width: '100%' }}

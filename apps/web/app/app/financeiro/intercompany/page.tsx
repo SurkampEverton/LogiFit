@@ -194,7 +194,7 @@ export default async function IntercompanyPage() {
             <thead>
               <tr>
                 <th style={{ textAlign: 'left' }}>De</th>
-                <th></th>
+                <th />
                 <th style={{ textAlign: 'left' }}>Para</th>
                 <th style={{ textAlign: 'right' }}>Entries</th>
                 <th style={{ textAlign: 'right' }}>Saldo</th>

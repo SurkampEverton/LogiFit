@@ -1,5 +1,5 @@
-import { LOCALES, type Locale } from '@repo/i18n/config'
 import type { BrowserContext, Page } from '@playwright/test'
+import { LOCALES, type Locale } from '@repo/i18n/config'
 
 /**
  * forEachLocale (ADR 0052 — extensibilidade i18n). Adicionar locale futuro

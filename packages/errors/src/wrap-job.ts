@@ -10,11 +10,7 @@ import { fingerprint } from './fingerprint'
 import { logBoundaryError } from './logger'
 import { translate } from './translators'
 
-const CAPTURE_CODES = new Set([
-  'INTERNAL_ERROR',
-  'SERVICE_UNAVAILABLE',
-  'AI_PROVIDER_ERROR',
-])
+const CAPTURE_CODES = new Set(['INTERNAL_ERROR', 'SERVICE_UNAVAILABLE', 'AI_PROVIDER_ERROR'])
 
 export interface WrapJobContext {
   module: string

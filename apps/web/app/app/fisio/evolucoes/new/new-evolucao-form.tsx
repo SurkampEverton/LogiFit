@@ -60,6 +60,7 @@ export function NewEvolucaoForm({
           value={subjetivo}
           onChange={(e) => setSubjetivo(e.target.value)}
           rows={2}
+          // biome-ignore lint/a11y/noAutofocus: tela dedicada de nova evolução, foco no primeiro campo (Subjetivo) é o fluxo esperado
           autoFocus
           placeholder="Ex: dor lombar diminuiu, conseguiu dormir melhor"
         />

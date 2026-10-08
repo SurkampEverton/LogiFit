@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  isMfaRecent,
   MfaRecentRequiredError,
+  isMfaRecent,
   requireRecentMfa,
   requireRecentMfaForAction,
 } from './require-recent-mfa'

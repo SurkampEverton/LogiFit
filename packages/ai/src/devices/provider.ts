@@ -134,7 +134,7 @@ export class MockDeviceProvider implements DeviceProvider {
     }
   }
 
-  async sync(input: {
+  async sync(_input: {
     connectionId: string
     accessToken: string
     cursor: Record<string, unknown> | null

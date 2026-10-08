@@ -71,8 +71,6 @@ const RejectAdaptationInputSchema = z.object({
   reason: z.string().min(2).max(500),
 })
 
-const ListPendingInputSchema = z.object({}).optional()
-
 // ─── Helper: resolve company de origem (consulta) ────────────────────────
 
 interface ConsultaContext {

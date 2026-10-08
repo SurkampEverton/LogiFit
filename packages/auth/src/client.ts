@@ -1,3 +1,4 @@
+import { magicLinkClient, twoFactorClient } from 'better-auth/client/plugins'
 /**
  * BetterAuth client-side instance (ADR 0092).
  *
@@ -15,7 +16,6 @@
  *   }
  */
 import { createAuthClient } from 'better-auth/react'
-import { magicLinkClient, twoFactorClient } from 'better-auth/client/plugins'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 

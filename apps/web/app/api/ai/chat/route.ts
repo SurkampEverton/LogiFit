@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   try {
     const json = await request.json()
     parsed = BodySchema.parse(json)
-  } catch (err) {
+  } catch {
     return NextResponse.json(
       { ok: false, error: { code: 'VALIDATION_ERROR', message: 'Body inválido' } },
       { status: 400 },

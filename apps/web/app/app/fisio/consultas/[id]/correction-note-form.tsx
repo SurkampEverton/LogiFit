@@ -30,7 +30,7 @@ export function CorrectionNoteForm({ consultaId }: { consultaId: string }) {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="ev-btn ev-btn-ghost">
+      <button type="button" onClick={() => setOpen(true)} className="ev-btn ev-btn-ghost">
         + Nota corretiva
       </button>
     )

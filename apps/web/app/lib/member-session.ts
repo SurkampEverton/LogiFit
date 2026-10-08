@@ -74,7 +74,7 @@ export async function getMemberSession(): Promise<MemberSessionClaims | null> {
 
   // Update last_seen_at (fire-and-forget)
   void pool
-    .query(`UPDATE member_sessions SET last_seen_at = now() WHERE id = $1`, [row.id])
+    .query('UPDATE member_sessions SET last_seen_at = now() WHERE id = $1', [row.id])
     .catch(() => {})
 
   return {

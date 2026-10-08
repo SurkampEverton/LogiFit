@@ -83,7 +83,8 @@ export function SignupWizard() {
           (json.data.nomeFantasia || json.data.razaoSocial)
             .toLowerCase()
             .normalize('NFD')
-            .replace(/[̀-ͯ]/g, '')
+            // biome-ignore lint/suspicious/noMisleadingCharacterClass: falso positivo — após normalize('NFD') o intervalo de marcas combinantes é removido de propósito para tirar acentos
+            .replace(/[\u0300-\u036f]/g, '')
             .replace(/[^a-z0-9]/g, '-')
             .replace(/-+/g, '-')
             .replace(/^-|-$/g, '')
@@ -131,6 +132,7 @@ export function SignupWizard() {
 
   if (step === 'success') {
     return (
+      // biome-ignore lint/a11y/useSemanticElements: <output> é inline por padrão e quebraria o layout do bloco de sucesso; role="status" na section é suficiente
       <section
         role="status"
         className="rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-surface)] p-6 text-center space-y-3"

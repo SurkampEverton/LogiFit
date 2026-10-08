@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  detectEmbeddedThreats,
-  detectMimeByMagicBytes,
-  scanUpload,
-} from './scan-upload'
+import { detectEmbeddedThreats, detectMimeByMagicBytes, scanUpload } from './scan-upload'
 
 // ─── Magic bytes ──────────────────────────────────────────────────────────
 

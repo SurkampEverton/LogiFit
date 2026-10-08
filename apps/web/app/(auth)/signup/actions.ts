@@ -307,7 +307,7 @@ export async function onboardTenant(
       await auth.api.signInMagicLink({
         body: {
           email: input.adminEmail,
-          callbackURL: `/app`,
+          callbackURL: '/app',
         },
         headers: reqHeaders,
       })

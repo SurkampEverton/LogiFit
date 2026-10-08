@@ -112,6 +112,7 @@ export const listMyPushTokens = wrapMemberAction(
     action: 'mobile.list_push_tokens',
     returnTo: '/meu/mobile/push',
   },
+  // biome-ignore lint/suspicious/noConfusingVoidType: `void` torna o parâmetro opcional para o caller chamar a action sem argumento; `undefined` quebraria os call sites (TS2554)
   async (_input: void, { session }) => {
     const r = await pool.query<PushTokenRow>(
       `SELECT id, platform::text AS platform, device_model, os_version, app_version,

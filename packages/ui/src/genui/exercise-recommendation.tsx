@@ -57,7 +57,15 @@ export function ExerciseRecommendation(props: ExerciseRecommendationProps): Reac
         </div>
       </header>
 
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 'var(--ev-space-2)' }}>
+      <ul
+        style={{
+          listStyle: 'none',
+          padding: 0,
+          margin: 0,
+          display: 'grid',
+          gap: 'var(--ev-space-2)',
+        }}
+      >
         {props.exercises.map((ex) => (
           <li
             key={ex.exerciseId}

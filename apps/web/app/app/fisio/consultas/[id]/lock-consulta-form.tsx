@@ -64,7 +64,7 @@ export function LockConsultaForm({
           ))}
         </select>
       </label>
-      <button onClick={submit} className="ev-btn ev-btn-primary" disabled={pending}>
+      <button type="button" onClick={submit} className="ev-btn ev-btn-primary" disabled={pending}>
         {pending ? 'Fechando...' : '🔒 Fechar consulta'}
       </button>
       {error && (

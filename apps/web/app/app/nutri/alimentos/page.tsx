@@ -42,7 +42,7 @@ export default async function AlimentosListPage({ searchParams }: PageProps) {
       FROM foods
       WHERE active = true
         AND (tenant_id IS NULL OR tenant_id = ${tenantId})
-        ${q ? sql`AND name_normalized ILIKE ${'%' + q.toLowerCase() + '%'}` : sql``}
+        ${q ? sql`AND name_normalized ILIKE ${`%${q.toLowerCase()}%`}` : sql``}
         ${cat ? sql`AND category::text = ${cat}` : sql``}
       ORDER BY name ASC
       LIMIT 100
@@ -158,7 +158,7 @@ export default async function AlimentosListPage({ searchParams }: PageProps) {
                   {CATEGORY_LABEL[r.category] ?? r.category}
                 </td>
                 <td style={{ padding: 'var(--ev-space-2)', fontSize: 'var(--ev-text-xs)' }}>
-                  {r.tenant_id ? '🏢 tenant' : '🌐 ' + r.source}
+                  {r.tenant_id ? '🏢 tenant' : `🌐 ${r.source}`}
                 </td>
                 <td
                   style={{

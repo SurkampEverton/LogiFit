@@ -1,3 +1,4 @@
+import { setCaptureHook } from '@repo/errors'
 /**
  * Sentry/GlitchTip server config — Node runtime (Server Actions, API Routes, jobs).
  *
@@ -8,7 +9,6 @@
  * que tem armazenamento próprio.
  */
 import * as Sentry from '@sentry/nextjs'
-import { setCaptureHook } from '@repo/errors'
 
 const dsn = process.env.SENTRY_DSN ?? process.env.NEXT_PUBLIC_SENTRY_DSN
 

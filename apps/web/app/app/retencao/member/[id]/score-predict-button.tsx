@@ -24,10 +24,16 @@ export function ScorePredictButton({ memberId }: { memberId: string }) {
 
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-      <button onClick={() => run(false)} className="ev-btn ev-btn-primary" disabled={pending}>
+      <button
+        type="button"
+        onClick={() => run(false)}
+        className="ev-btn ev-btn-primary"
+        disabled={pending}
+      >
         {pending ? 'Calculando...' : 'Calcular agora'}
       </button>
       <button
+        type="button"
         onClick={() => run(true)}
         className="ev-btn ev-btn-ghost"
         disabled={pending}

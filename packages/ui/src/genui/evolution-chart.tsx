@@ -22,9 +22,7 @@ const HEIGHT = 200
 const PADDING = { top: 16, right: 16, bottom: 32, left: 40 }
 
 export function EvolutionChart(props: EvolutionChartProps): ReactNode {
-  const pts = [...props.points].sort(
-    (a, b) => new Date(a.at).getTime() - new Date(b.at).getTime(),
-  )
+  const pts = [...props.points].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
   if (pts.length < 2) {
     return (
       <div
@@ -55,14 +53,10 @@ export function EvolutionChart(props: EvolutionChartProps): ReactNode {
   const xSpan = xRangeEnd - xRangeStart || 1
 
   function toX(ms: number): number {
-    return (
-      PADDING.left + ((ms - xRangeStart) / xSpan) * (WIDTH - PADDING.left - PADDING.right)
-    )
+    return PADDING.left + ((ms - xRangeStart) / xSpan) * (WIDTH - PADDING.left - PADDING.right)
   }
   function toY(v: number): number {
-    return (
-      PADDING.top + (1 - (v - y0) / (y1 - y0)) * (HEIGHT - PADDING.top - PADDING.bottom)
-    )
+    return PADDING.top + (1 - (v - y0) / (y1 - y0)) * (HEIGHT - PADDING.top - PADDING.bottom)
   }
 
   const pathD = pts
@@ -186,6 +180,7 @@ export function EvolutionChart(props: EvolutionChartProps): ReactNode {
         {/* Pontos */}
         {pts.map((p, i) => (
           <circle
+            // biome-ignore lint/suspicious/noArrayIndexKey: pontos não têm id e dois podem ter o mesmo timestamp; lista derivada e ordenada, sem estado por item
             key={i}
             cx={toX(new Date(p.at).getTime())}
             cy={toY(p.value)}

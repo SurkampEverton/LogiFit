@@ -16,7 +16,7 @@
  * Pré-requisito: npm/npx instalado (não vem com pnpm).
  */
 import { execSync } from 'node:child_process'
-import { mkdirSync, readFileSync, existsSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const REPO_ROOT = process.cwd()

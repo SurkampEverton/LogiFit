@@ -67,8 +67,8 @@ export default async function ICFechamentoPage({
     .where(
       and(
         eq(intercompanyEntries.tenantId, tenantId),
-        gte(intercompanyEntries.createdAt, new Date(from + 'T00:00:00Z')),
-        lte(intercompanyEntries.createdAt, new Date(to + 'T23:59:59Z')),
+        gte(intercompanyEntries.createdAt, new Date(`${from}T00:00:00Z`)),
+        lte(intercompanyEntries.createdAt, new Date(`${to}T23:59:59Z`)),
       ),
     )
     .groupBy(intercompanyEntries.fromCompanyId, intercompanyEntries.toCompanyId)
@@ -181,7 +181,7 @@ export default async function ICFechamentoPage({
             <thead>
               <tr>
                 <th style={{ textAlign: 'left' }}>De</th>
-                <th></th>
+                <th />
                 <th style={{ textAlign: 'left' }}>Para</th>
                 <th style={{ textAlign: 'right' }}>Entries</th>
                 <th style={{ textAlign: 'right' }}>Total</th>

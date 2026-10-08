@@ -79,6 +79,7 @@ export function PasswordLoginForm() {
           maxLength={6}
           className="ev-portal-input"
           required
+          // biome-ignore lint/a11y/noAutofocus: foco no campo do código TOTP é intencional: é o único campo da etapa e o usuário precisa digitá-lo logo ao entrar
           autoFocus
         />
 

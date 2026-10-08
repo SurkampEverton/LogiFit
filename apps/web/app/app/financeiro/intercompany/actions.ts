@@ -172,9 +172,9 @@ export const listIntercompanyEntries = wrapServerAction(
     if (parsed.settledOnly) where.push(sql`${intercompanyEntries.settledAt} IS NOT NULL`)
     if (parsed.pendingOnly) where.push(isNull(intercompanyEntries.settledAt))
     if (parsed.from)
-      where.push(gte(intercompanyEntries.createdAt, new Date(parsed.from + 'T00:00:00Z')))
+      where.push(gte(intercompanyEntries.createdAt, new Date(`${parsed.from}T00:00:00Z`)))
     if (parsed.to)
-      where.push(lte(intercompanyEntries.createdAt, new Date(parsed.to + 'T23:59:59Z')))
+      where.push(lte(intercompanyEntries.createdAt, new Date(`${parsed.to}T23:59:59Z`)))
 
     const rows = await db
       .select({
@@ -219,8 +219,8 @@ export const generateIcReport = wrapServerAction(
       .where(
         and(
           eq(intercompanyEntries.tenantId, session.logifit.tenantId),
-          gte(intercompanyEntries.createdAt, new Date(parsed.from + 'T00:00:00Z')),
-          lte(intercompanyEntries.createdAt, new Date(parsed.to + 'T23:59:59Z')),
+          gte(intercompanyEntries.createdAt, new Date(`${parsed.from}T00:00:00Z`)),
+          lte(intercompanyEntries.createdAt, new Date(`${parsed.to}T23:59:59Z`)),
         ),
       )
       .groupBy(intercompanyEntries.fromCompanyId, intercompanyEntries.toCompanyId)
@@ -269,10 +269,10 @@ export const getIntercompanyBalances = wrapServerAction(
 
     // Resolve names
     const compIds = new Set<string>()
-    rows.forEach((r) => {
+    for (const r of rows) {
       compIds.add(r.fromCompanyId)
       compIds.add(r.toCompanyId)
-    })
+    }
     const comps =
       compIds.size > 0
         ? await db

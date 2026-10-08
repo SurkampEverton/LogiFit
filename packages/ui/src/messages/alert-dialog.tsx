@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { type ReactNode, useEffect, useId, useRef } from 'react'
 
 /**
  * AlertDialog — substitui `window.alert()` (proibido pela regra 45 + ADR 0089).
@@ -65,10 +65,9 @@ export function AlertDialog({
         <h2 id={titleId} style={{ margin: 0, fontSize: 'var(--ev-text-lg)' }}>
           {title}
         </h2>
-        <div style={{ fontSize: 'var(--ev-text-sm)', color: 'var(--ev-text-muted)' }}>
-          {body}
-        </div>
+        <div style={{ fontSize: 'var(--ev-text-sm)', color: 'var(--ev-text-muted)' }}>{body}</div>
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          {/* biome-ignore lint/a11y/noAutofocus: foco inicial no botão de ação dentro de <dialog> modal, conforme o padrão WAI-ARIA de diálogo */}
           <button type="button" onClick={onClose} className="ev-btn ev-btn-primary" autoFocus>
             {confirmLabel}
           </button>

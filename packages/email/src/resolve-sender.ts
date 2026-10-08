@@ -37,9 +37,7 @@ export function resolveEmailSender(input: SendTransactionalInput): ResolvedSende
   // do caller. Quando o schema for criado (sprint dedicado), evoluir esta branch pra
   // consultar tenant_email_settings via getTenantEmailSettings(input.tenantId).
   if (!input.tenantId) {
-    throw new Error(
-      "[email] resolveEmailSender: category='tenant' requires tenantId (ADR 0097)",
-    )
+    throw new Error("[email] resolveEmailSender: category='tenant' requires tenantId (ADR 0097)")
   }
 
   return {

@@ -30,8 +30,8 @@ export default async function ReceitaUnificadaPage({
   last30d.setDate(today.getDate() - 30)
   const from = params.from ?? last30d.toISOString().slice(0, 10)
   const to = params.to ?? today.toISOString().slice(0, 10)
-  const fromDate = new Date(from + 'T00:00:00Z')
-  const toDate = new Date(to + 'T23:59:59Z')
+  const fromDate = new Date(`${from}T00:00:00Z`)
+  const toDate = new Date(`${to}T23:59:59Z`)
 
   // Online (invoices.paid)
   const [online] = await db

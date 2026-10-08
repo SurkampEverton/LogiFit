@@ -22,7 +22,7 @@
  * + boot hook (Coolify post-deploy) re-roda sem custo se conteúdo não mudou.
  */
 import { createHash } from 'node:crypto'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, extname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -222,11 +222,15 @@ const manifestPath = join(ROOT, '.rag-seed-manifest.json')
 import('node:fs').then((fs) => {
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
   console.log(`seed-rag: manifest gerado em ${relative(ROOT, manifestPath)}`)
-  console.log(`  docs: ${stats.newDocs} novos · ${stats.updatedDocs} atualizados · ${stats.skipped} pulados`)
+  console.log(
+    `  docs: ${stats.newDocs} novos · ${stats.updatedDocs} atualizados · ${stats.skipped} pulados`,
+  )
   console.log(`  chunks: ${stats.totalChunks} total`)
-  console.log(`  embeddings: ${embeddings.filter((e) => e !== null).length} preenchidos / ${embeddings.length} total`)
+  console.log(
+    `  embeddings: ${embeddings.filter((e) => e !== null).length} preenchidos / ${embeddings.length} total`,
+  )
   if (embeddings.every((e) => e === null)) {
-    console.log(`  ℹ GEMINI_API_KEY ausente — chunks ficam com embedding=NULL`)
-    console.log(`  ℹ Configure ENV ou via /app/settings/ia BYOK e re-rode pra embedar`)
+    console.log('  ℹ GEMINI_API_KEY ausente — chunks ficam com embedding=NULL')
+    console.log('  ℹ Configure ENV ou via /app/settings/ia BYOK e re-rode pra embedar')
   }
 })

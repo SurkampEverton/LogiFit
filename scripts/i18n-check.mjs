@@ -6,7 +6,7 @@
  *
  * Falha (exit 1) na primeira divergência. Sai 0 com sumário se tudo OK.
  */
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { extractKeys } from './i18n-extract.mjs'
 

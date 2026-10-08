@@ -25,7 +25,7 @@ let readerUserId: string
 
 async function getOrCreateUser(tenantId: string, label: string): Promise<string> {
   const r = await pool.query<{ id: string }>(
-    `SELECT id FROM users WHERE tenant_id = $1 AND username LIKE $2 LIMIT 1`,
+    'SELECT id FROM users WHERE tenant_id = $1 AND username LIKE $2 LIMIT 1',
     [tenantId, `test-${label}-%`],
   )
   if (r.rows[0]) return r.rows[0].id
@@ -106,7 +106,7 @@ async function callHasAccess(
   category: string,
 ): Promise<boolean> {
   const r = await pool.query<{ has: boolean }>(
-    `SELECT has_cross_tenant_access($1, $2, $3, $4::passport_module, $5) AS has`,
+    'SELECT has_cross_tenant_access($1, $2, $3, $4::passport_module, $5) AS has',
     [readerUserId, TENANT_READER, passport, module, category],
   )
   return r.rows[0]!.has
@@ -119,17 +119,17 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await pool
-    .query(`DELETE FROM patient_link_modules WHERE passport_passport_id = $1`, [passportId])
+    .query('DELETE FROM patient_link_modules WHERE passport_passport_id = $1', [passportId])
     .catch(() => {})
   await pool
-    .query(`DELETE FROM patient_company_links WHERE passport_passport_id = $1`, [passportId])
+    .query('DELETE FROM patient_company_links WHERE passport_passport_id = $1', [passportId])
     .catch(() => {})
   await pool.end()
 })
 
 beforeEach(async () => {
   // Fresh passport per test pra evitar constraint global (1 módulo ativo)
-  passportId = (await pool.query<{ id: string }>(`SELECT gen_random_uuid() AS id`)).rows[0]!.id
+  passportId = (await pool.query<{ id: string }>('SELECT gen_random_uuid() AS id')).rows[0]!.id
 })
 
 describe('has_cross_tenant_access — 6 cenários canônicos', () => {

@@ -22,10 +22,7 @@ export const CANONICAL_VIEWPORTS: readonly ViewportName[] = [
   'desktop-1280',
 ] as const
 
-type TestFn = (
-  name: string,
-  fn: (params: { page: Page }) => Promise<void>,
-) => void
+type TestFn = (name: string, fn: (params: { page: Page }) => Promise<void>) => void
 
 export function forEachViewport(
   test: TestFn,

@@ -193,6 +193,7 @@ export function NewReguaForm({ templates }: { templates: Template[] }) {
 
         {actions.map((a, idx) => (
           <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: ActionDraft não tem id estável; inputs são controlados pelo state, então o índice só afeta foco ao remover linha
             key={idx}
             className="rounded-md border border-[color:var(--ev-border)] bg-[color:var(--ev-bg)] p-3 space-y-2"
           >

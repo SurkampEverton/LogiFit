@@ -3,17 +3,13 @@
  * Mesmo shape do wrapAction, mas devolve Response em vez de ApiResult.
  * Status HTTP derivado do código do erro.
  */
-import { ApiException, type ApiErrorCode } from './api-error'
+import { type ApiErrorCode, ApiException } from './api-error'
 import { captureFromBoundary } from './capture'
 import { fingerprint } from './fingerprint'
 import { logBoundaryError } from './logger'
 import { translate } from './translators'
 
-const CAPTURE_CODES = new Set([
-  'INTERNAL_ERROR',
-  'SERVICE_UNAVAILABLE',
-  'AI_PROVIDER_ERROR',
-])
+const CAPTURE_CODES = new Set(['INTERNAL_ERROR', 'SERVICE_UNAVAILABLE', 'AI_PROVIDER_ERROR'])
 
 const HTTP_STATUS: Record<ApiErrorCode, number> = {
   VALIDATION_ERROR: 400,

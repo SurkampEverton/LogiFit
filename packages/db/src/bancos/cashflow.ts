@@ -40,7 +40,7 @@ function isoDateOnly(d: Date): string {
 }
 
 function addDays(iso: string, n: number): string {
-  const d = new Date(iso + 'T00:00:00Z')
+  const d = new Date(`${iso}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() + n)
   return isoDateOnly(d)
 }

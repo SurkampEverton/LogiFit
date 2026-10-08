@@ -63,7 +63,11 @@ export function AssistantSheet({
     if (sessionId) return sessionId
     // safe-fetch-exempt: same-origin client fetch to local /api/* (regra 37 é pra outbound externo)
     const res = await fetch('/api/ai/session', { method: 'POST', body: JSON.stringify({}) })
-    const json = (await res.json()) as { ok: boolean; data?: { sessionId: string }; error?: { message: string } }
+    const json = (await res.json()) as {
+      ok: boolean
+      data?: { sessionId: string }
+      error?: { message: string }
+    }
     if (!json.ok || !json.data?.sessionId) {
       throw new Error(json.error?.message ?? 'Falha ao criar sessão')
     }
@@ -133,6 +137,7 @@ export function AssistantSheet({
   return (
     <div
       id="logifit-assistant-sheet"
+      // biome-ignore lint/a11y/useSemanticElements: painel lateral posicionado manualmente (fixed) e controlado por prop; <dialog> traria estilos UA (margem, borda, backdrop) e exigiria showModal(), mudando o visual e o foco
       role="dialog"
       aria-modal="true"
       aria-labelledby="assistant-title"
@@ -243,7 +248,8 @@ export function AssistantSheet({
             borderBottom: '1px solid var(--ev-border)',
           }}
         >
-          {label('assistant.quota.used')}: {quota.used} / {quota.limit} ({Math.round(quota.percent)}%)
+          {label('assistant.quota.used')}: {quota.used} / {quota.limit} ({Math.round(quota.percent)}
+          %)
         </div>
       )}
 

@@ -62,17 +62,16 @@ export async function createTestMember(opts: {
     await client.query('SET row_security = off')
 
     // Resolve tenant + company
-    const tenant = await client.query<{ id: string }>(
-      `SELECT id FROM tenants WHERE slug = $1`,
-      [TEST_TENANT_SLUG],
-    )
+    const tenant = await client.query<{ id: string }>('SELECT id FROM tenants WHERE slug = $1', [
+      TEST_TENANT_SLUG,
+    ])
     if (!tenant.rows[0]) {
       throw new Error(`Tenant '${TEST_TENANT_SLUG}' não existe — rode pnpm db:seed primeiro`)
     }
     const tenantId = tenant.rows[0].id
 
     const company = await client.query<{ id: string }>(
-      `SELECT id FROM companies WHERE tenant_id = $1 LIMIT 1`,
+      'SELECT id FROM companies WHERE tenant_id = $1 LIMIT 1',
       [tenantId],
     )
     if (!company.rows[0]) {
@@ -87,10 +86,10 @@ export async function createTestMember(opts: {
        )`,
       [tenantId, email],
     )
-    await client.query(
-      `DELETE FROM persons WHERE tenant_id = $1 AND lower(email) = lower($2)`,
-      [tenantId, email],
-    )
+    await client.query('DELETE FROM persons WHERE tenant_id = $1 AND lower(email) = lower($2)', [
+      tenantId,
+      email,
+    ])
 
     // INSERT person + member
     const personRow = await client.query<{ id: string }>(
@@ -135,10 +134,7 @@ export async function deleteTestMember(member: TestMember): Promise<void> {
     await client.query('DELETE FROM persons WHERE id = $1', [member.personId])
   } catch (err) {
     // Tolerante — logging only
-    console.warn(
-      '[test-member] cleanup falhou:',
-      err instanceof Error ? err.message : err,
-    )
+    console.warn('[test-member] cleanup falhou:', err instanceof Error ? err.message : err)
   } finally {
     client.release()
   }

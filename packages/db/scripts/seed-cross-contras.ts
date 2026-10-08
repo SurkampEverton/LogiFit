@@ -315,7 +315,7 @@ async function main(): Promise<void> {
     // Garante que CIDs referenciados existem (a maioria já vem do seed-fisio)
     const cidCodes = Array.from(new Set(CONTRAS.map((c) => c.cidCode)))
     const existing = await pool.query<{ code: string }>(
-      `SELECT code FROM cid_catalog WHERE code = ANY($1::text[])`,
+      'SELECT code FROM cid_catalog WHERE code = ANY($1::text[])',
       [cidCodes],
     )
     const existingSet = new Set(existing.rows.map((r) => r.code))
@@ -361,7 +361,7 @@ async function main(): Promise<void> {
 
     // Confere quantos existem agora (global)
     const total = await pool.query<{ count: string }>(
-      `SELECT count(*)::text AS count FROM cid_exercise_contraindications WHERE tenant_id IS NULL`,
+      'SELECT count(*)::text AS count FROM cid_exercise_contraindications WHERE tenant_id IS NULL',
     )
     console.log(
       `[seed-cross-contras] ✅ ${inserted} inseridos · ${skipped} pulados · ${total.rows[0]!.count} total global agora`,

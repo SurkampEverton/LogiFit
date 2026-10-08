@@ -50,7 +50,7 @@ export function DeactivateAccountForm({ email }: Props) {
     }
     const ok = await confirm({
       title: 'Desativar conta — última confirmação',
-      body: `Sua conta LogiFit será desativada. Você tem 30 dias pra reativar via privacidade@logifit.com.br antes do hard delete LGPD art. 18 VI. Todas as sessões serão encerradas imediatamente.`,
+      body: 'Sua conta LogiFit será desativada. Você tem 30 dias pra reativar via privacidade@logifit.com.br antes do hard delete LGPD art. 18 VI. Todas as sessões serão encerradas imediatamente.',
       confirmLabel: 'Sim, desativar',
       danger: true,
     })

@@ -72,10 +72,9 @@ export async function createTestPassportIdentity(
     await client.query('SET row_security = off')
 
     // Cleanup: deleta identity existente pelo email (cascade limpa sessions + tokens)
-    await client.query(
-      `DELETE FROM passport_global_identities WHERE lower(email) = lower($1)`,
-      [email],
-    )
+    await client.query('DELETE FROM passport_global_identities WHERE lower(email) = lower($1)', [
+      email,
+    ])
 
     // INSERT identity
     const ins = await client.query<{ id: string }>(
@@ -122,13 +121,11 @@ export async function createTestPassportIdentity(
  * Apaga identity criada por `createTestPassportIdentity`. FK CASCADE limpa
  * sessions + tokens automaticamente. Tolerante.
  */
-export async function deleteTestPassportIdentity(
-  identity: TestPassportIdentity,
-): Promise<void> {
+export async function deleteTestPassportIdentity(identity: TestPassportIdentity): Promise<void> {
   const client = await getPool().connect()
   try {
     await client.query('SET row_security = off')
-    await client.query(`DELETE FROM passport_global_identities WHERE id = $1`, [
+    await client.query('DELETE FROM passport_global_identities WHERE id = $1', [
       identity.identityId,
     ])
   } catch (err) {
@@ -164,14 +161,7 @@ export async function insertEmailVerificationToken(opts: {
       `INSERT INTO passport_email_verification_tokens
          (passport_global_identity_id, email, kind, new_email, token_hash, expires_at)
        VALUES ($1, $2, $3, $4, $5, now() + ($6::int * interval '1 hour'))`,
-      [
-        opts.identityId,
-        opts.email,
-        opts.kind,
-        opts.newEmail ?? null,
-        tokenHash,
-        ttl,
-      ],
+      [opts.identityId, opts.email, opts.kind, opts.newEmail ?? null, tokenHash, ttl],
     )
   } finally {
     client.release()

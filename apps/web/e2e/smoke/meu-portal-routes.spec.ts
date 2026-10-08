@@ -1,16 +1,16 @@
 import { expect, test } from '@playwright/test'
 import {
-  closePassportPool,
-  createTestPassportIdentity,
-  deleteTestPassportIdentity,
-  type TestPassportIdentity,
-} from '../helpers/test-passport-identity'
-import {
+  type TestMember,
   closePool,
   createTestMember,
   deleteTestMember,
-  type TestMember,
 } from '../helpers/test-member'
+import {
+  type TestPassportIdentity,
+  closePassportPool,
+  createTestPassportIdentity,
+  deleteTestPassportIdentity,
+} from '../helpers/test-passport-identity'
 
 /**
  * smoke/meu-portal-routes — varre todas as paginas /meu/* protegidas pra
@@ -123,9 +123,9 @@ test.describe('Portal /meu/* - rotas passport-aware', () => {
   let identity: TestPassportIdentity
 
   test.beforeAll(async () => {
-    const uniq = Date.now() + '-' + Math.random().toString(36).slice(2, 8)
+    const uniq = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     identity = await createTestPassportIdentity({
-      email: 'e2e-portal-passport-' + uniq + '@logifit.test',
+      email: `e2e-portal-passport-${uniq}@logifit.test`,
       emailVerified: true,
       withSession: true,
       mfaVerified: true,
@@ -138,7 +138,7 @@ test.describe('Portal /meu/* - rotas passport-aware', () => {
   })
 
   for (const route of PASSPORT_SUPPORTED_ROUTES) {
-    test('renderiza ' + route + ' com session passport', async ({ page, context }) => {
+    test(`renderiza ${route} com session passport`, async ({ page, context }) => {
       await context.addCookies([
         {
           name: 'lf_passport_session',
@@ -152,7 +152,7 @@ test.describe('Portal /meu/* - rotas passport-aware', () => {
 
       const response = await page.goto(route)
       expect(response).not.toBeNull()
-      expect(response && response.status()).toBe(200)
+      expect(response?.status()).toBe(200)
       expect(page.url()).not.toContain('/login')
     })
   }
@@ -164,9 +164,9 @@ test.describe('Portal /meu/* - rotas member-only (Sprint 26)', () => {
   let member: TestMember
 
   test.beforeAll(async () => {
-    const uniq = Date.now() + '-' + Math.random().toString(36).slice(2, 8)
+    const uniq = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     member = await createTestMember({
-      email: 'e2e-portal-member-' + uniq + '@logifit.test',
+      email: `e2e-portal-member-${uniq}@logifit.test`,
       name: 'E2E Portal Member',
     })
   })
@@ -208,7 +208,7 @@ test.describe('Portal /meu/* - rotas member-only (Sprint 26)', () => {
   }
 
   for (const route of MEMBER_ONLY_ROUTES) {
-    test('renderiza ' + route + ' com session member', async ({ page, context }) => {
+    test(`renderiza ${route} com session member`, async ({ page, context }) => {
       const token = await setupMemberSession()
       await context.addCookies([
         {
@@ -223,7 +223,7 @@ test.describe('Portal /meu/* - rotas member-only (Sprint 26)', () => {
 
       const response = await page.goto(route)
       expect(response).not.toBeNull()
-      expect(response && response.status()).toBe(200)
+      expect(response?.status()).toBe(200)
       expect(page.url()).not.toContain('/login')
     })
   }

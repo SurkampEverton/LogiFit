@@ -864,7 +864,7 @@ export const getCrossTenantSummary = wrapServerAction(
 
     // Chama função SQL has_cross_tenant_access
     const r = await pool.query<{ allowed: boolean }>(
-      `SELECT has_cross_tenant_access($1::uuid, $2::uuid, $3::uuid, $4::passport_module, $5::text) AS allowed`,
+      'SELECT has_cross_tenant_access($1::uuid, $2::uuid, $3::uuid, $4::passport_module, $5::text) AS allowed',
       [userId, tenantId, parsed.passportPassportId, parsed.module, parsed.category],
     )
     const allowed = r.rows[0]?.allowed === true
@@ -989,7 +989,7 @@ export const sendPatientInviteSimple = wrapServerAction(
       passportPassportId = [
         hash.slice(0, 8),
         hash.slice(8, 12),
-        '4' + hash.slice(13, 16), // version 4
+        `4${hash.slice(13, 16)}`, // version 4
         ((Number.parseInt(hash.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + hash.slice(17, 20),
         hash.slice(20, 32),
       ].join('-')

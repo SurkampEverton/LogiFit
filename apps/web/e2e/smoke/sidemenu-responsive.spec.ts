@@ -31,18 +31,15 @@ for (const { name, size } of SCENARIO_VIEWPORTS) {
   test.describe(`SideMenu — ${name} (${size.width}×${size.height})`, () => {
     test.use({ viewport: size })
 
-    test.fixme(
-      'hamburger ☰ trigger visível + 44px touch target',
-      async ({ page }) => {
-        // TODO: await loginAs(page.context(), 'tenant_owner', 'rede-propria')
-        await page.goto('/app')
-        const trigger = page.getByRole('button', { name: /menu|abrir menu/i })
-        await expect(trigger).toBeVisible()
-        const box = await trigger.boundingBox()
-        expect(box?.width).toBeGreaterThanOrEqual(44)
-        expect(box?.height).toBeGreaterThanOrEqual(44)
-      },
-    )
+    test.fixme('hamburger ☰ trigger visível + 44px touch target', async ({ page }) => {
+      // TODO: await loginAs(page.context(), 'tenant_owner', 'rede-propria')
+      await page.goto('/app')
+      const trigger = page.getByRole('button', { name: /menu|abrir menu/i })
+      await expect(trigger).toBeVisible()
+      const box = await trigger.boundingBox()
+      expect(box?.width).toBeGreaterThanOrEqual(44)
+      expect(box?.height).toBeGreaterThanOrEqual(44)
+    })
 
     test.fixme('click ☰ abre overlay menu com translateX(0)', async ({ page }) => {
       await page.goto('/app')

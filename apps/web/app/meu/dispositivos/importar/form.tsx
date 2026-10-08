@@ -54,7 +54,7 @@ export function ImportCsvForm() {
         value={content}
         onChange={(e) => setContent(e.target.value)}
         rows={12}
-        placeholder={`Date,Time,Weight,BodyFatPct,MuscleMass\n2026-05-18,08:00:00,80.5,22.3,33.2`}
+        placeholder={'Date,Time,Weight,BodyFatPct,MuscleMass\n2026-05-18,08:00:00,80.5,22.3,33.2'}
         className="ev-portal-textarea"
         style={{ fontFamily: 'monospace', fontSize: 'var(--ev-text-xs)' }}
       />
@@ -82,6 +82,7 @@ export function ImportCsvForm() {
               <summary>{result.parseErrors.length} erros de parse</summary>
               <ul style={{ fontSize: 'var(--ev-text-xs)', fontFamily: 'monospace' }}>
                 {result.parseErrors.slice(0, 10).map((e, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: lista read-only de erros de parse; `line` pode repetir (mais de um erro por linha) e não há id
                   <li key={i}>
                     Linha {e.line}: {e.reason}
                   </li>

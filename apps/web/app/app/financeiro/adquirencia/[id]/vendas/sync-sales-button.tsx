@@ -47,7 +47,7 @@ export function SyncSalesButton({ connectionId }: { connectionId: string }) {
         onChange={(e) => setTo(e.target.value)}
         style={{ width: 140 }}
       />
-      <button onClick={sync} className="ev-btn ev-btn-primary" disabled={pending}>
+      <button type="button" onClick={sync} className="ev-btn ev-btn-primary" disabled={pending}>
         {pending ? 'Sincronizando...' : 'Sincronizar agora'}
       </button>
       {message && (

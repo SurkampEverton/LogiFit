@@ -98,10 +98,7 @@ export async function loginPassport(input: unknown) {
         : 0
       throw new ApiException({
         code: 'RATE_LIMITED',
-        message:
-          'Muitas tentativas falharam. Conta bloqueada temporariamente — tente novamente em ' +
-          Math.ceil(retryAfterMs / 60_000) +
-          ' min.',
+        message: `Muitas tentativas falharam. Conta bloqueada temporariamente — tente novamente em ${Math.ceil(retryAfterMs / 60_000)} min.`,
         request_id: '',
       })
     }
@@ -218,7 +215,7 @@ export async function loginPassport(input: unknown) {
 
   // 5. Update last_login_at (fire-and-forget)
   void pool
-    .query(`UPDATE passport_global_identities SET last_login_at = now() WHERE id = $1`, [
+    .query('UPDATE passport_global_identities SET last_login_at = now() WHERE id = $1', [
       identity.id,
     ])
     .catch((err) => {

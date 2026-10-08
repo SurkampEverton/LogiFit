@@ -18,7 +18,6 @@ interface Props {
 }
 
 const TICK_MS = 1000
-const REFRESH_MS = 60_000
 
 export function QrLiveDisplay({ initialQrString }: Props) {
   const [qrString, setQrString] = useState(initialQrString)

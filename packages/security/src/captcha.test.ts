@@ -55,9 +55,7 @@ describe('captcha verifyCaptcha', () => {
     })
 
     it('lança erro em prod sem TURNSTILE_SECRET_KEY', async () => {
-      await expect(verifyCaptcha({ token: 'x' })).rejects.toThrow(
-        /TURNSTILE_SECRET_KEY/,
-      )
+      await expect(verifyCaptcha({ token: 'x' })).rejects.toThrow(/TURNSTILE_SECRET_KEY/)
     })
   })
 

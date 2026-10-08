@@ -203,8 +203,8 @@ export function suggestMatches(
 }
 
 function daysBetween(d1: string, d2: string): number {
-  const t1 = new Date(d1 + 'T00:00:00Z').getTime()
-  const t2 = new Date(d2 + 'T00:00:00Z').getTime()
+  const t1 = new Date(`${d1}T00:00:00Z`).getTime()
+  const t2 = new Date(`${d2}T00:00:00Z`).getTime()
   return Math.round((t1 - t2) / (24 * 60 * 60 * 1000))
 }
 

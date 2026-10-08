@@ -213,6 +213,7 @@ export default async function AgendaWeekPage({
                 {Array.from({ length: 7 }, (_, dayIdx) => {
                   const cell = grid[hourIdx]?.[dayIdx] ?? { booked: null, virtual: null }
                   const date = headerDates[dayIdx]
+                  // biome-ignore lint/suspicious/noArrayIndexKey: guard de noUncheckedIndexedAccess — sem data a coluna só tem identidade pela posição no grid fixo de 7 dias
                   if (!date) return <td key={dayIdx} />
                   const slotIso = new Date(date)
                   slotIso.setUTCHours(h, 0, 0, 0)
@@ -221,7 +222,7 @@ export default async function AgendaWeekPage({
                   if (cell.booked) {
                     return (
                       <td
-                        key={dayIdx}
+                        key={date.toISOString()}
                         className="border-l border-[color:var(--ev-border)] p-1 align-top"
                       >
                         <Link
@@ -242,7 +243,7 @@ export default async function AgendaWeekPage({
                   if (cell.virtual) {
                     return (
                       <td
-                        key={dayIdx}
+                        key={date.toISOString()}
                         className="border-l border-[color:var(--ev-border)] p-1 align-top"
                       >
                         <Link
@@ -256,7 +257,7 @@ export default async function AgendaWeekPage({
                   }
                   return (
                     <td
-                      key={dayIdx}
+                      key={date.toISOString()}
                       className="border-l border-[color:var(--ev-border)] p-1 align-top"
                     >
                       <Link

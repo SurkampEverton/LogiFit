@@ -17,12 +17,27 @@
  */
 
 import { spawnSync } from 'node:child_process'
-import { randomBytes, createHash } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 
 function psql(sql) {
   const result = spawnSync(
     'docker',
-    ['exec', '-i', 'logifit-postgres', 'psql', '-U', 'postgres', '-d', 'logifit', '-t', '-A', '-F', '|', '-c', sql],
+    [
+      'exec',
+      '-i',
+      'logifit-postgres',
+      'psql',
+      '-U',
+      'postgres',
+      '-d',
+      'logifit',
+      '-t',
+      '-A',
+      '-F',
+      '|',
+      '-c',
+      sql,
+    ],
     { encoding: 'utf-8' },
   )
   if (result.status !== 0) {
@@ -38,7 +53,9 @@ console.log('[smoke] OLD_EMAIL:', OLD_EMAIL)
 console.log('[smoke] NEW_EMAIL:', NEW_EMAIL)
 
 // 1. Cleanup + cria identity
-psql(`DELETE FROM passport_global_identities WHERE email LIKE 'change-old-%@logifit.test' OR email LIKE 'change-new-%@logifit.test';`)
+psql(
+  `DELETE FROM passport_global_identities WHERE email LIKE 'change-old-%@logifit.test' OR email LIKE 'change-new-%@logifit.test';`,
+)
 const ts = Date.now().toString().slice(-9)
 const cpf = `${ts}99`
 
@@ -54,12 +71,17 @@ psql(`SET row_security = off; INSERT INTO passport_global_identities (
   now(), 'v1.0', 'v1.0-test',
   'proactive'
 );`)
-const identityId = psql(`SET row_security = off; SELECT id FROM passport_global_identities WHERE email = '${OLD_EMAIL}';`)
+const identityId = psql(
+  `SET row_security = off; SELECT id FROM passport_global_identities WHERE email = '${OLD_EMAIL}';`,
+)
   .split('\n')
   .filter((line) => line.match(/^[0-9a-f-]{36}$/))
   .pop()
 if (!identityId) {
-  console.error('[smoke] FALHA — identity_id não extraído. Output:', psql(`SELECT id FROM passport_global_identities WHERE email = '${OLD_EMAIL}';`))
+  console.error(
+    '[smoke] FALHA — identity_id não extraído. Output:',
+    psql(`SELECT id FROM passport_global_identities WHERE email = '${OLD_EMAIL}';`),
+  )
   process.exit(1)
 }
 console.log('[smoke] identity criada:', identityId)
@@ -81,7 +103,7 @@ console.log('[smoke] token change_email inserido')
 await fetch('http://localhost:8025/api/v1/messages', { method: 'DELETE' })
 
 const confirmUrl = `http://localhost:3100/api/meu/perfil/email/confirm-change?t=${token}`
-console.log('[smoke] GET', confirmUrl.replace(token, token.slice(0, 8) + '...'))
+console.log('[smoke] GET', confirmUrl.replace(token, `${token.slice(0, 8)}...`))
 
 const res = await fetch(confirmUrl, { redirect: 'manual' })
 console.log('[smoke] status:', res.status, 'location:', res.headers.get('location'))
@@ -97,7 +119,9 @@ if (!location.includes('email-trocado')) {
 }
 
 // 4. Verifica DB: identity.email mudou
-const after = psql(`SET row_security = off; SELECT email, email_verified_at FROM passport_global_identities WHERE id = '${identityId}';`)
+const after = psql(
+  `SET row_security = off; SELECT email, email_verified_at FROM passport_global_identities WHERE id = '${identityId}';`,
+)
 console.log('[smoke] identity após confirm:', after)
 const [updatedEmail, verifiedAt] = after.split('\n').filter(Boolean).pop().split('|')
 
@@ -118,14 +142,19 @@ const oldNotif = (inbox.items ?? []).find((m) =>
 )
 if (!oldNotif) {
   console.error('[smoke] FALHA — notificação NÃO chegou no email ANTIGO')
-  console.error('[smoke] inbox To addresses:', (inbox.items ?? []).map((m) => m.Content?.Headers?.To?.[0]))
+  console.error(
+    '[smoke] inbox To addresses:',
+    (inbox.items ?? []).map((m) => m.Content?.Headers?.To?.[0]),
+  )
   process.exit(1)
 }
 console.log('[smoke] ✓ notificação chegou no email antigo')
 console.log('  Subject:', oldNotif.Content?.Headers?.Subject?.[0])
 
 // 6. Cleanup
-psql(`SET row_security = off; DELETE FROM passport_email_verification_tokens WHERE passport_global_identity_id = '${identityId}'; DELETE FROM passport_global_identities WHERE id = '${identityId}';`)
+psql(
+  `SET row_security = off; DELETE FROM passport_email_verification_tokens WHERE passport_global_identity_id = '${identityId}'; DELETE FROM passport_global_identities WHERE id = '${identityId}';`,
+)
 
 console.log('')
 console.log('[smoke] ✅ TUDO OK — change_email flow funciona end-to-end:')

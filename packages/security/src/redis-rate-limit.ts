@@ -76,10 +76,7 @@ export function getRedisClient(): RedisClient | null {
     connectionAttempted = true
     return cachedClient
   } catch (err) {
-    console.warn(
-      '[redis] connect failed:',
-      err instanceof Error ? err.message : err,
-    )
+    console.warn('[redis] connect failed:', err instanceof Error ? err.message : err)
     connectionAttempted = true
     return null
   }
@@ -243,10 +240,7 @@ export async function setLockoutFlag(input: {
     const result = await client.set(input.key, input.reason, 'PX', duration, 'NX')
     return result === 'OK' // 'OK' = criou agora; null = já existia
   } catch (err) {
-    console.warn(
-      '[redis] setLockoutFlag failed:',
-      err instanceof Error ? err.message : err,
-    )
+    console.warn('[redis] setLockoutFlag failed:', err instanceof Error ? err.message : err)
     return false
   }
 }
@@ -263,10 +257,7 @@ export async function getLockoutFlag(key: string): Promise<string | null | undef
     const val = await client.get(key)
     return val // string reason | null se não existe
   } catch (err) {
-    console.warn(
-      '[redis] getLockoutFlag failed:',
-      err instanceof Error ? err.message : err,
-    )
+    console.warn('[redis] getLockoutFlag failed:', err instanceof Error ? err.message : err)
     return undefined
   }
 }
@@ -320,9 +311,7 @@ export async function evaluateLockoutRedis(input: {
   // Registra falha em paralelo
   const [ipCount, emailCount] = await Promise.all([
     recordFailureSlidingWindow({ key: ipKey, windowMs }),
-    emailKey
-      ? recordFailureSlidingWindow({ key: emailKey, windowMs })
-      : Promise.resolve(0),
+    emailKey ? recordFailureSlidingWindow({ key: emailKey, windowMs }) : Promise.resolve(0),
   ])
 
   // Se qualquer um retornou null, falha — fallback SQL

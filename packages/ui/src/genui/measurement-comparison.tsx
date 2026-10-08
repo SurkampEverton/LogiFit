@@ -30,13 +30,25 @@ function deltaColor(metric: ComparisonMetric): string {
       : 'var(--ev-warning-hover)'
   }
   if (metric.desiredDirection === 'lower') {
-    return delta < 0 ? 'var(--ev-success-hover)' : delta > 0 ? 'var(--ev-danger-hover)' : 'var(--ev-text-muted)'
+    return delta < 0
+      ? 'var(--ev-success-hover)'
+      : delta > 0
+        ? 'var(--ev-danger-hover)'
+        : 'var(--ev-text-muted)'
   }
-  return delta > 0 ? 'var(--ev-success-hover)' : delta < 0 ? 'var(--ev-danger-hover)' : 'var(--ev-text-muted)'
+  return delta > 0
+    ? 'var(--ev-success-hover)'
+    : delta < 0
+      ? 'var(--ev-danger-hover)'
+      : 'var(--ev-text-muted)'
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+  return new Date(iso).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+  })
 }
 
 export function MeasurementComparison(props: MeasurementComparisonProps): ReactNode {
@@ -85,10 +97,7 @@ export function MeasurementComparison(props: MeasurementComparisonProps): ReactN
             const delta = m.after - m.before
             const pct = (delta / Math.abs(m.before || 1)) * 100
             return (
-              <tr
-                key={m.name}
-                style={{ borderBottom: '1px solid var(--ev-border)' }}
-              >
+              <tr key={m.name} style={{ borderBottom: '1px solid var(--ev-border)' }}>
                 <td style={{ padding: 'var(--ev-space-1) 0' }}>{m.name}</td>
                 <td style={{ textAlign: 'right', fontFamily: 'var(--ev-font-mono)' }}>
                   {m.before.toFixed(1)}

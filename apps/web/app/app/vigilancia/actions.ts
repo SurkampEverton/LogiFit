@@ -273,34 +273,30 @@ export const scheduleMaintenance = wrapServerAction(
       })
     }
 
-    try {
-      const [row] = await db
-        .insert(equipmentMaintenance)
-        .values({
-          tenantId,
-          equipmentId: parsed.equipmentId,
-          kind: parsed.kind,
-          plannedFor: parsed.plannedFor,
-          status: 'scheduled',
-          externalLocation: parsed.externalLocation,
-          externalSupplierId: parsed.externalSupplierId ?? null,
-          observations: parsed.observations ?? null,
-          createdByUserId: session.logifit.userId,
-        })
-        .returning({ id: equipmentMaintenance.id })
+    const [row] = await db
+      .insert(equipmentMaintenance)
+      .values({
+        tenantId,
+        equipmentId: parsed.equipmentId,
+        kind: parsed.kind,
+        plannedFor: parsed.plannedFor,
+        status: 'scheduled',
+        externalLocation: parsed.externalLocation,
+        externalSupplierId: parsed.externalSupplierId ?? null,
+        observations: parsed.observations ?? null,
+        createdByUserId: session.logifit.userId,
+      })
+      .returning({ id: equipmentMaintenance.id })
 
-      // Se for manutenção: atualiza status do equipamento
-      if (parsed.externalLocation) {
-        await db
-          .update(equipment)
-          .set({ status: 'maintenance', updatedAt: new Date() })
-          .where(and(eq2(equipment.id, parsed.equipmentId), eq2(equipment.tenantId, tenantId)))
-      }
-      setAuditResource(row!.id, { kind: parsed.kind, plannedFor: parsed.plannedFor })
-      return { id: row!.id }
-    } catch (err) {
-      throw err
+    // Se for manutenção: atualiza status do equipamento
+    if (parsed.externalLocation) {
+      await db
+        .update(equipment)
+        .set({ status: 'maintenance', updatedAt: new Date() })
+        .where(and(eq2(equipment.id, parsed.equipmentId), eq2(equipment.tenantId, tenantId)))
     }
+    setAuditResource(row!.id, { kind: parsed.kind, plannedFor: parsed.plannedFor })
+    return { id: row!.id }
   },
 )
 

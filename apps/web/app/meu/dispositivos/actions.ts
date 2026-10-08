@@ -259,6 +259,7 @@ export const listMyConnections = wrapMemberAction(
     action: 'device.list_connections',
     returnTo: '/meu/dispositivos',
   },
+  // biome-ignore lint/suspicious/noConfusingVoidType: `void` torna o parâmetro opcional para o caller chamar a action sem argumento; `undefined` quebraria os call sites (TS2554)
   async (_input: void, { session }) => {
     const r = await pool.query<ConnRow>(
       `SELECT id, provider::text AS provider, status::text AS status,

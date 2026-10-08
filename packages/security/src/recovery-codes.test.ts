@@ -5,12 +5,12 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  type RecoveryCodeEntry,
   countAvailableRecoveryCodes,
   findUnusedMatchingCode,
   generateRecoveryCodes,
   hashRecoveryCode,
   markRecoveryCodeUsed,
-  type RecoveryCodeEntry,
   verifyRecoveryCode,
 } from './recovery-codes'
 

@@ -1,14 +1,11 @@
 import { expect, test } from '@playwright/test'
+import { deleteAllMessages, waitForMessage } from '../helpers/mailhog'
 import {
-  deleteAllMessages,
-  waitForMessage,
-} from '../helpers/mailhog'
-import {
+  type TestPassportIdentity,
   closePassportPool,
   countEmailVerificationTokens,
   createTestPassportIdentity,
   deleteTestPassportIdentity,
-  type TestPassportIdentity,
 } from '../helpers/test-passport-identity'
 
 /**
@@ -52,10 +49,7 @@ test.describe('Portal do paciente — resend email verification', () => {
    * (Mailhog + count tokens DB).
    */
 
-  test('happy path — paciente não verificado reenvia + email chega', async ({
-    page,
-    context,
-  }) => {
+  test('happy path — paciente não verificado reenvia + email chega', async ({ page, context }) => {
     identity = await createTestPassportIdentity({
       email: `e2e-resend-${Date.now()}@logifit.test`,
       emailVerified: false, // bota como NÃO verificado pra UI renderizar o botão
@@ -147,10 +141,7 @@ test.describe('Portal do paciente — resend email verification', () => {
     await expect(page.getByText('✓ verificado')).toBeVisible()
   })
 
-  test('cooldown — 2ª chamada em <5min retorna RATE_LIMITED', async ({
-    page,
-    context,
-  }) => {
+  test('cooldown — 2ª chamada em <5min retorna RATE_LIMITED', async ({ page, context }) => {
     identity = await createTestPassportIdentity({
       email: `e2e-resend-cooldown-${Date.now()}@logifit.test`,
       emailVerified: false,

@@ -144,7 +144,7 @@ export async function requestSmsCode(input: unknown) {
   )
   if (active.rows.length > 0) {
     // Invalida o anterior (revoga implícito) — caller pode pedir novo legitimamente
-    await pool.query(`UPDATE passport_signup_otps SET used_at = now() WHERE id = $1`, [
+    await pool.query('UPDATE passport_signup_otps SET used_at = now() WHERE id = $1', [
       active.rows[0]!.id,
     ])
   }
@@ -231,7 +231,7 @@ export async function verifySmsCode(input: unknown) {
 
   if (otp.attempts >= MAX_VERIFY_ATTEMPTS) {
     // Invalida OTP — força novo request
-    await pool.query(`UPDATE passport_signup_otps SET used_at = now() WHERE id = $1`, [otp.id])
+    await pool.query('UPDATE passport_signup_otps SET used_at = now() WHERE id = $1', [otp.id])
     throw new ApiException({
       code: 'RATE_LIMITED',
       message: 'Muitas tentativas — solicite um novo código',
@@ -242,7 +242,7 @@ export async function verifySmsCode(input: unknown) {
   // 2. Verifica código (constant-time)
   if (!verifyOtpCode(code, otp.code_hash)) {
     // Incrementa attempts + retorna erro genérico (não revela "código quase certo")
-    await pool.query(`UPDATE passport_signup_otps SET attempts = attempts + 1 WHERE id = $1`, [
+    await pool.query('UPDATE passport_signup_otps SET attempts = attempts + 1 WHERE id = $1', [
       otp.id,
     ])
     throw new ApiException({
@@ -253,7 +253,7 @@ export async function verifySmsCode(input: unknown) {
   }
 
   // 3. Marca used_at — sucesso
-  await pool.query(`UPDATE passport_signup_otps SET used_at = now() WHERE id = $1`, [otp.id])
+  await pool.query('UPDATE passport_signup_otps SET used_at = now() WHERE id = $1', [otp.id])
 
   return { ok: true as const, otpId: otp.id, phone }
 }
@@ -298,7 +298,7 @@ export async function signupPatient(input: unknown) {
     id: string
     phone: string
     used_at: Date | null
-  }>(`SELECT id, phone, used_at FROM passport_signup_otps WHERE id = $1 LIMIT 1`, [
+  }>('SELECT id, phone, used_at FROM passport_signup_otps WHERE id = $1 LIMIT 1', [
     parsed.data.smsOtpId,
   ])
   const otpRow = otp.rows[0]
@@ -486,11 +486,11 @@ export async function signupPatient(input: unknown) {
     /** Sprint 02b3 — session já criada; redireciona pro dashboard do paciente
      *  (Sprint 02b3 completo: enableMfa=true vai pra /cadastro/mfa-setup primeiro). */
     redirectUrl: parsed.data.enableMfa ? '/cadastro/mfa-setup' : '/meu',
-    note:
-      'Sprint 02b3 partial — identity global criada + session lf_passport_session ativa. ' +
-      (parsed.data.enableMfa
+    note: `Sprint 02b3 partial — identity global criada + session lf_passport_session ativa. ${
+      parsed.data.enableMfa
         ? 'Sprint 02b3 completo ativa wizard TOTP em /cadastro/mfa-setup.'
-        : 'Login direto em /meu funcional.'),
+        : 'Login direto em /meu funcional.'
+    }`,
   }
 }
 
@@ -703,11 +703,11 @@ export async function verifyPassportEmail(input: unknown) {
   try {
     await client.query('BEGIN')
     await client.query(
-      `UPDATE passport_email_verification_tokens SET used_at = now() WHERE id = $1`,
+      'UPDATE passport_email_verification_tokens SET used_at = now() WHERE id = $1',
       [row.token_id],
     )
     await client.query(
-      `UPDATE passport_global_identities SET email_verified_at = now(), updated_at = now() WHERE id = $1`,
+      'UPDATE passport_global_identities SET email_verified_at = now(), updated_at = now() WHERE id = $1',
       [row.identity_id],
     )
     await client.query('COMMIT')
