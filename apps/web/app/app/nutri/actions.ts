@@ -268,12 +268,16 @@ export const createTenantFood = wrapServerAction(
     } catch (err) {
       throw new ApiException({
         code: 'VALIDATION_ERROR',
-        message: 'Nutrientes inválidos: ' + (err instanceof Error ? err.message : 'unknown'),
+        message: `Nutrientes inválidos: ${err instanceof Error ? err.message : 'unknown'}`,
         request_id: '',
       })
     }
 
-    const nameNormalized = parsed.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    const nameNormalized = parsed.name
+      .toLowerCase()
+      .normalize('NFD')
+      // biome-ignore lint/suspicious/noMisleadingCharacterClass: falso positivo — após normalize('NFD') o intervalo de marcas combinantes é removido de propósito para tirar acentos
+      .replace(/[\u0300-\u036f]/g, '')
 
     const [row] = await db
       .insert(foods)
@@ -521,14 +525,12 @@ export const getMealPlanFull = wrapServerAction(
       mealId: m.id,
       name: m.name,
       order: m.order,
-      items: (itemsByMeal.get(m.id) ?? [])
-        .filter((it) => mealsInput) // placeholder p/ tipagem
-        .map((it) => ({
-          foodId: it.foodId,
-          foodName: it.foodName,
-          grams: Number(it.grams),
-          nutrients: it.nutrients as Nutrients,
-        })),
+      items: (itemsByMeal.get(m.id) ?? []).map((it) => ({
+        foodId: it.foodId,
+        foodName: it.foodName,
+        grams: Number(it.grams),
+        nutrients: it.nutrients as Nutrients,
+      })),
     }))
 
     const nutrition = calculateMealPlanNutrition(mealsInput)
