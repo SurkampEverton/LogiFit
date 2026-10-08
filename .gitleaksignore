@@ -1,0 +1,4 @@
+# Falsos positivos confirmados — um fingerprint por linha, com o motivo acima.
+
+# generic-api-key casou `key = 'fiscal_apuracao_v1'` (chave de feature flag em SQL, não segredo)
+f2ca149703a5ab85b32ae1be4b666155e13ee19a:apps/web/app/api/jobs/aggregate-fiscal-monthly/route.ts:generic-api-key:93

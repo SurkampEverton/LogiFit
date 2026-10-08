@@ -6,6 +6,40 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fix — CI volta a rodar de verdade 2026-10-08
+
+Todo job que usava pnpm (`lint`, `typecheck`, `test`, `db`, e o `osv-scanner` do
+`security.yml`) morria no `pnpm/action-setup@v4` desde o bootstrap: o workflow
+passava `version: 10` e o `package.json` declara `packageManager: pnpm@10.29.3`.
+O `packageManager` passa a ser a fonte única. Com os jobs executando, apareceu o
+que se acumulou nesses meses:
+
+- **Banco novo não migrava.** As migrations `0042`–`0048` (passaporte global,
+  `feature_flags`) existiam como `.sql` mas nunca entraram no `_journal.json` do
+  Drizzle; num banco vazio a `0052` quebrava em `feature_flags` inexistente. Entram
+  no journal com `when` entre a `0041` e a `0049`: banco novo aplica em ordem, banco
+  existente (último aplicado > esses) não reaplica.
+- **Partições de `patient_link_events` sem RLS.** As policies valem para acesso
+  pelo parent; `SELECT` direto numa partição como `logifit_app` via eventos de
+  todos os tenants. Cada partição recebe `ENABLE` + `FORCE ROW LEVEL SECURITY`
+  (deny total no acesso direto); acesso pelo parent segue igual.
+- **`rls-check`** passa a cobrir tabelas particionadas (o parent não era
+  verificado), dispensa policy nas partições, e declara `webhook_events` como
+  exceção (sem RLS por design, `0019_financeiro_rls.sql`).
+- **Testes de `@repo/db` são de integração** e falhavam sem Postgres: saem do job
+  `test` e rodam no job `db` depois de migrate + rls-check + seed.
+- **Lint: 1.301 erros.** Formatação, imports e template literals corrigidos
+  automaticamente; `noNonNullAssertion` desligada (conflita com
+  `noUncheckedIndexedAccess`, que torna `arr[0]!` o escape idiomático) e `noDelete`
+  desligada em testes (`delete process.env.X` é o jeito certo de limpar env); o
+  resto corrigido caso a caso ou suprimido com motivo.
+- **Nutrição do plano alimentar lançava `ReferenceError`.** Um
+  `.filter(() => mealsInput)` ("placeholder p/ tipagem") lia `mealsInput` dentro do
+  próprio inicializador; qualquer refeição com itens derrubava a action. Linha
+  removida.
+- **gitleaks**: falso positivo (`key = 'fiscal_apuracao_v1'`, chave de feature flag)
+  vai para `.gitleaksignore` por fingerprint.
+
 ### Chore — Claude Code: economia de contexto e revisor adversarial 2026-10-08
 
 Configuração do Claude Code versionada (`.claude/settings.json`): compacta em
