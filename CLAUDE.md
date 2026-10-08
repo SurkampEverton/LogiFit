@@ -303,3 +303,49 @@ Consultar [`docs/roadmap.md`](docs/roadmap.md) — seção "Sprints ativos".
 - Usar TodoWrite para tarefas multi-passos
 - Não criar arquivos `.md` fora do necessário; não adicionar comentários explicando o óbvio
 - Mostrar caminhos relativos nos links markdown para facilitar navegação
+
+## Economia de contexto — a cota semanal é da conta inteira
+
+Quase todo o consumo é o contexto relido a cada chamada à API, não a saída do modelo.
+
+O `.claude/settings.json` já faz sozinho: compacta em 300k; subagente sem `model` roda em
+Sonnet; até 4 subagentes por sessão; injeta estado e handoff ao abrir, retomar ou compactar;
+recusa `gh pr create` sem revisão adversarial.
+
+O resto depende de você.
+
+- **Uma tarefa = uma sessão.** No máximo ~3 chats pesados ao mesmo tempo.
+- **Handoff a cada push e no fim de cada onda**, até 40 linhas: objetivo e estado, PR,
+  decisões e porquê, próximos passos, armadilhas.
+  - Fica em `<pasta do Claude>/handoffs/`. O hook `estado-sessao` mostra o caminho exato.
+  - Worktree: `<branch com / trocado por __>.md`.
+  - Checkout principal: `coord-<frente>.md`, com a 1ª linha `sessao: <session_id>`.
+  - Nunca escreva no arquivo de outra sessão.
+- **Leia em blocos:** `Read`, ou 200 linhas ou mais, com vários arquivos em paralelo na mesma
+  resposta.
+- **Saída de teste e lint filtrada** (`2>&1 | tail -80`); a completa vai para um arquivo.
+- **Modelo do subagente:** `haiku` para busca, `sonnet` como padrão, `opus` só para diagnóstico
+  difícil.
+  - Nunca acima do modelo da sessão.
+  - Nunca subagente dentro de subagente.
+- **Revisão adversarial** (agente `revisor-adversarial`) antes de toda PR de código.
+  - PR trivial: `ERP_SEM_REVISAO=1 gh pr create ...`. O nome vem do script; não renomeie.
+  - O hook só atua em `gh pr create`. No commit direto em `main` (regra 10), chame o agente à
+    mão quando a mudança for de risco.
+- **Não troque de modelo no meio da sessão.** Esforço `medium`; `ultrathink` num turno difícil.
+- **CI:** espere o aviso do app ou use Monitor, nunca um laço com `sleep`.
+- **Sessão parada há mais de 1h:** "Resume from summary". Não clique "Don't ask me again".
+- **Ponytail:** não escreva comentário `ponytail:` no código; o porquê vai na mensagem de commit.
+
+# Compact instructions
+
+Ao compactar, preserve literalmente:
+- branch e worktree;
+- nº e estado da PR;
+- decisões do dono e o porquê;
+- próximos passos, em ordem;
+- arquivos tocados;
+- verificações que faltam;
+- armadilhas encontradas.
+
+Descarte a saída de ferramentas já resolvida.

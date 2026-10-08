@@ -1,0 +1,9 @@
+# Scripts, hooks e agentes do Claude Code: LF em toda maquina. Com
+# core.autocrlf=true (padrao de quem clona no Windows) o checkout gravaria CRLF
+# e o bash quebraria em silencio ("bad interpreter"; o frontmatter do agente
+# tambem depende do LF).
+*.sh text eol=lf
+scripts/hooks/* text eol=lf
+.claude/agents/*.md text eol=lf
+.claude/settings.json text eol=lf
+.githooks/* text eol=lf

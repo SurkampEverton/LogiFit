@@ -6,6 +6,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Chore — Claude Code: economia de contexto e revisor adversarial 2026-10-08
+
+Configuração do Claude Code versionada (`.claude/settings.json`): compacta em
+300k em vez de ~1M, subagente sem `model` roda em Sonnet, até 4 por sessão, e o
+hook `estado-sessao` injeta branch, PR e handoff ao abrir, retomar ou compactar.
+Quase todo o consumo da cota é contexto relido a cada chamada, não saída.
+
+Agente `revisor-adversarial` com o que caçar nesta base; `gh pr create` sem ele é
+recusado (`ERP_SEM_REVISAO=1` para PR trivial). Scripts copiados de
+deepcontrol/DeepControl#1687, já revisados e testados. O fluxo de commit em
+`main` (regras 10 e 11) não muda: `pre-push-guard.sh` e `worktree-guard.sh`
+vêm no repo, mas desligados.
+
 ### Feat — Sprint 41c: `calculateTax()` — o cálculo dirigido por flags 2026-07-31
 
 Camada 3 do motor: `ResolvedTax` → `TaxBreakdown`. Cobre ICMS próprio, redução
